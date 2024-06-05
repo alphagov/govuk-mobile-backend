@@ -56,7 +56,7 @@ jobs:
     - name: terraform init
       run: |
         STEP_EXIT_STATUS=0
-        for d in terraform/deployments/*; do
+        for d in terraform/*; do
           echo "$d"
           cd "$d"
           if ! terraform init -backend=false; then STEP_EXIT_STATUS=1; fi
@@ -68,7 +68,7 @@ jobs:
     - name: terraform validate
       run: |
         STEP_EXIT_STATUS=0
-        for d in terraform/deployments/*; do
+        for d in terraform/*; do
           echo "$d"
           cd "$d"
           if ! terraform validate; then STEP_EXIT_STATUS=1; fi
@@ -79,7 +79,7 @@ jobs:
 
     - name: tflint
       run: |
-        cd terraform/deployments
+        cd terraform
         tflint --version
         tflint --init --recursive 
         tflint --format compact --module --recursive --force \
