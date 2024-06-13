@@ -1,4 +1,5 @@
 terraform {
+  required_version = "~> 1.5"
   backend "s3" {
     bucket         = "govuk-mobile-backend-integration-tfstate"
     key            = "static-config/terraform.tfstate"
@@ -24,10 +25,9 @@ locals {
 }
 
 module "static-config" {
-  source            = "./static-config"
-  govuk_environment = var.govuk_environment
-  aws_tags          = local.default_tags
-  bucket_name       = local.static_config_bucket_name
+  source      = "./static-config"
+  aws_tags    = local.default_tags
+  bucket_name = local.static_config_bucket_name
 }
 
 module "routing" {

@@ -22,7 +22,7 @@ resource "aws_iam_role" "api_gateway_role" {
 EOF
 }
 
-// -- S3
+# -- S3
 resource "aws_iam_policy" "s3_policy" {
   name        = "s3-policy"
   description = "Policy to allow reading of items from static config bucket"
@@ -49,7 +49,7 @@ resource "aws_iam_role_policy_attachment" "s3_policy_attach" {
   policy_arn = aws_iam_policy.s3_policy.arn
 }
 
-// -- CloudWatch
+# -- CloudWatch
 resource "aws_iam_policy" "cloudwatch_policy" {
   name        = "cloudwatch-policy"
   description = "Policy to allow writing to and from CloudWatch"

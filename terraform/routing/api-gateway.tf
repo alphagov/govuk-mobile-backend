@@ -31,11 +31,11 @@ resource "aws_api_gateway_integration" "info_integration" {
   integration_http_method = "GET"
   type                    = "AWS"
 
-  // todo fix hardcoded region
+  # todo fix hardcoded region
   uri         = "arn:aws:apigateway:eu-west-2:s3:path/${var.static_config_bucket_name}/{object}"
   credentials = aws_iam_role.api_gateway_role.arn
 
-  // this maps the path variable name to the uri placeholder
+  # this maps the path variable name to the uri placeholder
   request_parameters = {
     "integration.request.path.object" = "method.request.path.item"
   }
