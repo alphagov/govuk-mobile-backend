@@ -7,7 +7,7 @@ variable "aws_tags" {
   type = map(string)
 }
 
-variable "bucket_name" {
+variable "static_config_bucket_name" {
   type        = string
-  description = "Name to use for the static config bucket"
+  description = "Name of the static config bucket"
 }

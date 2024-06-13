@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "govuk_app_static" {
-  bucket = "govuk-app-${var.govuk_environment}-static-config"
+  bucket = var.bucket_name
 }
 
 resource "aws_s3_bucket_versioning" "govuk_app_static" {
@@ -10,31 +10,31 @@ resource "aws_s3_bucket_versioning" "govuk_app_static" {
 }
 
 # Allow access from Fastly
-data "aws_iam_policy_document" "govuk_app_static" {
-  statement {
-    sid     = "S3FastlyReadBucket"
-    actions = ["s3:GetObject"]
+# data "aws_iam_policy_document" "govuk_app_static" {
+#   statement {
+#     sid     = "S3FastlyReadBucket"
+#     actions = ["s3:GetObject"]
 
-    resources = [
-      "arn:aws:s3:::${aws_s3_bucket.govuk_app_static.id}",
-      "arn:aws:s3:::${aws_s3_bucket.govuk_app_static.id}/*",
-    ]
+#     resources = [
+#       "arn:aws:s3:::${aws_s3_bucket.govuk_app_static.id}",
+#       "arn:aws:s3:::${aws_s3_bucket.govuk_app_static.id}/*",
+#     ]
 
-    condition {
-      test     = "IpAddress"
-      variable = "aws:SourceIp"
+#     condition {
+#       test     = "IpAddress"
+#       variable = "aws:SourceIp"
 
-      values = data.fastly_ip_ranges.fastly.cidr_blocks
-    }
+#       values = data.fastly_ip_ranges.fastly.cidr_blocks
+#     }
 
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-  }
-}
+#     principals {
+#       type        = "AWS"
+#       identifiers = ["*"]
+#     }
+#   }
+# }
 
-resource "aws_s3_bucket_policy" "govuk_app_static_read_policy" {
-  bucket = aws_s3_bucket.govuk_app_static.id
-  policy = data.aws_iam_policy_document.govuk_app_static.json
-}
+# resource "aws_s3_bucket_policy" "govuk_app_static_read_policy" {
+#   bucket = aws_s3_bucket.govuk_app_static.id
+#   policy = data.aws_iam_policy_document.govuk_app_static.json
+# }
