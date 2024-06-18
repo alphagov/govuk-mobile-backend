@@ -1,0 +1,22 @@
+{
+    "name": "govuk-mobile-backend-functions",
+    "version": "0.0.1",
+    "description": "Functions that support the GOV.UK App backend",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/alphagov/govuk-mobile-backend.git"
+    },
+    "author": "",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/alphagov/govuk-mobile-backend/issues"
+    },
+    "homepage": "https://github.com/alphagov/govuk-mobile-backend#readme",
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.138"
+    }
+}
