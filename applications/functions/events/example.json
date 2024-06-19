@@ -1,0 +1,4 @@
+{
+    "httpMethod": "GET",
+    "body": "{ \"message\": \"This is an example event\" }"
+}
