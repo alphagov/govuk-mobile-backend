@@ -7,7 +7,17 @@ terraform {
     encrypt        = true
     dynamodb_table = "govuk-mobile-backend-integration-tf-lockid"
   }
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
 
+provider "aws" {
+  region = "eu-west-2"
+  default_tags { tags = local.default_tags }
 }
 
 locals {
