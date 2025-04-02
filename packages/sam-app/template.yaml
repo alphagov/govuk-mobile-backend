@@ -1,0 +1,919 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for demo-sam-app.
+  Managed by dev-platform
+
+Parameters:
+  VpcStackName:
+    Description: "The VPC stack name in the account"
+    Type: "String"
+
+  CodeSigningConfigArn:
+    Type: String
+    Description: Asserts that lambdas are signed when deployed.
+    Default: "none"
+
+  LambdaDeploymentPreference:
+    Description: "Specifies the configuration to enable gradual Lambda deployments"
+    Type: String
+    Default: "Canary10Percent5Minutes"
+
+  PermissionsBoundary:
+    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
+    Type: String
+    Default: "none"
+
+  Environment:
+    Description: "The name of the environment to deploy to"
+    Type: "String"
+
+  NotificationTopicArn:
+    Description: "The ARN of the SNS topic used for notifications"
+    Type: "String"
+    Default: "none"
+
+Conditions:
+  IsNonDevEnvironment:
+    Fn::Not:
+      - Fn::Or:
+        - Fn::Equals:
+          - !Ref Environment
+          - "dev"
+        - Fn::Equals:
+          - !Ref Environment
+          - "demo"
+        - Fn::Equals:
+          - !Ref Environment
+          - "local"
+
+  UseCodeSigning:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - "none"
+
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - "none"
+
+  UseAlarmActions:
+    Fn::Not:
+      - Fn::Equals:
+        - !Ref NotificationTopicArn
+        - "none"
+
+Mappings:
+  APIDomainNames:
+    build:
+      DomainName: "demoapp.build.platform.sandpit.account.gov.uk"
+    staging:
+      DomainName: "demoapp.staging.platform.sandpit.account.gov.uk"
+    integration:
+      DomainName: "demoapp.integration.platform.sandpit.account.gov.uk"
+    production:
+      DomainName: "demoapp.platform.sandpit.account.gov.uk"
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    CodeSigningConfigArn: !If
+      - UseCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    Timeout: 20
+
+Resources:
+  APIGatewayAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt HelloWorldKmsKey.Arn
+      Tags:
+        - Key: Product
+          Value: GOV.UK Sign In
+        - Key: System
+          Value: Dev Platform
+        - Key: Environment
+          Value: Demo
+        - Key: Service
+          Value: backend
+        - Key: Name
+          Value: APIGatewayAccessLogGroup
+        - Key: Source
+          Value: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+
+  # Setup to validate we can use pipelines to set CSLS as the destination: https://github.com/alphagov/centralised-security-logging-service
+  CSLSFirehoseSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNonDevEnvironment
+    Properties:
+      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython
+      FilterPattern: ""
+      LogGroupName: !Ref APIGatewayAccessLogGroup
+
+  LambdaEgressSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: >-
+        Permits outbound on port 443 from within the VPC to the internet.
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow to the wider internet on port 443
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      VpcId:
+        Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
+      SecurityGroupIngress:
+        - CidrIp:
+            Fn::ImportValue: !Sub "${VpcStackName}-VpcCidr"
+          Description: Allow ingress traffic from vpc cidr to port 443
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+
+  HelloWorldRestApi:
+    Type: AWS::Serverless::Api
+    # checkov:skip=CKV_AWS_120:API caching is not the programme approved way
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_120"
+            comment: "API caching is not the GDS approved way of caching in API Gateway"
+    Properties:
+      StageName: Prod
+      AccessLogSetting:
+        Format: "$context.requestId $context.httpMethod $context.path"
+        DestinationArn: !GetAtt APIGatewayAccessLogGroup.Arn
+      CacheClusterEnabled: false
+      # CacheClusterSize: "0.5"
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ./openapi-spec.yaml
+      TracingEnabled: true
+      Tags:
+        Product: GOV.UK Sign In
+        System: Dev Platform
+        Environment: Demo
+        Service: backend
+        Name: HelloWorldRestApi
+        Source: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+
+  HelloWorldRestAPIDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Condition: IsNonDevEnvironment
+    Properties:
+      DomainName: !Sub
+        - "${AWS::StackName}.${DomainName}"
+        - DomainName: !FindInMap
+            - APIDomainNames
+            - !Ref Environment
+            - DomainName
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !Ref ApiGatewayCertificate
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Name
+          Value: ApiGatewayCertificate
+        - Key: Service
+          Value: backend
+        - Key: Source
+          Value: "govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml"
+
+  HelloWorldRestAPIBasePath:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: IsNonDevEnvironment
+    DependsOn: HelloWorldRestAPIDomainName
+    Properties:
+      DomainName: !Sub
+        - "${AWS::StackName}.${DomainName}"
+        - DomainName: !FindInMap
+            - APIDomainNames
+            - !Ref Environment
+            - DomainName
+      RestApiId: !Ref HelloWorldRestApi
+      Stage: !Sub "${HelloWorldRestApi.Stage}"
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    # checkov:skip=CKV_AWS_116: DLQ is not appropriate for a Lambda invoked by an API
+    # checkov:skip=CKV_AWS_117: Internet access not required
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_116"
+            comment: "DLQ is not appropriate for a Lambda invoked by an API"
+          - id: "CKV_AWS_117"
+            comment: "Internet access not required"
+    Properties:
+      CodeUri: hello-world/
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 512
+      ReservedConcurrentExecutions: 5
+      KmsKeyArn: !GetAtt HelloWorldKmsKey.Arn
+      Tracing: Active
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          PARAM1: VALUE
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt LambdaEgressSecurityGroup.GroupId
+        SubnetIds:
+          - Fn::ImportValue:
+              "Fn::Sub": "${VpcStackName}-ProtectedSubnetIdA"
+          - Fn::ImportValue:
+              "Fn::Sub": "${VpcStackName}-ProtectedSubnetIdB"
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref HelloWorldTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref HelloWorldTable
+        - S3ReadPolicy:
+            BucketName: !Ref HelloWorldBucket
+        - S3WritePolicy:
+            BucketName: !Ref HelloWorldBucket
+        - SNSPublishMessagePolicy:
+            TopicName: !Ref HelloWorldTopic
+        - SQSSendMessagePolicy:
+            QueueName: !Ref HelloWorldQueue
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /hello
+            Method: get
+            RestApiId: !Ref HelloWorldRestApi
+      AutoPublishAlias: HelloWorldFunction
+      DeploymentPreference:
+        # Testing against 10 percent of traffic: runs for 5 minutes, if no alarms fire, remaining traffic shifts.
+        Type: !Ref LambdaDeploymentPreference
+        Alarms:
+          - !Ref HelloWorldFunctionTooManyRequestsAlarm
+          - !Ref HelloWorldLambdaErrors
+          # Anomaly alarms need to be active in an account prior to being added as a deployment alarm.
+          # Otherwise there is a risk of false positives
+          - !Ref HelloWorldFunctionInvocationAnomalyAlarm
+          - !Ref HelloWorldLambda4XXAnomalyAlarm
+          - !Ref HelloWorldLambdaErrorAnomalyAlarm
+        Hooks:
+          PreTraffic: !Ref PreTrafficHook
+          PostTraffic: !Ref PostTrafficHook
+        Role: !GetAtt CodeDeployServiceRole.Arn
+      Tags:
+        Product: GOV.UK Sign In
+        System: Dev Platform
+        Environment: Demo
+        Service: backend
+        Name: HelloWorldFunction
+        Source: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+        CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_117
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+      PermissionsBoundary:
+        !If [
+          UsePermissionsBoundary,
+          !Ref PermissionsBoundary,
+          !Ref AWS::NoValue,
+        ]
+
+  PreTrafficHook:
+    Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_116: DLQ is not appropriate for a Lambda invoked by an API
+    # checkov:skip=CKV_AWS_117: Internet access not required
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_116"
+            comment: "DLQ is not appropriate for a Lambda invoked by an API"
+          - id: "CKV_AWS_117"
+            comment: "Internet access not required"
+    Properties:
+      CodeUri: PreTrafficHook
+      FunctionName: !Join
+        - "_"
+        - - "CodeDeployHook"
+          - !Ref AWS::StackName
+          - "PreTrafficHook"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - /
+                          - Ref: AWS::StackId
+      Handler: preTrafficHook.handler
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "codedeploy:PutLifecycleEventHookExecutionStatus"
+              Resource: !Sub "arn:aws:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${ServerlessDeploymentApplication}/*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "lambda:InvokeFunction"
+              Resource: !Ref HelloWorldFunction.Version
+      Runtime: nodejs18.x
+      KmsKeyArn: !GetAtt HelloWorldKmsKey.Arn
+      Environment:
+        Variables:
+          NewVersion: !Ref HelloWorldFunction.Version
+      ReservedConcurrentExecutions: 5
+      Tags:
+        Product: GOV.UK Sign In
+        System: Dev Platform
+        Environment: Demo
+        Service: backend
+        Name: PreTrafficHook
+        Source: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+        CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_117
+
+  PostTrafficHook:
+    Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_116: DLQ is not appropriate for a Lambda invoked by an API
+    # checkov:skip=CKV_AWS_117: Ensure that AWS Lambda function is configured inside a VPC
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_116"
+            comment: "DLQ is not appropriate for a Lambda invoked by an API"
+          - id: "CKV_AWS_117"
+            comment: "Ensure that AWS Lambda function is configured inside a VPC"
+    Properties:
+      CodeUri: PostTrafficHook
+      FunctionName: !Join
+        - "_"
+        - - "CodeDeployHook"
+          - !Ref AWS::StackName
+          - "PostTrafficHook"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - /
+                          - Ref: AWS::StackId
+      Handler: postTrafficHook.handler
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "codedeploy:PutLifecycleEventHookExecutionStatus"
+              Resource: !Sub "arn:aws:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${ServerlessDeploymentApplication}/*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "lambda:InvokeFunction"
+              Resource: !Ref HelloWorldFunction.Version
+      Runtime: nodejs18.x
+      KmsKeyArn: !GetAtt HelloWorldKmsKey.Arn
+      Environment:
+        Variables:
+          NewVersion: !Ref HelloWorldFunction.Version
+      ReservedConcurrentExecutions: 5
+      Tags:
+        Product: GOV.UK Sign In
+        System: Dev Platform
+        Environment: Demo
+        Service: backend
+        Name: PostTrafficHook
+        Source: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+        CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_117
+
+
+  HelloWorldTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "Id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "Id"
+          KeyType: "HASH"
+      SSESpecification:
+        KMSMasterKeyId: !Ref HelloWorldKmsKey
+        SSEEnabled: true
+        SSEType: "KMS"
+      Tags:
+        - Key: Product
+          Value: GOV.UK Sign In
+        - Key: System
+          Value: Dev Platform
+        - Key: Environment
+          Value: Demo
+        - Key: Service
+          Value: backend
+        - Key: Name
+          Value: HelloWorldTable
+        - Key: Source
+          Value: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+
+  AccessLogsBucket:
+    Type: "AWS::S3::Bucket"
+    # checkov:skip=CKV_AWS_18:This is the access logs bucket. It should not log itself.
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_18"
+            comment: "This is the access logs bucket. It should not log itself."
+    Properties:
+      # AccessControl: LogDeliveryWrite
+      OwnershipControls:
+          Rules:
+            - ObjectOwnership: BucketOwnerPreferred
+      BucketName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "accesslogsbucket"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - /
+                          - Ref: AWS::StackId
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      # This cannot be implemented as this, as the target account needs permissions before the bucket name is know, but it permissions based on the bucketName.
+      # NotificationConfiguration:
+      #   QueueConfigurations:
+      #     - Event: "s3:ObjectCreated:*"
+      #       Queue: "arn:aws:sqs:eu-west-2:885513274347:cyber-security-s3-to-splunk-prodpython"
+      #     - Event: "s3:ObjectRestore:*"
+      #       Queue: "arn:aws:sqs:eu-west-2:885513274347:cyber-security-s3-to-splunk-prodpython"
+      Tags:
+        - Key: Product
+          Value: GOV.UK Sign In
+        - Key: System
+          Value: Dev Platform
+        - Key: Environment
+          Value: Demo
+        - Key: Service
+          Value: backend
+        - Key: Source
+          Value: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+        - Key: CheckovRulesToSkip
+          Value: "CKV_AWS_18"
+
+  # AccessLogsBucketPolicy:
+  #   Type: AWS::S3::BucketPolicy
+  #   Properties:
+  #     Bucket: !Ref AccessLogsBucket
+  #     PolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         - Effect: "Allow"
+  #           Resource:
+  #             - !Sub "AccessLogsBucket.Arn"
+  #             - !Sub "${AccessLogsBucket.Arn}/*"
+  #           Principal:
+  #             AWS: arn:aws:logs:eu-west-2:885513274347:root #CSLS account - can limit this further if we know the specific lambda role arn
+  #             # Lambda role ARN: arn:aws:iam::885513274347:role/csls_prodpython/csls_process_s3_logs_lambda_prodpython
+  #           Action:
+  #             - "s3:Get*"
+  #             - "s3:List*"
+
+  HelloWorldBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "helloworldbucket"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - /
+                          - Ref: AWS::StackId
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogsBucket
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Product
+          Value: GOV.UK Sign In
+        - Key: System
+          Value: Dev Platform
+        - Key: Environment
+          Value: Demo
+        - Key: Service
+          Value: backend
+        - Key: Name
+          Value: HelloWorldBucket
+        - Key: Source
+          Value: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+
+  HelloWorldKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK Sign In
+        - Key: System
+          Value: Dev Platform
+        - Key: Environment
+          Value: Demo
+        - Key: Service
+          Value: backend
+        - Key: Name
+          Value: HelloWorldKmsKey
+        - Key: Source
+          Value: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+
+  HelloWorldTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: !Ref HelloWorldKmsKey
+      Tags:
+        - Key: Product
+          Value: GOV.UK Sign In
+        - Key: System
+          Value: Dev Platform
+        - Key: Environment
+          Value: Demo
+        - Key: Service
+          Value: backend
+        - Key: Name
+          Value: HelloWorldTopic
+        - Key: Source
+          Value: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+
+  HelloWorldQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: !Ref HelloWorldKmsKey
+      Tags:
+        - Key: Product
+          Value: GOV.UK Sign In
+        - Key: System
+          Value: Dev Platform
+        - Key: Environment
+          Value: Demo
+        - Key: Service
+          Value: backend
+        - Key: Name
+          Value: HelloWorldQueue
+        - Key: Source
+          Value: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
+
+  #
+  # Anomaly detection
+  #
+
+  HelloWorldLambdaErrorAnomalyDetector:
+    Type: AWS::CloudWatch::AnomalyDetector
+    Properties:
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Stat: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref HelloWorldFunction
+
+  HelloWorldLambdaInvocationsAnomalyDetector:
+    Type: AWS::CloudWatch::AnomalyDetector
+    Properties:
+      MetricName: Invocations
+      Namespace: AWS/Lambda
+      Stat: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref HelloWorldFunction
+
+  HelloWorldLambda4XXErrorAnomalyDetector:
+    Type: AWS::CloudWatch::AnomalyDetector
+    Properties:
+      MetricName: 4XXError
+      Namespace: AWS/ApiGateway
+      Stat: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref HelloWorldFunction
+
+  HelloWorldLambdaErrorAnomalyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-HelloWorldLambdaErrorsAnomalies"
+      AlarmDescription: >
+        Alarm to detect Lambda error anomalies
+      AlarmActions: !If
+        - UseAlarmActions
+        - - !Ref NotificationTopicArn
+        - []
+      ComparisonOperator: GreaterThanUpperThreshold
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      ThresholdMetricId: ad1
+      TreatMissingData: notBreaching
+      Metrics:
+      - Id: ad1
+        ReturnData: True
+        Expression: ANOMALY_DETECTION_BAND(m1, 2)
+      - Id: m1
+        ReturnData: True
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Errors
+            Dimensions:
+              - Name: FunctionName
+                Value: !Ref HelloWorldFunction
+          Period: 60
+          Stat: Sum
+
+
+  HelloWorldLambda4XXAnomalyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-HelloWorldLambda4XXAnomalyAlarm"
+      AlarmDescription: >
+        Test alarm to trigger if a 4XX status code is received.
+      AlarmActions: !If
+        - UseAlarmActions
+        - - !Ref NotificationTopicArn
+        - []
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      ComparisonOperator: GreaterThanUpperThreshold
+      ThresholdMetricId: ad2
+      TreatMissingData: notBreaching
+      Metrics:
+      - Id: ad2
+        ReturnData: True
+        Expression: ANOMALY_DETECTION_BAND(m2, 2)
+      - Id: m2
+        ReturnData: True
+        MetricStat:
+          Metric:
+            Namespace: AWS/ApiGateway
+            MetricName: 4XXError
+            Dimensions:
+              - Name: FunctionName
+                Value: !Ref HelloWorldFunction
+          Period: 60
+          Stat: Sum
+
+  HelloWorldFunctionInvocationAnomalyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-HelloWorldFunctionInvocationAnomalyAlarm"
+      AlarmDescription: >
+        Test alarm to trigger if the lambda receives many requests.
+      AlarmActions: !If
+        - UseAlarmActions
+        - - !Ref NotificationTopicArn
+        - []
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      ComparisonOperator: GreaterThanUpperThreshold
+      TreatMissingData: notBreaching
+      ThresholdMetricId: ad3
+      Metrics:
+      - Id: ad3
+        ReturnData: True
+        Expression: ANOMALY_DETECTION_BAND(m3, 2)
+      - Id: m3
+        ReturnData: True
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Invocations
+            Dimensions:
+              - Name: FunctionName
+                Value: !Ref HelloWorldFunction
+          Period: 300
+          Stat: Sum
+
+  #
+  # Cloudwatch Alarms
+  #
+
+  HelloWorldFunctionTooManyRequestsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-HelloWorldFunctionTooManyRequestsAlarm"
+      AlarmDescription: >
+        Test alarm to trigger if the lambda receives many requests.
+      MetricName: Invocations
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref HelloWorldFunction
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  HelloWorldLambdaErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-HelloWorldLambdaErrors"
+      AlarmDescription: >
+        Test alarm to trigger if the lambda throws an error.
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref HelloWorldFunction
+      Period: 300
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  HelloWorldLambda4XXAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-HelloWorldLambda4XXAlarm"
+      AlarmDescription: >
+        Test alarm to trigger if a 4XX status code is received.
+      MetricName: 4XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref HelloWorldFunction
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  HelloWorldLambda5XXAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-HelloWorldLambda5XXAlarm"
+      AlarmDescription: >
+        Test alarm to trigger if a 5XX status code is received.
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref HelloWorldFunction
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  #
+  # Certificates & Certificate Record
+  #
+  HelloWorldCertificateRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: IsNonDevEnvironment
+    Properties:
+      Name: !Sub
+        - "${AWS::StackName}.${DomainName}"
+        - DomainName: !FindInMap
+            - APIDomainNames
+            - !Ref Environment
+            - DomainName
+      Type: A
+      HostedZoneId:
+        Fn::ImportValue: PlatformSandpitHostedZone
+      AliasTarget:
+        DNSName: !GetAtt HelloWorldRestAPIDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt HelloWorldRestAPIDomainName.RegionalHostedZoneId
+
+  ApiGatewayCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: IsNonDevEnvironment
+    Properties:
+      DomainName: !Sub
+        - "${AWS::StackName}.${DomainName}"
+        - DomainName: !FindInMap
+            - APIDomainNames
+            - !Ref Environment
+            - DomainName
+      DomainValidationOptions:
+        - DomainName: !Sub
+            - "${AWS::StackName}.${DomainName}"
+            - DomainName: !FindInMap
+                - APIDomainNames
+                - !Ref Environment
+                - DomainName
+          HostedZoneId:
+            Fn::ImportValue: PlatformSandpitHostedZone
+      ValidationMethod: DNS
+      CertificateTransparencyLoggingPreference: ENABLED
+      Tags:
+        - Key: Name
+          Value: ApiGatewayCertificate
+        - Key: Service
+          Value: backend
+        - Key: Source
+          Value: "govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml"
+
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${HelloWorldRestApi}.execute-api.${AWS::Region}.amazonaws.com/${HelloWorldRestApi.Stage}/hello/"
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
+  HelloWorldFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt HelloWorldFunctionRole.Arn
+  HelloWorldApiDomain:
+    Description: "API Gateway domain"
+    Condition: IsNonDevEnvironment
+    Value: !Sub
+      - "https://${AWS::StackName}.${DomainName}/hello/"
+      - DomainName: !FindInMap
+          - APIDomainNames
+          - !Ref Environment
+          - DomainName
