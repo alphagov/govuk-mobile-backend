@@ -1,0 +1,15 @@
+# Deploy Template Test
+
+A one-time template to be applied to the demo build account.
+
+This template exports a role ARN that is assumed by the pre-merge GitHub Action
+workflow. This ARN must be set as a repository secret so that it may be used by
+the workflow (see the test step in [the workflow definition](../.github/workflows/pre-merge-checks.yaml)).
+The role grants the workflow permissions to apply the sam-deploy-pipeline
+template.
+
+{% block parameters %}{% endblock %}
+
+{% block resources %}{% endblock %}
+
+{% block outputs %}{% endblock %}
