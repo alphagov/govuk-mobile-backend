@@ -1,0 +1,303 @@
+name: Publish templates
+# Do not change this workflow name unless the code in publish-check.yaml workflow is also updated.
+# Linting using cfn-lint and py-lint.
+# Runs checkov checks on CloudFormation templates.
+# Runs tests on sam-deploy-pipeline.
+# Updates Changelog.
+# Uploads resources and updates all templates in template S3 bucket (Publishing).
+# There is a workflow that checks if this workflow is in running state, and it will block a second PR merge until this workflow is complete.
+# Notifies slack in case of tests failure.
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sam-deploy-pipeline-test:
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.commits[0].message, '[run-sam-tests]')
+    timeout-minutes: 60
+    permissions:
+      id-token: write
+      contents: read
+    concurrency: pipeline-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Set up SAM cli
+        uses: aws-actions/setup-sam@v2
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_TEST_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: 'true' # pragma: allowlist secret
+
+      - name: Cache Python packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip3.9-${{ hashFiles('sam-deploy-pipeline/tests/requirements.txt', 'sam-deploy-pipeline/promote/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip3.9-
+
+      - name: Run tests
+        run: '.github/scripts/pipeline.sh'
+        env:
+          SIGNING_PROFILE_NAME: ${{ secrets.DEPLOY_TEST_SIGNING_PROFILE_NAME }}
+          DEPLOY_TEST_BUCKET_NAME: ${{ secrets.DEPLOY_TEST_BUCKET_NAME }}
+
+      - name: Send failure notification to Slack
+        if: failure()
+        run: |
+          aws cloudwatch set-alarm-state \
+          --alarm-name $SLACK_ALARM_NAME \
+          --state-value ALARM \
+          --state-reason "The tests in the <https://github.com/govuk-one-login/devplatform-deploy/actions|publish> workflow failed"
+        env:
+          SLACK_ALARM_NAME: ${{ secrets.SLACK_ALARM_NAME }}
+
+  update-changelog-and-tag:
+    needs:
+      - sam-deploy-pipeline-test
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      (needs.sam-deploy-pipeline-test.result == 'success' || needs.sam-deploy-pipeline-test.result == 'skipped') &&
+      !contains(github.event.commits[0].message, '[publish-only]')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.LEAD_ENGINEER_TOKEN }}
+          fetch-depth: '0' # Needed for git diff-tree to compare
+
+      - name: If a stack directory and changelog is updated set the needed outputs
+        run: '.github/scripts/check-changelog-requirements.sh'
+        shell: bash
+
+      - name: Set update type from changelog
+        if: ${{ env.UPDATE_CHANGELOG }}
+        run: |
+          UNRELEASED_CHANGES=$(grep "^## \[Unreleased\]" $CHANGELOG_FILE)
+
+          if [ -z "$UNRELEASED_CHANGES" ] # If UNRELEASED_CHANGES is empty
+          then
+            echo "$CHANGELOG_FILE doesn't contain unreleased changes"
+            exit 1
+          else
+            echo "$CHANGELOG_FILE contains unreleased changes: $UNRELEASED_CHANGES"
+          fi
+
+          UPDATE_TYPE_REGEX='^## \[Unreleased\] - (MAJOR|MINOR|PATCH)' # Capture MAJOR|MINOR|PATCH in group 1
+          if [[ $UNRELEASED_CHANGES =~ $UPDATE_TYPE_REGEX ]]
+          then
+            UPDATE_TYPE="${BASH_REMATCH[1]}" # Set UPDATE_TYPE to group 1 content
+            echo "$CHANGELOG_FILE contains update type ${UPDATE_TYPE}"
+          else
+            echo "$CHANGELOG_FILE doesn't contain update type"
+            exit 1
+          fi
+          echo "UPDATE_TYPE=$UPDATE_TYPE" >> $GITHUB_ENV
+        shell: bash
+
+      # Using Lead Engineer's account here (not possible to alter GITHUB_TOKEN to include write permissions- project policy)
+      - name: setup git config
+        if: ${{ env.UPDATE_CHANGELOG }}
+        run: |
+          git config user.name "Dev Platform Release"
+          git config user.email "monjurul.haque@digital.cabinet-office.gov.uk"
+
+      - name: Get current version
+        if: ${{ env.UPDATE_CHANGELOG }}
+        run: |
+          CURRENT_VERSION=$(grep "devplatform-deploy ${{ env.STACK_NAME }} template version" ${{ env.STACK_NAME }}/template.yaml  | awk -F : '{ print $2 }' | sed -e 's/^[ \t]*//' )
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Set new env.VERSION using current version and update type
+        if: ${{ env.UPDATE_CHANGELOG }}
+        run: '.github/scripts/version_increment.sh ${{ env.UPDATE_TYPE }} ${{ env.CURRENT_VERSION }}'
+        shell: bash
+
+      - name: Update template with new version
+        if: ${{ env.UPDATE_CHANGELOG }}
+        run: |
+          echo "Updating template.yaml version to ${{ env.VERSION }}"
+          sed -i "s|devplatform-deploy ${{ env.STACK_NAME }} template version.*|devplatform-deploy ${{ env.STACK_NAME }} template version: ${{ env.VERSION }}|g" ${{ env.STACK_NAME }}/template.yaml
+        shell: bash
+
+      - name: Update Changelog with new version
+        if: ${{ env.UPDATE_CHANGELOG }}
+        run:  |
+          echo "Changes found in ${{ env.CHANGELOG_FILE }}, updating version to ${{ env.VERSION }}"
+          sed -i "s/^## \[Unreleased\].*/## \[${{ env.VERSION }}\] \- $(date '+%Y-%m-%d')/" ${{ env.CHANGELOG_FILE }}
+        shell: bash
+
+      # Commit and push the updated CHANGELOG.md
+      - name: commit and tag
+        if: ${{ env.UPDATE_CHANGELOG }}
+        run: |
+          # Stage the file, commit and push
+          tag="${{ env.STACK_NAME }}/${{ env.VERSION }}"
+          git add ${{ env.CHANGELOG_FILE }} ${{ env.STACK_NAME }}/template.yaml
+          git commit -m "Publishing: $tag, [publish-only]"
+          git tag -a "$tag" -m "$tag"
+          git push --atomic origin main "$tag"
+
+  publish:
+    if: |
+      contains(github.event.commits[0].message, '[publish-only]') && !contains(github.event.head_commit.message, '[jest-only]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      modified_stack: ${{ steps.get_modified_stack.outputs.modified_stack }}
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0' # Needed for git diff-tree to compare
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Cache Python packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip3.9-${{ hashFiles('.github/workflows/publish.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip3.9-
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Get modified stack
+        id: get_modified_stack
+        shell: 'bash'
+        run: |
+          dir=$(git diff-tree -m --no-commit-id --name-only HEAD | sort | uniq)
+          echo "Project directory $dir modified"
+          echo "STACK_NAME=$dir" >> $GITHUB_ENV
+          echo "modified_stack=$dir" >> "$GITHUB_OUTPUT"
+
+      - name: Publish secondary sources
+        if: ${{ env.STACK_NAME == 'sam-deploy-pipeline' }}
+        run: '.github/scripts/publish-secondary-sources.sh'
+        shell: 'bash'
+        env:
+          BUCKET_NAME: ${{ secrets.TEMPLATE_BUCKET_NAME }}
+
+      - name: Publish application pipeline secondary sources
+        if: ${{ env.STACK_NAME == 'application-deploy-pipeline' }}
+        run: '.github/scripts/publish-application-secondary-sources.sh'
+        shell: 'bash'
+        env:
+          BUCKET_NAME: ${{ secrets.TEMPLATE_BUCKET_NAME }}
+
+      - name: Publish authentication pipeline secondary sources
+        if: ${{ env.STACK_NAME == 'auth-deploy-pipeline' }}
+        run: '.github/scripts/publish-auth-secondary-sources.sh'
+        shell: 'bash'
+        env:
+          BUCKET_NAME: ${{ secrets.TEMPLATE_BUCKET_NAME }}
+
+      - name: Publish templates
+        run: '.github/scripts/publish.sh'
+        env:
+          BUCKET_NAME: ${{ secrets.TEMPLATE_BUCKET_NAME }}
+          SIGNING_PROFILE: ${{ secrets.SIGNING_PROFILE }}
+          STACK_NAME: ${{ env.STACK_NAME }}
+        shell: bash
+
+      - name: Publish Readme to confluence
+        run: |
+          pip install md2cf
+          md2cf \
+            -o ${{ secrets.ATLASSIAN_API }} \
+            -u ${{ secrets.LEAD_ENGINEER_ATLASSIAN_USERNAME }} \
+            -p ${{ secrets.LEAD_ENGINEER_ATLASSIAN_API_TOKEN }} \
+            -s ${{ secrets.ATLASSIAN_SPACE }} \
+            --parent-title 'Cloudformation Stack READMEs' \
+            --title "$(basename ${{ env.STACK_NAME }}): readme" \
+            --skip-empty \
+            --only-changed \
+            ./$(basename ${{ env.STACK_NAME }})/README.md
+
+  publish-eu-west-1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: publish
+    if: |
+      needs.publish.outputs.modified_stack == 'sam-deploy-pipeline'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Cache Python packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip3.9-${{ hashFiles('.github/workflows/publish.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip3.9-
+
+      - name: Get modified stack
+        shell: 'bash'
+        run: |
+          dir=$(git diff-tree -m --no-commit-id --name-only HEAD | sort | uniq)
+          echo "Project directory $dir modified"
+          echo "STACK_NAME=$dir" >> $GITHUB_ENV
+
+      - name: Set up AWS credentials (eu-west-1)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN_EU_WEST_1 }}
+          aws-region: eu-west-1
+
+      - name: Publish secondary sources (eu-west-1)
+        run: '.github/scripts/publish-secondary-sources.sh'
+        shell: 'bash'
+        env:
+          BUCKET_NAME: ${{ secrets.TEMPLATE_BUCKET_NAME_EU_WEST_1 }}
+
+      - name: Publish templates (eu-west-1)
+        run: '.github/scripts/publish.sh'
+        env:
+          BUCKET_NAME: ${{ secrets.TEMPLATE_BUCKET_NAME_EU_WEST_1 }}
+          SIGNING_PROFILE: ${{ secrets.SIGNING_PROFILE_EU_WEST_1 }}
+          STACK_NAME: ${{ env.STACK_NAME }}
+        shell: bash
