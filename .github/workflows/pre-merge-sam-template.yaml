@@ -1,0 +1,94 @@
+name: Deploy Pipeline Template Test
+
+env:
+  BUCKET_NAME: ${{ secrets.DEPLOY_TEST_BUCKET_NAME }}
+  REGION: "eu-west-2"
+  PIPELINE_VERSION: ${{ github.ref_name }}
+  TEMPLATE_DESCRIPTION_REPLACE: Secure pipelines template managed by dev-platform
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - .github/workflows/pre-merge-sam-template.yaml
+      - sam-deploy-pipeline/template.yaml
+      - application-deploy-pipeline/template.yaml
+      - auth-deploy-pipeline/template.yaml
+  workflow_dispatch:
+
+jobs:
+  generate-sam-test-template:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_TEST_ROLE_ARN }}
+          aws-region: eu-west-2
+      - name: Prepare Development Bucket
+        run: |
+          ./.github/scripts/publish-secondary-sources.sh
+      - name: Update pipeline version to confirm this is a test template
+        run: |
+          sed -i "s|$TEMPLATE_DESCRIPTION_REPLACE|TEST TEMPLATE, DO NOT DEPLOY BEYOND DEV|g" sam-deploy-pipeline/template.yaml
+      - name: Upload template
+        run: |
+          aws s3 cp sam-deploy-pipeline/template.yaml s3://$BUCKET_NAME/test-templates/sam-deploy-pipeline/$PIPELINE_VERSION-template.yaml
+
+  generate-application-test-template:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_TEST_ROLE_ARN }}
+          aws-region: eu-west-2
+      - name: Prepare Development Bucket
+        run: |
+          ./.github/scripts/publish-application-secondary-sources.sh
+      - name: Update pipeline version to confirm this is a test template
+        run: |
+          sed -i "s|$TEMPLATE_DESCRIPTION_REPLACE|TEST TEMPLATE, DO NOT DEPLOY BEYOND DEV|g" application-deploy-pipeline/template.yaml
+      - name: Upload template
+        run: |
+          aws s3 cp application-deploy-pipeline/template.yaml s3://$BUCKET_NAME/test-templates/application-deploy-pipeline/$PIPELINE_VERSION-template.yaml
+
+  generate-auth-test-template:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEPLOY_TEST_ROLE_ARN }}
+          aws-region: eu-west-2
+      - name: Prepare Development Bucket
+        run: |
+          ./.github/scripts/publish-auth-secondary-sources.sh
+      - name: Update pipeline version to confirm this is a test template
+        run: |
+          sed -i "s|$TEMPLATE_DESCRIPTION_REPLACE|TEST TEMPLATE, DO NOT DEPLOY BEYOND DEV|g" auth-deploy-pipeline/template.yaml
+      - name: Upload template
+        run: |
+          aws s3 cp auth-deploy-pipeline/template.yaml s3://$BUCKET_NAME/test-templates/auth-deploy-pipeline/$PIPELINE_VERSION-template.yaml

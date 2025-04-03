@@ -1,0 +1,33 @@
+name: Publish check
+# Include this workflow in branch protection "status checks before merging".
+# This workflow will be triggered when PR's are updated
+# to check if the `Publish templates` workflow is already in progress
+# and it will block merging of PRs until it completes.
+# This is to prevent a "non-fast-forward" scenario (multi merge to main before publish).
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  publish-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish workflow check
+        run: |
+          echo "Checking if another publish workflow is already in progress"
+          sleep 5 # Allow publish workflow time to start after a merge
+          PUBLISHING=$(gh api -H "Accept: application/vnd.github+json" /repos/govuk-one-login/devplatform-deploy/actions/runs | jq '.workflow_runs | map(select(.name == "Publish templates")) | map(select(.status == "in_progress" )) | length')
+          echo "Current number of running publish workflows is $PUBLISHING"
+          while [ $PUBLISHING != 0 ]; do
+           echo "Another publish job is currently running, waiting 1 minute to try again"
+           sleep 60
+           PUBLISHING=$(gh api -H "Accept: application/vnd.github+json" /repos/govuk-one-login/devplatform-deploy/actions/runs | jq '.workflow_runs | map(select(.name == "Publish templates")) | map(select(.status == "in_progress" )) | length')
+           echo "Current number of running publish workflows = $PUBLISHING"
+          done
+          echo "No other publish workflows are currently running, ok to proceed."
+        env:
+            GH_TOKEN: ${{ secrets.LEAD_ENGINEER_TOKEN}}

@@ -1,0 +1,47 @@
+name: dependabot-pre-merge-tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - package.json
+      - package-lock.json
+
+jobs:
+  check:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node v18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Cache Node dependencies
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ./node_modules
+          key: modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache Nx tasks
+        uses: actions/cache@v4
+        with:
+          path: .nx
+          key: nx-${{ hashFiles('nx.json') }}
+
+      - name: Install Node dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci --ignore-scripts
+
+      - name: Run Lerna tests
+        run: ".github/scripts/run_tests.sh run_feature_tests"
+        shell: bash
