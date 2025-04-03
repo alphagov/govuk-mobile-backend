@@ -1,7 +1,25 @@
 {
-  "installation": {
-    "version": "20.7.0"
-  },
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "nxCloudId": "67ece6ac8b3bb1798de13bdc"
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": ["default"],
+    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
+  },
+  "nxCloudId": "67ecec7864a11b0b94e71f3f",
+  "plugins": [
+    {
+      "plugin": "@nx/js/typescript",
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        },
+        "build": {
+          "targetName": "build",
+          "configName": "tsconfig.lib.json",
+          "buildDepsName": "build-deps",
+          "watchDepsName": "watch-deps"
+        }
+      }
+    }
+  ]
 }
