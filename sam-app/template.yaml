@@ -65,17 +65,6 @@ Conditions:
         - !Ref NotificationTopicArn
         - "none"
 
-Mappings:
-  APIDomainNames:
-    build:
-      DomainName: "demoapp.build.platform.sandpit.account.gov.uk"
-    staging:
-      DomainName: "demoapp.staging.platform.sandpit.account.gov.uk"
-    integration:
-      DomainName: "demoapp.integration.platform.sandpit.account.gov.uk"
-    production:
-      DomainName: "demoapp.platform.sandpit.account.gov.uk"
-
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -168,40 +157,10 @@ Resources:
         Name: HelloWorldRestApi
         Source: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
 
-  HelloWorldRestAPIDomainName:
-    Type: AWS::ApiGateway::DomainName
-    Condition: IsNonDevEnvironment
-    Properties:
-      DomainName: !Sub
-        - "${AWS::StackName}.${DomainName}"
-        - DomainName: !FindInMap
-            - APIDomainNames
-            - !Ref Environment
-            - DomainName
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-      RegionalCertificateArn: !Ref ApiGatewayCertificate
-      SecurityPolicy: TLS_1_2
-      Tags:
-        - Key: Name
-          Value: ApiGatewayCertificate
-        - Key: Service
-          Value: backend
-        - Key: Source
-          Value: "govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml"
-
   HelloWorldRestAPIBasePath:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: IsNonDevEnvironment
-    DependsOn: HelloWorldRestAPIDomainName
     Properties:
-      DomainName: !Sub
-        - "${AWS::StackName}.${DomainName}"
-        - DomainName: !FindInMap
-            - APIDomainNames
-            - !Ref Environment
-            - DomainName
       RestApiId: !Ref HelloWorldRestApi
       Stage: !Sub "${HelloWorldRestApi.Stage}"
 
@@ -270,9 +229,6 @@ Resources:
           - !Ref HelloWorldFunctionInvocationAnomalyAlarm
           - !Ref HelloWorldLambda4XXAnomalyAlarm
           - !Ref HelloWorldLambdaErrorAnomalyAlarm
-        Hooks:
-          PreTraffic: !Ref PreTrafficHook
-          PostTraffic: !Ref PostTrafficHook
         Role: !GetAtt CodeDeployServiceRole.Arn
       Tags:
         Product: GOV.UK Sign In
@@ -303,119 +259,6 @@ Resources:
           !Ref PermissionsBoundary,
           !Ref AWS::NoValue,
         ]
-
-  PreTrafficHook:
-    Type: AWS::Serverless::Function
-    # checkov:skip=CKV_AWS_116: DLQ is not appropriate for a Lambda invoked by an API
-    # checkov:skip=CKV_AWS_117: Internet access not required
-    Metadata:
-      checkov:
-        skip:
-          - id: "CKV_AWS_116"
-            comment: "DLQ is not appropriate for a Lambda invoked by an API"
-          - id: "CKV_AWS_117"
-            comment: "Internet access not required"
-    Properties:
-      CodeUri: PreTrafficHook
-      FunctionName: !Join
-        - "_"
-        - - "CodeDeployHook"
-          - !Ref AWS::StackName
-          - "PreTrafficHook"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - /
-                          - Ref: AWS::StackId
-      Handler: preTrafficHook.handler
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Action:
-                - "codedeploy:PutLifecycleEventHookExecutionStatus"
-              Resource: !Sub "arn:aws:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${ServerlessDeploymentApplication}/*"
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Action:
-                - "lambda:InvokeFunction"
-              Resource: !Ref HelloWorldFunction.Version
-      Runtime: nodejs18.x
-      KmsKeyArn: !GetAtt HelloWorldKmsKey.Arn
-      Environment:
-        Variables:
-          NewVersion: !Ref HelloWorldFunction.Version
-      ReservedConcurrentExecutions: 5
-      Tags:
-        Product: GOV.UK Sign In
-        System: Dev Platform
-        Environment: Demo
-        Service: backend
-        Name: PreTrafficHook
-        Source: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
-        CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_117
-
-  PostTrafficHook:
-    Type: AWS::Serverless::Function
-    # checkov:skip=CKV_AWS_116: DLQ is not appropriate for a Lambda invoked by an API
-    # checkov:skip=CKV_AWS_117: Ensure that AWS Lambda function is configured inside a VPC
-    Metadata:
-      checkov:
-        skip:
-          - id: "CKV_AWS_116"
-            comment: "DLQ is not appropriate for a Lambda invoked by an API"
-          - id: "CKV_AWS_117"
-            comment: "Ensure that AWS Lambda function is configured inside a VPC"
-    Properties:
-      CodeUri: PostTrafficHook
-      FunctionName: !Join
-        - "_"
-        - - "CodeDeployHook"
-          - !Ref AWS::StackName
-          - "PostTrafficHook"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - /
-                          - Ref: AWS::StackId
-      Handler: postTrafficHook.handler
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Action:
-                - "codedeploy:PutLifecycleEventHookExecutionStatus"
-              Resource: !Sub "arn:aws:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${ServerlessDeploymentApplication}/*"
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Action:
-                - "lambda:InvokeFunction"
-              Resource: !Ref HelloWorldFunction.Version
-      Runtime: nodejs18.x
-      KmsKeyArn: !GetAtt HelloWorldKmsKey.Arn
-      Environment:
-        Variables:
-          NewVersion: !Ref HelloWorldFunction.Version
-      ReservedConcurrentExecutions: 5
-      Tags:
-        Product: GOV.UK Sign In
-        System: Dev Platform
-        Environment: Demo
-        Service: backend
-        Name: PostTrafficHook
-        Source: govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml
-        CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_117
-
 
   HelloWorldTable:
     Type: AWS::DynamoDB::Table
@@ -849,55 +692,6 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
-  #
-  # Certificates & Certificate Record
-  #
-  HelloWorldCertificateRecord:
-    Type: AWS::Route53::RecordSet
-    Condition: IsNonDevEnvironment
-    Properties:
-      Name: !Sub
-        - "${AWS::StackName}.${DomainName}"
-        - DomainName: !FindInMap
-            - APIDomainNames
-            - !Ref Environment
-            - DomainName
-      Type: A
-      HostedZoneId:
-        Fn::ImportValue: PlatformSandpitHostedZone
-      AliasTarget:
-        DNSName: !GetAtt HelloWorldRestAPIDomainName.RegionalDomainName
-        HostedZoneId: !GetAtt HelloWorldRestAPIDomainName.RegionalHostedZoneId
-
-  ApiGatewayCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Condition: IsNonDevEnvironment
-    Properties:
-      DomainName: !Sub
-        - "${AWS::StackName}.${DomainName}"
-        - DomainName: !FindInMap
-            - APIDomainNames
-            - !Ref Environment
-            - DomainName
-      DomainValidationOptions:
-        - DomainName: !Sub
-            - "${AWS::StackName}.${DomainName}"
-            - DomainName: !FindInMap
-                - APIDomainNames
-                - !Ref Environment
-                - DomainName
-          HostedZoneId:
-            Fn::ImportValue: PlatformSandpitHostedZone
-      ValidationMethod: DNS
-      CertificateTransparencyLoggingPreference: ENABLED
-      Tags:
-        - Key: Name
-          Value: ApiGatewayCertificate
-        - Key: Service
-          Value: backend
-        - Key: Source
-          Value: "govuk-one-login/devplatform-demo-sam-app/sam-app/template.yaml"
-
 Outputs:
   HelloWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
@@ -908,12 +702,3 @@ Outputs:
   HelloWorldFunctionIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt HelloWorldFunctionRole.Arn
-  HelloWorldApiDomain:
-    Description: "API Gateway domain"
-    Condition: IsNonDevEnvironment
-    Value: !Sub
-      - "https://${AWS::StackName}.${DomainName}/hello/"
-      - DomainName: !FindInMap
-          - APIDomainNames
-          - !Ref Environment
-          - DomainName
