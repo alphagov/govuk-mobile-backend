@@ -1,7 +1,6 @@
 name: SAM app test and build and deploy
 
 on:
-  pull_request:
   workflow_dispatch:
   push:
     branches:
@@ -28,27 +27,6 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      # - name: Set up JDK 17
-      #   uses: actions/setup-java@v4
-      #   with:
-      #     java-version: '17'
-      #     distribution: 'adopt'
-      #     cache: gradle
-
-      # - name: Cache Gradle packages
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: ~/.gradle/caches
-      #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-      #     restore-keys: ${{ runner.os }}-gradle
-
-      # - name: Sonar scan
-      #   if: ${{ github.actor != 'dependabot[bot]' }}
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      #   run: ./gradlew build sonar --info
-      #   working-directory: ./sam-app/HelloWorldFunction
-
       - name: Set up SAM cli
         uses: aws-actions/setup-sam@v2
         with:
@@ -65,33 +43,6 @@ jobs:
 
       - name: SAM build and test
         run: sam build
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v1.9.0'
-
-      - name: Build, tag, and push testing images to Amazon ECR
-        env:
-          CONTAINER_SIGN_KMS_KEY: ${{ secrets.CONTAINER_SIGN_KMS_KEY }}
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_BUILD: ${{ secrets.SAM_APP_ECR_REPOSITORY_BUILD }}
-          ECR_REPOSITORY_STAGING: ${{ secrets.SAM_APP_ECR_REPOSITORY_STAGING }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_BUILD:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY_BUILD:latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_BUILD:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_BUILD:latest
-          cosign sign --key awskms:///${CONTAINER_SIGN_KMS_KEY} $ECR_REGISTRY/$ECR_REPOSITORY_BUILD:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_BUILD:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_STAGING:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_BUILD:latest $ECR_REGISTRY/$ECR_REPOSITORY_STAGING:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_STAGING:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_STAGING:latest
-          cosign sign --key awskms:///${CONTAINER_SIGN_KMS_KEY} $ECR_REGISTRY/$ECR_REPOSITORY_STAGING:$IMAGE_TAG
 
       - name: Deploy SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
