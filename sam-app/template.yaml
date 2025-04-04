@@ -50,7 +50,7 @@ Resources:
       DeletionProtection: ACTIVE
       Policies:
         PasswordPolicy:
-          MinimumLength: 0
+          MinimumLength: 6
       UsernameAttributes:
         - email
       Schema:
