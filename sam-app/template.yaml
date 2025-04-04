@@ -6,15 +6,16 @@ Description: >
 
 Parameters:
   Environment:
-    Description: "The environment we're deploying into."
+    Description: "The name of the environment to deploy to"
     Type: "String"
-    Default: dev
     AllowedValues:
-      - "dev"
-      - "build"
-      - "staging"
-      - "integration"
-      - "production"
+      - build
+      - staging
+      - production
+      - integration
+      - demo
+      - local
+      - dev
 
 Resources:
   CircuitBreakerTriggerEventRule:
@@ -58,5 +59,5 @@ Resources:
           Required: true
       UserPoolTags:
         Product: GOV.UK
-        Environment: build
+        Environment: !Ref Environment
         System: Authentication
