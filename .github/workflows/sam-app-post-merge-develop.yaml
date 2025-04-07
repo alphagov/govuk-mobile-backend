@@ -1,0 +1,59 @@
+name: SAM app test and build and deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy the SAM app to selected environment'
+        type: environment
+        required: true
+        default: 'dev'  
+  push:
+    branches:
+      - main
+    paths:
+      - "sam-app/**"
+      - ".github/workflows/sam-app-post-merge-actions.yml"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./sam-app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Set up SAM cli
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true  # this caches installation but is only available on Linux x86-64 runners
+
+      - name: Set up AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: SAM validate
+        run: sam validate
+
+      - name: SAM build and test
+        run: sam build
+
+      - name: Deploy SAM app
+        uses: govuk-one-login/devplatform-upload-action@v3.9.4
+        with:
+            artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
+            signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+            working-directory: ./sam-app/.aws-sam/build
