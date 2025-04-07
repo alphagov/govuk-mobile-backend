@@ -1,0 +1,19 @@
+{
+    "name": "sam-app",
+    "description": "SAM App",
+    "version": "0.0.1",
+    "private": true,
+    "devDependencies": {
+        "@amiceli/vitest-cucumber": "^4.7.0",
+        "@types/js-yaml": "^4.0.9",
+        "@types/node": "^22.14.0",
+        "aws-cdk-lib": "^2.188.0",
+        "typescript": "^5.8.3",
+        "vitest": "^3.1.1",
+        "yaml-cfn": "^0.3.2"
+    },
+    "scripts": {
+        "test:validate": "sam validate",
+        "test": "vitest"
+    }
+}
