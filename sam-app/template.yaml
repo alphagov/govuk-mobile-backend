@@ -17,20 +17,6 @@ Parameters:
       - local
       - dev
 
-Resources:
-  CircuitBreakerTriggerEventRule:
-    Type: AWS::Events::Rule
-    Properties:
-      EventPattern:
-        source:
-          - aws.codedeploy
-        detail-type:
-          - CodeDeploy Deployment State-change Notification
-        detail:
-          state:
-            - STOP
-            - FAILURE
-
   GovUKMobileCognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -48,9 +34,6 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       DeletionProtection: ACTIVE
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 0
       UsernameAttributes:
         - email
       Schema:
