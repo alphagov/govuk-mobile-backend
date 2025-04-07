@@ -19,7 +19,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
         Then(`the template must have the required resource and properties to deploy the GOV UK Mobile Cognito Userpool`, () => {
             template.hasResourceProperties(
                 "AWS::Cognito::UserPool",
-                {
+                Match.objectEquals({
                     UserPoolName: {
                         "Fn::Join": [
                             "-",
@@ -66,7 +66,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                         "Product": "GOV.UK",
                         "System": "Authentication"
                     },
-                })
+                }))
 
         })
     })
