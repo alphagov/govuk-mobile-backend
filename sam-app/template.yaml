@@ -4,16 +4,44 @@ Description: >
   devplatform-deploy canary-circuit-breaker template version: v0.0.0
   Canary deployment circuit breaker template managed by dev-platform.
 
+Parameters:
+  Environment:
+    Description: "The name of the environment to deploy to"
+    Type: "String"
+    AllowedValues:
+      - build
+      - staging
+      - production
+      - integration
+      - demo
+      - local
+      - dev
+
 Resources:
-  CircuitBreakerTriggerEventRule:
-    Type: AWS::Events::Rule
+  GovUKMobileCognitoUserPool:
+    Type: AWS::Cognito::UserPool
     Properties:
-      EventPattern:
-        source:
-          - aws.codedeploy
-        detail-type:
-          - CodeDeploy Deployment State-change Notification
-        detail:
-          state:
-            - STOP
-            - FAILURE
+      UserPoolName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "user-pool"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      DeletionProtection: ACTIVE
+      UsernameAttributes:
+        - email
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: true
+      UserPoolTags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
