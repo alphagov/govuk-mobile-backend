@@ -1,5 +1,4 @@
 import { loadFeature, describeFeature } from "@amiceli/vitest-cucumber"
-import { exportTemplate } from "feature-tests/template"
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { schema } from 'yaml-cfn';
 import { readFileSync } from 'fs';
@@ -16,7 +15,6 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     })
     Scenario(`A template can deploy the GOV UK Mobile Cognito Userpool`, ({ Given, Then }) => {
         Given(`a template to deploy the GOV UK Mobile Cognito Userpool`, () => {
-            exportTemplate();
         })
         Then(`the template must have the required resource and properties to deploy the GOV UK Mobile Cognito Userpool`, () => {
             template.hasResourceProperties(
