@@ -17,6 +17,7 @@ Parameters:
       - local
       - dev
 
+Resources:
   GovUKMobileCognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
