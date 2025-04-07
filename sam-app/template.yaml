@@ -75,3 +75,9 @@ Resources:
          Value: !Ref Environment
        - Key: System
          Value: Authentication
+  
+  GovUKMobileCognitoWAFAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !GetAtt GovUKMobileCognitoUserPool.Arn
+      WebACLArn: !GetAtt GovUKMobileWebApplicationFirewall.Arn
