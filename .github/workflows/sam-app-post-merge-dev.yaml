@@ -1,19 +1,13 @@
-name: SAM app test and build and deploy
+name: SAM app test and build and deploy DEV
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deploy the SAM app to selected environment'
-        type: environment
-        required: true
-        default: 'dev'  
   push:
     branches:
       - main
     paths:
       - "sam-app/**"
-      - ".github/workflows/sam-app-post-merge-actions.yml"
+      - ".github/workflows/sam-app-post-merge-actions-dev.yml"
 
 defaults:
   run:
@@ -24,7 +18,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -42,7 +35,7 @@ jobs:
       - name: Set up AWS creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN_DEV }}
           aws-region: eu-west-2
 
       - name: SAM validate
@@ -54,6 +47,6 @@ jobs:
       - name: Deploy SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
-            artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
-            signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+            artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}
+            signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME_DEV }}
             working-directory: ./sam-app/.aws-sam/build
