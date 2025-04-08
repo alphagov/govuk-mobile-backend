@@ -106,4 +106,24 @@ Resources:
             Path: /hello
             Method: GET
 
+Outputs:
+  GovUKMobileApiGateway:
+    Description: API Gateway endpoint URL Hello World function
+    Value:
+      Fn::Sub: https://${GovUKMobileApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Staging/hello/
+  GovUKMobileApiGatewayRestApiId:
+    Description: API Gateway ARN for GOV UK AWS API Gateway
+    Value:
+      Ref: GovUKMobileApiGateway
+    Export:
+      Name: GovUKMobileApiGateway-RestApiId
+  GovUKMobileApiGatewayRootResourceId:
+    Value:
+      Fn::GetAtt:
+        - GovUKMobileApiGateway
+        - RootResourceId
+    Export:
+      Name: GovUKMobileApiGateway-RootResourceId
+  
+
       
