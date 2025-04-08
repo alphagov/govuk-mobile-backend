@@ -1,9 +1,9 @@
 import { loadFeature, describeFeature } from "@amiceli/vitest-cucumber"
-import { Template, Match } from 'aws-cdk-lib/assertions';
+import { Template } from 'aws-cdk-lib/assertions';
 import { schema } from 'yaml-cfn';
 import { readFileSync } from 'fs';
 import { load } from 'js-yaml';
-import { describe, beforeEach, it, expect } from 'vitest';
+import { expect } from 'vitest';
 
 const feature = await loadFeature('feature-tests/vitest-features/GovUKMobileTags.feature')
 
@@ -26,7 +26,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                 if (!ignoredResources.includes(resourceName)) {
 
                     expect(resource.Properties).toHaveProperty('Tags');
-                    
+
                     const actualTags = resource.Properties["Tags"];
                     const expectedTags = [
                         { Key: 'Product', Value: 'GOV.UK' },
