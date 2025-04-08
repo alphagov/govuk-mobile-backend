@@ -143,8 +143,13 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node
 
+# Mac
+.DS_Store
+.DS_Store?
+
 # Emacs backup files
 *.*~
+#*.*#
 
 .nx/installation
 .nx/cache
@@ -152,3 +157,5 @@ dist
 
 # sam build
 .aws-sam
+
+reports
