@@ -81,3 +81,12 @@ Resources:
     Properties:
       ResourceArn: !GetAtt GovUKMobileCognitoUserPool.Arn
       WebACLArn: !GetAtt GovUKMobileWebApplicationFirewall.Arn
+
+  GovUKMobileApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication

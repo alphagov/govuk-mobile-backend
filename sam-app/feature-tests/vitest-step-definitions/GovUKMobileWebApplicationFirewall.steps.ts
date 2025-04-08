@@ -12,8 +12,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     BeforeAllScenarios(() => {
         let yamltemplate = load(readFileSync('template.yaml', 'utf-8'), { schema: schema });
         template = Template.fromJSON(yamltemplate);
-    })
-
+    });
 
     Scenario(`A template can deploy the GOV UK Mobile Web Application Firewall`, ({ Given, Then }) => {
         Given(`a template to deploy the GOV UK Mobile Web Application Firewall`, () => { })
@@ -72,6 +71,5 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                 })
             );
         })
-    })
-
-})
+    });
+});

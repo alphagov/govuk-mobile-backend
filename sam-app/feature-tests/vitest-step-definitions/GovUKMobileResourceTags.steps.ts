@@ -5,15 +5,21 @@ import { readFileSync } from 'fs';
 import { load } from 'js-yaml';
 import { expect } from 'vitest';
 
-const feature = await loadFeature('feature-tests/vitest-features/GovUKMobileTags.feature')
+const feature = await loadFeature('feature-tests/vitest-features/GovUKMobileResourceTags.feature')
 
 let template: Template;
+
+const ignoredResources = [
+    "GovUKMobileCognitoUserPool",
+    "GovUKMobileCognitoWAFAssociation",
+    "GovUKMobileApiGateway"
+];
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     BeforeAllScenarios(() => {
         let yamltemplate = load(readFileSync('template.yaml', 'utf-8'), { schema: schema });
         template = Template.fromJSON(yamltemplate);
-    })
+    });
 
     Scenario(`A template has the correct resource tags`, ({ Given, Then }) => {
         Given(`a template with AWS resources`, () => { })
@@ -21,7 +27,6 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
             Object.keys(template.toJSON().Resources).forEach((resourceName) => {
 
                 const resource = template.toJSON().Resources[resourceName];
-                const ignoredResources = ["GovUKMobileCognitoUserPool", "GovUKMobileCognitoWAFAssociation"];
 
                 if (!ignoredResources.includes(resourceName)) {
 
@@ -38,6 +43,6 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                 }
             })
         })
-    })
+    });
 
 })
