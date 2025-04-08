@@ -145,6 +145,7 @@ dist
 
 # Emacs backup files
 *.*~
+#*.*#
 
 .nx/installation
 .nx/cache
@@ -155,3 +156,4 @@ dist
 
 #intelliJ files
 .idea
+reports
