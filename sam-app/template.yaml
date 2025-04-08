@@ -90,3 +90,20 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+  
+  GovUKMobileHelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |
+        exports.handler = async (event) => ++event;
+      Handler: app.lambda_handler
+      Runtime: nodejs22.x
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref GovUKMobileApiGateway
+            Path: /hello
+            Method: GET
+
+      
