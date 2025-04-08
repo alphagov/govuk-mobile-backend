@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import { load } from "js-yaml";
 
 const feature = await loadFeature(
-  "feature-tests/vitest-features/GovUKMobileCognitoWAFAssociation.feature"
+  "feature-tests/vitest-features/GovUKMobileApiGateway.feature"
 );
 
 let template: Template;
@@ -18,24 +18,23 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     template = Template.fromJSON(yamltemplate);
   });
   Scenario(
-    `A template can associate the GOV UK Cognito Userpool with a WAF`,
+    `A template can deploy the GOV UK Api Gateway`,
     ({ Given, Then }) => {
-      Given(
-        `a template to deploy associate GOV UK Mobile Cognito Userpool with a WAF`,
-        () => {}
-      );
+      Given(`a template to deploy the GOV UK Api Gateway`, () => {});
       Then(
-        `the template must have the required resource and properties to deploy the association between GOV UK Mobile Cognito Userpool and a WAF`,
+        `the template must have the required resource and properties to deploy the GOV UK Api Gateway`,
         () => {
           template.hasResourceProperties(
-            "AWS::WAFv2::WebACLAssociation",
+            "AWS::Serverless::Api",
             Match.objectEquals({
-              ResourceArn: {
-                "Fn::GetAtt": ["GovUKMobileCognitoUserPool", "Arn"],
+              StageName: {
+                Ref: "Environment"
               },
-              WebACLArn: {
-                "Fn::GetAtt": ["GovUKMobileWebApplicationFirewall", "Arn"],
-              },
+              Tags: {
+                Environment: { "Ref": "Environment" },
+                Product: "GOV.UK",
+                System: "Authentication"
+              }
             })
           );
         }
