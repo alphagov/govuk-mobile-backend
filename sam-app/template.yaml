@@ -69,13 +69,13 @@ Resources:
                             - Ref: AWS::StackId
         SampledRequestsEnabled: true
       Tags:
-       - Key: Product
-         Value: GOV.UK
-       - Key: Environment
-         Value: !Ref Environment
-       - Key: System
-         Value: Authentication
-  
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   GovUKMobileCognitoWAFAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
