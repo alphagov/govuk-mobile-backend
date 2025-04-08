@@ -149,6 +149,7 @@ dist
 
 # Emacs backup files
 *.*~
+#*.*#
 
 .nx/installation
 .nx/cache
@@ -156,3 +157,5 @@ dist
 
 # sam build
 .aws-sam
+
+reports
