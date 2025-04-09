@@ -1,9 +1,0 @@
-{
-    "default": {
-        "formatOptions": {
-            "snippetInterface": "synchronous"
-        },
-	"format": ["progress-bar", ["html", "reports/cucumber-report.html"]],
-	"paths": ["test/features/**/*.{feature,feature.md}"]
-    }
-}
