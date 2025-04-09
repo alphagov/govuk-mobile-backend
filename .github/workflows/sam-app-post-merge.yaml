@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - "sam-app/**"
-      - ".github/workflows/sam-app-post-merge-actions-dev.yml"
+      - ".github/workflows/sam-app-post-merge-actions.yml"
 
 defaults:
   run:
