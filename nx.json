@@ -31,6 +31,20 @@
       "cache": true
     }
   },
+  "targets": {
+    "test:infrastructure": {
+      "cache": true,
+      "executor": "nx:run-commands", 
+      "options": {
+        "command": "test",
+        "cwd": "./sam-app" 
+      },
+      "outputs": [
+        "{workspaceRoot}/reports/infrastructure"
+      ] 
+    }
+  },
+  "defaultBase": "main",
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
