@@ -3,6 +3,13 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "projectType": "application",
     "targets": {
+        "install": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm i",
+                "cwd": "sam-app"
+            }
+        },
         "lint": {
             "executor": "@nx/eslint:lint",
             "outputs": [
@@ -15,6 +22,9 @@
             }
         },
         "test:infrastructure": {
+            "dependsOn": [
+                "install"
+            ],
             "executor": "nx:run-commands",
             "options": {
                 "command": "npm run test:infrastructure",

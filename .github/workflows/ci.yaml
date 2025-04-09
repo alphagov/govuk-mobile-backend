@@ -9,7 +9,7 @@ defaults:
     shell: bash
 
 jobs:
-  deploy:
+  ci:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -30,4 +30,4 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
-      - run: npx nx affected -t test:infrastructure --verbose
+      - run: npx nx affected -t test:infrastructure 
