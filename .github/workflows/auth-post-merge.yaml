@@ -7,6 +7,12 @@ on:
       environment:
         description: 'Environment to deploy to'
         required: true
+  push:
+    branches:
+      - main
+    paths:
+      - 'sam-app/**'
+      - '.github/workflows/sam-app-post-merge.yaml'      
 
 defaults:
   run:
