@@ -17,10 +17,11 @@
     "prettier": "^2.6.2",
     "tslib": "^2.3.0",
     "typescript": "~5.7.2",
+    "typescript-eslint": "^8.29.1",
     "vite": "^6.2.5"
   },
   "workspaces": [
-    "packages/*"
+    "sam-app/*"
   ],
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.9.5"
