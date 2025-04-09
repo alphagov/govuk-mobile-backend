@@ -48,13 +48,6 @@
       }
     },
     {
-      "plugin": "@nx/vite/plugin",
-      "options": {},
-      "test": {
-        "targetName": "test:unit"
-      }
-    },
-    {
       "plugin": "@nx/eslint/plugin",
       "options": {
         "targetName": "lint"
