@@ -140,7 +140,7 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
-  GovUKMobileHelloWorldFunction:
+  GovUKMobileTestFunction:
     Type: AWS::Serverless::Function
     Properties:
       InlineCode: |
@@ -153,10 +153,10 @@ Resources:
           Properties:
             RestApiId:
               Ref: GovUKMobileApiGateway
-            Path: /hello
+            Path: /test
             Method: GET
 
 Outputs:
   GovUKMobileApiGateway:
     Description: API Gateway endpoint URL Hello World function
-    Value: !Sub https://${GovUKMobileApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/hello/
+    Value: !Sub https://${GovUKMobileApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
