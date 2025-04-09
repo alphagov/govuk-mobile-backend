@@ -18,7 +18,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    environment: govuk_backend_build
+    # environment: build
     permissions:
       id-token: write
       contents: read
@@ -32,6 +32,14 @@ jobs:
         uses: aws-actions/setup-sam@v2
         with:
           use-installer: true  # this caches installation but is only available on Linux x86-64 runners
+    
+      - name: Check if SIGNING_PROFILE_NAME is set
+        run: |
+          if [[ -z "${{ secrets.SIGNING_PROFILE_NAME }}" ]]; then
+            echo "::warning::The secret 'SIGNING_PROFILE_NAME' is not set."
+          else
+            echo "The secret 'SIGNING_PROFILE_NAME' is set."
+          fi
 
       - name: Set up AWS creds
         uses: aws-actions/configure-aws-credentials@v4
