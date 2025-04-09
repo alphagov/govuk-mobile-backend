@@ -2,12 +2,6 @@ name: SAM app test and build and deploy
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deploy the SAM app to selected environment'
-        type: environment
-        required: true
-        default: 'dev'  
   push:
     branches:
       - main
@@ -24,7 +18,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -54,6 +47,6 @@ jobs:
       - name: Deploy SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
-            artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
-            signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
-            working-directory: ./sam-app/.aws-sam/build
+          artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
+          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+          working-directory: ./sam-app/.aws-sam/build
