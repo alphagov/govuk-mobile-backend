@@ -4,6 +4,7 @@
     "projectType": "application",
     "targets": {
         "install": {
+            "cache": true,
             "executor": "nx:run-commands",
             "options": {
                 "command": "npm i",
