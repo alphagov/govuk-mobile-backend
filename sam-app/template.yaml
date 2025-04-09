@@ -17,6 +17,42 @@ Parameters:
       - local
       - dev
 
+  CodeSigningConfigArn:
+    Type: String
+    Description: >
+      The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Default: "none"
+    
+  PermissionsBoundary:
+    Type: String
+    Description: >
+      The ARN of the permissions boundary to apply to any role created by the template
+    Default: "none"
+    
+Conditions:
+  UseCodeSigning:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - "none"
+
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - "none"
+
+Globals:
+  Function:
+    CodeSigningConfigArn: !If
+      - UseCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+
 Resources:
   GovUKMobileCognitoUserPool:
     Type: AWS::Cognito::UserPool
@@ -85,8 +121,42 @@ Resources:
   GovUKMobileApiGateway:
     Type: AWS::Serverless::Api
     Properties:
+      Name: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "api-gateway"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
       StageName: !Ref Environment
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+
+  GovUKMobileTestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |
+        exports.handler = async (event) => ++event;
+      Handler: app.lambda_handler
+      Runtime: nodejs22.x
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: GovUKMobileApiGateway
+            Path: /test
+            Method: GET
+
+Outputs:
+  GovUKMobileApiGateway:
+    Description: API Gateway endpoint URL Hello World function
+    Value: !Sub https://${GovUKMobileApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
