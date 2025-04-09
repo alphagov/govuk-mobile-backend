@@ -44,10 +44,6 @@ Conditions:
 
 Globals:
   Function:
-    CodeSigningConfigArn: !If
-      - UseCodeSigning
-      - !Ref CodeSigningConfigArn
-      - !Ref AWS::NoValue
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
