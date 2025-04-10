@@ -12,7 +12,7 @@ let template: Template;
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
   BeforeAllScenarios(() => {
-    let yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
+    const yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
       schema: schema,
     });
     template = Template.fromJSON(yamltemplate);
@@ -27,6 +27,40 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
           template.hasResourceProperties(
             "AWS::Serverless::Api",
             Match.objectEquals({
+              Name: {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      Ref: "AWS::StackName",
+                    },
+                    "api-gateway",
+                    {
+                      "Fn::Select": [
+                        4,
+                        {
+                          "Fn::Split": [
+                            "-",
+                            {
+                              "Fn::Select": [
+                                2,
+                                {
+                                  "Fn::Split": [
+                                    "/",
+                                    {
+                                      Ref: "AWS::StackId",
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                ],
+              },
               StageName: {
                 Ref: "Environment"
               },

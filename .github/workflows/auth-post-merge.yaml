@@ -1,4 +1,4 @@
-name: SAM app test and build and deploy
+name: Auth test and build and deploy
 
 on:
   workflow_dispatch:
@@ -6,13 +6,13 @@ on:
     branches:
       - main
     paths:
-      - "sam-app/**"
-      - ".github/workflows/sam-app-post-merge-actions.yml"
+      - "auth/**"
+      - ".github/workflows/auth-post-merge-actions.yml"
 
 defaults:
   run:
     shell: bash
-    working-directory: ./sam-app
+    working-directory: ./auth
 
 jobs:
   deploy:
@@ -48,4 +48,4 @@ jobs:
         with:
           artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
           signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
-          working-directory: ./sam-app/.aws-sam/build
+          working-directory: ./auth/.aws-sam/build
