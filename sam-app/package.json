@@ -14,6 +14,7 @@
         "yaml-cfn": "^0.3.2"
     },
     "scripts": {
+        "test:infrastructure": "vitest run",
         "test:validate": "sam validate",
         "test": "vitest"
     }

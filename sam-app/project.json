@@ -1,0 +1,39 @@
+{
+    "name": "sam-app",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "targets": {
+        "install": {
+            "cache": true,
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm i",
+                "cwd": "sam-app"
+            }
+        },
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "lintFilePatterns": [
+                    "./**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "test:infrastructure": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:infrastructure",
+                "cwd": "sam-app"
+            },
+            "outputs": [
+                "{workspaceRoot}/reports/infrastructure"
+            ]
+        }
+    }
+}
