@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { lambdaHandler } from '../../app';
-import { expect, describe, it } from '@jest/globals';
+import { expect, describe, it } from 'vitest'
 
 describe('Unit test for app handler', function () {
     it('verifies successful response', async () => {
