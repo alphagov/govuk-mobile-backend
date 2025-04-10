@@ -52,6 +52,8 @@ Globals:
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
+    MemorySize: 128
+    Timeout: 100
 
 Resources:
   GovUKMobileCognitoUserPool:
@@ -143,9 +145,7 @@ Resources:
   GovUKMobileTestFunction:
     Type: AWS::Serverless::Function
     Properties:
-      InlineCode: |
-        exports.handler = async (event) => ++event;
-      Handler: index.lambda_handler
+      Handler: src/handlers/hello-world.handler
       Runtime: nodejs22.x
       Events:
         HelloWorldApi:
