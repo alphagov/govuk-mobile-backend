@@ -145,6 +145,7 @@ Resources:
   GovUKMobileTestFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: GovUKMobileTestFunction
       Handler: src/handlers/hello-world.handler
       Runtime: nodejs22.x
       Events:
