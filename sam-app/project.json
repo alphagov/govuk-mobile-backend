@@ -36,6 +36,19 @@
                 ]
             }
         },
+        "test:unit": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run unit",
+                "cwd": "sam-app/hello-world"
+            },
+            "outputs": [
+                "{workspaceRoot}/reports/infrastructure"
+            ]
+        },
         "test:infrastructure": {
             "dependsOn": [
                 "install"
