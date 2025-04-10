@@ -145,7 +145,7 @@ Resources:
     Properties:
       InlineCode: |
         exports.handler = async (event) => ++event;
-      Handler: app.lambda_handler
+      Handler: index.lambda_handler
       Runtime: nodejs22.x
       Events:
         HelloWorldApi:
