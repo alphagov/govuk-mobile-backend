@@ -142,20 +142,20 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
-  # GovUKMobileTestFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: src
-  #     Handler: src/handlers/hello-world.handler
-  #     Runtime: nodejs22.x
-  #     Events:
-  #       HelloWorldApi:
-  #         Type: Api
-  #         Properties:
-  #           RestApiId:
-  #             Ref: GovUKMobileApiGateway
-  #           Path: /test
-  #           Method: GET
+  GovUKMobileTestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: src/handlers/hello-world.handler
+      Runtime: nodejs22.x
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: GovUKMobileApiGateway
+            Path: /test
+            Method: GET 
 
 Outputs:
   GovUKMobileApiGateway:
