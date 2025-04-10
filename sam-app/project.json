@@ -11,6 +11,20 @@
                 "cwd": "sam-app"
             }
         },
+        "build": {
+            "cache": true,
+            "executor": "nx:run-commands",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "dependsOn": [
+                "install"
+            ],
+            "options": {
+                "command": "npm i && npm run compile",
+                "cwd": "sam-app/hello-world"
+            }
+        },
         "lint": {
             "executor": "@nx/eslint:lint",
             "outputs": [

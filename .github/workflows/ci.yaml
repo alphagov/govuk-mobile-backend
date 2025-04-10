@@ -30,4 +30,8 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
-      - run: npx nx affected -t test:infrastructure 
+      - name: Build
+        run: npx nx affected -t build 
+
+      - name: Test Infrastructure
+        run: npx nx affected -t test:infrastructure 

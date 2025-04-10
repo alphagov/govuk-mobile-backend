@@ -28,3 +28,29 @@ npm add --global nx@latest
 ```bash
 npx nx affected -t test:infrastructure
 ```
+
+## pre-commit
+
+* Install pre-commit:
+
+```bash
+brew install pre-commit && pre-commit install && pre-commit install -tprepare-commit-msg -tcommit-msg
+```
+
+* If you are experiencing installation issues with brew please try:
+
+```bash
+pip install pre-commit
+```
+
+* Then use the command `pre-commit install` in order to install the hooks and run pre-commit per commit
+
+# CI/CD - Github Actions
+
+## Workflows
+
+There are five workflows automating our tests, publishing and general checks:
+
+| Workflow | Runs on | Jobs |
+| -------- | ------- | ---- |
+| CI | Pull Request, Main | `build`  <ul><li>...</li></ul> |
