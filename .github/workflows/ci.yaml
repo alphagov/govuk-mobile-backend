@@ -32,6 +32,9 @@ jobs:
 
       - name: Build
         run: npx nx affected -t build 
+      
+      - name: Lint
+        run: npx nx affected -t lint
 
       - name: Unit Test
         run: npx nx affected -t test:unit 

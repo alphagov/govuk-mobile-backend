@@ -7,6 +7,8 @@ export default [
   {
     ignores: [
       '**/dist',
+      '.nx',
+      '**/debug'
     ],
   },
   {

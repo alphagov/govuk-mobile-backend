@@ -12,7 +12,7 @@ let template: Template;
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
   BeforeAllScenarios(() => {
-    let yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
+    const yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
       schema: schema,
     });
     template = Template.fromJSON(yamltemplate);
@@ -20,7 +20,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
   Scenario(
     `A template can deploy the GOV UK Api Gateway`,
     ({ Given, Then }) => {
-      Given(`a template to deploy the GOV UK Api Gateway`, () => {});
+      Given(`a template to deploy the GOV UK Api Gateway`);
       Then(
         `the template must have the required resource and properties to deploy the GOV UK Api Gateway`,
         () => {

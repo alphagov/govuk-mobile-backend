@@ -46,7 +46,7 @@
                 "cwd": "sam-app/hello-world"
             },
             "outputs": [
-                "{workspaceRoot}/reports/infrastructure"
+                "{workspaceRoot}/reports/unit"
             ]
         },
         "test:infrastructure": {
