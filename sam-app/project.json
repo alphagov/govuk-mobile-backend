@@ -44,10 +44,7 @@
             "options": {
                 "command": "npm run unit",
                 "cwd": "sam-app/hello-world"
-            },
-            "outputs": [
-                "{workspaceRoot}/reports/unit"
-            ]
+            }
         },
         "test:infrastructure": {
             "dependsOn": [
