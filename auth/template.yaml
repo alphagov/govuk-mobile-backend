@@ -22,13 +22,13 @@ Parameters:
     Description: >
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
     Default: "none"
-    
+
   PermissionsBoundary:
     Type: String
     Description: >
       The ARN of the permissions boundary to apply to any role created by the template
     Default: "none"
-    
+
 Conditions:
   UseCodeSigning:
     Fn::Not:
@@ -54,6 +54,7 @@ Globals:
       - !Ref AWS::NoValue
     MemorySize: 128
     Timeout: 100
+    Runtime: nodejs22.x
 
 Resources:
   GovUKMobileCognitoUserPool:
@@ -79,6 +80,8 @@ Resources:
         - AttributeDataType: String
           Name: email
           Required: true
+      LambdaConfig:
+        PostAuthentication: !GetAtt GovUKMobilePostAuthenticationFunction.Arn
       UserPoolTags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -142,12 +145,29 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
+  GovUKMobilePostAuthenticationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: post-authentication-function/
+      Handler: app.lambdaHandler
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
   GovUKMobileTestFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src
-      Handler: src/handlers/hello-world.handler
-      Runtime: nodejs22.x
+      CodeUri: hello-world/
+      Handler: app.lambdaHandler
       Events:
         HelloWorldApi:
           Type: Api
@@ -157,12 +177,17 @@ Resources:
             Path: /test
             Method: GET
       Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
 
 Outputs:
   GovUKMobileApiGateway:

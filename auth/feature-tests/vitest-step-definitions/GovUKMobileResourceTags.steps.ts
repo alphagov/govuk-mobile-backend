@@ -15,7 +15,6 @@ const ignoredResources = [
   "GovUKMobileCognitoUserPool",
   "GovUKMobileCognitoWAFAssociation",
   "GovUKMobileApiGateway",
-  "GovUKMobileTestFunction"
 ];
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {

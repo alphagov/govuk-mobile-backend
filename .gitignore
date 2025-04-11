@@ -157,3 +157,6 @@ dist
 #intelliJ files
 .idea
 reports
+
+# samconfig
+samconfig.toml
