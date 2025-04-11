@@ -12,8 +12,8 @@ on:
     branches:
       - main
     paths:
-      - 'sam-app/**'
-      - '.github/workflows/sam-app-post-merge.yaml'      
+      - "auth/**"
+      - ".github/workflows/auth-post-merge.yml"
 
 defaults:
   run:
