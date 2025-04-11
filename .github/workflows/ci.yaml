@@ -40,4 +40,4 @@ jobs:
         run: npx nx affected -t test:unit 
 
       - name: Test Infrastructure
-        run: npx nx affected -t test:infrastructure 
+        run: npx nx affected -t test:infrastructure --verbose
