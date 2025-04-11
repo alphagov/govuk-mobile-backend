@@ -1,13 +1,19 @@
-name: Auth test and build and deploy
+name: SAM app test and build and deploy
+run-name: SAM app test and build and deploy using Environment ${{ inputs.environment }}
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: true
   push:
     branches:
       - main
     paths:
       - "auth/**"
-      - ".github/workflows/auth-post-merge-actions.yml"
+      - ".github/workflows/auth-post-merge.yml"
 
 defaults:
   run:
@@ -18,6 +24,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
