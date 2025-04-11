@@ -1,0 +1,63 @@
+{
+    "name": "auth",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "targets": {
+        "install": {
+            "cache": true,
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm i",
+                "cwd": "auth"
+            }
+        },
+        "build": {
+            "cache": true,
+            "executor": "nx:run-commands",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "dependsOn": [
+                "install"
+            ],
+            "options": {
+                "command": "npm i && npm run compile",
+                "cwd": "auth/hello-world"
+            }
+        },
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "lintFilePatterns": [
+                    "./**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "test:unit": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run unit",
+                "cwd": "auth/hello-world"
+            }
+        },
+        "test:infrastructure": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:infrastructure",
+                "cwd": "auth"
+            },
+            "outputs": [
+                "{options.outputFile}"
+            ]
+        }
+    }
+}

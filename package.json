@@ -4,9 +4,11 @@
   "license": "MIT",
   "scripts": {},
   "private": true,
-  "dependencies": {},
   "devDependencies": {
+    "@nx/eslint": "^20.7.0",
+    "@nx/eslint-plugin": "^20.7.1",
     "@nx/js": "20.7.0",
+    "@nx/vite": "^20.7.2",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
@@ -14,9 +16,13 @@
     "nx": "20.7.0",
     "prettier": "^2.6.2",
     "tslib": "^2.3.0",
-    "typescript": "~5.7.2"
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.29.1"
   },
   "workspaces": [
-    "packages/*"
-  ]
+    "auth/*"
+  ],
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.9.5"
+  }
 }

@@ -15,12 +15,12 @@ const ignoredResources = [
   "GovUKMobileCognitoUserPool",
   "GovUKMobileCognitoWAFAssociation",
   "GovUKMobileApiGateway",
-  "GovUKMobileHelloWorldFunction"
+  "GovUKMobileTestFunction"
 ];
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
   BeforeAllScenarios(() => {
-    let yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
+    const yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
       schema: schema,
     });
     template = Template.fromJSON(yamltemplate);

@@ -1,0 +1,43 @@
+name: Release candidate
+
+on:
+  workflow_dispatch:
+  push:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: Build
+        run: npx nx affected -t build 
+      
+      - name: Lint
+        run: npx nx affected -t lint
+
+      - name: Unit Test
+        run: npx nx affected -t test:unit 
+
+      - name: Test Infrastructure
+        run: npx nx affected -t test:infrastructure
