@@ -7,6 +7,8 @@ export default [
   {
     ignores: [
       '**/dist',
+      '.nx',
+      '**/debug'
     ],
   },
   {
@@ -41,4 +43,12 @@ export default [
     // Override or add rules here
     rules: {},
   },
+  {
+    files: [
+      "sam-app/feature-tests/**/*.ts"
+    ],
+    rules: {
+      "@typescript-eslint/no-empty-function": "off"
+    },
+  }
 ];
