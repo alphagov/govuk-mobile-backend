@@ -56,7 +56,7 @@
                 "cwd": "auth"
             },
             "outputs": [
-                "{workspaceRoot}/reports/infrastructure"
+                "{options.outputFile}"
             ]
         }
     }
