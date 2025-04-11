@@ -27,6 +27,40 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
           template.hasResourceProperties(
             "AWS::Serverless::Api",
             Match.objectEquals({
+              Name: {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      Ref: "AWS::StackName",
+                    },
+                    "api-gateway",
+                    {
+                      "Fn::Select": [
+                        4,
+                        {
+                          "Fn::Split": [
+                            "-",
+                            {
+                              "Fn::Select": [
+                                2,
+                                {
+                                  "Fn::Split": [
+                                    "/",
+                                    {
+                                      Ref: "AWS::StackId",
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                ],
+              },
               StageName: {
                 Ref: "Environment"
               },
