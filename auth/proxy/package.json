@@ -1,16 +1,16 @@
 {
-  "name": "pre-auth",
+  "name": "proxy",
   "version": "1.0.0",
-  "description": "",
+  "description": "Authentication proxy for cognito",
   "main": "app.js",
-  "author": "",
+  "repository": "https://github.com/awslabs/aws-sam-cli/tree/develop/samcli/local/init/templates/cookiecutter-aws-sam-hello-nodejs",
+  "author": "SAM CLI",
   "license": "MIT",
   "scripts": {
-    "unit": "vitest run",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
     "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify",
-    "test": "npm run compile && npm run unit"
+    "test:unit": "vitest run tests/unit"
   },
   "dependencies": {
     "esbuild": "^0.14.14"

@@ -145,11 +145,13 @@ dist
 
 # Emacs backup files
 *.*~
-#*.*#
+*.*#
 
+# NX
 .nx/installation
 .nx/cache
 .nx/workspace-data
+report/
 
 # sam build
 .aws-sam
@@ -165,3 +167,5 @@ samconfig.toml
 report/
 junit.xml
 results.json
+
+.DS_Store

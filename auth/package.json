@@ -18,6 +18,7 @@
     "scripts": {
         "test:infrastructure": "vitest run",
         "test:validate": "sam validate",
-        "test": "vitest run"
+        "test": "vitest run",
+        "test:functional": "vitest run --include tests/functional/**"
     }
 }

@@ -42,22 +42,9 @@
             ],
             "executor": "nx:run-commands",
             "options": {
-                "command": "npm run unit",
-                "cwd": "auth/hello-world"
-            }
-        },
-        "test:infrastructure": {
-            "dependsOn": [
-                "install"
-            ],
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "npm run test --project infrastructure",
+                "command": "npm run test --project unit",
                 "cwd": "auth"
-            },
-            "outputs": [
-                "{options.outputFile}"
-            ]
+            }
         },
         "test:functional": {
             "dependsOn": [

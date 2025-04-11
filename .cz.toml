@@ -1,0 +1,68 @@
+[tool.commitizen]
+name = "cz_customize"
+tag_format = "v$major.$minor.$patch$prerelease"
+version_scheme = "semver"
+version_provider = "npm"
+update_changelog_on_bump = true
+major_version_zero = true
+gpg_sign = true
+
+[tool.commitizen.customize]
+message_template = "{{change_type}} {% if breaking_change %}:boom:{% endif %} {{message | lower }}\n\nscope: {{scope}} \ndescription: {{description | wordwrap(72)}}\n\nfooter: {{footer}}\nJIRA-ID:GOVUKAPP-{{jira_id}}:"
+example = "feature: this feature enable customize through config file"
+bump_pattern = "^(hotfix|feat|bug|refactor|deps|config|api|deprecate)"
+bump_map = {"hotfix" = "PATCH", "feat" = "MINOR", "bug" = "PATCH", "refactor" = "PATCH", "deps" = "PATCH", "config" = "PATCH", "api" = "PATCH", "deprecate" = "PATCH"}
+change_type_order = ["hotfix", "feat", "bug", "refactor", "deps", "config", "api", "doc", "deprecate"]
+commit_parser = "^(?P<change_type>feat|bug|refactor|hotfix|doc|deps|config|api|deprecate)\\s(?P<message>.*)?"
+changelog_pattern = "^(feat|bug|refactor|hotfix|doc|deps|config|api|deprecate)?(!)?"
+changelog_incremental = true
+change_type_map = {"feature" = ":sparkles:", "bug" = ":bug:", "refactor" = ":recycle:", "doc" = ":memo:", "deps" = ":arrow_up:", "config" = ":wrench:", "api" = ":alien:", "deprecate" = ":wastebin:" }	
+template = "CHANGELOG.md.j2"
+
+[[tool.commitizen.customize.questions]]
+type = "list"
+name = "change_type"
+choices = [
+	{value = "feat", name = "feature: A new feature."},
+	{value = "bug", name = "bug fix: A bug fix."},
+	{value = "refactor", name = "refactor: A code refactor."},
+	{value = "hotfix", name = "critical: A critical hotfix."},
+	{value = "doc", name = "documentation: A documentation change."},
+	{value = "deps", name = "dependency: A dependency upgrade."},
+	{value = "config", name = "config: A configuration change."},
+	{value = "api", name = "api: An update due to external api changes."},
+	{value = "deprecate", name = "deprecate: Deprecating a feature."} 
+]
+# choices = ["feature", "fix"]  # short version
+message = "Select the type of change you are committing"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "message"
+message = "subject:"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "scope"
+message = "scope: e.g. post-auth-lambda"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "description"
+message = "description:"
+
+[[tool.commitizen.customize.questions]]
+type = "confirm"
+name = "breaking_change"
+message = "breaking change?:"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "footer"
+message = "footer: e.g. closes 1493 and 1493 also"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "jira_id"
+message = "JIRA Issue ID e.g. 1430"
+
