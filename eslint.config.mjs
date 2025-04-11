@@ -45,7 +45,7 @@ export default [
   },
   {
     files: [
-      "sam-app/feature-tests/**/*.ts"
+      "auth/feature-tests/**/*.ts"
     ],
     rules: {
       "@typescript-eslint/no-empty-function": "off"

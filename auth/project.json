@@ -1,5 +1,5 @@
 {
-    "name": "sam-app",
+    "name": "auth",
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "projectType": "application",
     "targets": {
@@ -8,7 +8,7 @@
             "executor": "nx:run-commands",
             "options": {
                 "command": "npm i",
-                "cwd": "sam-app"
+                "cwd": "auth"
             }
         },
         "build": {
@@ -22,7 +22,7 @@
             ],
             "options": {
                 "command": "npm i && npm run compile",
-                "cwd": "sam-app/hello-world"
+                "cwd": "auth/hello-world"
             }
         },
         "lint": {
@@ -43,7 +43,7 @@
             "executor": "nx:run-commands",
             "options": {
                 "command": "npm run unit",
-                "cwd": "sam-app/hello-world"
+                "cwd": "auth/hello-world"
             }
         },
         "test:infrastructure": {
@@ -53,10 +53,10 @@
             "executor": "nx:run-commands",
             "options": {
                 "command": "npm run test:infrastructure",
-                "cwd": "sam-app"
+                "cwd": "auth"
             },
             "outputs": [
-                "{workspaceRoot}/reports/infrastructure"
+                "{options.outputFile}"
             ]
         }
     }

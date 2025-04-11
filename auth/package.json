@@ -1,6 +1,6 @@
 {
-    "name": "sam-app",
-    "description": "SAM App",
+    "name": "auth",
+    "description": "Auth",
     "version": "0.0.1",
     "private": true,
     "devDependencies": {
