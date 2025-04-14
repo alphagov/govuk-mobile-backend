@@ -21,7 +21,6 @@ Resources:
         EntryPoints: 
         - app.ts
 
-
 Outputs:
   PreAuthenticationArn:
     Description: "ARN of the Pre Auth Lambda"
