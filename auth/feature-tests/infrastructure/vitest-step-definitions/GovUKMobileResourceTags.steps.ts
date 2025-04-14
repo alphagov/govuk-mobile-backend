@@ -6,7 +6,7 @@ import { load } from "js-yaml";
 import { expect } from "vitest";
 
 const feature = await loadFeature(
-  "feature-tests/vitest-features/GovUKMobileResourceTags.feature"
+  "feature-tests/infrastructure/vitest-features/GovUKMobileResourceTags.feature"
 );
 
 let template: Template;

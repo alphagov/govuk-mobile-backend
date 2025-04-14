@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import { load } from "js-yaml";
 
 const feature = await loadFeature(
-  "feature-tests/vitest-features/GovUKMobileCognitoUserPool.feature"
+  "feature-tests/infrastructure/vitest-features/GovUKMobileCognitoUserPool.feature"
 );
 
 let template: Template;

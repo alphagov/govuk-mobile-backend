@@ -52,7 +52,7 @@
             ],
             "executor": "nx:run-commands",
             "options": {
-                "command": "npm run test:infrastructure",
+                "command": "npm run test --project infrastructure",
                 "cwd": "auth"
             },
             "outputs": [

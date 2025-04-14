@@ -3,7 +3,7 @@ import { defineWorkspace } from 'vitest/config'
 export default defineWorkspace([
   {
     test: {
-      include: ['feature-tests/vitest-step-definitions/**.steps.ts'],
+      include: ['feature-tests/infrastructure/**/*.steps.ts'],
       name: 'infrastructure',
       environment: 'node',
     }
