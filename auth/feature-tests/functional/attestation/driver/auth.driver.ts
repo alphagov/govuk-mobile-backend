@@ -1,6 +1,6 @@
 import 'dotenv/config'
 
-import { CognitoIdentityProviderClient, InitiateAuthCommand, InitiateAuthRequest } from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProviderClient, InitiateAuthCommand, InitiateAuthCommandOutput, InitiateAuthRequest } from "@aws-sdk/client-cognito-identity-provider";
 
 export type InitiateAuthInput = {
     username: string;
@@ -19,9 +19,6 @@ export class AuthDriver {
 
   /**
    * Initiates the authentication process as a client application.
-   * This method simulates the initial step where an app with only a client ID
-   * requests authentication. It typically results in a challenge being issued
-   * by Cognito (e.g., SMS_MFA, PASSWORD_VERIFIER).
    *
    * @returns A Promise that resolves to the InitiateAuthCommandOutput from Cognito.
    * @throws Error if the initiation process fails.
@@ -30,9 +27,9 @@ export class AuthDriver {
     username, 
     password,
     attestationToken
-}: InitiateAuthInput): Promise<any> {
+}: InitiateAuthInput): Promise<InitiateAuthCommandOutput> {
     const authParams: InitiateAuthRequest = {
-      AuthFlow: "USER_PASSWORD_AUTH", // Or USER_SRP_AUTH if you intend to use SRP
+      AuthFlow: "USER_PASSWORD_AUTH", 
       ClientId: this.clientId,
       AuthParameters: {
         USERNAME: username,
