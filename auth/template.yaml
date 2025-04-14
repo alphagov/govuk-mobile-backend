@@ -86,6 +86,16 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+      LambdaConfig:
+        PreAuthentication: !GetAtt GovUKMobileAttestation.Outputs.PreAuthenticationArn
+
+  PreAuthCognitoLambdaInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt GovUKMobileAttestation.Outputs.PreAuthenticationArn
+      Principal: "cognito-idp.amazonaws.com"
+      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${GovUKMobileCognitoUserPool}
 
   GovUKMobileWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
@@ -188,6 +198,11 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
+
+  GovUKMobileAttestation:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./attestation/template.yaml
 
 Outputs:
   GovUKMobileApiGateway:
