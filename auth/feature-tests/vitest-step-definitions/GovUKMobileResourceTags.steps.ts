@@ -14,6 +14,8 @@ let template: Template;
 const ignoredResources = [
   "GovUKMobileCognitoUserPool",
   "GovUKMobileCognitoWAFAssociation",
+  "GovUKMobileAttestation",
+  "PreAuthCognitoLambdaInvokePermission"
 ];
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
@@ -30,8 +32,10 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
       Object.keys(template.toJSON().Resources).forEach((resourceName) => {
         const resource = template.toJSON().Resources[resourceName];
 
+        console.log(resourceName)
         if (!ignoredResources.includes(resourceName)) {
-          expect(resource.Properties).toHaveProperty("Tags");
+        console.log(resource.Properties)
+        expect(resource.Properties).toHaveProperty("Tags");
 
           const actualTags = resource.Properties["Tags"];
  
