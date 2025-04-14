@@ -101,7 +101,6 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
-      GenerateSecret: false
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
         - code
