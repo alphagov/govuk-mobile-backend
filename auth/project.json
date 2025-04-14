@@ -58,6 +58,19 @@
             "outputs": [
                 "{options.outputFile}"
             ]
+        },
+        "test:functional": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test --project functional",
+                "cwd": "auth"
+            },
+            "outputs": [
+                "{options.outputFile}"
+            ]
         }
     }
 }
