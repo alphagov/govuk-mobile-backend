@@ -32,9 +32,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
       Object.keys(template.toJSON().Resources).forEach((resourceName) => {
         const resource = template.toJSON().Resources[resourceName];
 
-        console.log(resourceName)
         if (!ignoredResources.includes(resourceName)) {
-        console.log(resource.Properties)
         expect(resource.Properties).toHaveProperty("Tags");
 
           const actualTags = resource.Properties["Tags"];
