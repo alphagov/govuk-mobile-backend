@@ -8,7 +8,8 @@ export default [
     ignores: [
       '**/dist',
       '.nx',
-      '**/debug'
+      '**/debug',
+      '**/.aws-sam/**'
     ],
   },
   {
@@ -45,10 +46,12 @@ export default [
   },
   {
     files: [
-      "auth/feature-tests/**/*.ts"
+      "auth/feature-tests/**/*.ts",
+      "auth/**/*.test.ts"
     ],
     rules: {
-      "@typescript-eslint/no-empty-function": "off"
+      "@typescript-eslint/no-empty-function": "off",
+      "@typescript-eslint/no-unused-expressions": "off"
     },
   }
 ];
