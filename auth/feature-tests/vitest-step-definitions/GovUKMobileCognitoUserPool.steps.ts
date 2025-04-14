@@ -64,6 +64,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                   ],
                 ],
               },
+              LambdaConfig: {
+                PreAuthentication: {
+                  "Fn::GetAtt": [
+                    "GovUKMobileAttestation",
+                    "Outputs.PreAuthenticationArn"
+                  ]
+                }
+              },
               DeletionProtection: "ACTIVE",
               UsernameAttributes: ["email"],
               Schema: [
