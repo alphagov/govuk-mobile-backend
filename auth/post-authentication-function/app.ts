@@ -11,9 +11,9 @@ import { PostAuthenticationTriggerEvent } from 'aws-lambda';
  */
 
 export const lambdaHandler = async (event: PostAuthenticationTriggerEvent): Promise<PostAuthenticationTriggerEvent> => {
-    console.log(`Trigger function = ${event.triggerSource}`);
-    console.log(`Trigger function = ${event.userPoolId}`);
-    console.log(`Trigger function = ${event.callerContext.clientId}`);
-    console.log(`Trigger function = ${event.userName}`);
+    console.log(`Source = ${event.triggerSource}`);
+    console.log(`User Pool Id = ${event.userPoolId}`);
+    console.log(`Client Id = ${event.callerContext.clientId}`);
+    console.log(`Username = ${event.userName}`);
     return event;
 };

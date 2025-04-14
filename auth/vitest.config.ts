@@ -5,6 +5,7 @@ export default defineConfig({
     test: {
         include: [
             "**/*.steps.ts",
+            "**/*.test.ts",
         ],
         reporters: [
             'default', // To still see output in the console

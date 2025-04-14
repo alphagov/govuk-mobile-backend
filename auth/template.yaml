@@ -53,7 +53,7 @@ Globals:
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
     MemorySize: 128
-    Timeout: 100
+    Timeout: 60
     Runtime: nodejs22.x
 
 Resources:
@@ -154,7 +154,7 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-    Metadata: # Manage esbuild properties
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
@@ -180,7 +180,7 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-    Metadata: # Manage esbuild properties
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
