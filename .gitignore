@@ -157,3 +157,11 @@ dist
 #intelliJ files
 .idea
 reports
+
+# samconfig
+samconfig.toml
+
+# junit
+report/
+junit.xml
+results.json

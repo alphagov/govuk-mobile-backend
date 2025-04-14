@@ -73,6 +73,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                   Required: true,
                 },
               ],
+              LambdaConfig: {
+                PostAuthentication: {
+                  "Fn::GetAtt": [
+                    "GovUKMobilePostAuthenticationFunction",
+                    "Arn",
+                  ],
+                },
+              },
               UserPoolTags: {
                 Environment: { Ref: "Environment" },
                 Product: "GOV.UK",

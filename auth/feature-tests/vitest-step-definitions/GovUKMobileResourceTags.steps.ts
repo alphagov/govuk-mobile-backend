@@ -14,8 +14,6 @@ let template: Template;
 const ignoredResources = [
   "GovUKMobileCognitoUserPool",
   "GovUKMobileCognitoWAFAssociation",
-  "GovUKMobileApiGateway",
-  "GovUKMobileTestFunction"
 ];
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
@@ -36,11 +34,20 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
           expect(resource.Properties).toHaveProperty("Tags");
 
           const actualTags = resource.Properties["Tags"];
-          const expectedTags = [
-            { Key: "Product", Value: "GOV.UK" },
-            { Key: "Environment", Value: expect.any(Object) },
-            { Key: "System", Value: "Authentication" },
-          ];
+ 
+          const expectedTags = Array.isArray(actualTags)
+            ? [
+                { Key: "Product", Value: "GOV.UK" },
+                { Key: "Environment", Value: expect.any(Object) },
+                { Key: "System", Value: "Authentication" },
+              ]
+            : {
+                Product: "GOV.UK",
+                Environment: {
+                  Ref: "Environment",
+                },
+                System: "Authentication",
+              };
 
           expect(actualTags).toEqual(expectedTags);
         }
