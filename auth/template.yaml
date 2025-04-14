@@ -80,20 +80,19 @@ Resources:
         - AttributeDataType: String
           Name: email
           Required: true
-      LambdaConfig:
-        PostAuthentication: !GetAtt GovUKMobilePostAuthenticationFunction.Arn
       UserPoolTags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
       LambdaConfig:
-        PreAuthentication: !GetAtt GovUKMobileAttestation.Outputs.PreAuthenticationArn
+        PreAuthentication: !GetAtt PreAuthenticationFn.Arn
+        PostAuthentication: !GetAtt GovUKMobilePostAuthenticationFunction.Arn
 
   PreAuthCognitoLambdaInvokePermission:
     Type: "AWS::Lambda::Permission"
     Properties:
       Action: "lambda:InvokeFunction"
-      FunctionName: !GetAtt GovUKMobileAttestation.Outputs.PreAuthenticationArn
+      FunctionName: !GetAtt PreAuthenticationFn.Arn
       Principal: "cognito-idp.amazonaws.com"
       SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${GovUKMobileCognitoUserPool}
 
@@ -198,11 +197,27 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
-
-  GovUKMobileAttestation:
-    Type: AWS::Serverless::Application
+  
+  PreAuthenticationFn:
+    Type: AWS::Serverless::Function
     Properties:
-      Location: ./attestation/template.yaml
+      Handler: app.handler
+      Runtime: nodejs22.x 
+      CodeUri: ./pre-authentication
+      MemorySize: 128
+      Timeout: 30
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata: 
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+        - app.ts
 
 Outputs:
   GovUKMobileApiGateway:

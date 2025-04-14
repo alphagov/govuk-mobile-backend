@@ -67,10 +67,16 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
               LambdaConfig: {
                 PreAuthentication: {
                   "Fn::GetAtt": [
-                    "GovUKMobileAttestation",
-                    "Outputs.PreAuthenticationArn"
+                    "PreAuthenticationFn",
+                    "Arn"
                   ]
-                }
+                },
+                PostAuthentication: {
+                  "Fn::GetAtt": [
+                    "GovUKMobilePostAuthenticationFunction",
+                    "Arn",
+                  ],
+                },
               },
               DeletionProtection: "ACTIVE",
               UsernameAttributes: ["email"],
@@ -81,14 +87,6 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                   Required: true,
                 },
               ],
-              LambdaConfig: {
-                PostAuthentication: {
-                  "Fn::GetAtt": [
-                    "GovUKMobilePostAuthenticationFunction",
-                    "Arn",
-                  ],
-                },
-              },
               UserPoolTags: {
                 Environment: { Ref: "Environment" },
                 Product: "GOV.UK",
