@@ -22,13 +22,13 @@ Parameters:
     Description: >
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
     Default: "none"
-    
+
   PermissionsBoundary:
     Type: String
     Description: >
       The ARN of the permissions boundary to apply to any role created by the template
     Default: "none"
-    
+
 Conditions:
   UseCodeSigning:
     Fn::Not:
@@ -71,7 +71,7 @@ Resources:
                       - 2
                       - Fn::Split:
                           - "/"
-                          - Ref: AWS::StackId
+                          - !Ref AWS::StackId
       DeletionProtection: ACTIVE
       UsernameAttributes:
         - email
@@ -83,12 +83,68 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-
+  
+  GovUKMobileCognitoUserClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref GovUKMobileCognitoUserPool
+      ClientName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "user-pool-client"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - aws.cognito.signin.user.admin
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - !Join
+          - ""
+          - - "https://"
+            - !Ref AWS::StackName
+            - "."
+            - !Ref Environment
+            - ".gov.uk/auth/callback" # Replace with "https://your-production-domain.gov.uk/auth/callback" before deployment
+      LogoutURLs:
+          - !Join
+            - ""
+            - - "https://"
+              - !Ref AWS::StackName
+              - "."
+              - !Ref Environment
+              - ".gov.uk/auth/logout" # Replace with actual logout URL TBD
+      DefaultRedirectURI:
+          - !Join
+            - ""
+            - - "https://"
+              - !Ref AWS::StackName
+              - "."
+              - !Ref Environment
+              - ".gov.uk/auth/callback" # Replace with actual callback URL TBD
+      AccessTokenValidity: 3600 # 1 hour
+      IdTokenValidity: 3600 # 1 hour
+      RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
+  
   GovUKMobileWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
     Properties:
       DefaultAction:
-        Allow: {}
+        Allow: { }
       Scope: REGIONAL
       VisibilityConfig:
         CloudWatchMetricsEnabled: true
