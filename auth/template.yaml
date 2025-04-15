@@ -57,7 +57,7 @@ Globals:
     Runtime: nodejs22.x
 
 Resources:
-  GovUKMobileCognitoUserPool:
+  CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: !Join
@@ -86,7 +86,7 @@ Resources:
         System: Authentication
       LambdaConfig:
         PreAuthentication: !GetAtt PreAuthenticationFn.Arn
-        PostAuthentication: !GetAtt GovUKMobilePostAuthenticationFunction.Arn
+        PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
 
   PreAuthCognitoLambdaInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -94,9 +94,9 @@ Resources:
       Action: "lambda:InvokeFunction"
       FunctionName: !GetAtt PreAuthenticationFn.Arn
       Principal: "cognito-idp.amazonaws.com"
-      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${GovUKMobileCognitoUserPool}
+      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}
 
-  GovUKMobileWebApplicationFirewall:
+  WebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
     Properties:
       DefaultAction:
@@ -126,13 +126,13 @@ Resources:
         - Key: System
           Value: Authentication
 
-  GovUKMobileCognitoWAFAssociation:
+  CognitoWAFAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
-      ResourceArn: !GetAtt GovUKMobileCognitoUserPool.Arn
-      WebACLArn: !GetAtt GovUKMobileWebApplicationFirewall.Arn
+      ResourceArn: !GetAtt CognitoUserPool.Arn
+      WebACLArn: !GetAtt WebApplicationFirewall.Arn
 
-  GovUKMobileApiGateway:
+  ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Join
@@ -154,7 +154,7 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
-  GovUKMobilePostAuthenticationFunction:
+  PostAuthenticationFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: post-authentication-function/
@@ -172,7 +172,7 @@ Resources:
         EntryPoints:
           - app.ts
 
-  GovUKMobileTestFunction:
+  TestFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello-world/
@@ -182,7 +182,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId:
-              Ref: GovUKMobileApiGateway
+              Ref: ApiGateway
             Path: /test
             Method: GET
       Tags:
@@ -220,6 +220,6 @@ Resources:
         - app.ts
 
 Outputs:
-  GovUKMobileApiGateway:
+  ApiGateway:
     Description: API Gateway endpoint URL Hello World function
-    Value: !Sub https://${GovUKMobileApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/

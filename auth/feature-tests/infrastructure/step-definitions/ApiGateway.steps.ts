@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import { load } from "js-yaml";
 
 const feature = await loadFeature(
-  "feature-tests/infrastructure/vitest-features/GovUKMobileCognitoUserPool.feature"
+  "feature-tests/infrastructure/features/ApiGateway.feature"
 );
 
 let template: Template;
@@ -18,26 +18,23 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     template = Template.fromJSON(yamltemplate);
   });
   Scenario(
-    `A template can deploy the GOV UK Mobile Cognito Userpool`,
+    `A template can deploy the GOV UK Api Gateway`,
     ({ Given, Then }) => {
-      Given(
-        `a template to deploy the GOV UK Mobile Cognito Userpool`,
-        () => {}
-      );
+      Given(`a template to deploy the GOV UK Api Gateway`, () => {});
       Then(
-        `the template must have the required resource and properties to deploy the GOV UK Mobile Cognito Userpool`,
+        `the template must have the required resource and properties to deploy the GOV UK Api Gateway`,
         () => {
           template.hasResourceProperties(
-            "AWS::Cognito::UserPool",
+            "AWS::Serverless::Api",
             Match.objectEquals({
-              UserPoolName: {
+              Name: {
                 "Fn::Join": [
                   "-",
                   [
                     {
                       Ref: "AWS::StackName",
                     },
-                    "user-pool",
+                    "api-gateway",
                     {
                       "Fn::Select": [
                         4,
@@ -64,34 +61,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                   ],
                 ],
               },
-              LambdaConfig: {
-                PreAuthentication: {
-                  "Fn::GetAtt": [
-                    "PreAuthenticationFn",
-                    "Arn"
-                  ]
-                },
-                PostAuthentication: {
-                  "Fn::GetAtt": [
-                    "GovUKMobilePostAuthenticationFunction",
-                    "Arn",
-                  ],
-                },
+              StageName: {
+                Ref: "Environment"
               },
-              DeletionProtection: "ACTIVE",
-              UsernameAttributes: ["email"],
-              Schema: [
-                {
-                  AttributeDataType: "String",
-                  Name: "email",
-                  Required: true,
-                },
-              ],
-              UserPoolTags: {
-                Environment: { Ref: "Environment" },
+              Tags: {
+                Environment: { "Ref": "Environment" },
                 Product: "GOV.UK",
-                System: "Authentication",
-              },
+                System: "Authentication"
+              }
             })
           );
         }

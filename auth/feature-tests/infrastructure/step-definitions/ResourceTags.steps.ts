@@ -6,14 +6,14 @@ import { load } from "js-yaml";
 import { expect } from "vitest";
 
 const feature = await loadFeature(
-  "feature-tests/infrastructure/vitest-features/GovUKMobileResourceTags.feature"
+  "feature-tests/infrastructure/features/ResourceTags.feature"
 );
 
 let template: Template;
 
 const ignoredResources = [
-  "GovUKMobileCognitoUserPool",
-  "GovUKMobileCognitoWAFAssociation",
+  "CognitoUserPool",
+  "CognitoWAFAssociation",
   "PreAuthCognitoLambdaInvokePermission"
 ];
 
