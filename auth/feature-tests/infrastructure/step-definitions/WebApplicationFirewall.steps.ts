@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import { load } from "js-yaml";
 
 const feature = await loadFeature(
-  "feature-tests/infrastructure/vitest-features/GovUKMobileWebApplicationFirewall.feature"
+  "feature-tests/infrastructure/features/WebApplicationFirewall.feature"
 );
 
 let template: Template;
