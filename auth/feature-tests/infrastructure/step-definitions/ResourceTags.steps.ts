@@ -6,17 +6,15 @@ import { load } from "js-yaml";
 import { expect } from "vitest";
 
 const feature = await loadFeature(
-  "feature-tests/vitest-features/GovUKMobileResourceTags.feature"
+  "feature-tests/infrastructure/features/ResourceTags.feature"
 );
 
 let template: Template;
 
 const ignoredResources = [
-  "GovUKMobileCognitoUserPool",
-  "GovUKMobileCognitoWAFAssociation",
-  "GovUKMobileApiGateway",
-  "GovUKMobileTestFunction",
-  "GovUKMobileCognitoUserClient",
+  "CognitoUserPool",
+  "CognitoWAFAssociation",
+  "PreAuthCognitoLambdaInvokePermission"
 ];
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
@@ -37,11 +35,20 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
           expect(resource.Properties).toHaveProperty("Tags");
 
           const actualTags = resource.Properties["Tags"];
-          const expectedTags = [
-            { Key: "Product", Value: "GOV.UK" },
-            { Key: "Environment", Value: expect.any(Object) },
-            { Key: "System", Value: "Authentication" },
-          ];
+
+          const expectedTags = Array.isArray(actualTags)
+            ? [
+                { Key: "Product", Value: "GOV.UK" },
+                { Key: "Environment", Value: expect.any(Object) },
+                { Key: "System", Value: "Authentication" },
+              ]
+            : {
+                Product: "GOV.UK",
+                Environment: {
+                  Ref: "Environment",
+                },
+                System: "Authentication",
+              };
 
           expect(actualTags).toEqual(expectedTags);
         }

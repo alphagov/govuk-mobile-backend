@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import { load } from "js-yaml";
 
 const feature = await loadFeature(
-  "feature-tests/vitest-features/GovUKMobileCognitoWAFAssociation.feature"
+  "feature-tests/infrastructure/features/CognitoWAFAssociation.feature"
 );
 
 let template: Template;
@@ -31,10 +31,10 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
             "AWS::WAFv2::WebACLAssociation",
             Match.objectEquals({
               ResourceArn: {
-                "Fn::GetAtt": ["GovUKMobileCognitoUserPool", "Arn"],
+                "Fn::GetAtt": ["CognitoUserPool", "Arn"],
               },
               WebACLArn: {
-                "Fn::GetAtt": ["GovUKMobileWebApplicationFirewall", "Arn"],
+                "Fn::GetAtt": ["WebApplicationFirewall", "Arn"],
               },
             })
           );
