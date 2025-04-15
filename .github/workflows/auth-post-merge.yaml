@@ -1,5 +1,5 @@
-name: SAM app test and build and deploy
-run-name: SAM app test and build and deploy using Environment ${{ inputs.environment }}
+name: Auth app test and build and deploy
+run-name: Auth app test and build and deploy using Environment ${{ inputs.environment }}
 
 on:
   workflow_dispatch:
