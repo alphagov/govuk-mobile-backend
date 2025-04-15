@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import { load } from "js-yaml";
 
 const feature = await loadFeature(
-  "feature-tests/vitest-features/GovUKMobileCognitoUserPool.feature"
+  "feature-tests/infrastructure/vitest-features/GovUKMobileCognitoUserPool.feature"
 );
 
 let template: Template;
@@ -64,6 +64,20 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                   ],
                 ],
               },
+              LambdaConfig: {
+                PreAuthentication: {
+                  "Fn::GetAtt": [
+                    "PreAuthenticationFn",
+                    "Arn"
+                  ]
+                },
+                PostAuthentication: {
+                  "Fn::GetAtt": [
+                    "GovUKMobilePostAuthenticationFunction",
+                    "Arn",
+                  ],
+                },
+              },
               DeletionProtection: "ACTIVE",
               UsernameAttributes: ["email"],
               Schema: [
@@ -73,14 +87,6 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
                   Required: true,
                 },
               ],
-              LambdaConfig: {
-                PostAuthentication: {
-                  "Fn::GetAtt": [
-                    "GovUKMobilePostAuthenticationFunction",
-                    "Arn",
-                  ],
-                },
-              },
               UserPoolTags: {
                 Environment: { Ref: "Environment" },
                 Product: "GOV.UK",

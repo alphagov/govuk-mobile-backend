@@ -7,7 +7,7 @@ import { expect } from "vitest";
 
 
 const feature = await loadFeature(
-  "feature-tests/vitest-features/GovUKMobilePostAuthenticationFunction.feature"
+  "feature-tests/infrastructure/vitest-features/GovUKMobilePostAuthenticationFunction.feature"
 );
 
 let template: Template;
