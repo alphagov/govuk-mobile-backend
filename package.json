@@ -2,7 +2,10 @@
   "name": "@govuk-mobile-backend-workspace/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+      "test": "exit 1",
+    "commit": "cz commit"
+  },
   "private": true,
   "devDependencies": {
     "@nx/eslint": "^20.7.0",
