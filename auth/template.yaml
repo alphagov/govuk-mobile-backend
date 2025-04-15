@@ -135,16 +135,8 @@ Resources:
       AccessTokenValidity: 3600 # 1 hour
       IdTokenValidity: 3600 # 1 hour
       RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-          
-  
-  GovUKMobileWebApplicationFirewall:
+        
+    GovUKMobileWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
     Properties:
       DefaultAction:
@@ -207,7 +199,7 @@ Resources:
     Properties:
       CodeUri: src
       Handler: src/handlers/hello-world.handler
-      Runtime: nodejs22.x
+      Runtime: nodejs18.x
       Events:
         HelloWorldApi:
           Type: Api
