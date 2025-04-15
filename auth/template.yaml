@@ -88,16 +88,6 @@ Resources:
         PreAuthentication: !GetAtt PreAuthenticationFn.Arn
         PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
 
-  PreAuthCognitoLambdaInvokePermission:
-    Type: "AWS::Lambda::Permission"
-    Properties:
-      Action: "lambda:InvokeFunction"
-      FunctionName: !GetAtt PreAuthenticationFn.Arn
-      Principal: "cognito-idp.amazonaws.com"
-      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}
-
-  WebApplicationFirewall:
-
   GovUKMobileCognitoUserClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
@@ -150,7 +140,15 @@ Resources:
       IdTokenValidity: 3600 # 1 hour
       RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
 
-    GovUKMobileWebApplicationFirewall:
+  PreAuthCognitoLambdaInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt PreAuthenticationFn.Arn
+      Principal: "cognito-idp.amazonaws.com"
+      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}
+
+  WebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
     Properties:
       DefaultAction:
