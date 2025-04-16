@@ -15,7 +15,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     const yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
       schema: schema,
     });
-    template = Template.fromJSON(yamltemplate);
+    template = Template.fromJSON(yamltemplate as any);
   });
   Scenario(
     `A template can deploy the GOV UK Api Gateway`,
