@@ -105,11 +105,11 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
-      AllowedOAuthFlowsUserPoolClient: true
-      AllowedOAuthFlows:
-        - code
-      AllowedOAuthScopes:
-        - email
+      # AllowedOAuthFlowsUserPoolClient: true
+      # AllowedOAuthFlows:
+      #   - code
+      # AllowedOAuthScopes:
+      #   - aws.cognito.signin.user.admin
       SupportedIdentityProviders:
         - COGNITO
       CallbackURLs:
@@ -129,13 +129,12 @@ Resources:
               - !Ref Environment
               - ".gov.uk/auth/logout" # Replace with actual logout URL TBD
       TokenValidityUnits:
-        AccessToken: "seconds"
-        IdToken: !Ref "seconds"
-        RefreshToken: "seconds"
+        AccessToken: seconds
+        IdToken: seconds
+        RefreshToken: seconds
       AccessTokenValidity: 3600 # 1 hour in seconds
       IdTokenValidity: 3600 # 1 hour in seconds
       RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
-      EnableTokenRevocation: true
 
   PreAuthCognitoLambdaInvokePermission:
     Type: "AWS::Lambda::Permission"
