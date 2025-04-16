@@ -128,14 +128,14 @@ Resources:
               - "."
               - !Ref Environment
               - ".gov.uk/auth/logout" # Replace with actual logout URL TBD
-      DefaultRedirectURI:
-          - !Join
-            - ""
-            - - "https://"
-              - !Ref AWS::StackName
-              - "."
-              - !Ref Environment
-              - ".gov.uk/auth/callback" # Replace with actual callback URL TBD
+#      DefaultRedirectURI:
+#          - !Join
+#            - ""
+#            - - "https://"
+#              - !Ref AWS::StackName
+#              - "."
+#              - !Ref Environment
+#              - ".gov.uk/auth/callback" # Replace with actual callback URL TBD
       AccessTokenValidity: 3600 # 1 hour
       IdTokenValidity: 3600 # 1 hour
       RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
