@@ -18,7 +18,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     template = Template.fromJSON(yamltemplate);
   });
   Scenario(
-    `A template can associate theCognito Userpool with a WAF`,
+    `A template can associate Cognito Userpool with a WAF`,
     ({ Given, Then }) => {
       Given(
         `a template to deploy associate Cognito Userpool with a WAF`,
