@@ -88,7 +88,7 @@ Resources:
         PreAuthentication: !GetAtt PreAuthenticationFn.Arn
         PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
 
-  GovUKMobileCognitoUserClient:
+  CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref GovUKMobileCognitoUserPool

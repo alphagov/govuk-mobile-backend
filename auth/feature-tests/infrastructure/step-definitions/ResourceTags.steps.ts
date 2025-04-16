@@ -14,7 +14,8 @@ let template: Template;
 const ignoredResources = [
   "CognitoUserPool",
   "CognitoWAFAssociation",
-  "PreAuthCognitoLambdaInvokePermission"
+  "PreAuthCognitoLambdaInvokePermission",
+  "CognitoUserPoolClient",
 ];
 
 describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
