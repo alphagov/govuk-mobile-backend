@@ -91,7 +91,7 @@ Resources:
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      UserPoolId: !Ref GovUKMobileCognitoUserPool
+      UserPoolId: !Ref CognitoUserPool
       ClientName: !Join
         - "-"
         - - !Ref AWS::StackName

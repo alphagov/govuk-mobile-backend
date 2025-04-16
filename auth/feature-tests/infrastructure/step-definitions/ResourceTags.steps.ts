@@ -23,7 +23,7 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     const yamltemplate = load(readFileSync("template.yaml", "utf-8"), {
       schema: schema,
     });
-    template = Template.fromJSON(yamltemplate);
+    template = Template.fromJSON(yamltemplate as any);
   });
 
   Scenario(`A template has the correct resource tags`, ({ Given, Then }) => {
