@@ -18,11 +18,11 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     template = Template.fromJSON(yamltemplate);
   });
   Scenario(
-    `A template can deploy the GOV UK Api Gateway`,
+    `A template can deploy theApi Gateway`,
     ({ Given, Then }) => {
-      Given(`a template to deploy the GOV UK Api Gateway`, () => {});
+      Given(`a template to deploy theApi Gateway`, () => {});
       Then(
-        `the template must have the required resource and properties to deploy the GOV UK Api Gateway`,
+        `the template must have the required resource and properties to deploy theApi Gateway`,
         () => {
           template.hasResourceProperties(
             "AWS::Serverless::Api",

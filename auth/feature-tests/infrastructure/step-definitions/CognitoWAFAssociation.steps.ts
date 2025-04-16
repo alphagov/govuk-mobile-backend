@@ -18,14 +18,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     template = Template.fromJSON(yamltemplate);
   });
   Scenario(
-    `A template can associate the GOV UK Cognito Userpool with a WAF`,
+    `A template can associate theCognito Userpool with a WAF`,
     ({ Given, Then }) => {
       Given(
-        `a template to deploy associate GOV UK Mobile Cognito Userpool with a WAF`,
+        `a template to deploy associate Cognito Userpool with a WAF`,
         () => {}
       );
       Then(
-        `the template must have the required resource and properties to deploy the association between GOV UK Mobile Cognito Userpool and a WAF`,
+        `the template must have the required resource and properties to deploy the association between Cognito Userpool and a WAF`,
         () => {
           template.hasResourceProperties(
             "AWS::WAFv2::WebACLAssociation",

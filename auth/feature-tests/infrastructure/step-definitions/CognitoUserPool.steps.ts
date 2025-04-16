@@ -18,14 +18,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
     template = Template.fromJSON(yamltemplate);
   });
   Scenario(
-    `A template can deploy the GOV UK Mobile Cognito Userpool`,
+    `A template can deploy the Cognito Userpool`,
     ({ Given, Then }) => {
       Given(
-        `a template to deploy the GOV UK Mobile Cognito Userpool`,
+        `a template to deploy the Cognito Userpool`,
         () => {}
       );
       Then(
-        `the template must have the required resource and properties to deploy the GOV UK Mobile Cognito Userpool`,
+        `the template must have the required resource and properties to deploy the Cognito Userpool`,
         () => {
           template.hasResourceProperties(
             "AWS::Cognito::UserPool",

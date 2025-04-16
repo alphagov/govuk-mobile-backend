@@ -20,14 +20,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
   });
 
   Scenario(
-    `A template can deploy the GOV UK User Pool Identity Provider`,
+    `A template can deploy theUser Pool Identity Provider`,
     ({ Given, Then }) => {
       Given(
-        `a template to deploy the GOV UK User Pool Identity Provider`,
+        `a template to deploy theUser Pool Identity Provider`,
         () => {}
       );
       Then(
-        `the template must have the required resource and properties to deploy the GOV UK User Pool Identity Provider`,
+        `the template must have the required resource and properties to deploy theUser Pool Identity Provider`,
         () => {
           template.hasResourceProperties(
             "AWS::Cognito::UserPoolIdentityProvider",

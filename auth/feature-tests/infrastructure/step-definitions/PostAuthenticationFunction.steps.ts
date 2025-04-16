@@ -21,14 +21,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
   });
 
   Scenario(
-    `A template can deploy the GOV UK Post Authentication Lambda`,
+    `A template can deploy thePost Authentication Lambda`,
     ({ Given, Then }) => {
       Given(
-        `a template to deploy the GOV UK Post Authentication Lambda`,
+        `a template to deploy thePost Authentication Lambda`,
         () => {}
       );
       Then(
-        `the template must have the required resource and properties to deploy the GOV UK Post Authentication Lambda`,
+        `the template must have the required resource and properties to deploy thePost Authentication Lambda`,
         () => {
           template.hasResourceProperties(
             "AWS::Serverless::Function",

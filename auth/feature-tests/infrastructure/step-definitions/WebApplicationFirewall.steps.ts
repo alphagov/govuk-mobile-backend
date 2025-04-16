@@ -19,14 +19,14 @@ describeFeature(feature, ({ BeforeAllScenarios, Scenario }) => {
   });
 
   Scenario(
-    `A template can deploy the GOV UK Mobile Web Application Firewall`,
+    `A template can deploy the Web Application Firewall`,
     ({ Given, Then }) => {
       Given(
-        `a template to deploy the GOV UK Mobile Web Application Firewall`,
+        `a template to deploy the Web Application Firewall`,
         () => {}
       );
       Then(
-        `the template must have the required resource and properties to deploy the GOV UK Mobile Web Application Firewall`,
+        `the template must have the required resource and properties to deploy the Web Application Firewall`,
         () => {
           template.hasResourceProperties(
             "AWS::WAFv2::WebACL",
