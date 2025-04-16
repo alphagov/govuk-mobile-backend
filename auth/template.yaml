@@ -197,12 +197,12 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
-  
+
   PreAuthenticationFn:
     Type: AWS::Serverless::Function
     Properties:
       Handler: app.handler
-      Runtime: nodejs22.x 
+      Runtime: nodejs22.x
       CodeUri: ./pre-authentication
       MemorySize: 128
       Timeout: 30
@@ -210,14 +210,56 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-    Metadata: 
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
         Target: "es2020"
         Sourcemap: true
-        EntryPoints: 
-        - app.ts
+        EntryPoints:
+          - app.ts
+
+  UserPoolIdentityProvider:
+    Type: "AWS::Cognito::UserPoolIdentityProvider"
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ProviderName: "onelogin"
+      ProviderType: "OIDC"
+      ProviderDetails:
+        attributes_request_method: "GET"
+        attributes_url: !Join
+          - ""
+          - - "https://oidc."
+            - !Ref Environment
+            - ".account.gov.uk/userinfo"
+        attributes_url_add_attributes: false
+        authorize_scopes: "openid email"
+        authorize_url: !Join
+          - ""
+          - - "https://oidc."
+            - !Ref Environment
+            - ".account.gov.uk/authorize"
+        client_id: "123"
+        jwks_uri: !Join
+          - ""
+          - - "https://oidc."
+            - !Ref Environment
+            - ".account.gov.uk/.well-known/jwks.json"
+        oidc_issuer: !Join
+          - ""
+          - - "https://oidc."
+            - !Ref Environment
+            - ".account.gov.uk"
+        token_url: !Join
+          - ""
+          - - "https://oidc."
+            - !Ref Environment
+            - ".account.gov.uk/token"
+      IdpIdentifiers:
+        - onelogin
+      AttributeMapping:
+        email: email
+        username: sub
 
 Outputs:
   ApiGateway:
