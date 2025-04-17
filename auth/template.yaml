@@ -112,6 +112,7 @@ Resources:
       #   - aws.cognito.signin.user.admin
       SupportedIdentityProviders:
         - COGNITO
+      GenerateSecret: true  # pragma: allowlist secret  
       CallbackURLs:
         - !Join
           - ""
