@@ -105,11 +105,6 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
-      # AllowedOAuthFlowsUserPoolClient: true
-      # AllowedOAuthFlows:
-      #   - code
-      # AllowedOAuthScopes:
-      #   - aws.cognito.signin.user.admin
       SupportedIdentityProviders:
         - COGNITO
       GenerateSecret: true  # pragma: allowlist secret  

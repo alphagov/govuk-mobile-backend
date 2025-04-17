@@ -20,5 +20,8 @@
         "test:validate": "sam validate",
         "test": "vitest run",
         "test:functional": "vitest run --include tests/functional/**"
+    },
+    "dependencies": {
+        "cucumber": "^6.0.7"
     }
 }
