@@ -5,5 +5,6 @@ export default defineConfig({
     // Common test configurations
     globals: true,
     environment: 'node',
+    watch: false
   },
 });

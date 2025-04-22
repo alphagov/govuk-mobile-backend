@@ -16,5 +16,6 @@ export default defineConfig({
             provider: 'istanbul', // or 'v8'
             reporter: ['text', 'json', 'html'],
         },
+        watch: false
     }
 })
