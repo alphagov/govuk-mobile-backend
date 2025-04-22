@@ -16,7 +16,9 @@
         "yaml-cfn": "^0.3.2"
     },
     "scripts": {
-        "test:validate": "sam validate",
-        "test": "vitest run"
+        "test:acc": "vitest acc",	
+        "test:infra": "vitest infra",
+	"test:unit": "vitest unit",
+        "test:validate": "sam validate"
     }
 }

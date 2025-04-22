@@ -36,14 +36,37 @@
                 ]
             }
         },
+	"test:acc": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:acc",
+                "cwd": "auth"
+            }
+        },
+	"test:infra": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:infra",
+                "cwd": "auth"
+            },
+            "outputs": [
+                "{options.outputFile}"
+            ]
+        },
         "test:unit": {
             "dependsOn": [
                 "install"
             ],
             "executor": "nx:run-commands",
             "options": {
-                "command": "npm run unit",
-                "cwd": "auth/hello-world"
+                "command": "npm run test:unit",
+                "cwd": "auth"
             }
         },
         "test:functional": {

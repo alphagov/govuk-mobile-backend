@@ -27,6 +27,9 @@
     "test:acc": {
       "cache": true
     },
+    "test:infra": {
+       "cache": true
+    },
     "lint": {
       "cache": true
     }
