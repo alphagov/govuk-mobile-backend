@@ -34,7 +34,7 @@ npx nx affected -t test:infrastructure
 * Install pre-commit:
 
 ```bash
-brew install pre-commit && pre-commit install && pre-commit install -tprepare-commit-msg -tcommit-msg
+brew install pre-commit && pre-commit install && pre-commit install
 ```
 
 * If you are experiencing installation issues with brew please try:
@@ -44,6 +44,24 @@ pip install pre-commit
 ```
 
 * Then use the command `pre-commit install` in order to install the hooks and run pre-commit per commit
+
+# Committing work
+
+When wanting to commit changes please first squash your commits
+
+## Simple command line procedure
+Get the current number of commits on your branch
+
+```bash
+git rev-list --count HEAD ^main
+```
+
+Supposing this returns 3 then you have made 3 commits since creating your branch and you want to squash them down into one
+
+```bash
+git rebase -i HEAD~3
+```
+Which will launch an interactive rebase session in the terminal
 
 # CI/CD - Github Actions
 

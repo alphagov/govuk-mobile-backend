@@ -1,12 +1,32 @@
----
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0
-    hooks:
-      - id: check-merge-conflict
-  - repo: git@github.com:Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-  
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  hooks:
+  - id: check-merge-conflict
+  rev: v5.0.0
+- repo: git@github.com:Yelp/detect-secrets
+  hooks:
+  - args:
+    - --baseline
+    - .secrets.baseline
+    id: detect-secrets
+  rev: v1.5.0
+- repo: local
+  hooks:
+  - id: pre-flight-checks
+    name: pre-flight-checks
+    language: script
+    entry: pre-commit.sh
+    pass_filenames: false
+    stages: [pre-commit]
+  - id: linting
+    name: linting
+    language: system
+    entry: npx affected -t lint
+    pass_filenames: false
+    stages: [pre-commit]
+  - id: unit-tests
+    name: unit-tests
+    language: system
+    entry: npx affected -t test:unit
+    pass_filenames: false
+    stages: [pre-commit]
