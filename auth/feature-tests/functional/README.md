@@ -16,7 +16,3 @@ npx nx affected -t test:functional
 ```
 
 * From domain root (`/auth`):
-
-```bash
-npm run test --project infrastructure
-```
