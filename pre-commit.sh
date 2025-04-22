@@ -3,7 +3,7 @@
 globalEmail="git config --global --get user.email"
 signingKey="git config --global --get user.signingkey"
 gpgsigning="git config --global --get commit.gpgsign"
-emaildomain="digital\.cabinet-office\.gov\.uk"
+emaildomain="(digital.cabinet-office.gov.uk|users.noreply.github.com)"
 
 if [[ !"$globalEmail" =~ "$emaildomain" ]];
 then
