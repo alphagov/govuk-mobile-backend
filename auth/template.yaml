@@ -172,32 +172,6 @@ Resources:
         EntryPoints:
           - app.ts
 
-  TestFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: ApiGateway
-            Path: /test
-            Method: GET
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
-        SourceMap: false
-        EntryPoints:
-          - app.ts
-
   PreAuthenticationFn:
     Type: AWS::Serverless::Function
     Properties:

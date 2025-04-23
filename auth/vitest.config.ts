@@ -9,8 +9,8 @@ export default defineConfig({
         ],
         reporters: [
             'default', // To still see output in the console
-            ['json', { outputFile: './report/results.json' }],
-            ['junit', { outputFile: './report/junit.xml' }],
+          ['json', { outputFile: `./${TEST_REPORT_DIR}/results.json` }],
+          ['junit', { outputFile: `./${TEST_REPORT_DIR}/junit.xml` }],
         ],
         coverage: {
             provider: 'istanbul', // or 'v8'
