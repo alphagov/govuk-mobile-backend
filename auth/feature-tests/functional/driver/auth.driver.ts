@@ -17,11 +17,11 @@ export class AuthDriver {
   private authUrl: string;
   private redirectUri: string;
 
-  constructor(clientId: string, authUrl: string) {
+  constructor(clientId: string, authUrl: string, redirectUri: string) {
     this.clientId = clientId;
     this.authUrl = authUrl
     // must be a valid server and redirect uri to allow puppeteer to intercept the request
-    this.redirectUri = "https://d84l1y8p4kdic.cloudfront.net"
+    this.redirectUri = redirectUri
   }
 
   async loginAndGetCode(input: LoginUserInput) {

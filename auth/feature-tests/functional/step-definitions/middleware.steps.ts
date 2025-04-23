@@ -16,7 +16,11 @@ const mappedExamples: {
 }
 
 describeFeature(feature, ({ ScenarioOutline }) => {
-  const authDriver = new AuthDriver(process.env.APP_CLIENT_ID as unknown as string, process.env.AUTH_URL as unknown as string);
+  const authDriver = new AuthDriver(
+    process.env.APP_CLIENT_ID as unknown as string, 
+    process.env.AUTH_URL as unknown as string,
+    process.env.REDIRECT_URI as unknown as string,
+  );
   
   ScenarioOutline(
     `Attestation middleware is ran prior to calls to protected services`,
