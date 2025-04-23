@@ -8,6 +8,6 @@ Feature: App attestation hook
         Then the attestation middleware is invoked
 
         Examples:
-            | user | 
-            | invalid  | 
+            | user  |
+            | valid |
 

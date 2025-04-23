@@ -94,16 +94,7 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
       LambdaConfig:
-        PreAuthentication: !GetAtt PreAuthenticationFn.Arn
         PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
-
-  PreAuthCognitoLambdaInvokePermission:
-    Type: "AWS::Lambda::Permission"
-    Properties:
-      Action: "lambda:InvokeFunction"
-      FunctionName: !GetAtt PreAuthenticationFn.Arn
-      Principal: "cognito-idp.amazonaws.com"
-      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}
 
   WebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
@@ -207,14 +198,14 @@ Resources:
         EntryPoints:
           - app.ts
 
-  PreAuthenticationFn:
+  AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.handler
-      Runtime: nodejs22.x
-      CodeUri: ./pre-authentication
-      MemorySize: 128
-      Timeout: 30
+      CodeUri: proxy/
+      Handler: app.lambdaHandler
+      Environment:
+        Variables:
+          COGNITO_URL: !Sub "https://${CognitoUserPool}.auth.${AWS::Region}.amazoncognito.com"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -270,8 +261,67 @@ Resources:
       AttributeMapping:
         email: email
         username: sub
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  AuthProxyApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: AuthProxyApi
+      ProtocolType: HTTP
+
+  AuthProxyIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt AuthProxyFunction.Arn
+      IntegrationMethod: POST
+      PayloadFormatVersion: '2.0'
+  
+  AuthProxyRouteCatchAll:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      RouteKey: 'ANY /{proxy+}'
+      Target: !Join [ '/', ['integrations', !Ref AuthProxyIntegration] ]
+
+  AuthProxyRouteAuthorize:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      RouteKey: 'GET /oauth2/authorize'
+      Target: !Join [ '/', ['integrations', !Ref AuthProxyIntegration] ]
+
+  AuthProxyRouteToken:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      RouteKey: 'POST /oauth2/token'
+      Target: !Join [ '/', ['integrations', !Ref AuthProxyIntegration] ]
+
+  AuthProxyStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      StageName: !Ref Environment
+      AutoDeploy: true
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AuthProxyFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
 
 Outputs:
   ApiGateway:
     Description: API Gateway endpoint URL Hello World function
     Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
+
+  AuthProxy:
+    Description: Auth Proxy Gateway endpoint URL
+    Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/

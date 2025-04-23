@@ -6,6 +6,14 @@ export default defineWorkspace([
       include: ['feature-tests/functional/**/*.steps.ts'],
       name: 'functional',
       environment: 'node',
+      // allow for puppeteer navigation changes
+      testTimeout: 10000
     }
-  }
+  },
+  {
+    test: {
+      name: 'unit',
+      include: ['**/*.unit.test.ts'],
+    }
+  },
 ])
