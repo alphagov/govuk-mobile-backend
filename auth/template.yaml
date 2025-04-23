@@ -29,6 +29,15 @@ Parameters:
       The ARN of the permissions boundary to apply to any role created by the template
     Default: "none"
 
+Mappings:
+  OneLogin:
+    Environment:
+      build: "staging"
+      dev: "staging"
+      staging: "staging"
+      integration: "integration"
+      production: "production"
+
 Conditions:
   UseCodeSigning:
     Fn::Not:
@@ -230,30 +239,31 @@ Resources:
         attributes_url: !Join
           - ""
           - - "https://oidc."
-            - !Ref Environment
+            - !FindInMap [OneLogin, Environment, !Ref Environment]
             - ".account.gov.uk/userinfo"
         attributes_url_add_attributes: false
         authorize_scopes: "openid email"
         authorize_url: !Join
           - ""
           - - "https://oidc."
-            - !Ref Environment
+            - !FindInMap [OneLogin, Environment, !Ref Environment]
             - ".account.gov.uk/authorize"
-        client_id: "123"
+        client_id: "{{resolve:ssm:/onelogin/client_id}}"
+        client_secret: "{{resolve:secretsmanager:/onelogin/client_secret:SecretString}}" # pragma: allowlist secret
         jwks_uri: !Join
           - ""
           - - "https://oidc."
-            - !Ref Environment
+            - !FindInMap [OneLogin, Environment, !Ref Environment]
             - ".account.gov.uk/.well-known/jwks.json"
         oidc_issuer: !Join
           - ""
           - - "https://oidc."
-            - !Ref Environment
+            - !FindInMap [OneLogin, Environment, !Ref Environment]
             - ".account.gov.uk"
         token_url: !Join
           - ""
           - - "https://oidc."
-            - !Ref Environment
+            - !FindInMap [OneLogin, Environment, !Ref Environment]
             - ".account.gov.uk/token"
       IdpIdentifiers:
         - onelogin
