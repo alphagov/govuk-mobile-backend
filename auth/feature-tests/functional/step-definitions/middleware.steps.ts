@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { loadFeature, describeFeature } from "@amiceli/vitest-cucumber";
 import { AuthDriver } from "../driver/auth.driver";
 import { AuthFixtures } from "../fixtures/auth.fixtures";
@@ -10,12 +11,12 @@ const feature = await loadFeature(
 const mappedExamples: {
   [key: string]: any;
 } = {
+  'valid': AuthFixtures.valid,
   'invalid': AuthFixtures.invalid,
 }
 
 describeFeature(feature, ({ ScenarioOutline }) => {
-  const defaultRegion = 'eu-west-2'
-  const authDriver = new AuthDriver(process.env.APP_CLIENT_ID as unknown as string, defaultRegion);
+  const authDriver = new AuthDriver(process.env.APP_CLIENT_ID as unknown as string, process.env.AUTH_URL as unknown as string);
   
   ScenarioOutline(
     `Attestation middleware is ran prior to calls to protected services`,
@@ -25,14 +26,15 @@ describeFeature(feature, ({ ScenarioOutline }) => {
       });
 
       When(`the request is made to authenticate`, async () => {
-        await authDriver.initiateAuth(context.user)
-          .catch((error) => {
-            context.error = error
-          })
+        context.code = await authDriver.loginAndGetCode(context.user)
       })
 
-      Then(`the attestation middleware is invoked`, () => {
-        expect(context.error).toEqual(new Error('Failed to initiate authentication: PreAuthentication failed with error No attestation token.'))
+      Then(`the attestation middleware is invoked`, async () => {
+        const { access_token, id_token, refresh_token } = await authDriver.exchangeCodeForTokens(context.code)
+
+        expect(access_token).toBeDefined()
+        expect(id_token).toBeDefined()
+        expect(refresh_token).toBeDefined()
       });
     }
   );
