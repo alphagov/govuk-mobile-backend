@@ -1,7 +1,5 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
 import https from 'https';
-import { MissingAttestationTokenError } from './errors';
-import { FEATURE_FLAGS } from './feature-flags';
 import querystring from 'querystring';
 
 const ALLOWED_ENDPOINTS = [
@@ -9,74 +7,91 @@ const ALLOWED_ENDPOINTS = [
   "token",
   '/.well-known/openid-configuration'
 ]
-const cognitoUrl = process.env.COGNITO_URL?.toLowerCase().replace('_', '') as string;
 
-/**
- * Validates:
- * - attestation check is only made on authorize endpoint - token exchange handled by cognito and third-party
- * - attestation token is present
- * 
- * @param {APIGatewayProxyEventHeaders} headers 
- * @returns 
- * @throws {MissingAttestationTokenError} 
- */
-const validateAttestationHeaderOrThrow = (headers: APIGatewayProxyEventHeaders, path: string): void => {
-  if (!FEATURE_FLAGS.ATTESTATION) return
+const rejectUnauthorisedEndpoints = (path: string) => {
+  const isAllowedEndpoint = !ALLOWED_ENDPOINTS.includes(path)
 
-  const attestationToken = headers['x-attestation'] || headers['X-Attestation'];
-  const isAuthorizeEndpoint = path.includes('/authorize');
-
-  if (isAuthorizeEndpoint && !attestationToken) {
-    throw new MissingAttestationTokenError('No attestation token header provided.')
+  if (!isAllowedEndpoint) {
+    throw new Error('Endpoint is not whitelisted.')
   }
+}
+
+// cognito expects consistent casing for header names e.g. x-amz-target
+// host must be removed to avoid ssl hostname unrecognised errors
+const sanitizeHeaders = (headers: APIGatewayProxyEventHeaders) => {
+  return Object.entries(headers)
+    .filter(([key]) => key.toLowerCase() !== 'host')
+    .reduce<Record<string, string>>((acc, [key, value]) => {
+      acc[key.toLowerCase()] = value || '';
+      return acc;
+    }, {});
+}
+
+const transformCognitoUrl = (url: string | undefined) => {
+  return url?.toLowerCase().replace('_', '')
 }
 
 export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   try {
-    const { headers, body, requestContext, routeKey, rawQueryString } = event;
-    const query = rawQueryString
+    const cognitoUrl = transformCognitoUrl(process.env.COGNITO_URL);
 
-    console.log('Calling auth proxy', event)
+    if (!cognitoUrl) {
+      throw new Error('Missing Cognito URL parameter')
+    }
+
+    const { headers, body, routeKey, rawQueryString } = event;
+
+    console.log('Calling auth proxy')
 
     const [method, path] = routeKey.split(' ')
 
-    const isAllowedEndpoint = !ALLOWED_ENDPOINTS.includes(requestContext.http.path)
-
-    if (!isAllowedEndpoint) {
-      console.log('Invalid path')
-      return {
-        statusCode: 400,
-        body: 'Invalid path',
-      };
-    }
-
+    // rejectUnauthorisedEndpoints(requestContext.http.path)
     // validateAttestationHeaderOrThrow(headers, requestContext.http.path)
 
-    const sanitizedHeaders: any = {}
-    for (const [k, v] of Object.entries(headers)) {
-      const key = k.toLowerCase();
-      if ([
-        'host',
-      ].includes(key)) continue; // Remove potentially problematic headers
-      sanitizedHeaders[key] = v || '';
-    }
+    const targetPath = path + (rawQueryString ? `?${rawQueryString}` : '');
 
-    const targetPath = path + (query ? `?${query}` : '');
-
-    return await proxyWithHttps(method, path, event, body as string, sanitizedHeaders, targetPath, new URL(cognitoUrl))
+    return await proxyWithHttps({
+      method,
+      path,
+      isBase64Encoded: event.isBase64Encoded,
+      body,
+      sanitizedHeaders: sanitizeHeaders(headers),
+      targetPath,
+      // can throw invalid URL
+      parsedUrl: new URL(cognitoUrl)
+    })
   } catch (error) {
     console.error('Catchall error:', JSON.stringify(error));
     return {
       statusCode: 500,
-      body: 'Server error',
+      headers: { 'Content-Type': 'application/x-amz-json-1.1' },
+      body: JSON.stringify({ message: 'Internal server error' })
     };
   }
 };
 
-const proxyWithHttps = async (method: string, path: string, event: APIGatewayProxyEventV2, body: string, sanitizedHeaders: any, targetPath: string, parsedUrl: URL) => {
+interface ProxyInput {
+  method: string
+  path: string
+  isBase64Encoded: boolean
+  body: string | undefined
+  sanitizedHeaders: any
+  targetPath: string
+  parsedUrl: URL
+}
+
+const proxyWithHttps = async ({
+  method,
+  path,
+  parsedUrl,
+  isBase64Encoded,
+  body,
+  sanitizedHeaders,
+  targetPath,
+}: ProxyInput) => {
   if (method === "POST" && path.includes('/token')) {
     // In API Gateway Proxy v2, if the request body is base64-encoded (e.g. from a frontend form or custom client), you need to handle decoding it manually.
-    const rawBody = event.isBase64Encoded ? Buffer.from(body!, 'base64').toString('utf-8') : body!;
+    const rawBody = isBase64Encoded ? Buffer.from(body!, 'base64').toString('utf-8') : body!;
     const parsedBody = querystring.parse(rawBody);
     const encodedBody = querystring.stringify(parsedBody);
 
@@ -111,25 +126,25 @@ async function proxy(hostname: string, path: string, body: any, headers: any, me
           resolve({
             statusCode: res.statusCode || 500,
             headers: respHeaders,
-            body: data 
+            body: data
           });
         });
       }
     );
+
     req.on('error', (e) => {
       console.error("Error proxying request to Cognito:", e);
       resolve({
         statusCode: 500,
         headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-        body: JSON.stringify({ message: 'internal error' })
+        body: JSON.stringify({ message: 'Internal server error' })
       });
     });
-    
+
     if (method === 'POST' && body) {
       req.write(body);
     }
 
-    console.log('Closing request')
     req.end();
   });
 }

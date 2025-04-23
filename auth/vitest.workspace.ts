@@ -9,5 +9,11 @@ export default defineWorkspace([
       // allow for puppeteer navigation changes
       testTimeout: 10000
     }
-  }
+  },
+  {
+    test: {
+      name: 'unit',
+      include: ['**/*.unit.test.ts'],
+    }
+  },
 ])

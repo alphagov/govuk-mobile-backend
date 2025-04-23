@@ -194,6 +194,9 @@ Resources:
     Properties:
       CodeUri: proxy/
       Handler: app.lambdaHandler
+      Environment:
+        Variables:
+          COGNITO_URL: !Sub "https://${CognitoUserPool}.auth.${AWS::Region}.amazoncognito.com"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment

@@ -7,11 +7,10 @@
   "author": "SAM CLI",
   "license": "MIT",
   "scripts": {
-    "unit": "vitest run",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
     "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify",
-    "test": "npm run compile && npm run unit"
+    "test:unit": "vitest run tests/unit"
   },
   "dependencies": {
     "esbuild": "^0.14.14"
