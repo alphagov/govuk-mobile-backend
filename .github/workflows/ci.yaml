@@ -27,7 +27,7 @@ jobs:
           use-installer: true
       
       - name: SAM validate
-        run: sam validate --lint
+        run: cd ./auth && sam validate --lint
 
       - uses: actions/setup-node@v3
         with:
