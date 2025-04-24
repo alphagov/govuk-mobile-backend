@@ -261,10 +261,6 @@ Resources:
       AttributeMapping:
         email: email
         username: sub
-        Target: es2020
-        SourceMap: false
-        EntryPoints:
-          - app.ts
 
   AuthProxyApi:
     Type: AWS::ApiGatewayV2::Api
