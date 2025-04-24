@@ -1,7 +1,12 @@
 
 import { APIGatewayProxyEventHeaders } from 'aws-lambda';
 import { MissingAttestationTokenError } from './errors';
-import { FEATURE_FLAGS } from './feature-flags';
+import { initializeApp, applicationDefault } from 'firebase-admin/app';
+import { getAppCheck } from "firebase-admin/app-check";
+
+initializeApp({
+  credential: applicationDefault(),
+});
 
 /**
  * Validates:
@@ -12,13 +17,16 @@ import { FEATURE_FLAGS } from './feature-flags';
  * @returns 
  * @throws {MissingAttestationTokenError} 
  */
-const validateAttestationHeaderOrThrow = (headers: APIGatewayProxyEventHeaders, path: string): void => {
-  if (!FEATURE_FLAGS.ATTESTATION) return
+export const validateAttestationHeaderOrThrow = async (headers: APIGatewayProxyEventHeaders, path: string): Promise<void> => {
 
-  const attestationToken = headers['x-attestation'] || headers['X-Attestation'];
-  const isAuthorizeEndpoint = path.includes('/authorize');
+  const attestationToken = headers['attestation-token'] || headers['Attestation-Token'];
+  const isTokenEndpoint = path.includes('/token');
 
-  if (isAuthorizeEndpoint && !attestationToken) {
+  if(!isTokenEndpoint) return
+
+  if (!attestationToken) {
     throw new MissingAttestationTokenError('No attestation token header provided.')
-  }
+  } 
+
+  await getAppCheck().verifyToken(attestationToken)
 }
