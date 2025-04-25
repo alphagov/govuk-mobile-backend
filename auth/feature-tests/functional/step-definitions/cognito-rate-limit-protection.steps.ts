@@ -101,7 +101,24 @@ const checkRateLimitLogsInCloudWatch = async (): Promise<boolean> => {
     filterPattern: '"RateLimitRule"',
   });
 
-  const response = await client.send(command);
+  let response;
+  let attempts = 0;
+  const maxAttempts = 10;
+  const backoffDelay = 5000;
+
+  do {
+    response = await client.send(command);
+    if (response.events) {
+      break;
+    }
+    
+    attempts++;
+
+    if (attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+    }
+  } while (attempts < maxAttempts);
+
   const events = response.events || [];
   return events.length > 0;
 };
