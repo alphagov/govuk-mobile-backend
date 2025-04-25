@@ -1,0 +1,17 @@
+FROM amazonlinux:latest AS build
+
+ARG NODE_VERSION=20
+
+RUN yum -y update && \
+    yum install -y awscli tar gzip
+
+SHELL ["/bin/bash", "-c"]
+RUN touch ~/.bashrc && chmod +x ~/.bashrc
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
+RUN . ~/.nvm/nvm.sh && source ~/.bashrc && nvm install $NODE_VERSION
+RUN which node
+RUN . ~/.nvm/nvm.sh && source ~/.bashrc && /usr/bin/node --version
+
+FROM build
+COPY run-tests.sh ./
+ENTRYPOINT ["/run-tests.sh"]
