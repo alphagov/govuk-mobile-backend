@@ -88,6 +88,49 @@ Resources:
         PreAuthentication: !GetAtt PreAuthenticationFn.Arn
         PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
 
+  CognitoUserPoolLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Statement:
+        - Sid: audit-policy
+          DataIdentifier:
+            - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+          Operation:
+            Audit:
+              FindingsDestination: {}
+        - Sid: redact-policy
+          DataIdentifier: 
+            - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+          Operation:
+            Deidentify:
+              MaskConfig: {}
+      FieldIndexPolicies:
+        - Fields:
+            - RequestId
+      #KmsKeyId: String
+      LogGroupClass: STANDARD
+      LogGroupName: CognitoUserPoolLogGroup
+      RetentionInDays: 30
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+    
+  CognitoUserPoolLogDeliveryConfiguration:
+    Type: AWS::Cognito::LogDeliveryConfiguration
+    Properties:
+      LogConfigurations: 
+        - CloudWatchLogsConfiguration:
+            LogGroupArn: !GetAtt CognitoUserPoolLogGroup.Arn
+      UserPoolId: !Ref CognitoUserPool
+
   PreAuthCognitoLambdaInvokePermission:
     Type: "AWS::Lambda::Permission"
     Properties:
@@ -132,27 +175,27 @@ Resources:
       ResourceArn: !GetAtt CognitoUserPool.Arn
       WebACLArn: !GetAtt WebApplicationFirewall.Arn
 
-  ApiGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "api-gateway"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      StageName: !Ref Environment
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
+  # ApiGateway:
+  #   Type: AWS::Serverless::Api
+  #   Properties:
+  #     Name: !Join
+  #       - "-"
+  #       - - !Ref AWS::StackName
+  #         - "api-gateway"
+  #         - Fn::Select:
+  #             - 4
+  #             - Fn::Split:
+  #                 - "-"
+  #                 - Fn::Select:
+  #                     - 2
+  #                     - Fn::Split:
+  #                         - "/"
+  #                         - Ref: AWS::StackId
+  #     StageName: !Ref Environment
+  #     Tags:
+  #       Product: GOV.UK
+  #       Environment: !Ref Environment
+  #       System: Authentication
 
   PostAuthenticationFunction:
     Type: AWS::Serverless::Function
@@ -235,7 +278,7 @@ Resources:
         email: email
         username: sub
 
-Outputs:
-  ApiGateway:
-    Description: API Gateway endpoint URL Hello World function
-    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
+# Outputs:
+#   ApiGateway:
+#     Description: API Gateway endpoint URL Hello World function
+#     Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/

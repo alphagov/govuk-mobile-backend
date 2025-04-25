@@ -5,6 +5,7 @@
     "private": true,
     "devDependencies": {
         "@amiceli/vitest-cucumber": "^4.7.0",
+        "@aws-sdk/client-cloudwatch-logs": "^3.787.0",
         "@aws-sdk/client-cognito-identity-provider": "^3.787.0",
         "@types/js-yaml": "^4.0.9",
         "@types/node": "^22.14.0",
@@ -16,9 +17,10 @@
         "yaml-cfn": "^0.3.2"
     },
     "scripts": {
-        "test:acc": "vitest acc",	
+        "test:acc": "vitest acc",
         "test:infra": "vitest infra",
-	"test:unit": "vitest unit",
+        "test:int": "vitest int",
+        "test:unit": "vitest unit",
         "test:validate": "sam validate"
     }
 }
