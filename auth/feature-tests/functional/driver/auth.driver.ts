@@ -2,14 +2,16 @@ import querystring from "querystring";
 import puppeteer from "puppeteer"
 
 export type LoginUserInput = {
-    username: string;
-    password: string;
+  username: string;
+  password: string;
 }
 
 export type TokenExchangeResponse = {
-  access_token: string;
-  id_token: string;
-  refresh_token: string;
+  access_token?: string;
+  id_token?: string;
+  refresh_token?: string;
+  status: number;
+  statusText?: string;
 }
 
 export class AuthDriver {
@@ -27,12 +29,12 @@ export class AuthDriver {
   async loginAndGetCode(input: LoginUserInput) {
     // Use puppeteer or simulate GET to /authorize
     const authorizeUrl = `${this.authUrl}/oauth2/authorize?` + querystring.stringify({
-        response_type: 'code',
-        client_id: this.clientId,
-        redirect_uri: this.redirectUri,
-        scope: 'email openid',
-        state: 'xyz123' // (could be random)
-      });
+      response_type: 'code',
+      client_id: this.clientId,
+      redirect_uri: this.redirectUri,
+      scope: 'email openid',
+      state: 'xyz123' // (could be random)
+    });
 
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
@@ -71,10 +73,15 @@ export class AuthDriver {
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Token exchange failed: ${response.status} ${text}`);
+      return {
+        status: response.status,
+        statusText: await response.text()
+      }
     }
 
-    return response.json();
+    return {
+      ...response.json(),
+      status: response.status
+    };
   }
 }
