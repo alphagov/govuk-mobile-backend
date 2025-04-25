@@ -4,7 +4,3 @@ Feature: Cognito User Pool rate limit protection
         When Too many requests are sent to the endpoint
         Then There should be a 429 Too Many Requests response and this should be logged in CloudWatch
 
-
-
-
-
