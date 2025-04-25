@@ -14,10 +14,10 @@ const feature = await loadFeature(
 const NUM_REQUESTS = 45000;
 const DELAY_MS = 1;
 const REGION = "eu-west-2";
+const responses: number[] = [];
 
 let COGNITO_IDP_URL: string;
 let APP_CLIENT_ID: string;
-let responses: number[] = [];
 let WAF_LOG_GROUP_NAME: string;
 
 describeFeature(feature, ({ Scenario }) => {
