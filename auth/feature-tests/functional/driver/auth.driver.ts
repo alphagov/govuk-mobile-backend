@@ -26,8 +26,7 @@ export class AuthDriver {
 
   async loginAndGetCode(input: LoginUserInput) {
     // Use puppeteer or simulate GET to /authorize
-    try {
-      const authorizeUrl = `${this.authUrl}/oauth2/authorize?` + querystring.stringify({
+    const authorizeUrl = `${this.authUrl}/oauth2/authorize?` + querystring.stringify({
         response_type: 'code',
         client_id: this.clientId,
         redirect_uri: this.redirectUri,
@@ -35,56 +34,26 @@ export class AuthDriver {
         state: 'xyz123' // (could be random)
       });
 
-      const browser = await puppeteer.launch({ headless: true });
-      const page = await browser.newPage();
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
 
-      await page.goto(authorizeUrl);
+    await page.goto(authorizeUrl);
 
-      await page.type('input[name="username"]', input.username);
-      await page.type('input[name="password"]', input.password);
-      await page.click('input[name="signInSubmitButton"]');
+    await page.type('input[name="username"]', input.username);
+    await page.type('input[name="password"]', input.password);
+    await page.click('input[name="signInSubmitButton"]');
 
-      await page.waitForNavigation();
+    await page.waitForNavigation();
 
-      const redirectedUrl = page.url();
+    const redirectedUrl = page.url();
 
-      const url = new URL(redirectedUrl);
-      const code = url.searchParams.get('code');
+    const url = new URL(redirectedUrl);
+    const code = url.searchParams.get('code');
 
-      if (!code) throw new Error('No auth code found in redirect URL');
-      await browser.close();
+    if (!code) throw new Error('No auth code found in redirect URL');
+    await browser.close();
 
-      return code;
-    }catch (error) {
-      console.log('Error is - ' + error)
-    }
-    //     response_type: 'code',
-    //     client_id: this.clientId,
-    //     redirect_uri: this.redirectUri,
-    //     scope: 'email openid',
-    //     state: 'xyz123' // (could be random)
-    //   });
-    //
-    // const browser = await puppeteer.launch({ headless: false });
-    // const page = await browser.newPage();
-    //
-    // await page.goto(authorizeUrl);
-    //
-    // await page.type('input[name="username"]', input.username);
-    // await page.type('input[name="password"]', input.password);
-    // await page.click('input[name="signInSubmitButton"]');
-    //
-    // await page.waitForNavigation();
-    //
-    // const redirectedUrl = page.url();
-    //
-    // const url = new URL(redirectedUrl);
-    // const code = url.searchParams.get('code');
-    //
-    // if (!code) throw new Error('No auth code found in redirect URL');
-    // await browser.close();
-    //
-    // return code;
+    return code;
   }
 
   async exchangeCodeForTokens(code: string): Promise<TokenExchangeResponse> {
@@ -106,6 +75,6 @@ export class AuthDriver {
       throw new Error(`Token exchange failed: ${response.status} ${text}`);
     }
 
-    return response.json(); 
+    return response.json();
   }
 }
