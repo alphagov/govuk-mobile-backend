@@ -31,6 +31,14 @@ const transformCognitoUrl = (url: string | undefined) => {
   return url?.toLowerCase().replace('_', '')
 }
 
+// removes stage i.e. dev/test/prod from the path to allow 
+const stripStageFromPath = (stage: string, path: string): string => {
+  if (path.startsWith(`/${stage}`)) {
+    return path.slice(stage.length + 1);
+  }
+  return path
+}
+
 export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   try {
     const cognitoUrl = transformCognitoUrl(process.env.COGNITO_URL);
@@ -39,20 +47,22 @@ export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIG
       throw new Error('Missing Cognito URL parameter')
     }
 
-    const { headers, body, routeKey, rawQueryString } = event;
+    const { headers, body, rawQueryString, requestContext } = event;
 
     console.log('Calling auth proxy')
+    const { stage } = requestContext;
+    const { method, path } = requestContext.http;
 
-    const [method, path] = routeKey.split(' ')
+    const formattedPath = stripStageFromPath(stage, path);
 
     // rejectUnauthorisedEndpoints(requestContext.http.path)
     // validateAttestationHeaderOrThrow(headers, requestContext.http.path)
 
-    const targetPath = path + (rawQueryString ? `?${rawQueryString}` : '');
+    const targetPath = formattedPath + (rawQueryString ? `?${rawQueryString}` : '');
 
     return await proxyWithHttps({
       method,
-      path,
+      path: formattedPath,
       isBase64Encoded: event.isBase64Encoded,
       body,
       sanitizedHeaders: sanitizeHeaders(headers),
