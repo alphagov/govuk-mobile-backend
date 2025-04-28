@@ -1,4 +1,4 @@
-import { defineWorkspace } from 'vitest/config';
+import { defineWorkspace } from "vitest/config";
 
 export default defineWorkspace([
   {
@@ -7,8 +7,14 @@ export default defineWorkspace([
       name: 'functional',
       environment: 'node',
       // allow for puppeteer navigation changes
-      testTimeout: 10000
+      testTimeout: 120000
     }
-  }
+  },
+  {
+    test: {
+      name: "unit",
+      include: ["**/*.unit.test.ts"],
+    },
+  },
 ]);
 

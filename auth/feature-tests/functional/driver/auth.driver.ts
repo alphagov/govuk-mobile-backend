@@ -6,7 +6,7 @@ export type LoginUserInput = {
     password: string;
 }
 
-type TokenExchangeResponse = {
+export type TokenExchangeResponse = {
   access_token: string;
   id_token: string;
   refresh_token: string;
@@ -36,17 +36,17 @@ export class AuthDriver {
 
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
-  
+
     await page.goto(authorizeUrl);
 
     await page.type('input[name="username"]', input.username);
     await page.type('input[name="password"]', input.password);
     await page.click('input[name="signInSubmitButton"]');
-  
+
     await page.waitForNavigation();
-  
-    const redirectedUrl = page.url();  
-  
+
+    const redirectedUrl = page.url();
+
     const url = new URL(redirectedUrl);
     const code = url.searchParams.get('code');
 
@@ -75,6 +75,6 @@ export class AuthDriver {
       throw new Error(`Token exchange failed: ${response.status} ${text}`);
     }
 
-    return response.json(); 
+    return response.json();
   }
 }

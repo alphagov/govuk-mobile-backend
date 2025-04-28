@@ -5,7 +5,7 @@
     "private": true,
     "devDependencies": {
         "@amiceli/vitest-cucumber": "^4.7.0",
-        "@aws-sdk/client-cloudwatch-logs": "^3.787.0",
+        "@aws-sdk/client-cloudwatch-logs": "^3.796.0",
         "@aws-sdk/client-cognito-identity-provider": "^3.787.0",
         "@types/js-yaml": "^4.0.9",
         "@types/node": "^22.14.0",
