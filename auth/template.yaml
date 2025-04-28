@@ -96,57 +96,6 @@ Resources:
       LambdaConfig:
         PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
 
-  CognitoUserPoolLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      DataProtectionPolicy:
-        Name: CloudWatchLogs-PersonalInformation-Protection
-        Description: Protect basic types of sensitive data
-        Version: '2021-06-01'
-        Statement:
-        - Sid: audit-policy
-          DataIdentifier:
-            - arn:aws:dataprotection::aws:data-identifier/EmailAddress
-          Operation:
-            Audit:
-              FindingsDestination: {}
-        - Sid: redact-policy
-          DataIdentifier: 
-            - arn:aws:dataprotection::aws:data-identifier/EmailAddress
-          Operation:
-            Deidentify:
-              MaskConfig: {}
-      FieldIndexPolicies:
-        - Fields:
-            - RequestId
-      #KmsKeyId: String
-      LogGroupClass: STANDARD
-      LogGroupName: CognitoUserPoolLogGroup
-      RetentionInDays: 30
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-    
-  CognitoUserPoolLogDeliveryConfiguration:
-    Type: AWS::Cognito::LogDeliveryConfiguration
-    Properties:
-      LogConfigurations: 
-        - CloudWatchLogsConfiguration:
-            LogGroupArn: !GetAtt CognitoUserPoolLogGroup.Arn
-      UserPoolId: !Ref CognitoUserPool
-
-  PreAuthCognitoLambdaInvokePermission:
-    Type: "AWS::Lambda::Permission"
-    Properties:
-      Action: "lambda:InvokeFunction"
-      FunctionName: !GetAtt PreAuthenticationFn.Arn
-      Principal: "cognito-idp.amazonaws.com"
-      SourceArn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}
-
   WebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
     Properties:
@@ -200,33 +149,7 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
-
-  PreAuthenticationFn:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: ApiGateway
-            Path: /test
-            Method: GET
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
-        SourceMap: false
-        EntryPoints:
-          - app.ts
-
+          
   AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -291,23 +214,12 @@ Resources:
         email: email
         username: sub
 
-
-Outputs:
   AuthProxyApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
       Name: AuthProxyApi
       ProtocolType: HTTP
 
-  AuthProxyIntegration:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref AuthProxyApi
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt AuthProxyFunction.Arn
-      IntegrationMethod: POST
-      PayloadFormatVersion: '2.0'
-  
   AuthProxyRouteCatchAll:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -344,11 +256,26 @@ Outputs:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
 
-  ApiGateway:
-    Description: API Gateway endpoint URL Hello World function
-    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
+  AuthProxyIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt AuthProxyFunction.Arn
+      IntegrationMethod: POST
+      PayloadFormatVersion: '2.0'
 
+Outputs:
+  
   AuthProxy:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
-
+  WebApplicationFirewallId:
+    Description: The id of the WebApplicationFirewall
+    Value: !Ref WebApplicationFirewall
+  CognitoUserPoolId:
+    Description: The id of the cognito user pool
+    Value: !Ref CognitoUserPool
+  CognitoUserPoolClientId:
+    Description: The id of the cognito user pool
+    Value: !GetAtt CognitoUserPoolClient.ClientId.
