@@ -1,12 +1,19 @@
 import "dotenv/config"
-import { describe, expect, it, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { validateAttestationHeaderOrThrow } from "../../attestation";
-import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getAppCheck } from "firebase-admin/app-check";
 import jwt from "jsonwebtoken";
+import { initializeApp, applicationDefault } from "firebase-admin/app";
 
 describe('attestation', () => {
     const appId = process.env.ATTESTATION_APP_ID as string;
+
+
+    beforeAll(() => {
+        initializeApp({
+            credential: applicationDefault()
+        })
+    })
 
     it('should return void for valid attesation checks', async () => {
         const jwt = await getAppCheck().createToken(appId)

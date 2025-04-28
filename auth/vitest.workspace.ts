@@ -16,4 +16,10 @@ export default defineWorkspace([
       include: ["**/*.unit.test.ts"],
     },
   },
+  {
+    test: {
+      name: "component",
+      include: ["**/*.component.test.ts"],
+    },
+  },
 ]);
