@@ -1,8 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  devplatform-deploy canary-circuit-breaker template version: v0.0.0
-  Canary deployment circuit breaker template managed by dev-platform.
+  GovUK Mobile Backend Authentication template.
 
 Parameters:
   Environment:
@@ -416,7 +415,19 @@ Resources:
   AuthProxyApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: AuthProxyApi
+      Name: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "auth-proxy"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
       ProtocolType: HTTP
 
   AuthProxyIntegration:
@@ -433,20 +444,6 @@ Resources:
     Properties:
       ApiId: !Ref AuthProxyApi
       RouteKey: "ANY /{proxy+}"
-      Target: !Join ["/", ["integrations", !Ref AuthProxyIntegration]]
-
-  AuthProxyRouteAuthorize:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref AuthProxyApi
-      RouteKey: "GET /oauth2/authorize"
-      Target: !Join ["/", ["integrations", !Ref AuthProxyIntegration]]
-
-  AuthProxyRouteToken:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref AuthProxyApi
-      RouteKey: "POST /oauth2/token"
       Target: !Join ["/", ["integrations", !Ref AuthProxyIntegration]]
 
   AuthProxyStage:
