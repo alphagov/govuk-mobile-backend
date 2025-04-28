@@ -348,29 +348,6 @@ Resources:
         EntryPoints:
           - app.ts
 
-  AuthProxyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: proxy/
-      Handler: app.lambdaHandler
-      Role: !GetAtt AuthProxyLambdaExecutionRole.Arn
-      Environment:
-        Variables:
-          COGNITO_URL: !Sub "https://${CognitoUserPool}.auth.${AWS::Region}.amazoncognito.com"
-          FIREBASE_SECRET_ARN: !GetAtt FirebaseServiceAccountSecret.Arn
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - app.ts
-
   UserPoolIdentityProvider:
     Type: "AWS::Cognito::UserPoolIdentityProvider"
     Properties:
@@ -414,6 +391,35 @@ Resources:
         email: email
         username: sub
 
+  AuthProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: proxy/
+      Handler: app.lambdaHandler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:  # <- Custom policy for accessing Secrets Manager
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue # pragma: allowlist secret
+              Resource: !Ref FirebaseServiceAccountSecret
+      Environment:
+        Variables:
+          COGNITO_URL: !Sub "https://${CognitoUserPool}.auth.${AWS::Region}.amazoncognito.com"
+          FIREBASE_SECRET_ARN: !Ref FirebaseServiceAccountSecret
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints:
+          - app.ts
+
   AuthProxyApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -431,6 +437,10 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       ProtocolType: HTTP
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
 
   AuthProxyIntegration:
     Type: AWS::ApiGatewayV2::Integration
@@ -463,31 +473,33 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
 
-  AuthProxyLambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: LambdaSecretsAccessPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: secretsmanager:GetSecretValue # pragma: allowlist secret
-                Resource: !GetAtt FirebaseServiceAccountSecret.Arn
-
   FirebaseServiceAccountSecret:
     Type: AWS::SecretsManager::Secret
     DeletionPolicy: Retain
+    # If an update triggers a replacement, the old secret is NOT deleted.
+    UpdateReplacePolicy: Retain
     Properties:
-      Name: firebase/serviceAccount
+      Name: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "firebase-secret"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
       Description: "Firebase service account credentials for Lambda."
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
 Outputs:
   ApiGateway:

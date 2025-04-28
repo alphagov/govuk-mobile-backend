@@ -1,5 +1,5 @@
 import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
-import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
+import { fromSSO } from "@aws-sdk/credential-providers";
 
 /**
  * Options for finding a log message in CloudWatch with retries.
@@ -26,12 +26,10 @@ interface FindLogMessageInternalOptions extends Omit<FindLogMessageOptions, 'ret
 export class LoggingDriver {
   private client: CloudWatchLogsClient;
 
-  constructor({ region }: { region: string }) {
-    this.client = new CloudWatchLogsClient({ 
-      region,
-      credentials: fromNodeProviderChain({
-        profile: 'dev-admin'
-      })
+  constructor() {
+    this.client = new CloudWatchLogsClient({
+      region: 'eu-west-2',
+      credentials: fromSSO()
     });
   }
 

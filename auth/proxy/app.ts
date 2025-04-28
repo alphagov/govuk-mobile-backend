@@ -1,6 +1,8 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
 import https from 'https';
 import querystring from 'querystring';
+import { validateAttestationHeaderOrThrow } from './attestation';
+import { AttestationTokenExpiredError, InvalidAttestationTokenError, MissingAttestationTokenError } from './errors';
 
 const ALLOWED_ENDPOINTS = [
   "authorize",
@@ -49,14 +51,14 @@ export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIG
 
     const { headers, body, rawQueryString, requestContext } = event;
 
-    console.log('Calling auth proxy')
     const { stage } = requestContext;
     const { method, path } = requestContext.http;
 
     const formattedPath = stripStageFromPath(stage, path);
+    console.log('Calling auth proxy')
 
     // rejectUnauthorisedEndpoints(requestContext.http.path)
-    // validateAttestationHeaderOrThrow(headers, requestContext.http.path)
+    await validateAttestationHeaderOrThrow(headers, requestContext.http.path)
 
     const targetPath = formattedPath + (rawQueryString ? `?${rawQueryString}` : '');
 
@@ -71,14 +73,44 @@ export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIG
       parsedUrl: new URL(cognitoUrl)
     })
   } catch (error) {
-    console.error('Catchall error:', JSON.stringify(error));
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-      body: JSON.stringify({ message: 'Internal server error' })
-    };
+    console.error('Catchall error:', error);
+    switch (true) {
+      case error instanceof MissingAttestationTokenError:
+        return generateErrorResponse({
+          statusCode: 400,
+          message: 'Attestation token is missing'
+        });
+      case error instanceof AttestationTokenExpiredError:
+        return generateErrorResponse({
+          statusCode: 401,
+          message: 'Attestation token has expired'
+        });
+      case error instanceof InvalidAttestationTokenError:
+        return generateErrorResponse({
+          statusCode: 401,
+          message: 'Attestation token is invalid'
+        });
+      default:
+        return generateErrorResponse({
+          statusCode: 500,
+          message: 'Internal server error'
+        });
+    }
   }
 };
+
+const generateErrorResponse = ({
+  statusCode,
+  message
+}: {
+  statusCode: number,
+  message: string
+}) => ({
+
+  statusCode,
+  headers: { 'Content-Type': 'application/x-amz-json-1.1' },
+  body: JSON.stringify({ message })
+})
 
 interface ProxyInput {
   method: string

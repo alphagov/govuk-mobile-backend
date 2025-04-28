@@ -58,11 +58,14 @@ export class AuthDriver {
     return code;
   }
 
-  async exchangeCodeForTokens(code: string): Promise<TokenExchangeResponse> {
+  async exchangeCodeForTokens(code: string, attestationHeader?: string): Promise<TokenExchangeResponse> {
     const response = await fetch(`${this.authUrl}/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        ...(attestationHeader ? {
+          'Attestation-Token': attestationHeader
+        }: {})
       },
       body: querystring.stringify({
         grant_type: 'authorization_code',
