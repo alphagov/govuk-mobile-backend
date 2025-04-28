@@ -82,7 +82,16 @@ Once you're happy with the squashed changed, use commitizen to commit:
 cz commit
 ```
 
-Which will launh an interactive commit session in the terminal.
+If you run into issues where cz commit is not updating the secrets detection and showing false results:
+```bash
+pip install detect-secrets
+```
+Update secrets baseline
+``` bash
+detect-secrets scan --baseline .secrets.baseline
+```
+
+Which will launch an interactive commit session in the terminal.
 
 # CI/CD - Github Actions
 

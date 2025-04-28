@@ -167,3 +167,5 @@ samconfig.toml
 report/
 junit.xml
 results.json
+
+.DS_Store
