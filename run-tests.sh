@@ -6,14 +6,13 @@ echo "Running tests in ${TEST_ENVIRONMENT}"
 
 case ${TEST_ENVIRONMENT:=build} in
     build | development)
-	echo "nx affected -t test:unit"
-	nx affected -t test:unit
+	# Unit testing coming in GOVUKAPP-1406
 	;;
     staging)
 	echo "nx affected -t test:acc"
 	nx affected -t test:acc
-	echo "nx affected -t test:infra"
-	nx affected -t test:infra
+	# Infra testing coming in GOVUKAPP-1457
+	# Integration testing coming in GOVUKAPP-1511
 	;;
     *)
 	echo "Unknown environment ${$TEST_ENVIRONMENT}"

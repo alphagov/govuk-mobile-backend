@@ -5,14 +5,16 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      TEST_ENVIRONMENT: build
+      TEST_ENVIRONMENT: staging
       AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
       AWS_SESSION_TOKEN: $AWS_SESSION_TOKEN
       AWS_SECURITY_TOKEN: $AWS_SECURITY_TOKEN
       AWS_DEFAULT_REGION: "eu-west-2"
       TEST_REPORT_DIR: reports/
-      TEST_REPORT_ABSOLUTE_DIR: absolute_reports/ 
+      TEST_REPORT_ABSOLUTE_DIR: absolute_reports/
+      CFN_UserPoolId: <your-value-goes-here>
+      CFN_AppUserPoolClientId: <your-value-goes-here>                        
     volumes:
       - ./:/app
       - ./reports:/reports:rw
