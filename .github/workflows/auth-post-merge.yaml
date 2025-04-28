@@ -45,7 +45,8 @@ jobs:
           aws-region: eu-west-2
 
       - name: SAM validate
-        run: cd ./auth && sam validate
+        working-directory: ./auth
+        run: sam validate --lint
 
       - name: SAM build and test
         run: sam build
