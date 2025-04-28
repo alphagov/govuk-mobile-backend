@@ -55,7 +55,7 @@ describeFeature(feature, ({ ScenarioOutline }) => {
         expect(refresh_token).toBeDefined();
 
       })
-      And(`the token should be correct validity period`, () => {
+      And(`the tokens should have correct validity period`, () => {
         const accessTokenResponse = jwtDecoderObj.decode(access_token);
         const accessTokenValidityPeriod = calculateDuration(accessTokenResponse);
         const tolerance = 5; // Allowable difference in seconds
@@ -69,7 +69,7 @@ describeFeature(feature, ({ ScenarioOutline }) => {
         
       });
 
-      And(`id_token should be have correct email address`, () => {
+      And(`id_token should have correct email address`, () => {
         const response = jwtDecoderObj.decode(id_token);
         if (!response) {
           throw new Error("Failed to decode id_token");
