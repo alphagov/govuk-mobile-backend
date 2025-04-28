@@ -13,6 +13,7 @@
     "test:unit": "vitest run tests/unit"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.797.0",
     "esbuild": "^0.14.14",
     "firebase-admin": "^13.3.0"
   },

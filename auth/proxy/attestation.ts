@@ -1,12 +1,25 @@
 
 import { APIGatewayProxyEventHeaders } from 'aws-lambda';
 import { MissingAttestationTokenError } from './errors';
-import { initializeApp, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, cert, App } from 'firebase-admin/app';
 import { getAppCheck } from "firebase-admin/app-check";
+import { getFirebaseCredentials } from './getFirebaseCredentials';
 
-initializeApp({
-  credential: applicationDefault(),
-});
+let cachedApp: App | null = null;
+
+async function initializeFirebase() {
+  const serviceAccount = await getFirebaseCredentials();
+
+  if(!serviceAccount) {
+    throw new Error('No firebase service account loaded')
+  }
+
+  if (!cachedApp) {
+    cachedApp = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  }
+}
 
 /**
  * Validates:
@@ -18,6 +31,7 @@ initializeApp({
  * @throws {MissingAttestationTokenError} 
  */
 export const validateAttestationHeaderOrThrow = async (headers: APIGatewayProxyEventHeaders, path: string): Promise<void> => {
+  await initializeFirebase()
 
   const attestationToken = headers['attestation-token'] || headers['Attestation-Token'];
   const isTokenEndpoint = path.includes('/token');
@@ -30,3 +44,4 @@ export const validateAttestationHeaderOrThrow = async (headers: APIGatewayProxyE
 
   await getAppCheck().verifyToken(attestationToken)
 }
+

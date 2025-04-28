@@ -353,9 +353,11 @@ Resources:
     Properties:
       CodeUri: proxy/
       Handler: app.lambdaHandler
+      Role: !GetAtt AuthProxyLambdaExecutionRole.Arn
       Environment:
         Variables:
           COGNITO_URL: !Sub "https://${CognitoUserPool}.auth.${AWS::Region}.amazoncognito.com"
+          FIREBASE_SECRET_ARN: !GetAtt FirebaseServiceAccountSecret.Arn
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -460,6 +462,32 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
+
+  AuthProxyLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaSecretsAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !GetAtt FirebaseServiceAccountSecret.Arn
+
+  FirebaseServiceAccountSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    Properties:
+      Name: firebase/serviceAccount
+      Description: "Firebase service account credentials for Lambda."
 
 Outputs:
   ApiGateway:
