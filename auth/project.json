@@ -36,13 +36,47 @@
                 ]
             }
         },
+	"samlint": {
+	    "cache": true,
+            "executor": "nx:run-commands",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "command": "sam validate --lint",
+		"cwd": "auth/"
+            }
+        },
+	"test:acc": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:acc",
+                "cwd": "auth"
+            }
+        },
+	"test:infra": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:infra",
+                "cwd": "auth"
+            },
+            "outputs": [
+                "{options.outputFile}"
+            ]
+        },
         "test:unit": {
             "dependsOn": [
                 "install"
             ],
             "executor": "nx:run-commands",
             "options": {
-                "command": "npm run test --project unit",
+                "command": "npm run test:unit",
                 "cwd": "auth"
             }
         },

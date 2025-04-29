@@ -24,7 +24,16 @@
     "test:unit": {
       "cache": true
     },
+    "test:acc": {
+      "cache": true
+    },
+    "test:infra": {
+       "cache": true
+    },
     "lint": {
+      "cache": true
+    },
+    "samlint": {
       "cache": true
     }
   },
