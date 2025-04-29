@@ -29,6 +29,7 @@ export class LoggingDriver {
   constructor() {
     this.client = new CloudWatchLogsClient({
       region: 'eu-west-2',
+      // may not be suitable for CI environment but required for local development if running via sso login credentials
       credentials: fromSSO()
     });
   }

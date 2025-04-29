@@ -10,6 +10,10 @@ APP_CLIENT_ID=
 AUTH_URL=
 REDIRECT_URI=
 WAF_LOG_GROUP_NAME=
+
+# Firebase
+GOOGLE_APPLICATION_CREDENTIALS=./service-account.json # location of service-account json
+ATTESTATION_APP_ID=
 ```
 
 - Enter your cognito idp url into `COGNITO_IDP_URL`

@@ -4,6 +4,7 @@ import { AuthDriver } from "../driver/auth.driver";
 import { AuthFixtures } from "../fixtures/auth.fixtures";
 import { LoggingDriver } from '../driver/logging.driver';
 import { expect } from "vitest"
+import { AttestationDriver } from '../driver/attestation.driver';
 
 const feature = await loadFeature(
   "feature-tests/functional/features/attestation.feature"
@@ -24,8 +25,26 @@ const givenAnAppInitiatesLogin = (variables: ScenarioVariables, context: any) =>
   context.user = mappedExamples[variables["user"]]
 }
 
-const whenARequestIsMadeWithAttestationHeader = async (variables: ScenarioVariables, context: any, authDriver: AuthDriver) => {
-  context.user['attestationToken'] = mappedExamples[variables["header"]]['attestationToken']
+const whenARequestIsMadeWithAttestationHeader = async (
+  {
+    variables,
+    context,
+    authDriver,
+    attestationDriver,
+  }: {
+    variables: ScenarioVariables,
+    context: any,
+    authDriver: AuthDriver
+    attestationDriver: AttestationDriver
+  }
+) => {
+  if(variables["header"] === "valid") {
+    // generate fresh attestation token for valid use-cases
+    const { token } = await attestationDriver.getToken(process.env.ATTESTATION_APP_ID!)
+    context.user['attestationToken'] = token
+  } else {
+    context.user['attestationToken'] = mappedExamples[variables["header"]]['attestationToken']
+  }
   context.code = await authDriver.loginAndGetCode(context.user)
 }
 
@@ -37,6 +56,7 @@ describeFeature(feature, ({ ScenarioOutline }) => {
   );
 
   const loggingDriver = new LoggingDriver();
+  const attestationDriver = new AttestationDriver();
 
   ScenarioOutline(
     `Attestation middleware is ran prior to calls to protected services`,
@@ -45,7 +65,12 @@ describeFeature(feature, ({ ScenarioOutline }) => {
         () => givenAnAppInitiatesLogin(variables, context));
 
       When(`the request is made to authenticate with <header> attestation header`,
-        async () => whenARequestIsMadeWithAttestationHeader(variables, context, authDriver))
+        async () => whenARequestIsMadeWithAttestationHeader({
+          variables, 
+          context, 
+          authDriver,
+          attestationDriver
+        }))
 
       Then(`the attestation middleware is invoked`, async () => {
         await authDriver.exchangeCodeForTokens(context.code)
@@ -72,7 +97,12 @@ describeFeature(feature, ({ ScenarioOutline }) => {
         () => givenAnAppInitiatesLogin(variables, context));
 
       When(`the request is made to authenticate with <header> attestation header`,
-        async () => whenARequestIsMadeWithAttestationHeader(variables, context, authDriver))
+        async () => whenARequestIsMadeWithAttestationHeader({
+          variables, 
+          context, 
+          authDriver,
+          attestationDriver
+        }))
 
       Then(`the response status is <status>`, async () => {
         const { status } = await authDriver.exchangeCodeForTokens(context.code, context.user.attestationToken)
@@ -88,7 +118,12 @@ describeFeature(feature, ({ ScenarioOutline }) => {
         () => givenAnAppInitiatesLogin(variables, context));
 
       When(`the request is made to authenticate with <header> attestation header`,
-        async () => whenARequestIsMadeWithAttestationHeader(variables, context, authDriver))
+        async () => whenARequestIsMadeWithAttestationHeader({
+          variables, 
+          context, 
+          authDriver,
+          attestationDriver
+        }))
 
       Then(`the unsuccessful request is logged`, async () => {
         await authDriver.exchangeCodeForTokens(context.code)
@@ -107,4 +142,6 @@ describeFeature(feature, ({ ScenarioOutline }) => {
       });
     }
   );
+}, {
+  includeTags: ["debug"]
 });

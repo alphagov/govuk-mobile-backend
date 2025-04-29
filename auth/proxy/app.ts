@@ -49,13 +49,13 @@ export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIG
       throw new Error('Missing Cognito URL parameter')
     }
 
+    console.log('Calling auth proxy')
     const { headers, body, rawQueryString, requestContext } = event;
 
     const { stage } = requestContext;
     const { method, path } = requestContext.http;
 
     const formattedPath = stripStageFromPath(stage, path);
-    console.log('Calling auth proxy')
 
     // rejectUnauthorisedEndpoints(requestContext.http.path)
     await validateAttestationHeaderOrThrow(headers, requestContext.http.path)
@@ -106,7 +106,6 @@ const generateErrorResponse = ({
   statusCode: number,
   message: string
 }) => ({
-
   statusCode,
   headers: { 'Content-Type': 'application/x-amz-json-1.1' },
   body: JSON.stringify({ message })

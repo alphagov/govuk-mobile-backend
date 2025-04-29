@@ -8,7 +8,6 @@ import { initializeApp, applicationDefault } from "firebase-admin/app";
 describe('attestation', () => {
     const appId = process.env.ATTESTATION_APP_ID as string;
 
-
     beforeAll(() => {
         initializeApp({
             credential: applicationDefault()
