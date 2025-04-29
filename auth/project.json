@@ -36,6 +36,17 @@
                 ]
             }
         },
+	"samlint": {
+	    "cache": true,
+            "executor": "nx:run-commands",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "command": "sam validate --lint",
+		"cwd": "auth/"
+            }
+        },
 	"test:acc": {
             "dependsOn": [
                 "install"

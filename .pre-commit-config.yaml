@@ -24,6 +24,12 @@ repos:
     entry: npx affected -t lint
     pass_filenames: false
     stages: [pre-commit]
+  - id: sam-linting
+    name: linting
+    language: system
+    entry: npx affected -t samlint
+    pass_filenames: false
+    stages: [pre-commit]
   - id: unit-tests
     name: unit-tests
     language: system

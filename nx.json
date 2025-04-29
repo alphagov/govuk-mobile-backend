@@ -32,6 +32,9 @@
     },
     "lint": {
       "cache": true
+    },
+    "samlint": {
+      "cache": true
     }
   },
   "defaultBase": "main",
