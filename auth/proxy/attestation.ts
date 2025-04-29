@@ -1,10 +1,10 @@
 
 import { APIGatewayProxyEventHeaders } from 'aws-lambda';
 import { MissingAttestationTokenError } from './errors';
-import { FEATURE_FLAGS } from './feature-flags';
+import { validateFirebaseJWT } from './firebaseJwt';
 
 export interface AttestationUseCase {
-  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, path: string, config: any) => void
+  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, path: string, config: any) => Promise<void>
 }
 
 /**
@@ -16,13 +16,26 @@ export interface AttestationUseCase {
  * @returns 
  * @throws {MissingAttestationTokenError} 
  */
-export const validateAttestationHeaderOrThrow = (headers: APIGatewayProxyEventHeaders, path: string): void => {
-  if (!FEATURE_FLAGS.ATTESTATION) return
+export const validateAttestationHeaderOrThrow = async (
+  headers: APIGatewayProxyEventHeaders,
+  path: string,
+  config: any
+): Promise<void> => {
+  const attestationToken = headers['x-attestation-token'] ?? headers['X-Attestation-Token'];
+  const isTokenEndpoint = path.includes('/token');
 
-  const attestationToken = headers['x-attestation'] || headers['X-Attestation'];
-  const isAuthorizeEndpoint = path.includes('/authorize');
+  // attestation checks is only made on token endpoint (this includes refresh tokens)
+  if (!isTokenEndpoint) return
 
-  if (isAuthorizeEndpoint && !attestationToken) {
+  if (!attestationToken) {
     throw new MissingAttestationTokenError('No attestation token header provided.')
   }
+
+  await validateFirebaseJWT({
+    token: attestationToken,
+    firebaseAppIds: [
+      config.FIREBASE_IOS_APP_ID,
+      config.FIREBASE_ANDROID_APP_ID,
+    ],
+  })
 }

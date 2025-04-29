@@ -169,3 +169,6 @@ junit.xml
 results.json
 
 .DS_Store
+
+# Firebase
+service-account.json
