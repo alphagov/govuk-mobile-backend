@@ -31,7 +31,7 @@ Parameters:
 Mappings:
   OneLogin:
     Environment:
-      build: "staging"
+      build: "integration"
       dev: "integration"
       staging: "staging"
       integration: "integration"
