@@ -142,6 +142,4 @@ describeFeature(feature, ({ ScenarioOutline }) => {
       });
     }
   );
-}, {
-  includeTags: ["debug"]
 });
