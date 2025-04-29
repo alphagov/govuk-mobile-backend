@@ -32,7 +32,7 @@ Mappings:
   OneLogin:
     Environment:
       build: "staging"
-      dev: "staging"
+      dev: "integration"
       staging: "staging"
       integration: "integration"
       production: "production"
