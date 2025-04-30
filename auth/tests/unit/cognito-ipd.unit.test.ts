@@ -122,4 +122,17 @@ describe("Set up the Cognito User Pool Identity Provider for GovUK app", () => {
       },
     });
   });
+  it("has idp identifiers", () => {
+    template.hasResourceProperties("AWS::Cognito::UserPoolIdentityProvider", {
+      IdpIdentifiers: ["onelogin"],
+    });
+  });
+  it("has attribute mapping", () => {
+    template.hasResourceProperties("AWS::Cognito::UserPoolIdentityProvider", {
+      AttributeMapping: {
+        email: "email",
+        username: "sub",
+      },
+    });
+  });
 });
