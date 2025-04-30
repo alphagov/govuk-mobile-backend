@@ -8,7 +8,7 @@ let template: Template;
 
 describe("Set up the Cognito User Pool Identity Provider for GovUK app", () => {
   beforeAll(() => {
-    let yamltemplate: string = load(readFileSync("template.yaml", "utf-8"), {
+    const yamltemplate: string = load(readFileSync("template.yaml", "utf-8"), {
       schema: schema,
     });
     template = Template.fromJSON(yamltemplate);
