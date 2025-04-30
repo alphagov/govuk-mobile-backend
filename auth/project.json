@@ -42,7 +42,7 @@
             ],
             "executor": "nx:run-commands",
             "options": {
-                "command": "npm run test --project unit",
+                "command": "npm run test:unit",
                 "cwd": "auth"
             }
         },
