@@ -23,7 +23,7 @@ describe("Set up the KMS Key for encrypting the Cognito WAF Log Group for GovUK 
       EnableKeyRotation: true,
     });
   });
-  it("has a key policy", () => {
+  it("has a key policy for the CloudWatch Logs service to use the key for encrypting and decrypting log data, but only for resources in the same account and region.", () => {
     template.hasResourceProperties("AWS::KMS::Key", {
       KeyPolicy: {
         Version: "2012-10-17",
@@ -61,14 +61,13 @@ describe("Set up the KMS Key for encrypting the Cognito WAF Log Group for GovUK 
       },
     });
   });
-    it("has the required tags", () => {
-      template.hasResourceProperties("AWS::WAFv2::WebACL", {
-        Tags: [
-          { Key: "Product", Value: "GOV.UK" },
-          { Key: "Environment", Value: { Ref: "Environment" } },
-          { Key: "System", Value: "Authentication" },
-        ],
-      });
+  it("has the required tags", () => {
+    template.hasResourceProperties("AWS::WAFv2::WebACL", {
+      Tags: [
+        { Key: "Product", Value: "GOV.UK" },
+        { Key: "Environment", Value: { Ref: "Environment" } },
+        { Key: "System", Value: "Authentication" },
+      ],
     });
-
+  });
 });
