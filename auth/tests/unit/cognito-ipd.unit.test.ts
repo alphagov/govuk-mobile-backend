@@ -1,4 +1,4 @@
-import { Template, Capture, Match, MatchResult } from "aws-cdk-lib/assertions";
+import { Template} from "aws-cdk-lib/assertions";
 import { schema } from "yaml-cfn";
 import { describe, it, beforeAll } from "vitest";
 import { readFileSync } from "fs";
