@@ -1,19 +1,26 @@
 import nx from '@nx/eslint-plugin';
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
 
-export default [
-  ...nx.configs['flat/base'],
-  ...nx.configs['flat/typescript'],
-  ...nx.configs['flat/javascript'],
+export default tseslint.config([
   {
     ignores: [
       '**/dist',
       '.nx',
       '**/debug',
-      '**/.aws-sam/**'
+      '**/.aws-sam/',
+      '**/*test*/**',
     ],
   },
   {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
+    files: ['**/*.ts', '**/*.js'],
+    extends: [
+     ...nx.configs['flat/base'],
+     ...nx.configs['flat/typescript'],
+     ...nx.configs['flat/javascript'],
+     eslint.configs.recommended,
+     ...tseslint.configs.recommended,
+    ],
     rules: {
       '@nx/enforce-module-boundaries': [
         'error',
@@ -29,29 +36,5 @@ export default [
         },
       ],
     },
-  },
-  {
-    files: [
-      '**/*.ts',
-      '**/*.tsx',
-      '**/*.cts',
-      '**/*.mts',
-      '**/*.js',
-      '**/*.jsx',
-      '**/*.cjs',
-      '**/*.mjs',
-    ],
-    // Override or add rules here
-    rules: {},
-  },
-  {
-    files: [
-      "auth/feature-tests/**/*.ts",
-      "auth/**/*.test.ts"
-    ],
-    rules: {
-      "@typescript-eslint/no-empty-function": "off",
-      "@typescript-eslint/no-unused-expressions": "off"
-    },
   }
-];
+]);
