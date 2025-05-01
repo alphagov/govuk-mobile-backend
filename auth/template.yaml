@@ -113,7 +113,7 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       SupportedIdentityProviders:
-        - COGNITO
+        - onelogin
       AllowedOAuthFlows:
         - code
       AllowedOAuthScopes:
