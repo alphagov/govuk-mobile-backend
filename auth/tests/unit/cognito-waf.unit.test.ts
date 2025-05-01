@@ -22,7 +22,7 @@ describe("Set up the Web ACL Association for Cognito for GovUK app", () => {
             {
               Ref: "AWS::StackName",
             },
-            "waf",
+            "waf-cognito",
             {
               "Fn::Select": [
                 4,
@@ -77,7 +77,7 @@ describe("Set up the Web ACL Association for Cognito for GovUK app", () => {
               {
                 Ref: "AWS::StackName",
               },
-              "waf-acl-rules",
+              "waf-cognito-acl-rules",
               {
                 "Fn::Select": [
                   4,

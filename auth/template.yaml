@@ -136,7 +136,7 @@ Resources:
       Name: !Join
         - "-"
         - - !Ref AWS::StackName
-          - "waf"
+          - "waf-cognito"
           - Fn::Select:
               - 4
               - Fn::Split:
@@ -155,7 +155,7 @@ Resources:
         MetricName: !Join
           - "-"
           - - !Ref AWS::StackName
-            - "waf-acl-rules"
+            - "waf-cognito-acl-rules"
             - Fn::Select:
                 - 4
                 - Fn::Split:
