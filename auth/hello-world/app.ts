@@ -11,7 +11,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  */
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    console.log("Application called")
+  console.log("Application called");
+  console.log(event);
     try {
         return {
             statusCode: 200,
