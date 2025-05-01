@@ -411,6 +411,9 @@ Resources:
         - onelogin
       AttributeMapping:
         email: email
+        email_verified: email_verified
+        phone_number: phone_number
+        phone_number_verified: phone_number_verified
         username: sub
 
   AuthProxyApi:
