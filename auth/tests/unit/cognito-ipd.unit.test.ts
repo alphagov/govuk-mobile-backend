@@ -132,8 +132,6 @@ describe("Set up the Cognito User Pool Identity Provider for GovUK app", () => {
       AttributeMapping: {
         email: "email",
         email_verified: "email_verified",
-        phone_number: "phone_number",
-        phone_number_verified: "phone_number_verified",
         username: "sub",
       },
     });
