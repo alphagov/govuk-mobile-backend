@@ -113,7 +113,7 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       SupportedIdentityProviders:
-        - COGNITO
+        - onelogin
       AllowedOAuthFlows:
         - code
       AllowedOAuthScopes:
@@ -411,6 +411,7 @@ Resources:
         - onelogin
       AttributeMapping:
         email: email
+        email_verified: email_verified
         username: sub
 
   AuthProxyApi:

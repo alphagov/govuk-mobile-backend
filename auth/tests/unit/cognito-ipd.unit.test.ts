@@ -131,6 +131,7 @@ describe("Set up the Cognito User Pool Identity Provider for GovUK app", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolIdentityProvider", {
       AttributeMapping: {
         email: "email",
+        email_verified: "email_verified",
         username: "sub",
       },
     });
