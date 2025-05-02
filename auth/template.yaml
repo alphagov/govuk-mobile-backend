@@ -36,6 +36,13 @@ Mappings:
       staging: "staging"
       integration: "integration"
       production: "production"
+  CustomDomain:
+    Environment:
+      build: "goukapp-build"
+      dev: "goukapp-dev"
+      staging: "goukapp-staging"
+      integration: "goukapp-integration"
+      production: "goukapp"
 
 Conditions:
   UseCodeSigning:
@@ -49,6 +56,11 @@ Conditions:
       - Fn::Equals:
           - !Ref PermissionsBoundary
           - "none"
+
+  IsDev:
+    Fn::Equals:
+      - !Ref Environment
+      - "dev"
 
 Globals:
   Function:
@@ -283,6 +295,18 @@ Resources:
         - Key: System
           Value: Authentication
 
+  CognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      Domain: !If
+        - IsDev
+        - !Join
+          - ""
+          - - !FindInMap [CustomDomain, Environment, !Ref Environment]
+            - !Sub "-${AWS::StackName}"
+        - !FindInMap [CustomDomain, Environment, !Ref Environment]
+
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -355,8 +379,20 @@ Resources:
       CodeUri: proxy/
       Handler: app.lambdaHandler
       Environment:
-        Variables:
-          COGNITO_URL: !Sub "https://${CognitoUserPool}.auth.${AWS::Region}.amazoncognito.com"
+        Variables: 
+         COGNITO_URL: !If
+          - IsDev
+          - !Join
+            - ""
+            - - "https://"
+              - !FindInMap [CustomDomain, Environment, !Ref Environment]
+              - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
+          - !Join
+            - ""
+            - - "https://"
+              - !FindInMap [CustomDomain, Environment, !Ref Environment]
+              - !Sub ".auth.${AWS::Region}.amazoncognito.com"
+
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
