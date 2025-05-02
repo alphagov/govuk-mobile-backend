@@ -22,17 +22,15 @@ defaults:
 
 jobs:
   deploy:
-
     strategy:
       matrix:
         environment:
           - name: build
-            artifact_bucket_name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
-            signing_profile_name: ${{ secrets.SIGNING_PROFILE_NAME }}
+            artifact_bucket_name: ARTIFACT_BUCKET_NAME
+            gh_role_arn: GH_ACTIONS_ROLE_ARN
           - name: dev
-            artifact_bucket_name: ${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}
-            signing_profile_name: ${{ secrets.SIGNING_PROFILE_NAME_DEV }}
-
+            artifact_bucket_name: ARTIFACT_BUCKET_NAME_DEV
+            gh_role_arn: GH_ACTIONS_ROLE_ARN_DEV
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: ${{ inputs.environment }}
@@ -52,7 +50,7 @@ jobs:
       - name: Set up AWS creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ secrets[matrix.environment.gh_role_arn] }}
           aws-region: eu-west-2
 
       - name: SAM validate
@@ -66,5 +64,5 @@ jobs:
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
           artifact-bucket-name: ${{ secrets[matrix.environment.artifact_bucket_name] }}
-          signing-profile-name: ${{ secrets[matrix.environment.signing_profile_name] }}
+          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
           working-directory: ./auth/.aws-sam/build
