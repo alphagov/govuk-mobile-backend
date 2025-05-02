@@ -27,11 +27,9 @@ jobs:
       matrix:
         environment:
           - name: build
-            artifact_bucket_name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
-            signing_profile_name: ${{ secrets.SIGNING_PROFILE_NAME }}
+            artifact_bucket_name: ARTIFACT_BUCKET_NAME
           - name: dev
-            artifact_bucket_name: ${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}
-            signing_profile_name: ${{ secrets.SIGNING_PROFILE_NAME_DEV }}
+            artifact_bucket_name: ARTIFACT_BUCKET_NAME_DEV
 
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -66,5 +64,5 @@ jobs:
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
           artifact-bucket-name: ${{ secrets[matrix.environment.artifact_bucket_name] }}
-          signing-profile-name: ${{ secrets[matrix.environment.signing_profile_name] }}
+          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
           working-directory: ./auth/.aws-sam/build
