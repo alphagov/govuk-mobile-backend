@@ -15,7 +15,12 @@ export default defineConfig({
           provider: 'istanbul', // or 'v8'
           reporter: ['text', 'json', 'html', 'lcov'],
           reportOnFailure: true,
-          exclude: ["**/feature-tests/**", "**/test?/**"]
+          exclude: [
+            "**/feature-tests/**",
+            "**/test?/**",
+            ".eslint.js",
+            ".prettierrc.js"
+          ]
         },
         watch: false
     }
