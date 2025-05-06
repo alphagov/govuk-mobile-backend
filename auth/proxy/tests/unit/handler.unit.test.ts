@@ -64,13 +64,6 @@ describe('lambdaHandler', () => {
         }),
     }))
 
-    const uncaughtExceptionEvent = createHandler(createMockDependencies({
-        attestationUseCase: {
-            validateAttestationHeaderOrThrow: vi.fn(() => {
-            throw new Error('Generic transient error');
-        })},
-    }))
-
     const disableAttestationEvent = createHandler(createMockDependencies({
         featureFlags: {
             ATTESTATION: false,
