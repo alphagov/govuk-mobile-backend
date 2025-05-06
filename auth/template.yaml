@@ -379,20 +379,20 @@ Resources:
       CodeUri: proxy/
       Handler: app.lambdaHandler
       Environment:
-        Variables: 
-         COGNITO_URL: !If
-          - IsDev
-          - !Join
-            - ""
-            - - "https://"
-              - !FindInMap [CustomDomain, Environment, !Ref Environment]
-              - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-          - !Join
-            - ""
-            - - "https://"
-              - !FindInMap [CustomDomain, Environment, !Ref Environment]
-              - !Sub ".auth.${AWS::Region}.amazoncognito.com"
-        ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
+        Variables:
+          ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
+          COGNITO_URL: !If
+            - IsDev
+            - !Join
+              - ""
+              - - "https://"
+                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
+            - !Join
+              - ""
+              - - "https://"
+                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub ".auth.${AWS::Region}.amazoncognito.com"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
