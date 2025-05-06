@@ -28,6 +28,21 @@ Parameters:
       The ARN of the permissions boundary to apply to any role created by the template
     Default: "none"
 
+  CustomScopeName:
+    Type: String
+    Description: Name for the custom OAuth scope
+    Default: "token_grant"
+  
+  CustomScopeDescription:
+    Type: String
+    Description: Description for the custom OAuth scope
+    Default: Generating a token for the client
+  
+  ResourceServerName:
+    Type: String
+    Description: Name for the Cognito Resource Server
+    Default: SharedSignalResourceServer    
+
 Mappings:
   OneLogin:
     Environment:
@@ -38,11 +53,11 @@ Mappings:
       production: "production"
   CustomDomain:
     Environment:
-      build: "goukapp-build"
-      dev: "goukapp-dev"
-      staging: "goukapp-staging"
-      integration: "goukapp-integration"
-      production: "goukapp"
+      build: "govukapp-build"
+      dev: "govukapp-dev"
+      staging: "govukapp-staging"
+      integration: "govukapp-integration"
+      production: "govukapp"
 
 Conditions:
   UseCodeSigning:
@@ -379,20 +394,20 @@ Resources:
       CodeUri: proxy/
       Handler: app.lambdaHandler
       Environment:
-        Variables: 
-         COGNITO_URL: !If
-          - IsDev
-          - !Join
-            - ""
-            - - "https://"
-              - !FindInMap [CustomDomain, Environment, !Ref Environment]
-              - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-          - !Join
-            - ""
-            - - "https://"
-              - !FindInMap [CustomDomain, Environment, !Ref Environment]
-              - !Sub ".auth.${AWS::Region}.amazoncognito.com"
-
+        Variables:
+          ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
+          COGNITO_URL: !If
+            - IsDev
+            - !Join
+              - ""
+              - - "https://"
+                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
+            - !Join
+              - ""
+              - - "https://"
+                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub ".auth.${AWS::Region}.amazoncognito.com"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -499,6 +514,53 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
 
+  CognitoResourceServer:
+    Type: AWS::Cognito::UserPoolResourceServer
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      Identifier: !Sub api.${AWS::Region}.${AWS::AccountId} # Unique identifier for your API
+      Name: !Ref ResourceServerName
+      Scopes:
+        - ScopeDescription: !Ref CustomScopeDescription
+          ScopeName: !Ref CustomScopeName
+  
+  # Shared signal user pool client
+  CognitoM2MClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      AllowedOAuthFlows:
+       - refresh_token
+      ClientName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "shared-signal-user-pool-client"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+    
+      AllowedOAuthFlows:
+        - client_credentials
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - !Sub api.${AWS::Region}.${AWS::AccountId}/${CustomScopeName}
+      SupportedIdentityProviders:
+        - COGNITO
+      GenerateSecret: true # pragma: allowlist secret
+      # TokenValidityUnits:
+      #   AccessToken: seconds
+      #   IdToken: seconds
+      #   RefreshToken: seconds
+      # AccessTokenValidity: 3600 # 1 hour in seconds
+      # IdTokenValidity: 3600 # 1 hour in seconds
+      # RefreshTokenValidity: 3600 # 1 hour in seconds
+         
 Outputs:
   ApiGateway:
     Description: API Gateway endpoint URL Hello World function
