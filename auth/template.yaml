@@ -38,11 +38,11 @@ Mappings:
       production: "production"
   CustomDomain:
     Environment:
-      build: "goukapp-build"
-      dev: "goukapp-dev"
-      staging: "goukapp-staging"
-      integration: "goukapp-integration"
-      production: "goukapp"
+      build: "govukapp-build"
+      dev: "govukapp-dev"
+      staging: "govukapp-staging"
+      integration: "govukapp-integration"
+      production: "govukapp"
 
 Conditions:
   UseCodeSigning:
