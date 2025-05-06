@@ -1,35 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { lambdaHandler } from '../../app'; // Adjust path as needed
+import { createHandler } from '../../app'; // Adjust path as needed
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
-import https from "https";
-
-vi.mock('https', () => {
-    beforeEach(() => vi.resetAllMocks())
-
-    const request = vi.fn((options, callback) => {
-        const res = {
-            on: (event: string, cb: any) => {
-                if (event === 'data') cb('mock response');
-                if (event === 'end') cb();
-            },
-            headers: { 'content-type': 'application/json' },
-            statusCode: 200,
-        };
-
-        const req = {
-            on: vi.fn(),
-            write: vi.fn(),
-            end: vi.fn(() => callback(res)),
-        };
-
-        return req;
-    });
-
-    return {
-        default: { request }, // default export for ESM-style import
-        request,
-    };
-});
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
     version: '2.0',
@@ -39,6 +10,7 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGa
     headers: {
         'content-type': 'application/x-www-form-urlencoded',
         host: 'example.com',
+        'X-Attestation-Token': 'test-token',
     },
     requestContext: {
         accountId: '',
@@ -64,6 +36,42 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGa
 });
 
 describe('lambdaHandler', () => {
+
+    const mockProxy = vi.fn().mockResolvedValue({
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: 'mock response',
+    })
+
+    const mockDependencies = {
+        attestationUseCase: {
+            validateAttestationHeaderOrThrow: vi.fn(),
+        },
+        proxy: mockProxy,
+        featureFlags: {
+            ATTESTATION: true,
+        }
+    }
+
+    const createMockDependencies = (overrides: Partial<typeof mockDependencies> = {}) => ({
+        ...mockDependencies,
+        ...overrides,
+    });
+
+    const proxy500Event = createHandler(createMockDependencies({
+        proxy: vi.fn(() => {
+            throw new Error('Generic transient error');
+        }),
+    }))
+
+    const disableAttestationEvent = createHandler(createMockDependencies({
+        featureFlags: {
+            ATTESTATION: false,
+        },
+    }))
+
+    const lambdaHandler = createHandler(mockDependencies);
+
     beforeEach(() => {
         process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
     });
@@ -85,58 +93,29 @@ describe('lambdaHandler', () => {
     });
 
     it('proxied requests have host stripped to avoid certificate name errors', async () => {
-        const requestSpy = vi.spyOn(https, 'request');
-
         await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
 
-        expect(requestSpy.mock.calls[0][0].headers['host']).toBeUndefined()
+        expect(mockProxy.mock.calls[0][0].sanitizedHeaders['host']).toBeUndefined();
     });
 
     it('proxied requests headers are lowercased', async () => {
-        const requestSpy = vi.spyOn(https, 'request');
-
         await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
-        const headerKeys = Object.keys(requestSpy.mock.calls[0][0].headers);
+        const headerKeys = Object.keys(mockProxy.mock.calls[0][0].sanitizedHeaders);
         const hasUppercaseKeys = headerKeys.some(k => /[A-Z]/.test(k));
         
         expect(hasUppercaseKeys).toBe(false);
     });
 
-    it('returns 500 on proxy error', async () => {
-        // Replace the implementation temporarily
-        vi.spyOn(https, 'request').mockImplementationOnce((options, callback) => {
-            const req = {
-                on: vi.fn(),
-                write: vi.fn(),
-                end: vi.fn(),
-            };
-
-            // the 'error' listener is attached after https.request() is called - gives proxy time to add an error to on 'error' callback
-            setTimeout(() => {
-                req.on.mock.calls
-                    .filter(([event]) => event === 'error')
-                    .forEach(([, handler]) => handler(new Error('Mocked failure')));
-            }, 0);
-
-            // No callback needed — we simulate error
-            return req as any;
-        });
-
-        const brokenEvent = createMockEvent({ routeKey: '' });
-        const response = await lambdaHandler(brokenEvent) as APIGatewayProxyStructuredResultV2;
-
-        expect(response.statusCode).toBe(500);
-        expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
+    it('should not perform an attestation check if the feature flag is enabled', async () => {
+        await disableAttestationEvent(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+        expect(mockDependencies.attestationUseCase.validateAttestationHeaderOrThrow)
+            .not
+            .toHaveBeenCalled();        
     });
 
-    it('returns 500 on catch-all errors', async () => {
-        // Replace the implementation temporarily
-        vi.spyOn(https, 'request').mockImplementationOnce((options, callback) => {
-            throw new Error('generic error')
-        });
+    it('returns 500 on proxy error', async () => {
+        const response = await proxy500Event(createMockEvent()) as APIGatewayProxyStructuredResultV2;
 
-        const response = await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
-        
         expect(response.statusCode).toBe(500);
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
     });
