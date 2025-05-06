@@ -392,7 +392,7 @@ Resources:
             - - "https://"
               - !FindInMap [CustomDomain, Environment, !Ref Environment]
               - !Sub ".auth.${AWS::Region}.amazoncognito.com"
-
+        ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
