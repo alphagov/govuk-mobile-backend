@@ -32,16 +32,16 @@ Parameters:
     Type: String
     Description: Name for the custom OAuth scope
     Default: "read"
-  
+
   CustomScopeDescription:
     Type: String
     Description: Description for the custom OAuth scope
     Default: Generating a token for the client
-  
+
   ResourceServerName:
     Type: String
     Description: Name for the Cognito Resource Server
-    Default: SharedSignalResourceServer    
+    Default: SharedSignalResourceServer
 
 Mappings:
   OneLogin:
@@ -523,7 +523,7 @@ Resources:
       Scopes:
         - ScopeDescription: !Ref CustomScopeDescription
           ScopeName: !Ref CustomScopeName
-  
+
   # Shared signal user pool client
   CognitoM2MClient:
     Type: AWS::Cognito::UserPoolClient
@@ -542,7 +542,7 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
-    
+
       AllowedOAuthFlows:
         - client_credentials
       AllowedOAuthFlowsUserPoolClient: true
@@ -556,7 +556,7 @@ Resources:
       TokenValidityUnits:
         AccessToken: seconds
       AccessTokenValidity: 3600 # 1 hour in seconds
-         
+
 Outputs:
   ApiGateway:
     Description: API Gateway endpoint URL Hello World function
@@ -576,4 +576,4 @@ Outputs:
 
   SharedSignalScope:
     Description: The scope for the shared signal user pool client
-    Value: !Sub api.${AWS::Region}.${AWS::AccountId}/${CustomScopeName}  
+    Value: !Sub api.${AWS::Region}.${AWS::AccountId}/${CustomScopeName}

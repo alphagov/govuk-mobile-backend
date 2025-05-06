@@ -1,20 +1,7 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
-import https from 'https';
-import querystring from 'querystring';
-
-const ALLOWED_ENDPOINTS = [
-  "authorize",
-  "token",
-  '/.well-known/openid-configuration'
-]
-
-const rejectUnauthorisedEndpoints = (path: string) => {
-  const isAllowedEndpoint = !ALLOWED_ENDPOINTS.includes(path)
-
-  if (!isAllowedEndpoint) {
-    throw new Error('Endpoint is not whitelisted.')
-  }
-}
+import { FEATURE_FLAGS, FeatureFlags } from './feature-flags';
+import { AttestationUseCase, validateAttestationHeaderOrThrow } from './attestation';
+import { proxy, ProxyInput } from './proxy';
 
 // cognito expects consistent casing for header names e.g. x-amz-target
 // host must be removed to avoid ssl hostname unrecognised errors
@@ -39,7 +26,13 @@ const stripStageFromPath = (stage: string, path: string): string => {
   return path
 }
 
-export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
+interface Dependencies {
+  proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>
+  attestationUseCase: AttestationUseCase
+  featureFlags: FeatureFlags
+}
+
+export const createHandler = (dependencies: Dependencies) => async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   try {
     const cognitoUrl = transformCognitoUrl(process.env.COGNITO_URL);
 
@@ -55,12 +48,13 @@ export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIG
 
     const formattedPath = stripStageFromPath(stage, path);
 
-    // rejectUnauthorisedEndpoints(requestContext.http.path)
-    // validateAttestationHeaderOrThrow(headers, requestContext.http.path)
+    if (dependencies.featureFlags.ATTESTATION) {
+      validateAttestationHeaderOrThrow(headers, requestContext.http.path)
+    }
 
     const targetPath = formattedPath + (rawQueryString ? `?${rawQueryString}` : '');
 
-    return await proxyWithHttps({
+    return await dependencies.proxy({
       method,
       path: formattedPath,
       isBase64Encoded: event.isBase64Encoded,
@@ -80,81 +74,14 @@ export const lambdaHandler = async (event: APIGatewayProxyEventV2): Promise<APIG
   }
 };
 
-interface ProxyInput {
-  method: string
-  path: string
-  isBase64Encoded: boolean
-  body: string | undefined
-  sanitizedHeaders: any
-  targetPath: string
-  parsedUrl: URL
+const attestationUseCase = {
+  validateAttestationHeaderOrThrow
 }
 
-const proxyWithHttps = async ({
-  method,
-  path,
-  parsedUrl,
-  isBase64Encoded,
-  body,
-  sanitizedHeaders,
-  targetPath,
-}: ProxyInput) => {
-  if (method === "POST" && path.includes('/token')) {
-    // In API Gateway Proxy v2, if the request body is base64-encoded (e.g. from a frontend form or custom client), you need to handle decoding it manually.
-    const rawBody = isBase64Encoded ? Buffer.from(body!, 'base64').toString('utf-8') : body!;
-    const parsedBody = querystring.parse(rawBody);
-    const encodedBody = querystring.stringify(parsedBody);
-
-    sanitizedHeaders['content-length'] = Buffer.byteLength(encodedBody).toString();
-    sanitizedHeaders['content-type'] = 'application/x-www-form-urlencoded'; // just to be safe
-
-    return await proxy(parsedUrl.hostname, targetPath, encodedBody, sanitizedHeaders, method);
-  }
-  return await proxy(parsedUrl.hostname, targetPath, body, sanitizedHeaders, method);
+const dependencies = {
+  proxy,
+  attestationUseCase,
+  featureFlags: FEATURE_FLAGS
 }
 
-async function proxy(hostname: string, path: string, body: any, headers: any, method = 'GET'): Promise<APIGatewayProxyResultV2> {
-  return new Promise((resolve) => {
-    const req = https.request(
-      {
-        hostname,
-        path,
-        method,
-        headers,
-      },
-      (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk
-        });
-        res.on('end', () => {
-          const respHeaders: { [key: string]: string } = {};
-          for (const [k, v] of Object.entries(res.headers)) {
-            respHeaders[k.toLowerCase()] = Array.isArray(v) ? v.join(', ') : v || '';
-          }
-
-          resolve({
-            statusCode: res.statusCode || 500,
-            headers: respHeaders,
-            body: data
-          });
-        });
-      }
-    );
-
-    req.on('error', (e) => {
-      console.error("Error proxying request to Cognito:", e);
-      resolve({
-        statusCode: 500,
-        headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-        body: JSON.stringify({ message: 'Internal server error' })
-      });
-    });
-
-    if (method === 'POST' && body) {
-      req.write(body);
-    }
-
-    req.end();
-  });
-}
+export const lambdaHandler = createHandler(dependencies);

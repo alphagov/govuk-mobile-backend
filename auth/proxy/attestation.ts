@@ -3,6 +3,10 @@ import { APIGatewayProxyEventHeaders } from 'aws-lambda';
 import { MissingAttestationTokenError } from './errors';
 import { FEATURE_FLAGS } from './feature-flags';
 
+export interface AttestationUseCase {
+  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, path: string, config: any) => void
+}
+
 /**
  * Validates:
  * - attestation check is only made on authorize endpoint - token exchange handled by cognito and third-party
@@ -12,7 +16,7 @@ import { FEATURE_FLAGS } from './feature-flags';
  * @returns 
  * @throws {MissingAttestationTokenError} 
  */
-const validateAttestationHeaderOrThrow = (headers: APIGatewayProxyEventHeaders, path: string): void => {
+export const validateAttestationHeaderOrThrow = (headers: APIGatewayProxyEventHeaders, path: string): void => {
   if (!FEATURE_FLAGS.ATTESTATION) return
 
   const attestationToken = headers['x-attestation'] || headers['X-Attestation'];
