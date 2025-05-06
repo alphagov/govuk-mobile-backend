@@ -1,0 +1,80 @@
+Parameters:
+  CognitoUrl:
+    Description: "The name of the environment to deploy to"
+    Type: "String"
+
+Resources:
+  AuthProxyApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "api-gateway"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      ProtocolType: HTTP
+
+  AuthProxyIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt AuthProxyFunction.Arn
+      IntegrationMethod: POST
+      PayloadFormatVersion: '2.0'
+  
+  AuthProxyRouteCatchAll:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      RouteKey: 'ANY /{proxy+}'
+      Target: !Join [ '/', ['integrations', !Ref AuthProxyIntegration] ]
+
+  AuthProxyStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref AuthProxyApi
+      StageName: !Ref Environment
+      AutoDeploy: true
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AuthProxyFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
+    
+  AuthProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: proxy
+      Handler: app.lambdaHandler
+      Environment:
+        Variables:
+          COGNITO_URL: !Ref CognitoUrl
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints:
+          - app.ts
+
+Outputs:
+  Url:
+    Description: API Gateway endpoint URL Hello World function
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
