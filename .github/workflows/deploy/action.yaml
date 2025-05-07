@@ -20,9 +20,11 @@ runs:
     - name: SAM validate
       working-directory: ./auth
       run: sam validate --lint
+      shell: bash  # Explicitly define the shell
 
     - name: SAM build and test
       run: sam build
+      shell: bash  # Explicitly define the shell
 
     - name: Deploy SAM app
       uses: govuk-one-login/devplatform-upload-action@v3.9.4
