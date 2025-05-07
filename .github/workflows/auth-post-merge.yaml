@@ -16,9 +16,19 @@ defaults:
     working-directory: ./auth
 
 jobs:
-  build:
+  deploy:
+    strategy:
+      matrix:
+        environment:
+          - name: govuk_backend_build
+            artifact_bucket_name: ARTIFACT_BUCKET_NAME
+            gh_role_arn: GH_ACTIONS_ROLE_ARN
+          # - name: govuk_backend_dev
+          #   artifact_bucket_name: ARTIFACT_BUCKET_NAME_DEV
+          #   gh_role_arn: GH_ACTIONS_ROLE_ARN_DEV
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -32,36 +42,18 @@ jobs:
         with:
           use-installer: true  # this caches installation but is only available on Linux x86-64 runners
 
+      - name: Set up AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[matrix.environment.gh_role_arn] }}
+          aws-region: eu-west-2
+
       - name: SAM validate
         working-directory: ./auth
         run: sam validate --lint
 
       - name: SAM build and test
         run: sam build
-
-  deploy:
-    needs: build
-    strategy:
-      matrix:
-        environment:
-          - name: govuk_backend_build
-            artifact_bucket_name: ARTIFACT_BUCKET_NAME
-            gh_role_arn: GH_ACTIONS_ROLE_ARN
-          - name: govuk_backend_dev
-            artifact_bucket_name: ARTIFACT_BUCKET_NAME_DEV
-            gh_role_arn: GH_ACTIONS_ROLE_ARN_DEV
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    environment: ${{ inputs.environment }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Set up AWS creds
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets[matrix.environment.gh_role_arn] }}
-          aws-region: eu-west-2
 
       - name: Deploy SAM app to ${{ matrix.environment.name }}
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
