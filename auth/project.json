@@ -46,6 +46,19 @@
                 "cwd": "auth"
             }
         },
+        "test:acc": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run --project acc",
+                "cwd": "auth"
+            },
+            "outputs": [
+                "{options.outputFile}"
+            ]
+        },
         "test:functional": {
             "dependsOn": [
                 "install"

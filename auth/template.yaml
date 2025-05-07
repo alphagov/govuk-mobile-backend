@@ -133,7 +133,13 @@ Resources:
         - openid
       GenerateSecret: false # pragma: allowlist secret
       CallbackURLs:
-        - !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/"
+        - "govuk://govuk/login-auth-callback"
+      LogoutURLs: 
+        - !Join
+          - ""
+          - - "https://oidc."
+            - !FindInMap [OneLogin, Environment, !Ref Environment]
+            - ".account.gov.uk/logout"
       TokenValidityUnits:
         AccessToken: seconds
         IdToken: seconds
@@ -507,6 +513,10 @@ Outputs:
   AuthProxy:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+
+  AppUserPoolClientId:
+    Description: The id of the cognito user pool
+    Value: !Ref CognitoUserPoolClient
 
   UserPoolId:
     Description: ID of the Cognito User Pool
