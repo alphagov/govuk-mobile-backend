@@ -38,6 +38,13 @@ jobs:
         with:
           use-installer: true  # this caches installation but is only available on Linux x86-64 runners
 
+      - name: SAM validate
+        working-directory: ./auth
+        run: sam validate --lint
+
+      - name: SAM build and test
+        run: sam build
+
       - name: Deploy to Dev
         if: ${{ inputs.environment == 'govuk_backend_dev' }}
         uses: ./.github/workflows/deploy
