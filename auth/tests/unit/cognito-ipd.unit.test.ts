@@ -1,18 +1,9 @@
-import { Template} from "aws-cdk-lib/assertions";
-import { schema } from "yaml-cfn";
-import { describe, it, beforeAll } from "vitest";
-import { readFileSync } from "fs";
-import { load } from "js-yaml";
+import { describe, it } from "vitest";
+import { loadTemplateFromFile } from '../common/template'
 
-let template: Template;
+const template = loadTemplateFromFile('./template.yaml')
 
 describe("Set up the Cognito User Pool Identity Provider for GovUK app", () => {
-  beforeAll(() => {
-    const yamltemplate: string = load(readFileSync("template.yaml", "utf-8"), {
-      schema: schema,
-    });
-    template = Template.fromJSON(yamltemplate);
-  });
   it("has an associated user pool", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolIdentityProvider", {
       UserPoolId: {

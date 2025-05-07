@@ -1,32 +1,28 @@
 {
-  "name": "proxy",
+  "name": "shared-signals",
   "version": "1.0.0",
-  "description": "Authentication proxy for cognito",
+  "description": "Shared Signals - Receiver",
   "main": "app.js",
   "author": "govuk-app-backend",
   "license": "MIT",
   "scripts": {
+    "unit": "vitest run",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify"
+    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify",
+    "test": "npm run compile && npm run unit"
   },
   "dependencies": {
-    "esbuild": "^0.14.14",
-    "jsonwebtoken": "^9.0.2",
-    "jwk-to-pem": "^2.0.7"
+    "esbuild": "^0.14.14"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.92",
-    "@types/jwk-to-pem": "^2.0.3",
     "@types/node": "^20.5.7",
-    "@types/node-fetch": "^2.6.12",
-    "@types/node-jose": "^1.1.13",
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
     "eslint": "^8.8.0",
     "eslint-config-prettier": "^8.10.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "node-jose": "^2.2.0",
     "prettier": "^2.8.8",
     "ts-node": "^10.9.1",
     "typescript": "^4.8.4",
