@@ -16,4 +16,13 @@ export default defineWorkspace([
       include: ["**/*.unit.test.ts"],
     },
   },
+  {
+    test: {
+      include: ["tests/acc/**/*.test.ts"],
+      name: "acc",
+      environment: "node",
+      // allow for long running tests
+      testTimeout: 120000,
+    },
+  },
 ]);

@@ -17,7 +17,7 @@ const REGION = "eu-west-2";
 const responses: number[] = [];
 
 let COGNITO_IDP_URL: string;
-let APP_CLIENT_ID: string;
+let CFN_AppUserPoolClientId: string;
 let WAF_LOG_GROUP_NAME: string;
 
 describeFeature(feature, ({ Scenario }) => {
@@ -26,20 +26,20 @@ describeFeature(feature, ({ Scenario }) => {
     ({ Given, When, Then }) => {
       Given(`The Cognito Identity Provider endpoint`, () => {
         const cognitoIdpUrl = process.env.COGNITO_IDP_URL;
-        const cognitoAppClientId = process.env.APP_CLIENT_ID;
+        const cognitoAppClientId = process.env.CFN_AppUserPoolClientId;
         const wafLogGroupName = process.env.WAF_LOG_GROUP_NAME;
 
         if (!cognitoIdpUrl) {
           throw new Error("COGNITO_IDP_URL is not set in the environment");
         }
         if (!cognitoAppClientId) {
-          throw new Error("APP_CLIENT_ID is not set in the environment");
+          throw new Error("CFN_AppUserPoolClientId is not set in the environment");
         }
         if (!wafLogGroupName) {
           throw new Error("WAF_LOG_GROUP_NAME is not set in the environment");
         }
         COGNITO_IDP_URL = cognitoIdpUrl;
-        APP_CLIENT_ID = cognitoAppClientId;
+        CFN_AppUserPoolClientId = cognitoAppClientId;
         WAF_LOG_GROUP_NAME = wafLogGroupName;
       });
       When(`Too many requests are sent to the endpoint`, async () => {
@@ -51,7 +51,7 @@ describeFeature(feature, ({ Scenario }) => {
               PASSWORD: "FakePassword123!", // pragma: allowlist secret
             },
             AuthFlow: "USER_PASSWORD_AUTH",
-            ClientId: APP_CLIENT_ID,
+            ClientId: CFN_AppUserPoolClientId,
           };
 
           try {
