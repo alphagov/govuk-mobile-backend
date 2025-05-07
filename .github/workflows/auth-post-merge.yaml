@@ -3,11 +3,6 @@ run-name: SAM app test and build and deploy using Environment ${{ inputs.environ
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        type: environment
-        required: true
   push:
     branches:
       - main
@@ -22,6 +17,15 @@ defaults:
 
 jobs:
   deploy:
+    strategy:
+      matrix:
+        environment:
+          - name: govuk_backend_build
+            artifact_bucket_name: ARTIFACT_BUCKET_NAME
+            gh_role_arn: GH_ACTIONS_ROLE_ARN
+          - name: govuk_backend_dev
+            artifact_bucket_name: ARTIFACT_BUCKET_NAME_DEV
+            gh_role_arn: GH_ACTIONS_ROLE_ARN_DEV
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: ${{ inputs.environment }}
@@ -38,6 +42,12 @@ jobs:
         with:
           use-installer: true  # this caches installation but is only available on Linux x86-64 runners
 
+      - name: Set up AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[matrix.environment.gh_role_arn] }}
+          aws-region: eu-west-2
+
       - name: SAM validate
         working-directory: ./auth
         run: sam validate --lint
@@ -45,18 +55,9 @@ jobs:
       - name: SAM build and test
         run: sam build
 
-      - name: Deploy to Dev
-        if: ${{ inputs.environment == 'govuk_backend_dev' }}
-        uses: ./.github/workflows/deploy
+      - name: Deploy SAM app to ${{ matrix.environment.name }}
+        uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
-          role: ${{ secrets.GH_ACTIONS_ROLE_ARN_DEV }}
-          artifact_bucket: ${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}
-          signing_profile: ${{ secrets.SIGNING_PROFILE_NAME }}
-      
-      - name: Deploy to Build
-        if: ${{ inputs.environment == 'govuk_backend_build' }}
-        uses: ./.github/workflows/deploy
-        with:
-          role: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
-          artifact_bucket: ${{ secrets.ARTIFACT_BUCKET_NAME }}
-          signing_profile: ${{ secrets.SIGNING_PROFILE_NAME }}
+          artifact-bucket-name: ${{ secrets[matrix.environment.artifact_bucket_name] }}
+          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+          working-directory: ./auth/.aws-sam/build
