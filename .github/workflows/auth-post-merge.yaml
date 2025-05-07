@@ -39,13 +39,13 @@ jobs:
           use-installer: true  # this caches installation but is only available on Linux x86-64 runners
 
       - name: Deploy to Dev
-        if: ${{ inputs.environment == 'dev' }}
+        if: ${{ inputs.environment == 'govuk_backend_dev' }}
         uses: ./.github/workflows/deploy/sam.yaml
         with:
           environment: dev
       
       - name: Deploy to Build
-        if: ${{ inputs.environment == 'build' }}
+        if: ${{ inputs.environment == 'govuk_backend_build' }}
         uses: ./.github/workflows/deploy/sam.yaml
         with:
           environment: build
