@@ -46,6 +46,35 @@ describe("Set up the Cognito User Pool OIDC client", () => {
     });
   });
 
+  it("has a callback url", () => {
+    template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+      CallbackURLs: ["govuk://govuk/login-auth-callback"],
+    });
+  });
+
+  it("has a logout url", () => {
+    template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+      LogoutURLs: [
+        {
+          "Fn::Join": [
+            "",
+            [
+              "https://oidc.",
+              {
+                "Fn::FindInMap": [
+                  "OneLogin",
+                  "Environment",
+                  { Ref: "Environment" },
+                ],
+              },
+              ".account.gov.uk/logout",
+            ],
+          ],
+        },
+      ],
+    });
+  });
+
   it("has correct tokens validity", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
       AccessTokenValidity: 3600, //one hr
