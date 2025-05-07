@@ -54,7 +54,24 @@ describe("Set up the Cognito User Pool OIDC client", () => {
 
   it("has a logout url", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
-      LogoutURLs: ["govuk://govuk/logout-auth"],
+      LogoutURLs: [
+        {
+          "Fn::Join": [
+            "",
+            [
+              "https://oidc.",
+              {
+                "Fn::FindInMap": [
+                  "OneLogin",
+                  "Environment",
+                  { Ref: "Environment" },
+                ],
+              },
+              ".account.gov.uk/logout",
+            ],
+          ],
+        },
+      ],
     });
   });
 
