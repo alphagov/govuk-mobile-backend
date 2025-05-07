@@ -31,7 +31,7 @@ Parameters:
   CustomScopeName:
     Type: String
     Description: Name for the custom OAuth scope
-    Default: "token_grant"
+    Default: "read"
   
   CustomScopeDescription:
     Type: String
@@ -529,8 +529,6 @@ Resources:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      AllowedOAuthFlows:
-       - refresh_token
       ClientName: !Join
         - "-"
         - - !Ref AWS::StackName
@@ -553,13 +551,11 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       GenerateSecret: true # pragma: allowlist secret
-      # TokenValidityUnits:
-      #   AccessToken: seconds
-      #   IdToken: seconds
-      #   RefreshToken: seconds
-      # AccessTokenValidity: 3600 # 1 hour in seconds
-      # IdTokenValidity: 3600 # 1 hour in seconds
-      # RefreshTokenValidity: 3600 # 1 hour in seconds
+      ExplicitAuthFlows:
+        - ALLOW_REFRESH_TOKEN_AUTH
+      TokenValidityUnits:
+        AccessToken: seconds
+      AccessTokenValidity: 3600 # 1 hour in seconds
          
 Outputs:
   ApiGateway:
@@ -577,3 +573,7 @@ Outputs:
   UserPoolProviderUrl:
     Description: The URL of the Cognito User Pool
     Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+
+  SharedSignalScope:
+    Description: The scope for the shared signal user pool client
+    Value: !Sub api.${AWS::Region}.${AWS::AccountId}/${CustomScopeName}  
