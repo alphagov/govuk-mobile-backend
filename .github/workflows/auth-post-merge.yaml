@@ -41,7 +41,7 @@ jobs:
       - name: Set up AWS creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets[matrix.environment.gh_role_arn] }}
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
           aws-region: eu-west-2
 
       - name: SAM validate
