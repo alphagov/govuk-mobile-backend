@@ -3,11 +3,6 @@ run-name: SAM app test and build and deploy using Environment ${{ inputs.environ
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        type: environment
-        required: true
   push:
     branches:
       - main
@@ -38,12 +33,6 @@ jobs:
         with:
           use-installer: true  # this caches installation but is only available on Linux x86-64 runners
 
-      - name: Set up AWS creds
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
-          aws-region: eu-west-2
-
       - name: SAM validate
         working-directory: ./auth
         run: sam validate --lint
@@ -51,9 +40,28 @@ jobs:
       - name: SAM build and test
         run: sam build
 
-      - name: Deploy SAM app
+      - name: Set up AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Deploy SAM app to build
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
           artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
+          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+          working-directory: ./auth/.aws-sam/build
+
+      - name: Set up AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN_DEV }}
+          aws-region: eu-west-2
+
+      - name: Deploy SAM app to dev
+        uses: govuk-one-login/devplatform-upload-action@v3.9.4
+        with:
+          artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}
           signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
           working-directory: ./auth/.aws-sam/build
