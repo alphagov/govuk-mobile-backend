@@ -38,22 +38,14 @@ jobs:
         with:
           use-installer: true  # this caches installation but is only available on Linux x86-64 runners
 
-      - name: Set up AWS creds
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy to Dev
+        if: ${{ inputs.environment == 'dev' }}
+        uses: ./.github/workflows/deploy/sam.yaml
         with:
-          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
-          aws-region: eu-west-2
-
-      - name: SAM validate
-        working-directory: ./auth
-        run: sam validate --lint
-
-      - name: SAM build and test
-        run: sam build
-
-      - name: Deploy SAM app
-        uses: govuk-one-login/devplatform-upload-action@v3.9.4
+          environment: dev
+      
+      - name: Deploy to Build
+        if: ${{ inputs.environment == 'build' }}
+        uses: ./.github/workflows/deploy/sam.yaml
         with:
-          artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
-          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
-          working-directory: ./auth/.aws-sam/build
+          environment: build
