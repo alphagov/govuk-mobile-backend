@@ -42,10 +42,14 @@ jobs:
         if: ${{ inputs.environment == 'govuk_backend_dev' }}
         uses: ./.github/workflows/deploy
         with:
-          environment: dev
+          role: ${{ secrets.GH_ACTIONS_ROLE_ARN_DEV }}
+          artifact_bucket: ${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}
+          signing_profile: ${{ secrets.SIGNING_PROFILE_NAME }}
       
       - name: Deploy to Build
         if: ${{ inputs.environment == 'govuk_backend_build' }}
         uses: ./.github/workflows/deploy
         with:
-          environment: build
+          role: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          artifact_bucket: ${{ secrets.ARTIFACT_BUCKET_NAME }}
+          signing_profile: ${{ secrets.SIGNING_PROFILE_NAME }}

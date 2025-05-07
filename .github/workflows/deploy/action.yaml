@@ -1,28 +1,20 @@
 inputs:
-  environment: 
-    description: 'Deployment environment'
+  role: 
+    description: 'Deployment role ARN'
+    required: true
+  artifact_bucket:
+    description: 'S3 bucket name for artifacts'
+    required: true
+  signing_profile:
+    description: 'Signing profile name'
     required: true
 runs:
   using: "composite"
   steps: 
-    - name: Set AWS role based on environment
-      id: set-environment
-      run: |
-        if [[ "${{ inputs.environment }}" == "dev" ]]; then
-          echo "role=${{ secrets.GH_ACTIONS_ROLE_ARN_DEV }}" >> $GITHUB_OUTPUT
-          echo "artifact_bucket=${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}" >> $GITHUB_OUTPUT
-        elif [[ "${{ inputs.environment }}" == "prod" ]]; then
-          echo "role=${{ secrets.GH_ACTIONS_ROLE_ARN }}" >> $GITHUB_OUTPUT
-          echo "artifact_bucket=${{ secrets.ARTIFACT_BUCKET_NAME }}" >> $GITHUB_OUTPUT
-        else
-          echo "Unsupported environment"
-          exit 1
-        fi
-
     - name: Set up AWS creds
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: ${{ steps.set-environment.outputs.role }}
+        role-to-assume: ${{ inputs.role }}
         aws-region: eu-west-2
 
     - name: SAM validate
@@ -35,6 +27,6 @@ runs:
     - name: Deploy SAM app
       uses: govuk-one-login/devplatform-upload-action@v3.9.4
       with:
-        artifact-bucket-name: ${{ steps.set-environment.outputs.artifact_bucket }}
-        signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+        artifact-bucket-name: ${{ inputs.artifact_bucket }}
+        signing-profile-name: ${{ inputs.signing_profile }}
         working-directory: ./auth/.aws-sam/build
