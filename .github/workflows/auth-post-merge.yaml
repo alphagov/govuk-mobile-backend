@@ -16,6 +16,29 @@ defaults:
     working-directory: ./auth
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up SAM cli
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true  # this caches installation but is only available on Linux x86-64 runners
+
+      - name: SAM validate
+        working-directory: ./auth
+        run: sam validate --lint
+
+      - name: SAM build and test
+        run: sam build
+
   deploy:
     strategy:
       matrix:
@@ -33,27 +56,11 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: Set up SAM cli
-        uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true  # this caches installation but is only available on Linux x86-64 runners
-
       - name: Set up AWS creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets[matrix.environment.gh_role_arn] }}
           aws-region: eu-west-2
-
-      - name: SAM validate
-        working-directory: ./auth
-        run: sam validate --lint
-
-      - name: SAM build and test
-        run: sam build
 
       - name: Deploy SAM app to ${{ matrix.environment.name }}
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
