@@ -17,11 +17,10 @@ const commandInput: DescribeLogGroupsCommandInput = {
 };
 const command = new DescribeLogGroupsCommand(commandInput);
 
-let response;
 let logGroup;
 
 describe("Check the deployed WAF log group", async () => {
-  response = await client.send(command);
+  const response = await client.send(command);
   logGroup = response.logGroups[0];
   it("has data protection activated", () => {
     const extpectedDataProtectionStatus = "ACTIVATED";
