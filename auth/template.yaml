@@ -147,6 +147,8 @@ Resources:
       AccessTokenValidity: 3600 # 1 hour in seconds
       IdTokenValidity: 3600 # 1 hour in seconds
       RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
+      EnableTokenRevocation: true
+      AllowedOAuthFlowsUserPoolClient: true
 
   CognitoWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
@@ -525,3 +527,7 @@ Outputs:
   UserPoolProviderUrl:
     Description: The URL of the Cognito User Pool
     Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+  
+  CognitoWafLogGroupName:
+    Description: The name of the Cognito WAF log group
+    Value: !Ref CognitoWAFLogGroup
