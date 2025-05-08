@@ -23,7 +23,6 @@ let logGroup;
 describe("Check the deployed WAF log group", async () => {
   response = await client.send(command);
   logGroup = response.logGroups[0];
-  console.log("logGroup", logGroup);
   it("has data protection activated", () => {
     const extpectedDataProtectionStatus = "ACTIVATED";
     assert.equal(logGroup.dataProtectionStatus, extpectedDataProtectionStatus);
