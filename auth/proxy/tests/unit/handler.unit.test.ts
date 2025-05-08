@@ -69,10 +69,18 @@ describe('lambdaHandler', () => {
             ATTESTATION: false,
         },
     }))
+    
+    const uncaughtExceptionEvent = createHandler(createMockDependencies({
+        attestationUseCase: {
+            validateAttestationHeaderOrThrow: vi.fn(() => {
+            throw new Error('Generic transient error');
+        })},
+    }))
 
     const lambdaHandler = createHandler(mockDependencies);
 
     beforeEach(() => {
+        vi.clearAllMocks();
         process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
     });
 
@@ -116,6 +124,13 @@ describe('lambdaHandler', () => {
     it('returns 500 on proxy error', async () => {
         const response = await proxy500Event(createMockEvent()) as APIGatewayProxyStructuredResultV2;
 
+        expect(response.statusCode).toBe(500);
+        expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
+    });
+
+    it('returns 500 on catch-all errors', async () => {
+        const response = await uncaughtExceptionEvent(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+        
         expect(response.statusCode).toBe(500);
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
     });

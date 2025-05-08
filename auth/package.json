@@ -7,21 +7,27 @@
         "@amiceli/vitest-cucumber": "^4.7.0",
         "@aws-sdk/client-cloudwatch-logs": "^3.796.0",
         "@aws-sdk/client-cognito-identity-provider": "^3.787.0",
+        "@aws-sdk/client-lambda": "^3.799.0",
+        "@aws-sdk/credential-providers": "^3.799.0",
         "@types/js-yaml": "^4.0.9",
         "@types/node": "^22.14.0",
-        "aws-cdk-lib": "^2.189.1",
+        "aws-cdk-lib": "^2.193.0",
         "dotenv": "^16.5.0",
+        "firebase-admin": "^13.3.0",
         "prettier": "3.5.3",
         "puppeteer": "^24.7.0",
+        "rollup": "^4.40.2",
         "typescript": "^5.8.3",
-        "vitest": "^3.1.2",
+        "vitest": "^3.1.3",
         "yaml-cfn": "^0.3.2"
     },
     "scripts": {
-        "test:acc": "vitest acc",
-        "test:validate": "sam validate",
         "test": "vitest run",
+        "test:acc": "vitest acc",
+        "test:int": "vitest int",
         "test:unit": "vitest unit",
-        "test:functional": "vitest run --include tests/functional/**"
+        "test:validate": "sam validate",
+        "test:integration": "vitest run --project integration",
+        "test:functional": "vitest run --project functional"
     }
 }

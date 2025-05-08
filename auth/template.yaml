@@ -149,7 +149,7 @@ Resources:
       GenerateSecret: false # pragma: allowlist secret
       CallbackURLs:
         - "govuk://govuk/login-auth-callback"
-      LogoutURLs: 
+      LogoutURLs:
         - !Join
           - ""
           - - "https://oidc."
@@ -162,6 +162,8 @@ Resources:
       AccessTokenValidity: 3600 # 1 hour in seconds
       IdTokenValidity: 3600 # 1 hour in seconds
       RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
+      EnableTokenRevocation: true
+      AllowedOAuthFlowsUserPoolClient: true
 
   CognitoWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
@@ -394,38 +396,6 @@ Resources:
         EntryPoints:
           - app.ts
 
-  AuthProxyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: proxy/
-      Handler: app.lambdaHandler
-      Environment:
-        Variables:
-          ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
-          COGNITO_URL: !If
-            - IsDev
-            - !Join
-              - ""
-              - - "https://"
-                - !FindInMap [CustomDomain, Environment, !Ref Environment]
-                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-            - !Join
-              - ""
-              - - "https://"
-                - !FindInMap [CustomDomain, Environment, !Ref Environment]
-                - !Sub ".auth.${AWS::Region}.amazoncognito.com"
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - app.ts
 
   UserPoolIdentityProvider:
     Type: "AWS::Cognito::UserPoolIdentityProvider"
@@ -488,6 +458,45 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       ProtocolType: HTTP
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+
+  AuthProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: proxy/
+      Handler: app.lambdaHandler
+      Environment:
+        Variables:
+          ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
+          COGNITO_URL: !If
+            - IsDev
+            - !Join
+              - ""
+              - - "https://"
+                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
+            - !Join
+              - ""
+              - - "https://"
+                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub ".auth.${AWS::Region}.amazoncognito.com"
+          FIREBASE_IOS_APP_ID: "{{resolve:ssm:/firebase/appcheck/ios-app-id}}"
+          FIREBASE_ANDROID_APP_ID: "{{resolve:ssm:/firebase/appcheck/android-app-id}}"
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints:
+          - app.ts
 
   AuthProxyIntegration:
     Type: AWS::ApiGatewayV2::Integration
@@ -568,7 +577,7 @@ Outputs:
     Description: API Gateway endpoint URL Hello World function
     Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
 
-  AuthProxy:
+  AuthProxyUrl:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
@@ -583,6 +592,39 @@ Outputs:
   UserPoolProviderUrl:
     Description: The URL of the Cognito User Pool
     Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+
+  CognitoWafLogGroupName:
+    Description: The name of the Cognito WAF log group
+    Value: !Ref CognitoWAFLogGroup
+
+  # Testing Outputs
+  AuthProxyFunctionName:
+    Description: The name of the Auth Proxy Lambda function
+    Value: !Ref AuthProxyFunction
+
+  AuthProxyLogGroupName:
+    Description: The name of the Auth Proxy Lambda function log group
+    Value: !Sub /aws/lambda/${AuthProxyFunction}
+
+  FirebaseIosAppId:
+    Description: The Firebase iOS App ID
+    Value: "{{resolve:ssm:/firebase/appcheck/ios-app-id}}"
+
+  FirebaseAndroidAppId:
+    Description: The Firebase Android App ID
+    Value: "{{resolve:ssm:/firebase/appcheck/android-app-id}}"
+
+  UnknownAndroidAppId:
+    Description: The Unknown Android App ID
+    Value: "{{resolve:ssm:/firebase/appcheck/unknown-app-id}}"
+
+  AppClientId:
+    Description: The App Client ID for the Cognito User Pool
+    Value: !Ref CognitoUserPoolClient
+
+  RedirectUri:
+    Description: The redirect URI for the Cognito User Pool
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/"
 
   SharedSignalScope:
     Description: The scope for the shared signal user pool client

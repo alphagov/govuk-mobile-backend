@@ -25,4 +25,14 @@ export default defineWorkspace([
       testTimeout: 120000,
     },
   },
+  {
+    test: {
+      include: ["tests/int/**/*.test.ts"],
+      name: "int",
+      environment: "node",
+      // allow for long running tests
+      testTimeout: 120000,
+      hookTimeout: 120000,
+    },
+  },
 ]);

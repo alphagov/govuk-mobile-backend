@@ -3,7 +3,7 @@ import {
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
-import { assert, describe, it, beforeAll } from "vitest";
+import { assert, describe, it } from "vitest";
 
 const input = {
   UserPoolId: process.env.CFN_UserPoolId,
