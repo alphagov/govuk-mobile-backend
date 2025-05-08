@@ -18,10 +18,11 @@
         "yaml-cfn": "^0.3.2"
     },
     "scripts": {
-        "test:acc": "vitest acc",
-        "test:validate": "sam validate",
         "test": "vitest run",
+        "test:acc": "vitest acc",
+        "test:functional": "vitest run --include tests/functional/**",
+        "test:int": "vitest int",
         "test:unit": "vitest unit",
-        "test:functional": "vitest run --include tests/functional/**"
+        "test:validate": "sam validate"
     }
 }

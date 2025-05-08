@@ -82,4 +82,16 @@ describe("Set up the Cognito User Pool OIDC client", () => {
       RefreshTokenValidity: 31536000, //one year
     });
   });
+
+  it("has token revocation enabled", () => {
+    template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+      EnableTokenRevocation: true,
+    });
+  });
+
+  it("has allowed oauth flows", () => {
+    template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
+      AllowedOAuthFlowsUserPoolClient: true,
+    });
+  });
 });
