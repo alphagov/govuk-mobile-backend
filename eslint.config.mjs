@@ -10,6 +10,7 @@ export default tseslint.config([
       '**/debug',
       '**/.aws-sam/',
       '**/*test*/**',
+      '**/__mocks__/**/*',
     ],
   },
   {

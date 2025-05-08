@@ -46,6 +46,7 @@ export async function proxy(hostname: string, path: string, body: object, header
         headers: { 'Content-Type': 'application/x-amz-json-1.1' },
         body: JSON.stringify({ message: 'Internal server error' })
       });
+      console.log("This code should be unreachable");
     });
 
     if (method === 'POST' && body) {

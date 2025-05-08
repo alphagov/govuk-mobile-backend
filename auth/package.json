@@ -29,6 +29,8 @@
         "test:unit": "vitest unit",
         "test:validate": "sam validate",
         "test:integration": "vitest run --project integration",
-        "test:functional": "vitest run --project functional"
+        "test:functional": "vitest run --project functional",
+        "sam:validate": "sam validate --region eu-west-2",
+        "sam:lint": "sam validate --lint --region eu-west-2"
     }
 }
