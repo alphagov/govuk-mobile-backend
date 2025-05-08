@@ -626,10 +626,6 @@ Outputs:
     Description: The redirect URI for the Cognito User Pool
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/"
 
-  SharedSignalScope:
-    Description: The scope for the shared signal user pool client
-    Value: !Sub api.${AWS::Region}.${AWS::AccountId}/${CustomScopeName}
-
   SharedSignalClientId:
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
