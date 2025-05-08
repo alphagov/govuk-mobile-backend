@@ -1,0 +1,36 @@
+{
+    "version": "2.0",
+    "routeKey": "ANY /example",
+    "rawPath": "/example",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "content-type": "application/json",
+        "host": "example.com",
+        "user-agent": "PostmanRuntime/7.29.0",
+        "x-amzn-trace-id": "Root=1-67891233-abcdef012345678912345678",
+        "x-forwarded-for": "192.0.2.1",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "123456789012",
+        "apiId": "api-id",
+        "domainName": "example.com",
+        "domainPrefix": "example",
+        "http": {
+            "method": "GET",
+            "path": "/example",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "192.0.2.1",
+            "userAgent": "PostmanRuntime/7.29.0"
+        },
+        "requestId": "id",
+        "routeKey": "ANY /example",
+        "stage": "$default",
+        "time": "12/Mar/2023:19:03:58 +0000",
+        "timeEpoch": 1678653838000
+    },
+    "body": null,
+    "isBase64Encoded": false
+}
