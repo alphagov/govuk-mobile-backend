@@ -27,6 +27,7 @@
         "test:acc": "vitest acc",
         "test:int": "vitest int",
         "test:unit": "vitest unit",
+        "test:coverage": "vitest run --coverage --project unit",
         "test:validate": "sam validate",
         "test:integration": "vitest run --project integration",
         "test:functional": "vitest run --project functional"

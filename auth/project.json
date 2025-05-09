@@ -71,6 +71,13 @@
             "outputs": [
                 "{options.outputFile}"
             ]
+        },
+        "test:coverage": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:coverage",
+                "cwd": "auth"
+            }
         }
     }
 }
