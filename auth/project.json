@@ -36,26 +36,26 @@
                 ]
             }
         },
-	"sam:lint": {
+        "sam:lint": {
             "executor": "nx:run-commands",
             "outputs": [
                 "{options.outputFile}"
             ],
             "options": {
                 "command": "npm run sam:lint",
-		"cwd": "auth"
+                "cwd": "auth"
             }
         },
-	"sam:validate": {
-	    "executor": "nx:run-commands",
+        "sam:validate": {
+            "executor": "nx:run-commands",
             "outputs": [
                 "{options.outputFile}"
             ],
             "options": {
                 "command": "npm run sam:validate",
-		"cwd": "auth"
+                "cwd": "auth"
             }
-	},
+        },
         "test:unit": {
             "dependsOn": [
                 "install"
@@ -92,12 +92,12 @@
                 "{options.outputFile}"
             ]
         },
-	"test:coverage": {
-	    "executor": "nx:run-commands",
-	    "options": {
-		"command": "npm run test:coverage",
-		"cwd": "auth"
-	    }
-	}
+        "test:coverage": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:coverage",
+                "cwd": "auth"
+            }
+        }
     }
 }

@@ -15,15 +15,18 @@ export default defineConfig({
     watch: false,
     coverage: {
       exclude: [
-	...coverageConfigDefaults.exclude,
-	"**/feature-tests/**",
-	"vitest*.config.ts",
-	"__mocks__",
+        ...coverageConfigDefaults.exclude,
+        "**/feature-tests/**",
+        "**/feature-tests/**",
+        "**/tests/**/*",
+        "**/*.test.ts",
+        "vitest*.config.ts",
+        "__mocks__",
       ],
       reporter: ["text", "lcov"],
       reportOnFailure: true,
       thresholds: {
-	functions: 80
+        functions: 80
       },
     },
   },
