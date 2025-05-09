@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
-import { validateFirebaseJWT } from "../../firebaseJwt";
+import { validateFirebaseJWT } from "../../../services";
 import { JsonWebTokenError, decode } from "jsonwebtoken";
-import { UnknownAppError } from "../../errors";
+import { UnknownAppError } from "../../../services";
 
 vi.mock('jsonwebtoken', async (importOriginal) => {
     const originalModule = await importOriginal<typeof import('jsonwebtoken')>();
