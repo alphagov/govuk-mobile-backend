@@ -28,6 +28,21 @@ Parameters:
       The ARN of the permissions boundary to apply to any role created by the template
     Default: "none"
 
+  CustomScopeName:
+    Type: String
+    Description: Name for the custom OAuth scope
+    Default: "read"
+
+  CustomScopeDescription:
+    Type: String
+    Description: Description for the custom OAuth scope
+    Default: Generating a token for the client
+
+  ResourceServerName:
+    Type: String
+    Description: Name for the Cognito Resource Server
+    Default: SharedSignalResourceServer
+
 Mappings:
   OneLogin:
     Environment:
@@ -134,7 +149,7 @@ Resources:
       GenerateSecret: false # pragma: allowlist secret
       CallbackURLs:
         - "govuk://govuk/login-auth-callback"
-      LogoutURLs: 
+      LogoutURLs:
         - !Join
           - ""
           - - "https://oidc."
@@ -514,6 +529,49 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
 
+  CognitoResourceServer:
+    Type: AWS::Cognito::UserPoolResourceServer
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      Identifier: !Sub api.${AWS::Region}.${AWS::AccountId} # Unique identifier for your API
+      Name: !Ref ResourceServerName
+      Scopes:
+        - ScopeDescription: !Ref CustomScopeDescription
+          ScopeName: !Ref CustomScopeName
+
+  # Shared signal user pool client
+  CognitoM2MClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ClientName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "shared-signal-user-pool-client"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+
+      AllowedOAuthFlows:
+        - client_credentials
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - !Sub api.${AWS::Region}.${AWS::AccountId}/${CustomScopeName}
+      SupportedIdentityProviders:
+        - COGNITO
+      GenerateSecret: true # pragma: allowlist secret
+      ExplicitAuthFlows:
+        - ALLOW_REFRESH_TOKEN_AUTH
+      TokenValidityUnits:
+        AccessToken: seconds
+      AccessTokenValidity: 3600 # 1 hour in seconds
+
 Outputs:
   ApiGateway:
     Description: API Gateway endpoint URL Hello World function
@@ -534,7 +592,7 @@ Outputs:
   UserPoolProviderUrl:
     Description: The URL of the Cognito User Pool
     Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-  
+
   CognitoWafLogGroupName:
     Description: The name of the Cognito WAF log group
     Value: !Ref CognitoWAFLogGroup
@@ -567,3 +625,7 @@ Outputs:
   RedirectUri:
     Description: The redirect URI for the Cognito User Pool
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/"
+
+  SharedSignalClientId:
+    Description: The id of the shared signal user pool client
+    Value: !Ref CognitoM2MClient
