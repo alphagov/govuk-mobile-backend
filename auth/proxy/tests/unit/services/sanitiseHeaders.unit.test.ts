@@ -3,7 +3,7 @@ import {
   it,
   expect,
 } from 'vitest';
-import { sanitiseHeaders } from '../../../helpers';
+import { sanitiseHeaders } from '../../../services';
 import { APIGatewayProxyEventHeaders } from 'aws-lambda';
 
 describe('sanitise headers', () => {

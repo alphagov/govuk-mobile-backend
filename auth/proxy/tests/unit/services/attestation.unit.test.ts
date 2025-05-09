@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { validateAttestationHeaderOrThrow } from "../../attestation";
-import { MissingAttestationTokenError } from "../../errors";
+import {
+  validateAttestationHeaderOrThrow,
+  MissingAttestationTokenError
+} from "../../../services";
 
 const validateFirebaseMock = vi.fn();
-vi.mock('../../firebaseJwt', async (importOriginal) => {
-    const originalModule = await importOriginal<typeof import('../../firebaseJwt')>();
+vi.mock('../../../services', async (importOriginal) => {
+    const originalModule = await importOriginal<typeof import('../../../services')>();
 
     return {
         ...originalModule, // Include all original exports
@@ -20,7 +22,7 @@ describe('attestation', () => {
     const mockConfig = (overrides?: any) => ({
         ...process.env,
         ...overrides
-    })
+    });
 
     const attestationTokenHeaderName = 'X-Attestation-Token';
 
@@ -28,33 +30,41 @@ describe('attestation', () => {
         await expect(validateAttestationHeaderOrThrow({
             [attestationTokenHeaderName]: 'Bad-Token'
         }, '/jwks', mockConfig()))
-            .resolves
-            .not
-            .toThrow()
+          .resolves
+          .not
+          .toThrow();
     })
 
     it('should throw missing attestation token header if no header provided', async () => {
         await expect(validateAttestationHeaderOrThrow({}, '/token', mockConfig()))
-            .rejects
-            .toThrow(MissingAttestationTokenError)
+          .rejects
+          .toThrow(MissingAttestationTokenError);
     })
 
-    it('should return void for valid attesation checks', async () => {
-        await expect(validateAttestationHeaderOrThrow({
+    it('should return void for valid attestation checks', async () => {
+      try {
+	console.log("******************************");
+	await validateAttestationHeaderOrThrow({
+            [attestationTokenHeaderName]: 'valid-token'
+        }, '/token', mockConfig());
+      } catch (e) {
+	console.log(e);
+      }
+      await expect(validateAttestationHeaderOrThrow({
             [attestationTokenHeaderName]: 'valid-token'
         }, '/token', mockConfig()))
-            .resolves
-            .not
-            .toThrow()
+          .resolves
+          .not
+          .toThrow();
     })
 
     it('should allow case insensitive headers', async () => {
         await expect(validateAttestationHeaderOrThrow({
             'x-attestation-token': 'valid-token'
         }, '/token', mockConfig()))
-            .resolves
-            .not
-            .toThrow()
+          .resolves
+          .not
+          .toThrow();
     })
 
     it('should throw if attestation check fails', async () => {

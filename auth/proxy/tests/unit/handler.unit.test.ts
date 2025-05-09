@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHandler } from '../../app'; // Adjust path as needed
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
+import {
+  transformCognitoURL,
+  stripStageFromPath,
+} from "../../services";
+
+vi.mock("../../services", async(importOriginal) => {
+  return {
+    ...await importOriginal<typeof import('../../services')>(),
+    transformCognitoURL: vi.fn().mockImplementation((url: string | undefined) => url),
+    stripStageFromPath: vi.fn().mockImplementation((stage: string, path: string) => path),
+  }
+});
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
     version: '2.0',

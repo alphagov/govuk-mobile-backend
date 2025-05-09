@@ -37,6 +37,10 @@ let request = createEmitter<{
     error:undefined
   }>();
 
+request.on("error", (e) => {
+  console.log(e);
+});
+
 function mockRequest(url?: HttpURL, options: HttpsOptions, callback: Function): ClientRequest;
 function mockRequest(url: HttpURL, options: HttpsOptions, callback: Function) : ClientRequest;
 function mockRequest(urlOrOptions: HttpURL | HttpsOptions, options: HttpsOptions | Function, callback: Function): ClientRequest {
@@ -54,15 +58,17 @@ function mockRequest(urlOrOptions: HttpURL | HttpsOptions, options: HttpsOptions
   }
   
   const nextResponse = mockResponse();
-  response = Object.assign(response, (({ body, ...o }) => o)(nextResponse));
+  if(nextResponse) {
+    response = Object.assign(response, (({ body, ...o }) => o)(nextResponse));
   
-  if (typeof options === "function")
-    callback = options;
-  callback(response);
+    if (typeof options === "function")
+      callback = options;
+    callback(response);
 
-  response.emit('data', nextResponse.body);
-  response.emit('end');
-    
+    response.emit('data', nextResponse.body);
+    response.emit('end');
+  }
+  
   return request;
   
 }
