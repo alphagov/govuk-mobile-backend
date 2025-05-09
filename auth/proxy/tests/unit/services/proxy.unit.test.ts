@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import https from "https";
-import { proxy, ProxyInput } from '../../proxy'
+import { proxy, ProxyInput } from '../../../services/proxy'
 
 vi.mock('https', () => {
     beforeEach(() => vi.resetAllMocks())
@@ -47,7 +47,6 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
 });
 
 describe('proxy', () => {
-
     beforeEach(() => {
         process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
     });

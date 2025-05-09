@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { validateAttestationHeaderOrThrow } from "../../attestation";
-import { MissingAttestationTokenError } from "../../errors";
+import {
+    validateAttestationHeaderOrThrow,
+    MissingAttestationTokenError
+} from "../../../services";
 
 const validateFirebaseMock = vi.fn();
-vi.mock('../../firebaseJwt', async (importOriginal) => {
-    const originalModule = await importOriginal<typeof import('../../firebaseJwt')>();
+vi.mock('../../../services/firebaseJwt', async (importOriginal) => {
+    const originalModule = await importOriginal<typeof import('../../../services/firebaseJwt')>();
 
     return {
         ...originalModule, // Include all original exports
@@ -20,7 +22,7 @@ describe('attestation', () => {
     const mockConfig = (overrides?: any) => ({
         ...process.env,
         ...overrides
-    })
+    });
 
     const attestationTokenHeaderName = 'X-Attestation-Token';
 
@@ -30,22 +32,22 @@ describe('attestation', () => {
         }, '/jwks', mockConfig()))
             .resolves
             .not
-            .toThrow()
+            .toThrow();
     })
 
     it('should throw missing attestation token header if no header provided', async () => {
         await expect(validateAttestationHeaderOrThrow({}, '/token', mockConfig()))
             .rejects
-            .toThrow(MissingAttestationTokenError)
+            .toThrow(MissingAttestationTokenError);
     })
 
-    it('should return void for valid attesation checks', async () => {
+    it('should return void for valid attestation checks', async () => {
         await expect(validateAttestationHeaderOrThrow({
             [attestationTokenHeaderName]: 'valid-token'
         }, '/token', mockConfig()))
             .resolves
             .not
-            .toThrow()
+            .toThrow();
     })
 
     it('should allow case insensitive headers', async () => {
@@ -54,7 +56,7 @@ describe('attestation', () => {
         }, '/token', mockConfig()))
             .resolves
             .not
-            .toThrow()
+            .toThrow();
     })
 
     it('should throw if attestation check fails', async () => {
