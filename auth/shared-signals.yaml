@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  GovUK Mobile Backend Authentication template.
+
+Parameters:
+  Environment:
+    Description: "The name of the environment to deploy to"
+    Type: "String"
+    AllowedValues:
+      - build
+      - staging
+      - production
+      - integration
+      - demo
+      - local
+      - dev
+
+  Api:
+    Type: String
+    Description: "The ID of the API Gateway to use"
+    Default: !Ref ApiGatewayId
+  
+
+Resources:
+  SharedSignalsAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: CognitoAuthorizer
+      RestApiId:
+        Ref: Api
+      Type: COGNITO_USER_POOLS
+      IdentitySource: method.request.header.Authorization
+      ProviderARNs:
+        - Fn::GetAtt:
+            - UserPool
+            - Arn
+
+Output:
+  SharedSignalsAuthorizer:
+    Description: "The authorizer for the shared signals API"
+    Value: !Ref SharedSignalsAuthorizer

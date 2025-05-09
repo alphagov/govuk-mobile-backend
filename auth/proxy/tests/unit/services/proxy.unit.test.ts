@@ -3,7 +3,33 @@ import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import https from "https";
 import { proxy, ProxyInput } from '../../../services/proxy'
 
-vi.mock('https');
+vi.mock('https', () => {
+    beforeEach(() => vi.resetAllMocks())
+
+    const request = vi.fn((options, callback) => {
+        const res = {
+            on: (event: string, cb: any) => {
+                if (event === 'data') cb('mock response');
+                if (event === 'end') cb();
+            },
+            headers: { 'content-type': 'application/json' },
+            statusCode: 200,
+        };
+
+        const req = {
+            on: vi.fn(),
+            write: vi.fn(),
+            end: vi.fn(() => callback(res)),
+        };
+
+        return req;
+    });
+
+    return {
+        default: { request }, // default export for ESM-style import
+        request,
+    };
+});
 
 const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
     method: 'POST',
