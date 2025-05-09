@@ -1,9 +1,10 @@
-import { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
+import { APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { FEATURE_FLAGS, FeatureFlags } from './feature-flags';
 import { AttestationUseCase, validateAttestationHeaderOrThrow } from './attestation';
 import { proxy, ProxyInput } from './proxy';
 import { MissingAttestationTokenError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import { sanitiseHeaders, stripStageFromPath, transformCognitoUrl } from './helpers';
 
 interface Dependencies {
   proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>
@@ -40,7 +41,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       path: formattedPath,
       isBase64Encoded: event.isBase64Encoded,
       body,
-      sanitisedHeaders: sanitiseHeaders(headers),
+      sanitizedHeaders: sanitiseHeaders(headers),
       targetPath,
       // can throw invalid URL
       parsedUrl: new URL(cognitoUrl)

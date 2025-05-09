@@ -47,7 +47,6 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
 });
 
 describe('proxy', () => {
-
     beforeEach(() => {
         process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
     });

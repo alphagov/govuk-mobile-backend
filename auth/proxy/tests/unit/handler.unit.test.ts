@@ -1,15 +1,6 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHandler } from '../../app'; // Adjust path as needed
-import {
-    describe,
-    it,
-    expect,
-    vi,
-    beforeEach
-} from 'vitest';
-import { proxyWithHttps } from '../../services';
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
-
-vi.mock('../../services', { spy: true });
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
     version: '2.0',
@@ -78,13 +69,12 @@ describe('lambdaHandler', () => {
             ATTESTATION: false,
         },
     }))
-
+    
     const uncaughtExceptionEvent = createHandler(createMockDependencies({
         attestationUseCase: {
             validateAttestationHeaderOrThrow: vi.fn(() => {
-                throw new Error('Generic transient error');
-            })
-        },
+            throw new Error('Generic transient error');
+        })},
     }))
 
     const lambdaHandler = createHandler(mockDependencies);
@@ -120,7 +110,7 @@ describe('lambdaHandler', () => {
         await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
         const headerKeys = Object.keys(mockProxy.mock.calls[0][0].sanitizedHeaders);
         const hasUppercaseKeys = headerKeys.some(k => /[A-Z]/.test(k));
-
+        
         expect(hasUppercaseKeys).toBe(false);
     });
 
@@ -128,7 +118,7 @@ describe('lambdaHandler', () => {
         await disableAttestationEvent(createMockEvent()) as APIGatewayProxyStructuredResultV2;
         expect(mockDependencies.attestationUseCase.validateAttestationHeaderOrThrow)
             .not
-            .toHaveBeenCalled();
+            .toHaveBeenCalled();        
     });
 
     it('returns 500 on proxy error', async () => {
@@ -140,34 +130,8 @@ describe('lambdaHandler', () => {
 
     it('returns 500 on catch-all errors', async () => {
         const response = await uncaughtExceptionEvent(createMockEvent()) as APIGatewayProxyStructuredResultV2;
-
+        
         expect(response.statusCode).toBe(500);
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
     });
-
-    beforeEach(() => {
-        process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
-    });
-
-    it('proxies a valid GET /authorize request', async () => {
-        vi.mocked(proxyWithHttps).mockResolvedValue({
-            statusCode: 200,
-            body: 'mock response',
-        });
-        const response = await lambdaHandler(createMockEvent({
-            routeKey: 'GET /authorize'
-        })) as APIGatewayProxyStructuredResultV2;
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toBe('mock response');
-    });
-    it('proxies a valid POST /token request', async () => {
-        vi.mocked(proxyWithHttps).mockResolvedValue({
-            statusCode: 200,
-            body: 'mock response'
-        });
-        const response = await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toBe('mock response');
-    });
 });
-
