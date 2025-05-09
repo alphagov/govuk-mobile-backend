@@ -7,7 +7,7 @@ export interface ProxyInput {
     path: string
     isBase64Encoded: boolean
     body: string | undefined
-    sanitizedHeaders: any
+    sanitizedHeaders: Record<string, string>
     targetPath: string
     parsedUrl: URL
 }
@@ -35,7 +35,7 @@ export const proxy = async ({
     return await _proxyRequest(parsedUrl.hostname, targetPath, body, sanitizedHeaders, method);
 }
 
-async function _proxyRequest(hostname: string, path: string, body: any, headers: any, method = 'GET'): Promise<APIGatewayProxyResultV2> {
+async function _proxyRequest(hostname: string, path: string, body: string | undefined, headers: Record<string, string>, method = 'GET'): Promise<APIGatewayProxyResultV2> {
     return new Promise((resolve) => {
         const req = https.request(
             {
