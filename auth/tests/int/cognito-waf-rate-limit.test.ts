@@ -1,10 +1,9 @@
 import "dotenv/config";
-import { assert, beforeAll, describe, it, expect, afterAll } from "vitest";
+import { beforeAll, describe, it, expect } from "vitest";
 import axios from "axios";
 import {
   CloudWatchLogsClient,
   FilterLogEventsCommand,
-  DeleteLogGroupCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
 
 const input = {

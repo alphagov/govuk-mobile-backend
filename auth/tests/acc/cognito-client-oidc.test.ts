@@ -1,20 +1,17 @@
-import "dotenv/config";
 import {
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
+  TimeUnitsType,
+  TokenValidityUnitsType,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { assert, describe, it } from "vitest";
-
-const input = {
-  UserPoolId: process.env.CFN_UserPoolId,
-  ClientId: process.env.CFN_AppUserPoolClientId,
-  TestEnvironment: process.env.TEST_ENVIRONMENT,
-};
+import { testConfig } from "../common/config"
 
 const client = new CognitoIdentityProviderClient({ region: "eu-west-2" });
-const command = new DescribeUserPoolClientCommand(input);
-let response;
-let userPoolClient;
+const command = new DescribeUserPoolClientCommand({
+  UserPoolId: testConfig.userPoolId,
+  ClientId: testConfig.clientId,
+});
 const environmentMapping = [
   {
     environment: "build",
@@ -35,11 +32,11 @@ const environmentMapping = [
 ];
 
 describe("Check deployed Cognito User Pool Client", async () => {
-  response = await client.send(command);
-  userPoolClient = response.UserPoolClient;
+  const response = await client.send(command);
+  const userPoolClient = response.UserPoolClient!;
   it("has allowed OAuth flows set to code", () => {
     const expectedOauthFlows = "code";
-    assert.equal(userPoolClient.AllowedOAuthFlows[0], expectedOauthFlows);
+    assert.equal(userPoolClient.AllowedOAuthFlows?.[0], expectedOauthFlows);
   });
 
   it("has identity token expiration set correctly", () => {
@@ -78,7 +75,7 @@ describe("Check deployed Cognito User Pool Client", async () => {
   });
 
   it("has logout URL set correctly", () => {
-    const currentEnvironment = input.TestEnvironment;
+    const currentEnvironment = testConfig.testEnvironment;
     const matchedEnvironment = environmentMapping.find(
       (env) => env.environment === currentEnvironment
     );
@@ -107,10 +104,10 @@ describe("Check deployed Cognito User Pool Client", async () => {
   });
 
   it("has token validity units set correctly", () => {
-    const expectedTokenValidityUnits = {
-      AccessToken: "seconds",
-      IdToken: "seconds",
-      RefreshToken: "seconds",
+    const expectedTokenValidityUnits: TokenValidityUnitsType = {
+      AccessToken: TimeUnitsType.SECONDS,
+      IdToken: TimeUnitsType.SECONDS,
+      RefreshToken: TimeUnitsType.SECONDS,
     };
     assert.deepEqual(
       userPoolClient.TokenValidityUnits,

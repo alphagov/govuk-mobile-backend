@@ -24,7 +24,7 @@ describe("attestation lambda", () => {
 
         it("should create a log in cloudwatch", async () => {
             const response = await loggingDriver.findLogMessageWithRetries({
-                logGroupName: `/aws/lambda/${testConfig.authProxyLogGroup}`,
+                logGroupName: testConfig.authProxyLogGroup,
                 searchString: 'Calling auth proxy',
             })
 

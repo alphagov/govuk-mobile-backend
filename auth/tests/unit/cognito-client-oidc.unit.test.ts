@@ -1,18 +1,9 @@
-import { Template } from "aws-cdk-lib/assertions";
-import { schema } from "yaml-cfn";
-import { describe, it, beforeAll } from "vitest";
-import { readFileSync } from "fs";
-import { load } from "js-yaml";
+import { describe, it } from "vitest";
+import { loadTemplateFromFile } from '../common/template'
 
-let template: Template;
+const template = loadTemplateFromFile('./template.yaml')
 
 describe("Set up the Cognito User Pool OIDC client", () => {
-  beforeAll(() => {
-    const yamlTemplate: any = load(readFileSync("template.yaml", "utf-8"), {
-      schema: schema,
-    });
-    template = Template.fromJSON(yamlTemplate);
-  });
 
   it("should refer to cognito user pool", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {

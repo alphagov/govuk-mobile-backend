@@ -1,18 +1,9 @@
-import { Template } from "aws-cdk-lib/assertions";
-import { schema } from "yaml-cfn";
-import { describe, it, beforeAll, expect } from "vitest";
-import { readFileSync } from "fs";
-import { load } from "js-yaml";
+import { describe, it } from "vitest";
+import { loadTemplateFromFile } from '../common/template'
 
-let template: Template;
+const template = loadTemplateFromFile('./template.yaml')
 
 describe("Set up the Web ACL Association for Cognito for GovUK app", () => {
-  beforeAll(() => {
-    const yamltemplate: string = load(readFileSync("template.yaml", "utf-8"), {
-      schema: schema,
-    });
-    template = Template.fromJSON(yamltemplate);
-  });
   it("has a name that includes the stack name", () => {
     template.hasResourceProperties("AWS::WAFv2::WebACL", {
       Name: {

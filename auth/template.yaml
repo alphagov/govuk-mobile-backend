@@ -548,16 +548,6 @@ Resources:
         - "-"
         - - !Ref AWS::StackName
           - "shared-signal-user-pool-client"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-
       AllowedOAuthFlows:
         - client_credentials
       AllowedOAuthFlowsUserPoolClient: true
@@ -571,6 +561,68 @@ Resources:
       TokenValidityUnits:
         AccessToken: seconds
       AccessTokenValidity: 3600 # 1 hour in seconds
+      
+  SharedSignalsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "shared-signals"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      StageName: !Ref Environment
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+
+  SignalsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "shared-signals-receiver"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      Description: "Shared Signals receiver function"
+      CodeUri: shared-signals/
+      Handler: app.lambdaHandler
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: SharedSignalsApi
+            Path: /receiver
+            Method: POST
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
 
 Outputs:
   ApiGateway:
@@ -629,3 +681,15 @@ Outputs:
   SharedSignalClientId:
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
+    
+  SharedSignalsEndpoint:
+    Description: The endpoint for the Shared Signals API
+    Value: !Sub https://${SharedSignalsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+
+  SharedSignalsReceiverLogGroupName:
+    Description: The name of the Shared Signals Receiver Lambda function log group
+    Value: !Sub /aws/lambda/${SignalsFunction}
+
+  SharedSignalsApiId:
+    Description: The ID of the Shared Signals API
+    Value: !Ref SharedSignalsApi

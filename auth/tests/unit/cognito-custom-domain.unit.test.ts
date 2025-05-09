@@ -1,18 +1,10 @@
-import { Template } from "aws-cdk-lib/assertions";
-import { schema } from "yaml-cfn";
 import { describe, it, beforeAll } from "vitest";
-import { readFileSync } from "fs";
-import { load } from "js-yaml";
+import { loadTemplateFromFile } from '../common/template'
 
-let template: Template;
+const template = loadTemplateFromFile('./template.yaml')
 
 describe("Set up the Cognito User Custom Domain", () => {
-  beforeAll(() => {
-    const yamlTemplate: any = load(readFileSync("template.yaml", "utf-8"), {
-      schema: schema,
-    });
-    template = Template.fromJSON(yamlTemplate);
-  });
+
   it("has an associated user pool", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolDomain", {
       UserPoolId: {

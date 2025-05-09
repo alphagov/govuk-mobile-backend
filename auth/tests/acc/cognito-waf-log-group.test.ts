@@ -1,30 +1,28 @@
-import "dotenv/config";
-
 import {
   CloudWatchLogsClient,
   DescribeLogGroupsCommand,
   DescribeLogGroupsCommandInput,
 } from "@aws-sdk/client-cloudwatch-logs";
 import { assert, describe, it } from "vitest";
-
-const input = {
-  CognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName,
-};
+import { testConfig } from "../common/config"
 
 const client = new CloudWatchLogsClient({ region: "eu-west-2" });
 const commandInput: DescribeLogGroupsCommandInput = {
-  logGroupNamePrefix: input.CognitoWafLogGroupName,
+  logGroupNamePrefix: testConfig.cognitoWafLogGroupName,
 };
 const command = new DescribeLogGroupsCommand(commandInput);
 
-let logGroup;
-
 describe("Check the deployed WAF log group", async () => {
   const response = await client.send(command);
-  logGroup = response.logGroups[0];
+  const logGroup = response.logGroups?.[0];
+
+  if (!logGroup) {
+    throw new Error("Log group not found");
+  }
+
   it("has data protection activated", () => {
-    const extpectedDataProtectionStatus = "ACTIVATED";
-    assert.equal(logGroup.dataProtectionStatus, extpectedDataProtectionStatus);
+    const expectedDataProtectionStatus = "ACTIVATED";
+    assert.equal(logGroup.dataProtectionStatus, expectedDataProtectionStatus);
   });
   it("has an associated KMS key", () => {
     assert.isNotEmpty(logGroup.kmsKeyId);
