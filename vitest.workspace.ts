@@ -1,5 +1,7 @@
-import { defineWorkspace } from 'vitest/config';
+import { defineWorkspace } from "vitest/config";
 
 export default defineWorkspace([
-  'auth', 
+  './vitest.unit.config.ts',
+  './vitest.int.config.ts',
+  './vitest.acc.config.ts',
 ]);

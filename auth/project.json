@@ -32,8 +32,28 @@
             ],
             "options": {
                 "lintFilePatterns": [
-                    "./**/*.{ts,tsx,js,jsx}"
+                    "**/*.ts"
                 ]
+            }
+        },
+        "sam:lint": {
+            "executor": "nx:run-commands",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "command": "npm run sam:lint",
+                "cwd": "auth"
+            }
+        },
+        "sam:validate": {
+            "executor": "nx:run-commands",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "command": "npm run sam:validate",
+                "cwd": "auth"
             }
         },
         "test:unit": {
@@ -65,12 +85,19 @@
             ],
             "executor": "nx:run-commands",
             "options": {
-                "command": "npm run test --project functional",
+                "command": "npm run test:acc",
                 "cwd": "auth"
             },
             "outputs": [
                 "{options.outputFile}"
             ]
+        },
+        "test:coverage": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:coverage",
+                "cwd": "auth"
+            }
         }
     }
 }

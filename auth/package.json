@@ -24,11 +24,14 @@
     },
     "scripts": {
         "test": "vitest run",
-        "test:acc": "vitest acc",
         "test:int": "vitest int",
-        "test:unit": "vitest unit",
+        "test:unit": "vitest --project unit --root ../",
+        "test:acc": "vitest --project acc --root ../",
         "test:validate": "sam validate",
         "test:integration": "vitest run --project integration",
-        "test:functional": "vitest run --project functional"
+        "test:functional": "vitest run --project functional",
+        "test:coverage": "vitest run --coverage --root=../ --project unit",
+        "sam:validate": "sam validate --region eu-west-2",
+        "sam:lint": "sam validate --lint --region eu-west-2"
     }
 }
