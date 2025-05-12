@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHandler } from '../../app'; // Adjust path as needed
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
+import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import { MissingAttestationTokenError, UnknownAppError } from '../../errors';
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
     version: '2.0',
@@ -69,12 +71,13 @@ describe('lambdaHandler', () => {
             ATTESTATION: false,
         },
     }))
-    
+
     const uncaughtExceptionEvent = createHandler(createMockDependencies({
         attestationUseCase: {
             validateAttestationHeaderOrThrow: vi.fn(() => {
-            throw new Error('Generic transient error');
-        })},
+                throw new Error('Generic transient error');
+            })
+        },
     }))
 
     const lambdaHandler = createHandler(mockDependencies);
@@ -110,7 +113,7 @@ describe('lambdaHandler', () => {
         await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
         const headerKeys = Object.keys(mockProxy.mock.calls[0][0].sanitizedHeaders);
         const hasUppercaseKeys = headerKeys.some(k => /[A-Z]/.test(k));
-        
+
         expect(hasUppercaseKeys).toBe(false);
     });
 
@@ -118,7 +121,7 @@ describe('lambdaHandler', () => {
         await disableAttestationEvent(createMockEvent()) as APIGatewayProxyStructuredResultV2;
         expect(mockDependencies.attestationUseCase.validateAttestationHeaderOrThrow)
             .not
-            .toHaveBeenCalled();        
+            .toHaveBeenCalled();
     });
 
     it('returns 500 on proxy error', async () => {
@@ -128,9 +131,58 @@ describe('lambdaHandler', () => {
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
     });
 
+    it.each([
+        [createHandler(createMockDependencies({
+            attestationUseCase: {
+                validateAttestationHeaderOrThrow: vi.fn(() => {
+                    throw new JsonWebTokenError('err');
+                })
+            },
+        })), {
+            statusCode: 401,
+            message: 'Attestation token is invalid'
+        }],
+        [createHandler(createMockDependencies({
+            attestationUseCase: {
+                validateAttestationHeaderOrThrow: vi.fn(() => {
+                    throw new UnknownAppError('err');
+                })
+            },
+        })), {
+            statusCode: 401,
+            message: 'Unknown app associated with attestation token'
+        }],
+        [createHandler(createMockDependencies({
+            attestationUseCase: {
+                validateAttestationHeaderOrThrow: vi.fn(() => {
+                    throw new TokenExpiredError('err', new Date());
+                })
+            },
+        })), {
+            statusCode: 401,
+            message: 'Attestation token has expired'
+        }],
+        [createHandler(createMockDependencies({
+            attestationUseCase: {
+                validateAttestationHeaderOrThrow: vi.fn(() => {
+                    throw new MissingAttestationTokenError('err');
+                })
+            },
+        })), {
+            statusCode: 400,
+            message: 'Attestation token is missing'
+        }],
+    ])
+        ('returns jwt expired on expired token error', async (handler, expectedResponse) => {
+            const response = await handler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+
+            expect(response.statusCode).toBe(expectedResponse.statusCode);
+            expect(JSON.parse(response.body as string).message).toEqual(expectedResponse.message);
+        });
+
     it('returns 500 on catch-all errors', async () => {
         const response = await uncaughtExceptionEvent(createMockEvent()) as APIGatewayProxyStructuredResultV2;
-        
+
         expect(response.statusCode).toBe(500);
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
     });
