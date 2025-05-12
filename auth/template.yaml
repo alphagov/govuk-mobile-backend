@@ -33,7 +33,6 @@ Parameters:
     Description: Name for the custom OAuth scope
     Default: "read"
 
-  
 Mappings:
   OneLogin:
     Environment:
@@ -321,28 +320,6 @@ Resources:
             - !Sub "-${AWS::StackName}"
         - !FindInMap [CustomDomain, Environment, !Ref Environment]
 
-  ApiGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "api-gateway"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      StageName: !Ref Environment
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-
   PostAuthenticationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -360,33 +337,6 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
-
-  TestFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: ApiGateway
-            Path: /test
-            Method: GET
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
-        SourceMap: false
-        EntryPoints:
-          - app.ts
-
 
   UserPoolIdentityProvider:
     Type: "AWS::Cognito::UserPoolIdentityProvider"
@@ -552,7 +502,7 @@ Resources:
       TokenValidityUnits:
         AccessToken: seconds
       AccessTokenValidity: 3600 # 1 hour in seconds
-      
+
   SharedSignalsApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -616,10 +566,6 @@ Resources:
           - app.ts
 
 Outputs:
-  ApiGateway:
-    Description: API Gateway endpoint URL Hello World function
-    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
-
   AuthProxyUrl:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
@@ -665,14 +611,10 @@ Outputs:
     Description: The App Client ID for the Cognito User Pool
     Value: !Ref CognitoUserPoolClient
 
-  RedirectUri:
-    Description: The redirect URI for the Cognito User Pool
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/"
-
   SharedSignalClientId:
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
-    
+
   SharedSignalsEndpoint:
     Description: The endpoint for the Shared Signals API
     Value: !Sub https://${SharedSignalsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
