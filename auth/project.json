@@ -21,8 +21,7 @@
                 "install"
             ],
             "options": {
-                "command": "npm i && npm run compile",
-                "cwd": "auth/hello-world"
+                "command": "npm i && npm run compile"
             }
         },
         "lint": {
