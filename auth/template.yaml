@@ -467,7 +467,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: proxy/
-      Handler: app.lambdaHandler
+      Handler: index.lambdaHandler
       Environment:
         Variables:
           ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"

@@ -1,7 +1,8 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
-import { FEATURE_FLAGS, FeatureFlags } from './feature-flags';
-import { AttestationUseCase, validateAttestationHeaderOrThrow } from './attestation';
-import { proxy, ProxyInput } from './proxy';
+import { 
+  FeatureFlags } from './feature-flags';
+import { AttestationUseCase } from './attestation';
+import { ProxyInput } from './proxy';
 import { MissingAttestationTokenError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
@@ -100,16 +101,6 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
   }
 }
 
-const attestationUseCase = {
-  validateAttestationHeaderOrThrow
-}
-
-const dependencies = {
-  proxy,
-  attestationUseCase,
-  featureFlags: FEATURE_FLAGS
-}
-
 const generateErrorResponse = ({
   statusCode,
   message
@@ -121,6 +112,3 @@ const generateErrorResponse = ({
   headers: { 'Content-Type': 'application/x-amz-json-1.1' },
   body: JSON.stringify({ message })
 })
-
-
-export const lambdaHandler = createHandler(dependencies);

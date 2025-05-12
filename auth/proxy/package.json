@@ -2,13 +2,13 @@
   "name": "proxy",
   "version": "1.0.0",
   "description": "Authentication proxy for cognito",
-  "main": "app.js",
+  "main": "index.js",
   "author": "govuk-app-backend",
   "license": "MIT",
   "scripts": {
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify"
+    "build:debug": "esbuild --bundle index.ts --outfile=debug/index.js --sourcemap --platform=node --target=node22 --minify"
   },
   "dependencies": {
     "esbuild": "^0.14.14",
