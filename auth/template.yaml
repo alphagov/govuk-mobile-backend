@@ -33,16 +33,7 @@ Parameters:
     Description: Name for the custom OAuth scope
     Default: "read"
 
-  CustomScopeDescription:
-    Type: String
-    Description: Description for the custom OAuth scope
-    Default: Generating a token for the client
-
-  ResourceServerName:
-    Type: String
-    Description: Name for the Cognito Resource Server
-    Default: SharedSignalResourceServer
-
+  
 Mappings:
   OneLogin:
     Environment:
@@ -534,9 +525,9 @@ Resources:
     Properties:
       UserPoolId: !Ref CognitoUserPool
       Identifier: !Sub api.${AWS::Region}.${AWS::AccountId} # Unique identifier for your API
-      Name: !Ref ResourceServerName
+      Name: SharedSignalResourceServer
       Scopes:
-        - ScopeDescription: !Ref CustomScopeDescription
+        - ScopeDescription: Shared signal scope for resource server
           ScopeName: !Ref CustomScopeName
 
   # Shared signal user pool client
