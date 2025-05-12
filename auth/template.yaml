@@ -552,7 +552,7 @@ Resources:
         - client_credentials
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthScopes:
-        - !Sub api.${AWS::Region}.${AWS::AccountId}/${CustomScopeName}
+        - !Sub ${CognitoResourceServer}/${CustomScopeName}
       SupportedIdentityProviders:
         - COGNITO
       GenerateSecret: true # pragma: allowlist secret
