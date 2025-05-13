@@ -10,6 +10,7 @@ export interface ProxyInput {
     sanitizedHeaders: any
     targetPath: string
     parsedUrl: URL
+    requestFn?: typeof https.request
 }
 
 export const proxy = async ({
@@ -20,6 +21,7 @@ export const proxy = async ({
     body,
     sanitizedHeaders,
     targetPath,
+    requestFn = https.request
 }: ProxyInput) => {
     if (method === "POST" && path.includes('/token')) {
         // In API Gateway Proxy v2, if the request body is base64-encoded (e.g. from a frontend form or custom client), you need to handle decoding it manually.
@@ -30,14 +32,29 @@ export const proxy = async ({
         sanitizedHeaders['content-length'] = Buffer.byteLength(encodedBody).toString();
         sanitizedHeaders['content-type'] = 'application/x-www-form-urlencoded'; // just to be safe
 
-        return await _proxyRequest(parsedUrl.hostname, targetPath, encodedBody, sanitizedHeaders, method);
+        return await _proxyRequest(parsedUrl.hostname, targetPath, encodedBody, sanitizedHeaders, method, requestFn);
     }
-    return await _proxyRequest(parsedUrl.hostname, targetPath, body, sanitizedHeaders, method);
+    return await _proxyRequest(parsedUrl.hostname, targetPath, body, sanitizedHeaders, method, requestFn);
 }
 
-async function _proxyRequest(hostname: string, path: string, body: any, headers: any, method = 'GET'): Promise<APIGatewayProxyResultV2> {
+async function _proxyRequest(
+    hostname: string, 
+    path: string, 
+    body: any, 
+    headers: any, 
+    method = 'GET',
+    requestFn: typeof https.request = https.request
+): Promise<APIGatewayProxyResultV2> {
     return new Promise((resolve) => {
-        const req = https.request(
+        let resolved = false;
+        const safeResolve = (value: APIGatewayProxyResultV2) => {
+            if (!resolved) {
+                resolved = true;
+                resolve(value);
+            }
+        };
+
+        const req = requestFn(
             {
                 hostname,
                 path,
@@ -55,10 +72,11 @@ async function _proxyRequest(hostname: string, path: string, body: any, headers:
                         respHeaders[k.toLowerCase()] = Array.isArray(v) ? v.join(', ') : v || '';
                     }
 
-                    resolve({
+                    safeResolve({
                         statusCode: res.statusCode || 500,
                         headers: respHeaders,
-                        body: data
+                        body: data,
+                        cookies: Array.isArray(res.headers['set-cookie']) ? res.headers['set-cookie'] : undefined,
                     });
                 });
             }
@@ -66,7 +84,7 @@ async function _proxyRequest(hostname: string, path: string, body: any, headers:
 
         req.on('error', (e) => {
             console.error("Error proxying request to Cognito:", e);
-            resolve({
+            safeResolve({
                 statusCode: 500,
                 headers: { 'Content-Type': 'application/x-amz-json-1.1' },
                 body: JSON.stringify({ message: 'Internal server error' })
@@ -76,6 +94,16 @@ async function _proxyRequest(hostname: string, path: string, body: any, headers:
         if (method === 'POST' && body) {
             req.write(body);
         }
+
+        // req.setTimeout(10000, () => {
+        //     console.error("Request to Cognito timed out");
+        //     safeResolve({
+        //         statusCode: 500,
+        //         headers: { 'Content-Type': 'application/x-amz-json-1.1' },
+        //         body: JSON.stringify({ message: 'Internal server error' })
+        //     });
+        //     req.destroy();
+        // });
 
         req.end();
     });

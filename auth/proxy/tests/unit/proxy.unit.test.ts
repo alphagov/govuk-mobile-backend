@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import https from "https";
 import { proxy, ProxyInput } from '../../proxy'
+import EventEmitter from 'events';
 
 vi.mock('https', () => {
     beforeEach(() => vi.resetAllMocks())
@@ -47,7 +48,6 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
 });
 
 describe('proxy', () => {
-
     beforeEach(() => {
         process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
     });
@@ -66,6 +66,40 @@ describe('proxy', () => {
 
         expect(response.statusCode).toBe(200);
         expect(response.body).toBe('mock response');
+    });
+
+    it('does not resolve more than once if both end and error events are emitted', async () => {
+        // there's a potential subtle bug: resolve might be called more than once if both an 'error' and 'end' event fire 
+        // on the response. This test ensures that we only resolve once.
+        const mockResponse = new EventEmitter() as any;
+        mockResponse.statusCode = 200;
+        mockResponse.headers = { 'content-type': 'application/json' };
+
+        const mockRequest = vi.fn((options, callback) => {
+            // Call response callback with our mockResponse
+            setImmediate(() => {
+                callback(mockResponse)
+            });
+
+            const req = new EventEmitter() as any;
+            req.write = vi.fn();
+            req.end = () => {
+                // Simulate normal data and end
+                mockResponse.emit('data', '{"foo":"bar"}');
+                mockResponse.emit('end');
+
+                // Then simulate an error afterward
+                req.emit('error', new Error('Simulated error'));
+            };
+            return req;
+        });
+
+        const response = await proxy(createMockInput({
+            requestFn: mockRequest
+        })) as APIGatewayProxyStructuredResultV2;
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toContain('foo');
     });
 
     it('returns 500 on proxy error', async () => {
