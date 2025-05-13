@@ -95,16 +95,6 @@ async function _proxyRequest(
             req.write(body);
         }
 
-        // req.setTimeout(10000, () => {
-        //     console.error("Request to Cognito timed out");
-        //     safeResolve({
-        //         statusCode: 500,
-        //         headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-        //         body: JSON.stringify({ message: 'Internal server error' })
-        //     });
-        //     req.destroy();
-        // });
-
         req.end();
     });
 }

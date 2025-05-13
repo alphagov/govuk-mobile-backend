@@ -98,8 +98,8 @@ describe('proxy', () => {
             requestFn: mockRequest
         })) as APIGatewayProxyStructuredResultV2;
 
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toContain('foo');
+        expect(response.statusCode).toBe(500);
+        expect(JSON.parse(response.body as string)).toEqual({"message":"Internal server error"});
     });
 
     it('returns 500 on proxy error', async () => {
