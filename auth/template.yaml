@@ -33,7 +33,6 @@ Parameters:
     Description: Name for the custom OAuth scope
     Default: "read"
 
-  
 Mappings:
   OneLogin:
     Environment:
@@ -687,4 +686,4 @@ Outputs:
 
   SharedSignalResourceServerId:
     Description: The ID of the Shared Signal Resource Server
-    Value: !Ref CognitoResourceServer  
+    Value: !Ref CognitoResourceServer
