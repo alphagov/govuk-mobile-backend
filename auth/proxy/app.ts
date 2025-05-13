@@ -1,32 +1,18 @@
-import { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
-import { FEATURE_FLAGS, FeatureFlags } from './feature-flags';
-import { AttestationUseCase, validateAttestationHeaderOrThrow } from './attestation';
-import { proxy, ProxyInput } from './proxy';
-import { MissingAttestationTokenError, UnknownAppError } from './errors';
+import { APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-
-// cognito expects consistent casing for header names e.g. x-amz-target
-// host must be removed to avoid ssl hostname unrecognised errors
-const sanitizeHeaders = (headers: APIGatewayProxyEventHeaders) => {
-  return Object.entries(headers)
-    .filter(([key]) => key.toLowerCase() !== 'host')
-    .reduce<Record<string, string>>((acc, [key, value]) => {
-      acc[key.toLowerCase()] = value || '';
-      return acc;
-    }, {});
-}
-
-const transformCognitoUrl = (url: string | undefined) => {
-  return url?.toLowerCase().replace('_', '')
-}
-
-// removes stage i.e. dev/test/prod from the path to allow 
-const stripStageFromPath = (stage: string, path: string): string => {
-  if (path.startsWith(`/${stage}`)) {
-    return path.slice(stage.length + 1);
-  }
-  return path
-}
+import {
+  FEATURE_FLAGS,
+  FeatureFlags,
+  AttestationUseCase,
+  validateAttestationHeaderOrThrow,
+  proxy,
+  ProxyInput,
+  MissingAttestationTokenError,
+  UnknownAppError,
+  sanitiseHeaders,
+  stripStageFromPath,
+  transformCognitoUrl,
+} from './services';
 
 interface Dependencies {
   proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>
@@ -36,11 +22,11 @@ interface Dependencies {
 
 export const createHandler = (dependencies: Dependencies) => async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   try {
-    console.log('Calling auth proxy')
+    console.log('Calling auth proxy');
     const cognitoUrl = transformCognitoUrl(process.env.COGNITO_URL);
 
     if (!cognitoUrl) {
-      throw new Error('Missing Cognito URL parameter')
+      throw new Error('Missing Cognito URL parameter');
     }
 
     const { proxy, attestationUseCase, featureFlags } = dependencies;
@@ -63,11 +49,11 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       path: formattedPath,
       isBase64Encoded: event.isBase64Encoded,
       body,
-      sanitizedHeaders: sanitizeHeaders(headers),
+      sanitizedHeaders: sanitiseHeaders(headers),
       targetPath,
       // can throw invalid URL
       parsedUrl: new URL(cognitoUrl)
-    })
+    });
   } catch (error) {
     console.error('Catchall error:', error);
     switch (true) {
@@ -101,13 +87,13 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
 }
 
 const attestationUseCase = {
-  validateAttestationHeaderOrThrow
+  validateAttestationHeaderOrThrow,
 }
 
 const dependencies = {
   proxy,
   attestationUseCase,
-  featureFlags: FEATURE_FLAGS
+  featureFlags: FEATURE_FLAGS,
 }
 
 const generateErrorResponse = ({

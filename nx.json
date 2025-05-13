@@ -21,7 +21,19 @@
     "build": {
       "cache": true
     },
+    "sam:validate": {
+       "cache": true
+    },
+    "sam:lint": {
+       "cache": true
+    },
     "test:unit": {
+      "cache": true
+    },
+    "test:functional": {
+      "cache": true
+    },
+    "test:coverage": {
       "cache": true
     },
     "lint": {
@@ -47,7 +59,8 @@
     {
       "plugin": "@nx/eslint/plugin",
       "options": {
-        "targetName": "lint"
+          "targetName": "lint",
+	  "verbose": true
       }
     }
   ]

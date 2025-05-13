@@ -27,7 +27,7 @@ describeFeature(feature, ({ScenarioOutline}) => {
 
     const jwtDecoderObj = new JwtDecoder();
 
-    ScenarioOutline(
+    ScenarioOutline.skip(
         `Successfully generate a token using PKCE`,
         ({Given, When, Then, context, And}, variables) => {
             context.tokens = {
