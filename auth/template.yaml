@@ -524,7 +524,7 @@ Resources:
     Type: AWS::Cognito::UserPoolResourceServer
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      Identifier: !Sub api.${AWS::Region}.${AWS::AccountId} # Unique identifier for your API
+      Identifier: !Sub https://${Environment}.api.${AWS::Region}.${AWS::AccountId} # Unique identifier for your API
       Name: SharedSignalResourceServer
       Scopes:
         - ScopeDescription: Shared signal scope for resource server
@@ -684,3 +684,7 @@ Outputs:
   SharedSignalsApiId:
     Description: The ID of the Shared Signals API
     Value: !Ref SharedSignalsApi
+
+  SharedSignalResourceServerId:
+    Description: The ID of the Shared Signal Resource Server
+    Value: !Ref CognitoResourceServer  
