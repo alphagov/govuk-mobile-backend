@@ -73,8 +73,18 @@ async function _proxyRequest(hostname: string, path: string, body: any, headers:
             });
         });
 
-        if (method === 'POST' && body) {
-            req.write(body);
+        try {
+            if (method === 'POST' && body) {
+                req.write(body);
+            }
+        } catch (e) {
+            console.error('Error during req.write:', e);
+            resolve({
+                statusCode: 500,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: 'Internal server error' }),
+            });
+            return;
         }
 
         req.end();
