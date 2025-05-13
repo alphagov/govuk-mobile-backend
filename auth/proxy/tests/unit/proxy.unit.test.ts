@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import https from "https";
 import { proxy, ProxyInput } from '../../proxy'
+import { IncomingMessage } from 'http';
 
 vi.mock('https', () => {
     beforeEach(() => vi.resetAllMocks())
@@ -93,5 +94,37 @@ describe('proxy', () => {
 
         expect(response.statusCode).toBe(500);
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
+    });
+
+    it('returns 500 if req.write throws an error', async () => {
+        const errorMessage = 'Write failed!';
+
+        vi.spyOn(https, 'request').mockImplementationOnce((url, options, callback) => {
+            const res = {
+                on: vi.fn(),
+                headers: {},
+                statusCode: 200,
+            };
+
+            const req = {
+                on: vi.fn(),
+                write: vi.fn(() => {
+                    throw new Error(errorMessage); // Simulate write error
+                }),
+                end: vi.fn(() => {
+                    // End would never be called if write throws
+                    callback?.(res as unknown as IncomingMessage);
+                }),
+            };
+
+            return req as any;
+        });
+
+        const response = await proxy(createMockInput()) as APIGatewayProxyStructuredResultV2;
+
+        expect(response.statusCode).toBe(500);
+        expect(JSON.parse(response.body as string)).toEqual({
+            message: 'Internal server error',
+        });
     });
 });
