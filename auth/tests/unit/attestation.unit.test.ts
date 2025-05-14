@@ -11,7 +11,7 @@ describe("attestation", () => {
 
   beforeAll(() => {
     const resource = template.findResources("AWS::Serverless::Function");
-    resourceUnderTest = resource["AuthProxyFunction"] as any; // find Post Authentication Lambda function
+    resourceUnderTest = resource["AuthProxyFunction"] as any; 
   });
 
   describe("provisions an auth proxy lambda handler", () => {
