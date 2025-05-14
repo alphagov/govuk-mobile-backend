@@ -12,20 +12,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     console.log("Application called")
-    try {
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                message: 'You have successfully logged in',
-            }),
-        };
-    } catch (err) {
-        console.log(err);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({
-                message: 'some error happened',
-            }),
-        };
-    }
+    return {
+        statusCode: 200,
+        body: JSON.stringify({
+            message: 'You have successfully logged in',
+        }),
+    };
 };

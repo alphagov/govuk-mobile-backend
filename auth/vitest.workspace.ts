@@ -13,7 +13,7 @@ export default defineWorkspace([
   {
     test: {
       name: "unit",
-      include: ["**/*.unit.test.ts"],
+      include: ["**/*.unit.test.ts", "**/**/unit/*.test.ts"],
     },
   },
   {
