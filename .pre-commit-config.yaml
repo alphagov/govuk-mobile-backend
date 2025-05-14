@@ -21,12 +21,12 @@ repos:
   - id: linting
     name: linting
     language: system
-    entry: npx affected -t lint
+    entry: nx affected -t lint
     pass_filenames: false
     stages: [pre-commit]
   - id: unit-tests
     name: unit-tests
     language: system
-    entry: npx affected -t test:unit
+    entry: nx affected -t test:unit
     pass_filenames: false
     stages: [pre-commit]
