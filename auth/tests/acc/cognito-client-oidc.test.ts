@@ -53,7 +53,7 @@ describe("Check deployed Cognito User Pool Client", async () => {
   });
 
   it("has access token expiration set correctly", () => {
-    const expectedAccessTokenValidity = 3600;
+    const expectedAccessTokenValidity = 300;
     assert.equal(
       userPoolClient.AccessTokenValidity,
       expectedAccessTokenValidity
