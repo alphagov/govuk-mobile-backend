@@ -536,6 +536,23 @@ Resources:
         - ScopeDescription: Shared signal scope for resource server
           ScopeName: !Ref CustomScopeName
 
+  SharedSignalSecretsManager:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: /shared-signal/secrets
+      Description: "Shared Signal Secrets"
+      SecretString: !Sub '{
+        "client_id": "${CognitoM2MClient}",
+        "client_secret": "${CognitoM2MClient.ClientSecret}"
+      }'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+       
   # Shared signal user pool client
   CognitoM2MClient:
     Type: AWS::Cognito::UserPoolClient
