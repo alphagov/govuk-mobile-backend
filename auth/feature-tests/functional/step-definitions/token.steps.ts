@@ -57,7 +57,7 @@ describeFeature(feature, ({ScenarioOutline}) => {
 
                 const accessTokenResponse = jwtDecoderObj.decode(context.tokens.access_token);
                 const accessTokenValidityPeriod = jwtDecoderObj.calculateDuration(accessTokenResponse);
-                expect(Math.abs(accessTokenValidityPeriod - 3600)).toBeLessThanOrEqual(tolerance); //Allow test delay for 5 seconds
+                expect(Math.abs(accessTokenValidityPeriod - 300)).toBeLessThanOrEqual(tolerance); //Allow test delay for 5 seconds
 
                 const idTokenRes = jwtDecoderObj.decode(context.tokens.id_token);
                 const idTokenValidityPeriod = jwtDecoderObj.calculateDuration(idTokenRes);

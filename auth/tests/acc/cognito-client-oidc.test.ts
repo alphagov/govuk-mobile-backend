@@ -5,7 +5,7 @@ import {
   TokenValidityUnitsType,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { assert, describe, it } from "vitest";
-import { testConfig } from "../common/config"
+import { testConfig } from "../common/config";
 
 const client = new CognitoIdentityProviderClient({ region: "eu-west-2" });
 const command = new DescribeUserPoolClientCommand({
@@ -53,7 +53,7 @@ describe("Check deployed Cognito User Pool Client", async () => {
   });
 
   it("has access token expiration set correctly", () => {
-    const expectedAccessTokenValidity = 3600;
+    const expectedAccessTokenValidity = 300;
     assert.equal(
       userPoolClient.AccessTokenValidity,
       expectedAccessTokenValidity
