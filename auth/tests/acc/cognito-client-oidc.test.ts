@@ -5,7 +5,7 @@ import {
   TokenValidityUnitsType,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { assert, describe, it } from "vitest";
-import { testConfig } from "../common/config"
+import { testConfig } from "../common/config";
 
 const client = new CognitoIdentityProviderClient({ region: "eu-west-2" });
 const command = new DescribeUserPoolClientCommand({

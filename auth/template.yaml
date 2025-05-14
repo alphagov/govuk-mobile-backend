@@ -33,7 +33,6 @@ Parameters:
     Description: Name for the custom OAuth scope
     Default: "read"
 
-  
 Mappings:
   OneLogin:
     Environment:
@@ -387,7 +386,6 @@ Resources:
         EntryPoints:
           - app.ts
 
-
   UserPoolIdentityProvider:
     Type: "AWS::Cognito::UserPoolIdentityProvider"
     Properties:
@@ -520,6 +518,14 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
 
+  PostAuthLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostAuthenticationFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt CognitoUserPool.Arn
+
   CognitoResourceServer:
     Type: AWS::Cognito::UserPoolResourceServer
     Properties:
@@ -552,7 +558,7 @@ Resources:
       TokenValidityUnits:
         AccessToken: seconds
       AccessTokenValidity: 3600 # 1 hour in seconds
-      
+
   SharedSignalsApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -672,7 +678,7 @@ Outputs:
   SharedSignalClientId:
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
-    
+
   SharedSignalsEndpoint:
     Description: The endpoint for the Shared Signals API
     Value: !Sub https://${SharedSignalsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
@@ -684,3 +690,11 @@ Outputs:
   SharedSignalsApiId:
     Description: The ID of the Shared Signals API
     Value: !Ref SharedSignalsApi
+
+  PostAuthenticationFunctionName:
+    Description: The name of the Post Authentication function
+    Value: !Ref PostAuthenticationFunction
+  
+  PostAuthenticationFunctionInvokePermission:
+    Description: The name of the Post Authentication Invoke Permission
+    Value: !Ref PostAuthLambdaInvokePermission

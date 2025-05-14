@@ -10,4 +10,6 @@ export const testConfig = {
     sharedSignalsEndpoint: process.env.CFN_SharedSignalsEndpoint!,
     sharedSignalsReceiverLogGroupName: process.env.CFN_SharedSignalsReceiverLogGroupName!,
     sharedSignalsApiId: process.env.CFN_SharedSignalsApiId!,
+    postAuthenticationLambda: process.env.CFN_PostAuthenticationLambdaName!,
+    PostAuthenticationFunctionInvokePermission: process.env.CFN_PostAuthenticationFunctionInvokePermission!,
 }
