@@ -14,6 +14,15 @@ export interface ProxyInput {
 
 const sessionStore: { [state: string]: { cookies: string[] } } = {};
 
+function rewriteRedirectUri(locationHeader: string, newRedirectUri: string): string {
+    const originalUrl = new URL(locationHeader);
+
+    // Update the redirect_uri query parameter
+    originalUrl.searchParams.set('redirect_uri', newRedirectUri);
+
+    return originalUrl.toString();
+}
+
 export const proxy = async ({
     method,
     path,
@@ -33,18 +42,35 @@ export const proxy = async ({
         targetPath
     );
 
-    const code = targetPath.split('?')[1]?.split('&').find((param) => param.startsWith('code='))?.split('=')[1];
-    const state = targetPath.split('?')[1]?.split('&').find((param) => param.startsWith('state='))?.split('=')[1];
-
     // Step 1: Handle /authorize → store cookies
     if (method === 'GET' && path.includes('/authorize')) {
         console.log('Managing /authorize request');
         const res = await _proxyRequest(parsedUrl.hostname, targetPath, body, sanitizedHeaders, method);
         console.log('Response from authorize:', res);
+        const state = res?.headers?.location?.split('state=')[1]?.split('&')[0];
+        console.log('State:', state);
         const setCookies = res.cookies || [];
         if (state && setCookies.length) {
-            sessionStore[state] = { cookies: setCookies };
+            sessionStore[state] = { 
+                cookies: setCookies 
+            };
             console.log(`Stored cookies for state: ${state}`);
+        }
+
+        if (res.statusCode === 302) {
+            const modifiedLocation = rewriteRedirectUri(res.headers.location, newProxyRedirect);
+            console.log('Returning to client:', {
+                ...res.headers,
+                location: modifiedLocation,
+            })
+            return {
+                statusCode: 302,
+                headers: {
+                    ...res.headers,
+                    location: modifiedLocation,
+                },
+                body: ''
+            };
         }
 
         return res;
@@ -53,7 +79,8 @@ export const proxy = async ({
     // Step 2: Handle /idpresponse → replay cookies to Cognito
     if (method === 'GET' && path.includes('/idpresponse')) {
         console.log('Managing /idpresponse request');
-        if (!code || !state) {
+        const state = targetPath.split('?')[1]?.split('&').find((param) => param.startsWith('state='))?.split('=')[1];
+        if (!state) {
             return {
                 statusCode: 400,
                 headers: { 'Content-Type': 'application/json' },
@@ -62,33 +89,16 @@ export const proxy = async ({
         }
 
         const session = sessionStore[state];
-        if (!session || !session.cookies) {
-            return {
-                statusCode: 400,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: 'No session found for state' })
-            };
-        }
 
-        const idpresponsePath = `${parsedUrl.pathname}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+        console.log('Session cookies:', sessionStore[state]?.cookies);
+
         const headersWithCookies = {
             ...sanitizedHeaders,
             cookie: session.cookies.join('; ')
         };
 
-        console.log('🔁 Replaying cookies to /idpresponse for state:', state);
-        const res = await _proxyRequest(parsedUrl.hostname, idpresponsePath, body, headersWithCookies, 'GET');
-
-        const location = res.headers?.location || '';
-        if (res.statusCode === 302 && location.startsWith('govuk://')) {
-            return {
-                statusCode: 200,
-                headers: { 'Content-Type': 'text/html' },
-                body: `<h1>Login Complete</h1><p>You may now return to the GOVUK app manually.</p>`
-            };
-        }
-
-        return res;
+        console.log('🔁 Replaying cookies to /idpresponse for state:', state, " for host:", parsedUrl.hostname);
+        return await _proxyRequest(parsedUrl.hostname, targetPath, body, headersWithCookies, 'GET');
     }
 
     if (method === "POST" && path.includes('/token')) {
@@ -123,7 +133,6 @@ async function _proxyRequest(hostname: string, path: string, body: any, headers:
                     for (const [k, v] of Object.entries(res.headers)) {
                         respHeaders[k.toLowerCase()] = Array.isArray(v) ? v.join(', ') : v || '';
                     }
-                    console.log('Returning Cookies:', res.headers['set-cookie']);
 
                     resolve({
                         statusCode: res.statusCode || 500,
