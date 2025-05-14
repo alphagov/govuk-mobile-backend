@@ -1,11 +1,7 @@
-//https://docs.aws.amazon.com/lambda/latest/dg/lambda-typescript.html#typescript-type-definitions
 {
   "compilerOptions": {
-
-    //Type checking
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    //"alwaysStrict": true,
     "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
@@ -17,128 +13,24 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strict": true,
-    //"strictBindCallApply": true,
-    //"strictBuiltinIteratorReturn": true,
-    //"strictFunctionTypes": true,
-    //"strictNullChecks": true,
-    //"strictPropertyInitialisation": true,
     "useUnknownInCatchVariables": true,
-
-    //Modules
     "allowArbitraryExtensions": false,
     "allowImportingTsExtensions": false,
     "allowUmdGlobalAccess": false,
-    //"baseUrl": "",
-    //"customConditions": ["development"],
     "module": "node16",
     "moduleResolution": "node16",
-    //"moduleSuffixes": [] 
-    //"noResolve": false,
     "noUncheckedSideEffectImports": true,
-    //"paths": {},
     "resolveJsonModule": true,
-    //"resolvePackageJsonExports",
-    //"resolvePackageJsonImports",
-    //"rewriteRelativeImportExtensions",
-    //"rootDir",
-    //"rootDirs",
-    //"typeRoots",
-    //"types"
-    
-    //Emit
-    "declaration": false, // Not supported for ESBuild, which SAM uses
-    //"declarationDir",
-    //"declarationMap",
-    //"downlevelIteration",
-    //"emitBOM",
-    //"emitDeclarationOnly": true,
-    //"importHelpers",
-    //"inlineSourceMap",
-    //"inlineSources",
-    //"mapRoot",
-    //"newLine",
+    "declaration": false,
     "noEmit": true,
-    //"noEmitHelpers",
-    //"noEmitOnError": true,
-    //"outDir",
-    //"outFile",
     "preserveConstEnums": true,
-    //"removeComments",
     "sourceMap": false,
-    //"sourceRoot",
-    //"stripInternal"
-    
-    //Javascript Support
-    //"allowJS": false,
-    //"checkJS": false,
-    //"maxNodeModuleJsDepth": 0
-
-    //Editor Support
-    //"disableSizeLimit": false
-    //"plugins: []
-
-    //Interop Constraints
-    //"allowSyntheticDefaultImports": false,
-    //"erasableSyntaxOnly",
-    //"esModuleInterop": true, // true if module is node16
     "forceConsistentCasingInFileNames": true,
-    //"isolatedDeclarations",
-    "isolatedModules": true, //https://esbuild.github.io/content-types/#typescript-caveats
-    //"preserveSymlinks",
-    //"verbatimModuleSyntax"
-
-    //Backwards Compatibility
-    //"charset",
-    //"importsNotUsedAsValues",
-    //"keyofStringsOnly",
-    //"noImplicitUseStrict",
-    //"noStrictGenericChecks",
-    //"out",
-    //"preserveValueImports",
-    //"suppressExcessPropertyErrors"
-    //"suppressImplicitAnyIndexErrors"
-
-    //Language and environment
-    "emitDecoratorMetadata": false, //Not supported when using ESBuild, which SAM uses
-    //"experimentalDecorators",
-    //"jsx",
-    //"jsxFactory",
-    //"jsxFragmentFactory",
-    //"jsxImportSource",
+    "isolatedModules": true,
+    "emitDecoratorMetadata": false,
     "lib": ["es2020"],
-    //"libReplacement",
-    //"moduleDetection",
-    //"noLib",
-    //"reactNamespace",
     "target": "es2020",
-    //"useDefineForClassFields",
-
-    //Compiler Diagnostics
-    //"diagnostics",
-    //"explainFiles",
-    //"extendedDiagnostics",
-    //"generateCpuProfile",
-    //"generateTrace",
-    //"listEmittedFiles",
-    //"listFiles",
-    //"noCheck",
-    //"traceResolution",
-
-    //Projects
-    "composite": false, // Must be false if noEmit is true
-    //"disableReferencedProjectLoad",
-    //"disableSolutionSearching",
-    //"disableSourceOfProjectReferenceRedirect",
-    //"incremental",
-    //"tsBuildInfoFile"
-
-    //Output Formatting
-    //"noErrorTruncation",
-    //"preserveWatchOutput",
-    //"pretty"
-
-    //Completeness
-    //"skipDefaultLibCheck", true
+    "composite": false,
     "skipLibCheck": true,
   },
   "exclude": [
