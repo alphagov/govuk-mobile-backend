@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config"
+import { defineConfig, coverageConfigDefaults } from "vitest/config"
 import { VitestCucumberPlugin } from "@amiceli/vitest-cucumber"
 
 export default defineConfig({
@@ -7,14 +7,25 @@ export default defineConfig({
             "**/*.steps.ts",
             "**/*.test.ts",
         ],
-        reporters: [
-            'default', // To still see output in the console
-            ['json', { outputFile: './report/results.json' }],
-            ['junit', { outputFile: './report/junit.xml' }],
-        ],
         coverage: {
-            provider: 'istanbul', // or 'v8'
-            reporter: ['text', 'json', 'html'],
+          exclude: [
+            ...coverageConfigDefaults.exclude,
+            "**/feature-tests/**",
+            "**/feature-tests/**",
+            "**/tests/**/*",
+            "**/*.test.ts",
+            "vitest*.config.ts",
+            "__mocks__",
+          ],
+          reporter: ["text", "lcov"],
+          reportOnFailure: true,
+          reportsDirectory: './coverage',
+          thresholds: {
+            functions: 80,
+            lines: 80,
+            branches: 80,
+            statements: 80,
+          },
         },
         watch: false
     }

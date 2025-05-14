@@ -18,6 +18,7 @@ export default defineConfig({
       ],
       reporter: ["text", "lcov"],
       reportOnFailure: true,
+      reportsDirectory: './coverage',
       thresholds: {
         functions: 80
       },
