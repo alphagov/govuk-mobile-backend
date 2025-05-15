@@ -24,6 +24,9 @@
     "test:unit": {
       "cache": true
     },
+    "test:acc": {
+      "cache": true
+    },
     "lint": {
       "cache": true
     }
