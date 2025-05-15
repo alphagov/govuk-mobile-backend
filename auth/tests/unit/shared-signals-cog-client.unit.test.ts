@@ -81,4 +81,14 @@ describe("Test verify secrets manager presence", () => {
         expect(audience).toBeDefined();
         
     });
+
+    it("should have correct tags", () => {  
+        const tags = resourceUnderTest.Properties.Tags;
+        expect(tags).toBeDefined();
+        expect(tags).toHaveLength(3);
+        expect(tags[0].Key).toEqual("Product");
+        expect(tags[1].Key).toEqual("Environment");
+        expect(tags[2].Key).toEqual("System");
+    });
+
 });
