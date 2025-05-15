@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { APIGatewayProxyResult } from 'aws-lambda';
 
 /**
  *
@@ -9,23 +9,13 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  * @returns {Object} object - API Gateway Lambda Proxy Output Format
  *
  */
-
-export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
     console.log("Shared signals receiver called")
-    try {
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                message: 'signal received',
-            }),
-        };
-    } catch (err) {
-        console.log(err);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({
-                message: 'some error happened',
-            }),
-        };
-    }
+    return {
+        statusCode: 200,
+        body: JSON.stringify({
+            message: 'signal received',
+        }),
+    };
+
 };

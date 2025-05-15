@@ -50,7 +50,7 @@ jobs:
 
       - name: Coverage
         run: npx nx affected -t test:coverage
-        
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:

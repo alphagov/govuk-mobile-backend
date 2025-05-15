@@ -1,10 +1,19 @@
-import {Template} from "aws-cdk-lib/assertions";
-import {schema} from "yaml-cfn";
-import {describe, it, beforeAll, expect} from "vitest";
-import {readFileSync} from "fs";
-import {load} from "js-yaml";
+import { Template } from "aws-cdk-lib/assertions";
+import { schema } from "yaml-cfn";
+import { describe, it, beforeAll, expect } from "vitest";
+import { readFileSync } from "fs";
+import { load } from "js-yaml";
+import { loadTemplateFromFile } from "../common/template";
+import path from "path";
 
-let template: Template;
+const template = loadTemplateFromFile(
+  path.join(
+    __dirname,
+    "..",
+    "..",
+    "template.yaml"
+  )
+);
 
 describe("Test shared signal M2M cognito client", () => {
     let resourceUnderTest: {
@@ -13,11 +22,6 @@ describe("Test shared signal M2M cognito client", () => {
     }
 
     beforeAll(() => {
-        const yamlTemplate: any = load(readFileSync("template.yaml", "utf-8"), {
-            schema: schema,
-        });
-        template = Template.fromJSON(yamlTemplate);
-
         const resource = template.findResources("AWS::Cognito::UserPoolClient");
         resourceUnderTest = resource['CognitoM2MClient'] as any; //find Machine to Machine cognito client
     });

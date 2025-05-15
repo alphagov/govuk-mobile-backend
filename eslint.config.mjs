@@ -2,16 +2,31 @@
 
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+<<<<<<< HEAD
 import pluginPromise from 'eslint-plugin-promise';
 import jsdoc from 'eslint-plugin-jsdoc';
 import importPlugin from 'eslint-plugin-import';
+=======
+import promisePlugin from 'eslint-plugin-promise';
+import jsdocPlugin from 'eslint-plugin-jsdoc';
+import importPlugin from 'eslint-plugin-import';
+import securityPlugin from 'eslint-plugin-security';
+import sonarjsPlugin from 'eslint-plugin-sonarjs';
+>>>>>>> origin/chore/typescript-eslint-config-1688
 
 export default tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
+<<<<<<< HEAD
   jsdoc.configs['flat/recommended-typescript'],
   importPlugin.flatConfigs.recommended,
+=======
+  jsdocPlugin.configs['flat/recommended-typescript'],
+  importPlugin.flatConfigs.recommended,
+  securityPlugin.configs.recommended,
+  sonarjsPlugin.configs.recommended,
+>>>>>>> origin/chore/typescript-eslint-config-1688
   {
     languageOptions: {
       parserOptions: {
@@ -138,8 +153,9 @@ export default tseslint.config(
   },
   {
     plugins: {
-      promise: pluginPromise,
-      importPlugin: importPlugin
+      promise: promisePlugin,
+      importPlugin: importPlugin,
+      security: securityPlugin,
     }
   }
 );

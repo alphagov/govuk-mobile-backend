@@ -1,21 +1,4 @@
 {
-    "compilerOptions": {
-        "target": "es2020",
-        "strict": true,
-        "preserveConstEnums": true,
-        "noEmit": true,
-        "sourceMap": false,
-        "module": "esnext",
-        "moduleResolution": "node",
-        "resolveJsonModule": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "baseUrl": "./",
-        "useUnknownInCatchVariables": false
-    },
-    "exclude": [
-        "node_modules",
-        "**/*.test.ts"
-    ],
+  "extends": "../tsconfig.base",
+  "compilerOptions": {}
 }
