@@ -35,7 +35,7 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
     method: 'POST',
     body: 'mock body',
     isBase64Encoded: true,
-    parsedUrl: new URL('https://mock.auth.region.amazoncognito.com/token'),
+    parsedUrl: new URL('https://app-dev.auth.eu-west-2.amazoncognito.com/token'),
     path: '/token',
     sanitizedHeaders: {
         'content-type': 'application/x-www-form-urlencoded',
@@ -43,6 +43,7 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
         'X-Attestation-Token': 'test-token',
     },
     targetPath: '/token',
+    clientSecret: 'mock-client-secret', // pragma: allowlist secret
     ...overrides,
 });
 

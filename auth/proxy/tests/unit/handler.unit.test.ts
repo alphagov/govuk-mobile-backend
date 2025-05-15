@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createHandler } from '../../app'; // Adjust path as needed
+import { createHandler } from '../../handler'; // Adjust path as needed
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { MissingAttestationTokenError, UnknownAppError } from '../../errors';
+import { FailedToFetchSecretError, MissingAttestationTokenError, UnknownAppError } from '../../errors';
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
     version: '2.0',
@@ -52,7 +52,8 @@ describe('lambdaHandler', () => {
         proxy: mockProxy,
         featureFlags: {
             ATTESTATION: true,
-        }
+        },
+        getClientSecret: vi.fn(),
     }
 
     const createMockDependencies = (overrides: Partial<typeof mockDependencies> = {}) => ({
@@ -78,6 +79,12 @@ describe('lambdaHandler', () => {
                 throw new Error('Generic transient error');
             })
         },
+    }))
+
+    const unableToGetClientSecret = createHandler(createMockDependencies({
+        getClientSecret: vi.fn(() => {
+            throw new FailedToFetchSecretError('Unable to get client secret');
+        }),
     }))
 
     const lambdaHandler = createHandler(mockDependencies);
@@ -173,7 +180,7 @@ describe('lambdaHandler', () => {
             message: 'Attestation token is missing'
         }],
     ])
-        ('returns jwt expired on expired token error', async (handler, expectedResponse) => {
+        ('returns correct response on attestation token errors', async (handler, expectedResponse) => {
             const response = await handler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
 
             expect(response.statusCode).toBe(expectedResponse.statusCode);
@@ -186,4 +193,48 @@ describe('lambdaHandler', () => {
         expect(response.statusCode).toBe(500);
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
     });
+
+    it('should return an internal server error if no client secret is found', async () => {
+        const response = await unableToGetClientSecret(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+
+        expect(response.statusCode).toBe(500);
+        expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error, server missing key dependencies' });
+    });
+
+    it('should throw if cognito URL is not set', async () => {
+        delete process.env.COGNITO_URL;
+        const response = await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+        expect(response.statusCode).toBe(500);
+        expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
+    })
+
+    it('should use path name unmodified if no environment stage is present', async () => {
+        await lambdaHandler(createMockEvent({
+            requestContext: {
+                ...createMockEvent().requestContext,
+                stage: '',
+                http: {
+                    ...createMockEvent().requestContext.http,
+                    path: "/oauth2/token"
+                }
+            }
+        })) as APIGatewayProxyStructuredResultV2;
+
+        expect(mockProxy.mock.calls[0][0].targetPath).toBe('/oauth2/token');
+    })
+
+    it('should strip environment from path if environment stage is present', async () => {
+        await lambdaHandler(createMockEvent({
+            requestContext: {
+                ...createMockEvent().requestContext,
+                stage: 'dev',
+                http: {
+                    ...createMockEvent().requestContext.http,
+                    path: "/dev/oauth2/token"
+                }
+            }
+        })) as APIGatewayProxyStructuredResultV2;
+
+        expect(mockProxy.mock.calls[0][0].targetPath).toBe('/oauth2/token');
+    })
 });
