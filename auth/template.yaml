@@ -539,11 +539,13 @@ Resources:
   SharedSignalSecretsManager:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: /shared-signal/secrets
+      Name: /shared-signal/secrets-config
       Description: "Shared Signal Secrets"
       SecretString: !Sub '{
         "client_id": "${CognitoM2MClient}",
-        "client_secret": "${CognitoM2MClient.ClientSecret}"
+        "client_secret": "${CognitoM2MClient.ClientSecret}",
+        "auth_url": "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/oauth2/token",
+        "audience": "https://${CognitoUserPoolDomain}.shared-signal.gov.uk"
       }'
       Tags:
         - Key: Product
@@ -719,3 +721,11 @@ Outputs:
   SharedSignalResourceServerId:
     Description: The ID of the Shared Signal Resource Server
     Value: !Ref CognitoResourceServer
+
+  CustomDomain:
+    Description: The custom domain for the Cognito User Pool
+    Value: !Ref CognitoUserPoolDomain 
+
+  SharedSignalSecretsName:
+    Description: The name of the Shared Signal Secrets Manager secret
+    Value: !Ref SharedSignalSecretsManager  

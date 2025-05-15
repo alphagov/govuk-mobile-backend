@@ -3,6 +3,7 @@ import {
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
+import {SecretsManagerClient, GetSecretValueCommand} from "@aws-sdk/client-secrets-manager";
 import { assert, describe, it, expect } from "vitest";
 
 const input = {
@@ -11,7 +12,9 @@ const input = {
   TestEnvironment: process.env.TEST_ENVIRONMENT, 
 };
 
-const client = new CognitoIdentityProviderClient({ region: "eu-west-2" });
+const REGION = process.env.CFN_AWS_REGION || "eu-west-2";
+
+const client = new CognitoIdentityProviderClient({ region: REGION });
 const command = new DescribeUserPoolClientCommand(input);
 let response: any;
 let userPoolClient: any;
@@ -77,5 +80,24 @@ describe("Check deployed shared signal Cognito User Pool Client", async () => {
 
   it("has propagate additional user context data disabled", () => {
     assert.isFalse(userPoolClient.EnablePropagateAdditionalUserContextData);
+  });
+});
+
+describe("Check Secrets manager is storing shared signal credentials", async () => {
+  const secretsManagerClient = new SecretsManagerClient({ region: REGION });
+
+  it("retrieves shared signal credentials from Secrets Manager", async () => {
+    const secretName = process.env.CFN_SHARED_SIGNAL_SECRET_NAME || '/shared-signal/secrets-config';
+
+    const getSecretCommand = new GetSecretValueCommand({ SecretId: secretName });
+    const secretResponse = await secretsManagerClient.send(getSecretCommand);
+
+    expect(secretResponse.SecretString).toBeDefined();
+
+    const secretData = JSON.parse(secretResponse.SecretString || "{}");
+    expect(secretData).toHaveProperty("client_id");
+    expect(secretData).toHaveProperty("client_secret");
+    expect(secretData).toHaveProperty("auth_url");
+    expect(secretData).toHaveProperty("audience");
   });
 });
