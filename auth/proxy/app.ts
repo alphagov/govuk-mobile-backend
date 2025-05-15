@@ -37,7 +37,7 @@ interface Dependencies {
 export const createHandler = (dependencies: Dependencies) => async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   try {
     console.log('Calling auth proxy')
-    const cognitoUrl = transformCognitoUrl(process.env.COGNITO_URL);
+    const cognitoUrl = transformCognitoUrl(process.env['COGNITO_URL']);
 
     if (!cognitoUrl) {
       throw new Error('Missing Cognito URL parameter')
