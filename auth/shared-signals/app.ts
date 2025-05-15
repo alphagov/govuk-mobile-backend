@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import {APIGatewayProxyResult} from 'aws-lambda';
 
 /**
  *
@@ -10,8 +10,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
  *
  */
 
-export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    console.log("Shared signals receiver called")
+export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
+
     return {
         statusCode: 200,
         body: JSON.stringify({

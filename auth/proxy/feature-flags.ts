@@ -3,5 +3,5 @@ export type FeatureFlags = {
 }
 
 export const FEATURE_FLAGS: FeatureFlags = {
-    ATTESTATION: process.env.ENABLE_ATTESTATION === 'true',
+    ATTESTATION: process.env["ENABLE_ATTESTATION"] === 'true',
 }
