@@ -52,7 +52,7 @@
             ],
             "executor": "nx:run-commands",
             "options": {
-                "command": "npm run --project acc",
+                "command": "npm run test --project acc",
                 "cwd": "auth"
             },
             "outputs": [
