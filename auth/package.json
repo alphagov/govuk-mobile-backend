@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "devDependencies": {
-        "@amiceli/vitest-cucumber": "^4.7.0",
+        "@amiceli/vitest-cucumber": "^5.0.0",
         "@aws-sdk/client-api-gateway": "^3.804.0",
         "@aws-sdk/client-cloudwatch-logs": "^3.796.0",
         "@aws-sdk/client-cognito-identity-provider": "^3.787.0",
