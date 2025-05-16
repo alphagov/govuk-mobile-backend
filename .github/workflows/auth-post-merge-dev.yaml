@@ -49,4 +49,5 @@ jobs:
         uses: govuk-one-login/devplatform-upload-action@v3.10.0
         with:
             artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME_DEV }}
+            signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME_DEV }}
             working-directory: ./auth/.aws-sam/build
