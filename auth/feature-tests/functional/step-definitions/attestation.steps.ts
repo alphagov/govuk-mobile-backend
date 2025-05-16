@@ -65,7 +65,11 @@ const thenRequestIsLogged = async (
     context: any,
   }
 ) => {
-  await authDriver.exchangeCodeForTokens(context.code, context.user.attestationToken)
+  await authDriver.exchangeCodeForTokens({
+    code: context.code,
+    attestationHeader: context.user.attestationToken,
+    code_verifier: context.code_verifier
+  })
 
   const logMessageMap = {
     "success": "Attestation token is valid",
@@ -85,6 +89,7 @@ describeFeature(feature, ({ ScenarioOutline }) => {
     testConfig.appClientId,
     testConfig.authUrl,
     testConfig.redirectUri,
+    testConfig.proxyUrl
   );
 
   const loggingDriver = new LoggingDriver();
@@ -104,7 +109,11 @@ describeFeature(feature, ({ ScenarioOutline }) => {
         }))
 
       Then(`the response status is <status>`, async () => {
-        const { status, statusText } = await authDriver.exchangeCodeForTokens(context.code, context.user.attestationToken)
+        const { status, statusText } = await authDriver.exchangeCodeForTokens({
+          code: context.code,
+          attestationHeader: context.user.attestationToken,
+          code_verifier: context.code_verifier
+        })
         expect(status).toEqual(Number(variables['status']))
         context.response = {
           statusText

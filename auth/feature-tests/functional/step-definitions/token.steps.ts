@@ -1,10 +1,10 @@
 import 'dotenv/config'
-import {loadFeature, describeFeature} from "@amiceli/vitest-cucumber";
-import {AuthDriver} from "../driver/auth.driver";
-import {AuthFixtures} from "../fixtures/auth.fixtures";
-import {expect} from "vitest";
-import {JwtDecoder} from '../helper/jwt-decoder';
-
+import { loadFeature, describeFeature } from "@amiceli/vitest-cucumber";
+import { AuthDriver } from "../driver/auth.driver";
+import { AuthFixtures } from "../fixtures/auth.fixtures";
+import { expect } from "vitest";
+import { JwtDecoder } from '../helper/jwt-decoder';
+import { testConfig } from '../common/config';
 
 const feature = await loadFeature(
     "feature-tests/functional/features/token-generation.feature"
@@ -18,18 +18,19 @@ const mappedExamples: {
 }
 
 
-describeFeature(feature, ({ScenarioOutline}) => {
+describeFeature(feature, ({ ScenarioOutline }) => {
     const authDriver = new AuthDriver(
-        process.env.CFN_AppUserPoolClientId as unknown as string,
-        process.env.AUTH_URL as unknown as string,
-        process.env.REDIRECT_URI as unknown as string,
+        testConfig.appClientId,
+        testConfig.authUrl,
+        testConfig.redirectUri,
+        testConfig.proxyUrl
     );
 
     const jwtDecoderObj = new JwtDecoder();
 
     ScenarioOutline(
         `Successfully generate a token using PKCE`,
-        ({Given, When, Then, context, And}, variables) => {
+        ({ Given, When, Then, context, And }, variables) => {
             context.tokens = {
                 access_token: "",
                 id_token: "",
@@ -41,11 +42,16 @@ describeFeature(feature, ({ScenarioOutline}) => {
             });
 
             When(`initiate the token exchange`, async () => {
-                context.code = await authDriver.loginAndGetCode(context.user)
+                const { code, code_verifier } = await authDriver.loginAndGetCode(context.user)
+                context.code = code;
+                context.user.code_verifier = code_verifier;
             })
 
             Then(`I should receive an auth tokens`, async () => {
-                context.tokens = await authDriver.exchangeCodeForTokens(context.code)
+                context.tokens = await authDriver.exchangeCodeForTokens({
+                    code: context.code,
+                    code_verifier: context.user.code_verifier,
+                })
 
                 expect(context.tokens.access_token).toBeDefined();
                 expect(context.tokens.id_token).toBeDefined();

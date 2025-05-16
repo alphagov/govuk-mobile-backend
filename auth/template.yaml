@@ -136,7 +136,7 @@ Resources:
       AllowedOAuthScopes:
         - email
         - openid
-      GenerateSecret: false # pragma: allowlist secret
+      GenerateSecret: true # pragma: allowlist secret
       CallbackURLs:
         - "govuk://govuk/login-auth-callback"
       LogoutURLs:
@@ -452,11 +452,46 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
+  CognitoClientSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: /cognito/client-secret
+      Description: Cognito App Client Secret
+      # not setting secret string avoids being overridden on subsequent deployments
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "auth-proxy"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      Description: "Auth proxy - performs app integrity checks and forwards requests to the Cognito User Pool"
       CodeUri: proxy/
       Handler: app.lambdaHandler
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue # pragma: allowlist secret
+              Resource: !Ref CognitoClientSecret
       Environment:
         Variables:
           ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
@@ -474,6 +509,7 @@ Resources:
                 - !Sub ".auth.${AWS::Region}.amazoncognito.com"
           FIREBASE_IOS_APP_ID: "{{resolve:ssm:/firebase/appcheck/ios-app-id}}"
           FIREBASE_ANDROID_APP_ID: "{{resolve:ssm:/firebase/appcheck/android-app-id}}"
+          COGNITO_SECRET_NAME: !Ref CognitoClientSecret
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -649,6 +685,19 @@ Outputs:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
+  CognitoUrl:
+    Description: The domain name for the Cognito User Pool
+    Value: !If
+      - IsDev
+      - !Join
+        - ""
+        - - !FindInMap [CustomDomain, Environment, !Ref Environment]
+          - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
+      - !Join
+        - ""
+        - - !FindInMap [CustomDomain, Environment, !Ref Environment]
+          - !Sub ".auth.${AWS::Region}.amazoncognito.com"
+
   AppUserPoolClientId:
     Description: The id of the cognito user pool
     Value: !Ref CognitoUserPoolClient
@@ -728,4 +777,8 @@ Outputs:
 
   SharedSignalSecretsName:
     Description: The name of the Shared Signal Secrets Manager secret
-    Value: !Ref SharedSignalSecretsManager  
+    Value: !Ref SharedSignalSecretsManager
+    
+  CognitoSecretArn:
+    Description: The name of the Cognito secret
+    Value: !Ref CognitoClientSecret

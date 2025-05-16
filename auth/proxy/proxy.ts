@@ -10,6 +10,7 @@ export interface ProxyInput {
     sanitizedHeaders: any
     targetPath: string
     parsedUrl: URL
+    clientSecret: string
 }
 
 export const proxy = async ({
@@ -20,15 +21,20 @@ export const proxy = async ({
     body,
     sanitizedHeaders,
     targetPath,
+    clientSecret,
 }: ProxyInput) => {
     if (method === "POST" && path.includes('/token')) {
         // In API Gateway Proxy v2, if the request body is base64-encoded (e.g. from a frontend form or custom client), you need to handle decoding it manually.
         const rawBody = isBase64Encoded ? Buffer.from(body!, 'base64').toString('utf-8') : body!;
         const parsedBody = querystring.parse(rawBody);
-        const encodedBody = querystring.stringify(parsedBody);
+        const encodedBody = querystring.stringify({
+            ...parsedBody,
+            client_secret: clientSecret,
+        });
 
         sanitizedHeaders['content-length'] = Buffer.byteLength(encodedBody).toString();
         sanitizedHeaders['content-type'] = 'application/x-www-form-urlencoded'; // just to be safe
+      
 
         return await _proxyRequest(parsedUrl.hostname, targetPath, encodedBody, sanitizedHeaders, method);
     }

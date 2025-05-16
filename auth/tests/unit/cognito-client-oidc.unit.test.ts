@@ -31,9 +31,9 @@ describe("Set up the Cognito User Pool OIDC client", () => {
     });
   });
 
-  it("should not generate secrets", () => {
+  it("should generate secret for proxy as confidential client", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
-      GenerateSecret: false,
+      GenerateSecret: true,
     });
   });
 
