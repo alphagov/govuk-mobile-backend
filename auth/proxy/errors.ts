@@ -11,3 +11,10 @@ export class UnknownAppError extends Error {
         this.name = 'UnknownAppError';
     }
 }
+
+export class FailedToFetchSecretError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'FailedToFetchSecretError';
+    }
+}

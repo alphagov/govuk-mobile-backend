@@ -11,7 +11,6 @@ Feature: App Attestation
             | user  | header  | log     |
             | valid | missing | failure |
 
-
     Scenario Outline: Valid attestation tokens are accepted
         Given an app initiates a login with <user> credentials
         When the request is made to authenticate with <header> attestation header
