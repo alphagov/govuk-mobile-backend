@@ -455,7 +455,17 @@ Resources:
   CognitoClientSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: /cognito/client_secret
+      Name: !Join
+        - ""
+        - - !Ref AWS::StackName
+          - "-"
+          - Fn::Select:
+            - 2
+            - Fn::Split:
+              - "/"
+              - Ref: AWS::StackId
+          - /cognito/client_secret
+
       Description: Cognito App Client Secret
       # not setting secret string avoids being overridden on subsequent deployments
       Tags:
@@ -575,7 +585,16 @@ Resources:
   SharedSignalSecretsManager:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: /shared-signal/secrets-config
+      Name: !Join
+        - ""
+        - - !Ref AWS::StackName
+          - "-"
+          - Fn::Select:
+            - 2
+            - Fn::Split:
+              - "/"
+              - Ref: AWS::StackId
+          - /shared-signal/secrets-config
       Description: "Shared Signal Secrets"
       SecretString: !Sub '{
         "client_id": "${CognitoM2MClient}",
