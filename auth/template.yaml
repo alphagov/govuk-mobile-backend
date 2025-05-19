@@ -557,7 +557,7 @@ Resources:
       Scopes:
         - ScopeDescription: Shared signal scope for resource server
           ScopeName: !Ref CustomScopeName
-       
+
   # Shared signal user pool client
   CognitoM2MClient:
     Type: AWS::Cognito::UserPoolClient
@@ -642,6 +642,51 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
+
+  SharedSignalsGatewayWebApplicationFirewall:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "waf-shared-signals"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      Description: "Web Application Firewall for Shared Signals API Gateway"
+      DefaultAction:
+        Allow: {}
+      Scope: REGIONAL
+      Rules:
+        - Name: RateLimitRule
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          Priority: 1
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              Limit: 100
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CognitoWAFAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !GetAtt SharedSignalsApi.Arn
+      WebACLArn: !GetAtt SharedSignalsGatewayWebApplicationFirewall.Arn
 
 Outputs:
   ApiGateway:
@@ -729,7 +774,7 @@ Outputs:
   PostAuthenticationFunctionName:
     Description: The name of the Post Authentication function
     Value: !Ref PostAuthenticationFunction
-  
+
   PostAuthenticationFunctionInvokePermission:
     Description: The name of the Post Authentication Invoke Permission
     Value: !Ref PostAuthLambdaInvokePermission
@@ -740,4 +785,4 @@ Outputs:
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
-    Value: !Ref CognitoUserPoolDomain 
+    Value: !Ref CognitoUserPoolDomain
