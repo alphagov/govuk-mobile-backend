@@ -741,11 +741,3 @@ Outputs:
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
     Value: !Ref CognitoUserPoolDomain 
-
-  SharedSignalSecretsName:
-    Description: The name of the Shared Signal Secrets Manager secret
-    Value: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/shared-signal/secrets-config
-    
-  CognitoSecretArn:
-    Description: The name of the Cognito secret. Can be the ARN or name of the secret to retrieve
-    Value: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret
