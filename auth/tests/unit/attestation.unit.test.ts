@@ -1,7 +1,15 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
+import path from "path";
 
-const template = loadTemplateFromFile("./template.yaml");
+const template = loadTemplateFromFile(
+  path.join(
+    __dirname,
+    "..",
+    "..",
+    "template.yaml"
+  )
+);
 
 describe("attestation", () => {
   let resourceUnderTest: {
@@ -9,6 +17,7 @@ describe("attestation", () => {
     Properties: any;
     Metadata: any;
   };
+
   beforeAll(() => {
     const resource = template.findResources("AWS::Serverless::Function");
     resourceUnderTest = resource["AuthProxyFunction"] as any;
@@ -27,9 +36,7 @@ describe("attestation", () => {
           "{{resolve:ssm:/firebase/appcheck/android-app-id}}",
         FIREBASE_IOS_APP_ID:
           "{{resolve:ssm:/firebase/appcheck/ios-app-id}}",
-        COGNITO_SECRET_NAME: {
-          Ref: "CognitoClientSecret",
-        },
+        
       });
     });
 
@@ -42,7 +49,7 @@ describe("attestation", () => {
     it("contains a reference to the cognito secret name", () => {
       expect(resourceUnderTest.Properties.Environment.Variables).containSubset({
         COGNITO_SECRET_NAME: {
-          "Ref": "CognitoClientSecret",
+          "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret",
         },
       });
     });
@@ -57,7 +64,7 @@ describe("attestation", () => {
               ],
               "Effect": "Allow",
               "Resource": {
-                "Ref": "CognitoClientSecret",
+                "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret",
               },
             },
           ],
@@ -123,39 +130,4 @@ describe("attestation", () => {
       });
     });
   });
-
-  describe("confidential client secret", () => {
-    let secretUnderTest;
-    beforeAll(() => {
-      const resource = template.findResources("AWS::SecretsManager::Secret");
-      secretUnderTest = resource["CognitoClientSecret"] as any;
-    });
-
-    it("should generate a secret store for the auth proxy to use", () => {
-      expect(secretUnderTest).toBeDefined();
-    })
-
-    it("should have no secret string to avoid being overwritten", () => {
-      expect(secretUnderTest.Properties?.SecretString).toBeUndefined();
-    });
-
-    it('should have the correct tags', () => {
-      expect(secretUnderTest.Properties?.Tags).toEqual([
-        {
-          "Key": "Product",
-          "Value": "GOV.UK",
-        },
-        {
-          "Key": "Environment",
-          "Value": {
-            "Ref": "Environment",
-          },
-        },
-        {
-          "Key": "System",
-          "Value": "Authentication",
-        },
-      ])
-    });
-  })
 });
