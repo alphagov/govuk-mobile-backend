@@ -455,7 +455,7 @@ Resources:
   CognitoClientSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: /cognito/client-secret
+      Name: /cognito/client_secret
       Description: Cognito App Client Secret
       # not setting secret string avoids being overridden on subsequent deployments
       Tags:
