@@ -150,6 +150,9 @@ describe("Set up CloudWatch Alarm for Cognito SignInThrottles with supporting al
         ],
       ],
     });
+    expect(snsTopicUnderTest.Properties.KmsMasterKeyId).toEqual({
+      Ref: "CloudWatchAlarmNotificationTopicKey",
+    });
     expect(snsTopicUnderTest.Properties.Tags).toEqual([
       {
         Key: "Product",
