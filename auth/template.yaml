@@ -452,20 +452,6 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
-  CognitoClientSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: /cognito/client-secret
-      Description: Cognito App Client Secret
-      # not setting secret string avoids being overridden on subsequent deployments
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
   AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -491,7 +477,7 @@ Resources:
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue # pragma: allowlist secret
-              Resource: !Ref CognitoClientSecret
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret
       Environment:
         Variables:
           ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
@@ -509,7 +495,7 @@ Resources:
                 - !Sub ".auth.${AWS::Region}.amazoncognito.com"
           FIREBASE_IOS_APP_ID: "{{resolve:ssm:/firebase/appcheck/ios-app-id}}"
           FIREBASE_ANDROID_APP_ID: "{{resolve:ssm:/firebase/appcheck/android-app-id}}"
-          COGNITO_SECRET_NAME: !Ref CognitoClientSecret
+          COGNITO_SECRET_NAME: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -571,25 +557,6 @@ Resources:
       Scopes:
         - ScopeDescription: Shared signal scope for resource server
           ScopeName: !Ref CustomScopeName
-
-  SharedSignalSecretsManager:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: /shared-signal/secrets-config
-      Description: "Shared Signal Secrets"
-      SecretString: !Sub '{
-        "client_id": "${CognitoM2MClient}",
-        "client_secret": "${CognitoM2MClient.ClientSecret}",
-        "auth_url": "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/oauth2/token",
-        "audience": "https://${CognitoUserPoolDomain}.shared-signal.gov.uk"
-      }'
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
        
   # Shared signal user pool client
   CognitoM2MClient:
@@ -774,11 +741,3 @@ Outputs:
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
     Value: !Ref CognitoUserPoolDomain 
-
-  SharedSignalSecretsName:
-    Description: The name of the Shared Signal Secrets Manager secret
-    Value: !Ref SharedSignalSecretsManager
-    
-  CognitoSecretArn:
-    Description: The name of the Cognito secret
-    Value: !Ref CognitoClientSecret
