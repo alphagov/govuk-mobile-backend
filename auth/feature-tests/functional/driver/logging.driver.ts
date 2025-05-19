@@ -1,5 +1,4 @@
 import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
-import { fromSSO } from "@aws-sdk/credential-providers";
 
 /**
  * Options for finding a log message in CloudWatch with retries.
@@ -28,7 +27,6 @@ export class LoggingDriver {
     this.client = new CloudWatchLogsClient({
       region: 'eu-west-2',
       // may not be suitable for CI environment but required for local development if running via sso login credentials
-      credentials: fromSSO()
     });
   }
 
