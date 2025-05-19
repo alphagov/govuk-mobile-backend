@@ -32,24 +32,27 @@ describe("attestation", () => {
 
     it("should resolve attestation app ids as environment variables", () => {
       expect(resourceUnderTest.Properties.Environment.Variables).containSubset({
-        FIREBASE_ANDROID_APP_ID:
-          "{{resolve:ssm:/firebase/appcheck/android-app-id}}",
-        FIREBASE_IOS_APP_ID:
-          "{{resolve:ssm:/firebase/appcheck/ios-app-id}}",
-        
+        FIREBASE_ANDROID_APP_ID: {
+          "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}",
+        },
+        FIREBASE_IOS_APP_ID: {
+          "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}",
+        },
       });
     });
 
     it("contains an attestation feature flag", () => {
       expect(resourceUnderTest.Properties.Environment.Variables).containSubset({
-        ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
+        ENABLE_ATTESTATION: {
+          "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
+        },
       });
     });
 
     it("contains a reference to the cognito secret name", () => {
       expect(resourceUnderTest.Properties.Environment.Variables).containSubset({
         COGNITO_SECRET_NAME: {
-          "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret",
+          "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret",
         },
       });
     });
@@ -64,7 +67,7 @@ describe("attestation", () => {
               ],
               "Effect": "Allow",
               "Resource": {
-                "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret",
+                "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret",
               },
             },
           ],

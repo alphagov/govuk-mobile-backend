@@ -33,6 +33,11 @@ Parameters:
     Description: Name for the custom OAuth scope
     Default: "read"
 
+  ConfigStackName:
+    Type: String
+    Description: Stack Name for Config Stack
+    Default: govuk-app-backend-config
+
 Mappings:
   OneLogin:
     Environment:
@@ -477,10 +482,10 @@ Resources:
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue # pragma: allowlist secret
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret
       Environment:
         Variables:
-          ENABLE_ATTESTATION: "{{resolve:ssm:/feature-flags/attestation}}"
+          ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
           COGNITO_URL: !If
             - IsDev
             - !Join
@@ -493,9 +498,9 @@ Resources:
               - - "https://"
                 - !FindInMap [CustomDomain, Environment, !Ref Environment]
                 - !Sub ".auth.${AWS::Region}.amazoncognito.com"
-          FIREBASE_IOS_APP_ID: "{{resolve:ssm:/firebase/appcheck/ios-app-id}}"
-          FIREBASE_ANDROID_APP_ID: "{{resolve:ssm:/firebase/appcheck/android-app-id}}"
-          COGNITO_SECRET_NAME: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/cognito/client-secret
+          FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
+          FIREBASE_ANDROID_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
+          COGNITO_SECRET_NAME: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -692,15 +697,15 @@ Outputs:
 
   FirebaseIosAppId:
     Description: The Firebase iOS App ID
-    Value: "{{resolve:ssm:/firebase/appcheck/ios-app-id}}"
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
 
   FirebaseAndroidAppId:
     Description: The Firebase Android App ID
-    Value: "{{resolve:ssm:/firebase/appcheck/android-app-id}}"
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
 
   UnknownAndroidAppId:
     Description: The Unknown Android App ID
-    Value: "{{resolve:ssm:/firebase/appcheck/unknown-app-id}}"
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/unknown-app-id}}"
 
   AppClientId:
     Description: The App Client ID for the Cognito User Pool
@@ -740,4 +745,4 @@ Outputs:
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
-    Value: !Ref CognitoUserPoolDomain 
+    Value: !Ref CognitoUserPoolDomain
