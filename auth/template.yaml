@@ -36,7 +36,7 @@ Parameters:
   ConfigStackName:
     Type: String
     Description: Stack Name for Config Stack
-    Default: govuk-app-backend-config
+    Default: govuk-app-config
 
 Mappings:
   OneLogin:
