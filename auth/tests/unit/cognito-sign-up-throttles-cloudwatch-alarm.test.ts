@@ -161,7 +161,9 @@ describe("Set up CloudWatch Alarm for Cognito SignUpThrottles with supporting al
         {
           "Fn::GetAtt": ["PagerDutyTestFunction", "Arn"],
         },
-        "{{resolve:ssm:/pager-duty/url}}",
+        {
+          "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}",
+        },
       ],
     });
     expect(subscriptionUnderTest.Properties.TopicArn).toEqual({

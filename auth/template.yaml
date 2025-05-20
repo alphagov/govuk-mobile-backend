@@ -392,7 +392,7 @@ Resources:
       Endpoint: !If
         - IsNotProduction
         - !GetAtt PagerDutyTestFunction.Arn
-        - "{{resolve:ssm:/pager-duty/url}}"
+        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
       Protocol: !If
         - IsNotProduction
         - lambda
@@ -476,7 +476,7 @@ Resources:
       Endpoint: !If
         - IsNotProduction
         - !GetAtt PagerDutyTestFunction.Arn
-        - "{{resolve:ssm:/pager-duty/url}}"
+        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
       Protocol: !If
         - IsNotProduction
         - lambda
@@ -560,7 +560,7 @@ Resources:
       Endpoint: !If
         - IsNotProduction
         - !GetAtt PagerDutyTestFunction.Arn
-        - "{{resolve:ssm:/pager-duty/url}}"
+        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
       Protocol: !If
         - IsNotProduction
         - lambda
@@ -646,7 +646,7 @@ Resources:
       Endpoint: !If
         - IsNotProduction
         - !GetAtt PagerDutyTestFunction.Arn
-        - "{{resolve:ssm:/pager-duty/url}}"
+        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
       Protocol: !If
         - IsNotProduction
         - lambda
