@@ -24,31 +24,29 @@ describe("Set up CloudWatch Alarm for Cognito SignUpThrottles with supporting al
     Properties: any;
   };
 
-  beforeAll(() => {
-    const cloudWatchAlarmResources = template.findResources(
-      "AWS::CloudWatch::Alarm"
-    );
-    cloudWatchAlarmUnderTest = cloudWatchAlarmResources[
-      "CloudWatchAlarmSignUpThrottles"
-    ] as any;
+  const cloudWatchAlarmResources = template.findResources(
+    "AWS::CloudWatch::Alarm"
+  );
+  cloudWatchAlarmUnderTest = cloudWatchAlarmResources[
+    "CloudWatchAlarmSignUpThrottles"
+  ] as any;
 
-    const snsTopicResources = template.findResources("AWS::SNS::Topic");
-    snsTopicUnderTest = snsTopicResources[
-      "CloudWatchAlarmSignUpThrottlesTopicPagerDuty"
-    ] as any;
+  const snsTopicResources = template.findResources("AWS::SNS::Topic");
+  snsTopicUnderTest = snsTopicResources[
+    "CloudWatchAlarmSignUpThrottlesTopicPagerDuty"
+  ] as any;
 
-    const subscriptionResources = template.findResources(
-      "AWS::SNS::Subscription"
-    );
-    subscriptionUnderTest = subscriptionResources[
-      "CloudWatchAlarmSignUpThrottlesTopicSubscriptionPagerDuty"
-    ] as any;
+  const subscriptionResources = template.findResources(
+    "AWS::SNS::Subscription"
+  );
+  subscriptionUnderTest = subscriptionResources[
+    "CloudWatchAlarmSignUpThrottlesTopicSubscriptionPagerDuty"
+  ] as any;
 
-    const topicPolicies = template.findResources("AWS::SNS::TopicPolicy");
-    topicPolicyUnderTest = topicPolicies[
-      "CloudWatchAlarmSignUpThrottlesAlarmPublishToTopicPolicy"
-    ] as any;
-  });
+  const topicPolicies = template.findResources("AWS::SNS::TopicPolicy");
+  topicPolicyUnderTest = topicPolicies[
+    "CloudWatchAlarmSignUpThrottlesAlarmPublishToTopicPolicy"
+  ] as any;
 
   it("should create a CloudWatch alarm for SignUpThrottles", () => {
     expect(cloudWatchAlarmUnderTest).toBeDefined();
