@@ -1180,3 +1180,19 @@ Outputs:
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
     Value: !Ref CognitoUserPoolDomain
+
+  CloudWatchAlarmSignUpThrottlesName:
+    Description: The name of the CloudWatch alarm for sign up throttles
+    Value: !Ref CloudWatchAlarmSignUpThrottles
+
+  CloudWatchAlarmSignInThrottlesName:
+    Description: The name of the CloudWatch alarm for sign in throttles
+    Value: !Ref CloudWatchAlarmSignInThrottles
+
+  CloudWatchAlarmTokenRefreshThrottlesName:
+    Description: The name of the CloudWatch alarm for token refresh throttles
+    Value: !Ref CloudWatchAlarmTokenRefreshThrottles
+
+  CloudWatchAlarmFederationThrottlesName:
+    Description: The name of the CloudWatch alarm for federation throttles
+    Value: !Ref CloudWatchAlarmFederationThrottles
