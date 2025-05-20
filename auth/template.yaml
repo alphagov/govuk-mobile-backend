@@ -717,8 +717,85 @@ Resources:
   SharedSignalsApiGatewayWAFAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
-      ResourceArn: !GetAtt SharedSignalsApi.Arn
+      ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalsApi}/stages/${SharedSignalsApi.Stage}"
       WebACLArn: !GetAtt SharedSignalsGatewayWebApplicationFirewall.Arn
+
+  SharedSignalsWAFLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub "aws-waf-logs-shared-signals-${AWS::StackName}"
+      KmsKeyId: !GetAtt SharedSignalsWAFLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalsWAFLoggingConfiguration:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !GetAtt SharedSignalsWAFLogGroup.Arn
+      ResourceArn: !GetAtt SharedSignalsGatewayWebApplicationFirewall.Arn
+
+  SharedSignalsWAFLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the SharedSignals WAF Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - "kms:*"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
 
 Outputs:
   ApiGateway:
@@ -818,3 +895,7 @@ Outputs:
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
     Value: !Ref CognitoUserPoolDomain
+
+  SharedSignalsWafLogGroupName:
+    Description: The name of the Shared Signals WAF log group
+    Value: !Ref SharedSignalsWAFLogGroup
