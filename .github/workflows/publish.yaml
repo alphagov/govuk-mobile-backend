@@ -1,0 +1,26 @@
+name: Publish auth-backend to dev & build
+run-name: Auth backend publish to  ${{ github.environment }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-to-dev:
+    name: Dev
+    uses: ./.github/workflows/auth-post-merge.yaml
+    with:
+      environment: dev
+
+  deploy-to-build:
+    name: Build
+    uses: ./.github/workflows/auth-post-merge.yaml
+    if: ${{ github.head_ref || github.ref_name == 'main' }}
+    with:
+      environment: build
