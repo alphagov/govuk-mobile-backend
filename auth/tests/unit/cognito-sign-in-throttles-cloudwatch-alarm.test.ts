@@ -4,47 +4,27 @@ import { loadTemplateFromFile } from "../common/template";
 const template = loadTemplateFromFile("./template.yaml");
 
 describe("Set up CloudWatch Alarm for Cognito SignInThrottles with supporting alarm resources", () => {
-  let cloudWatchAlarmUnderTest: {
-    Type: any;
-    Properties: any;
-  };
-
-  let snsTopicUnderTest: {
-    Type: any;
-    Properties: any;
-  };
-
-  let subscriptionUnderTest: {
-    Type: any;
-    Properties: any;
-  };
-
-  let topicPolicyUnderTest: {
-    Type: any;
-    Properties: any;
-  };
-
   const cloudWatchAlarmResources = template.findResources(
     "AWS::CloudWatch::Alarm"
   );
-  cloudWatchAlarmUnderTest = cloudWatchAlarmResources[
+  const cloudWatchAlarmUnderTest = cloudWatchAlarmResources[
     "CloudWatchAlarmSignInThrottles"
   ] as any;
 
   const snsTopicResources = template.findResources("AWS::SNS::Topic");
-  snsTopicUnderTest = snsTopicResources[
+  const snsTopicUnderTest = snsTopicResources[
     "CloudWatchAlarmSignInThrottlesTopicPagerDuty"
   ] as any;
 
   const subscriptionResources = template.findResources(
     "AWS::SNS::Subscription"
   );
-  subscriptionUnderTest = subscriptionResources[
+  const subscriptionUnderTest = subscriptionResources[
     "CloudWatchAlarmSignInThrottlesTopicSubscriptionPagerDuty"
   ] as any;
 
   const topicPolicies = template.findResources("AWS::SNS::TopicPolicy");
-  topicPolicyUnderTest = topicPolicies[
+  const topicPolicyUnderTest = topicPolicies[
     "CloudWatchAlarmSignInThrottlesAlarmPublishToTopicPolicy"
   ] as any;
 
