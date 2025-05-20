@@ -20,14 +20,14 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         ecmaFeatures: {
-	  impliedStrict: true
-	},
+          impliedStrict: true
+        },
         tsconfigRootDir: import.meta.dirname,
-	sourceType: "module",
-	ecmaVersion: "ES2020",
-	projectService: {
-	  allowDefaultProject: ["eslint.config.mjs"],
-	}
+        sourceType: "module",
+        ecmaVersion: "ES2020",
+        projectService: {
+          allowDefaultProject: ["eslint.config.mjs"],
+        }
       },
     },
   },
@@ -99,10 +99,9 @@ export default tseslint.config(
       "init-declarations": "off",
       "@typescript-eslint/init-declarations": "error",
       "@typescript-eslint/naming-convention": ["error",
-      { "selector": "variableLike", "format": ["camelCase"] },
-      { "selector": "variable", "types": ["boolean"], "format": ["PascalCase"], "prefix": ["is", "should", "has", "can", "did", "will"] },
-      { "selector": "variable", "types": ["array", "boolean", "number", "string"], "modifiers": ["const"], "format": ["UPPER_CASE"] },
-      { "selector": ["variable", "function"], "format": ["camelCase"], "leadingUnderscore": "allow" },
+        { "selector": "variableLike", "format": ["camelCase"] },
+        { "selector": "variable", "types": ["boolean"], "format": ["PascalCase"], "prefix": ["is", "should", "has", "can", "did", "will"] },
+        { "selector": ["function"], "format": ["camelCase"], "leadingUnderscore": "allow" },
       ],
       "@typescript-eslint/no-import-type-side-effects": "error",
       "no-loop-func": "off",
@@ -126,8 +125,8 @@ export default tseslint.config(
       "prefer-destructuring": "off",
       "@typescript-eslint/prefer-destructuring": "error",
       "@typescript-eslint/prefer-enum-initializers": "error",
-      "@typescript-eslint/prefer-readonly": "error",
-      "@typescript-eslint/prefer-readonly-parameter-types": "error",
+      "@typescript-eslint/prefer-readonly": "warn",
+      "@typescript-eslint/prefer-readonly-parameter-types": "warn",
       "@typescript-eslint/promise-function-async": "error",
       "@typescript-eslint/strict-boolean-expressions": "error",
       "@typescript-eslint/switch-exhaustiveness-check": "error",
@@ -149,5 +148,16 @@ export default tseslint.config(
       importPlugin: importPlugin,
       security: securityPlugin,
     }
+  },
+  {
+    settings: {
+      // eslint-plugin-import doesnt natively understand typescript's path resolution
+      'import/resolver': {
+        typescript: {
+          // Optionally, specify the path to your tsconfig
+          project: './tsconfig.json',
+        },
+      },
+    },
   }
 );

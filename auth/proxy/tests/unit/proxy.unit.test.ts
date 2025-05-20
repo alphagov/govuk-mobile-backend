@@ -62,6 +62,14 @@ describe('proxy', () => {
         expect(response.body).toBe('mock response');
     });
 
+    it('should throw an error if the request body is undefined', async () => {
+        const input = createMockInput({
+            body: undefined,
+            method: 'POST',
+        })
+        await expect(proxy(input)).rejects.toThrow('Request body is undefined');
+    })
+
     it('proxies a valid POST /token request', async () => {
         const response = await proxy(createMockInput()) as APIGatewayProxyStructuredResultV2;
 

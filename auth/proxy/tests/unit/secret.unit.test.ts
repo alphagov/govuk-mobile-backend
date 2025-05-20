@@ -40,10 +40,15 @@ describe('secret', () => {
         expect(mockClient.send).toHaveBeenCalledTimes(1);
     })
 
-    it('should throw error if secret is empty', async () => { 
+    it.each([
+        '',
+        null,
+        undefined
+    ])
+    ('should throw error if secret is empty', async (secret) => { 
         const emptySecret = {
             send: vi.fn().mockResolvedValue({
-                SecretString: ''
+                SecretString: secret
             })
         } as unknown as SecretsManagerClient;
 
@@ -53,6 +58,21 @@ describe('secret', () => {
         ))
             .rejects
             .toThrow('SecretString is empty or undefined.');
+    })
+
+    it('should throw if secret is not valid json', async () => {
+        const emptySecret = {
+            send: vi.fn().mockResolvedValue({
+                SecretString: 'not a json'
+            })
+        } as unknown as SecretsManagerClient;
+
+        await expect(getClientSecret(
+            emptySecret,
+            null
+        ))
+            .rejects
+            .toThrow('Failed to parse secret.');
     })
 
     it('should throw error if client_secret is empty', async () => { 
