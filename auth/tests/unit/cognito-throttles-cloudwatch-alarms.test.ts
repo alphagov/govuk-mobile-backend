@@ -203,7 +203,9 @@ describe.each(testCases)(
         "Fn::If": [
           "IsNotProduction",
           { "Fn::GetAtt": ["PagerDutyTestFunction", "Arn"] },
-          "{{resolve:ssm:/pager-duty/url}}",
+          {
+            "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}",
+          },
         ],
       });
       expect(subscriptionUnderTest.Properties.TopicArn).toEqual({
