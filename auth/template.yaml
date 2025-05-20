@@ -649,7 +649,7 @@ Resources:
       Name: !Join
         - "-"
         - - !Ref AWS::StackName
-          - "waf-shared-signals"
+          - "shared-signals-waf"
           - Fn::Select:
               - 4
               - Fn::Split:
@@ -659,10 +659,26 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
-      Description: "Web Application Firewall for Shared Signals API Gateway"
+      Description: "Web Application Firewall for Shared Signals API"
       DefaultAction:
-        Allow: {}
+        Block: {}
       Scope: REGIONAL
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        MetricName: !Join
+          - "-"
+          - - !Ref AWS::StackName
+            - "waf-shared-signals-acl-rules"
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - "/"
+                            - Ref: AWS::StackId
+        SampledRequestsEnabled: true
       Rules:
         - Name: RateLimitRule
           Action:
@@ -674,6 +690,22 @@ Resources:
             RateBasedStatement:
               AggregateKeyType: IP
               Limit: 100
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join
+              - "-"
+              - - !Ref AWS::StackName
+                - "rate-limit-rule"
+                - Fn::Select:
+                    - 4
+                    - Fn::Split:
+                        - "-"
+                        - Fn::Select:
+                            - 2
+                            - Fn::Split:
+                                - "/"
+                                - Ref: AWS::StackId
+            SampledRequestsEnabled: true
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -682,7 +714,7 @@ Resources:
         - Key: System
           Value: Authentication
 
-  CognitoWAFAssociation:
+  SharedSignalsApiGatewayWAFAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
       ResourceArn: !GetAtt SharedSignalsApi.Arn
