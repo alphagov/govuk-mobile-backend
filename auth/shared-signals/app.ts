@@ -9,7 +9,6 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
  * @returns {Object} object - API Gateway Lambda Proxy Output Format
  *
  */
-// eslint-disable-next-line @typescript-eslint/require-await
 export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
     console.log("Shared signals receiver called")
     return {
