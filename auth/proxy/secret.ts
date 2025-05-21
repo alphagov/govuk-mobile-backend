@@ -14,7 +14,8 @@ export const getClientSecret = async (
     }
     const secretName = process.env['COGNITO_SECRET_NAME'];
 
-    if (secretName == null) {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (!secretName) {
         throw new FailedToFetchSecretError("Secret name is not provided");
     }
 

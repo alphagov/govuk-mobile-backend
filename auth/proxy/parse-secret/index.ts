@@ -10,7 +10,7 @@ export function parseSecret(
     secretString: string | undefined
 ): string {
     try {
-        if (typeof secretString !== 'string') {
+        if (typeof secretString !== 'string') { // pragma: allowlist-secret 
             throw new FailedToFetchSecretError('Secret is not correct type.')
         }
         if (!secretString.includes('client_secret')) {
@@ -18,17 +18,17 @@ export function parseSecret(
         }
         const secretStringParsed = JSON.parse(secretString) as unknown;
 
-        if (typeof secretStringParsed !== 'object' || secretStringParsed === null) {
+        if (typeof secretStringParsed !== 'object' || secretStringParsed === null) { // pragma: allowlist-secret 
             throw new FailedToFetchSecretError('Secret format is incorrect')
         }
 
         const clientSecret = (secretStringParsed as { client_secret?: unknown }).client_secret;
-        if (typeof clientSecret !== 'string') {
+        if (typeof clientSecret !== 'string') { // pragma: allowlist-secret 
             throw new FailedToFetchSecretError('client_secret is not a string');
         }
 
         if(!clientSecret) {
-            throw new FailedToFetchSecretError('client_secret it empty');
+            throw new FailedToFetchSecretError('client_secret is empty');
         }
         
         return clientSecret;
