@@ -1,5 +1,5 @@
 
-import { APIGatewayProxyEventHeaders } from 'aws-lambda';
+import type { APIGatewayProxyEventHeaders } from 'aws-lambda';
 import { MissingAttestationTokenError } from './errors';
 import { validateFirebaseJWT } from './firebaseJwt';
 

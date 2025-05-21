@@ -1,18 +1,18 @@
 // @ts-check
 
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import promisePlugin from 'eslint-plugin-promise';
-import jsdocPlugin from 'eslint-plugin-jsdoc';
-import importPlugin from 'eslint-plugin-import';
-import securityPlugin from 'eslint-plugin-security';
-import sonarjsPlugin from 'eslint-plugin-sonarjs';
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
+import promisePlugin from "eslint-plugin-promise";
+import jsdocPlugin from "eslint-plugin-jsdoc";
+import importPlugin from "eslint-plugin-import";
+import securityPlugin from "eslint-plugin-security";
+import sonarjsPlugin from "eslint-plugin-sonarjs";
 
 export default tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
-  jsdocPlugin.configs['flat/recommended-typescript'],
+  jsdocPlugin.configs["flat/recommended-typescript"],
   importPlugin.flatConfigs.recommended,
   securityPlugin.configs.recommended,
   sonarjsPlugin.configs.recommended,
@@ -20,37 +20,32 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         ecmaFeatures: {
-	  impliedStrict: true
-	},
-  tsconfigRootDir: import.meta.dirname,
-	sourceType: "module",
-	ecmaVersion: "ES2020",
-	projectService: {
-	  allowDefaultProject: ["eslint.config.mjs"],
-	}
+          impliedStrict: true,
+        },
+        tsconfigRootDir: import.meta.dirname,
+        sourceType: "module",
+        ecmaVersion: "ES2020",
+        projectService: {
+          allowDefaultProject: ["eslint.config.mjs"],
+        },
       },
     },
   },
   {
     ignores: [
-      '**/dist',
-      '.nx',
-      '**/debug',
-      '**/.aws-sam/**',
-      '**/feature-tests/**',
-      '**/tests/**',
-      '**/vitest*.ts',
-      '**/coverage/**/*',
-      'eslint.config.mjs',
+      "**/dist",
+      ".nx",
+      "**/debug",
+      "**/.aws-sam/**",
+      "**/feature-tests/**",
+      "**/tests/**",
+      "**/vitest*.ts",
+      "**/coverage/**/*",
+      "eslint.config.mjs",
     ],
   },
   {
-    files: [
-      '**/*.ts',
-      '**/*.js',
-      '**/*.cjs',
-      '**/*.mjs',
-    ],
+    files: ["**/*.ts", "**/*.js", "**/*.cjs", "**/*.mjs"],
     // Override or add rules here
     rules: {
       "promise/always-return": "error",
@@ -89,8 +84,18 @@ export default tseslint.config(
       "importPlugin/no-unassigned-import": "error",
       "class-methods-use-this": "off",
       "@typescript-eslint/class-methods-use-this": "error",
-      "@typescript-eslint/consistent-type-exports": ["error", { "fixMixedExportsWithInlineTypeSpecifier": false }],
-      "@typescript-eslint/consistent-type-imports": ["error", { "disallowTypeAnnotations": true, "fixStyle": "separate-type-imports", "prefer": "type-imports" }],
+      "@typescript-eslint/consistent-type-exports": [
+        "error",
+        { fixMixedExportsWithInlineTypeSpecifier: false },
+      ],
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        {
+          disallowTypeAnnotations: true,
+          fixStyle: "separate-type-imports",
+          prefer: "type-imports",
+        },
+      ],
       "default-param-last": "off",
       "@typescript-eslint/default-param-last": "error",
       "@typescript-eslint/explicit-function-return-type": "error",
@@ -98,24 +103,38 @@ export default tseslint.config(
       "@typescript-eslint/explicit-module-boundary-types": "error",
       "init-declarations": "off",
       "@typescript-eslint/init-declarations": "error",
-      "@typescript-eslint/naming-convention": ["error",
-      { "selector": "variableLike", "format": ["camelCase"] },
-      { "selector": "variable", "types": ["boolean"], "format": ["PascalCase"], "prefix": ["is", "should", "has", "can", "did", "will"] },
-      { "selector": ["variable", "function"], "format": ["camelCase"], "leadingUnderscore": "allow" },
+      "@typescript-eslint/naming-convention": [
+        "error",
+        { selector: "variableLike", format: ["camelCase"] },
+        {
+          selector: "variable",
+          types: ["boolean"],
+          format: ["PascalCase"],
+          prefix: ["is", "should", "has", "can", "did", "will"],
+        },
+        {
+          selector: ["variable", "function"],
+          format: ["camelCase"],
+          leadingUnderscore: "allow",
+        },
       ],
       "@typescript-eslint/no-import-type-side-effects": "error",
       "no-loop-func": "off",
       "@typescript-eslint/no-loop-func": "error",
       "no-magic-numbers": "off",
-      "@typescript-eslint/no-magic-numbers": ["error", {
-        "ignoreEnums": true,
-        "ignoreNumericLiteralTypes": true,
-        "ignoreReadonlyClassProperties": false,
-        "ignoreTypeIndexes": false,
-      }],
+      "@typescript-eslint/no-magic-numbers": [
+        "error",
+        {
+          ignoreEnums: true,
+          ignoreNumericLiteralTypes: true,
+          ignoreReadonlyClassProperties: false,
+          ignoreTypeIndexes: false,
+        },
+      ],
       "no-shadow": "off",
       "@typescript-eslint/no-shadow": "error",
-      "@typescript-eslint/no-unnecessary-parameter-property-assignment": "error",
+      "@typescript-eslint/no-unnecessary-parameter-property-assignment":
+        "error",
       "@typescript-eslint/no-unnecessary-qualifier": "error",
       "@typescript-eslint/no-unnecessary-type-conversion": "error",
       "@typescript-eslint/no-unsafe-type-assertion": "error",
@@ -131,13 +150,10 @@ export default tseslint.config(
     },
   },
   {
-    files: [
-      "auth/feature-tests/**/*.ts",
-      "auth/**/*.test.ts"
-    ],
+    files: ["auth/feature-tests/**/*.ts", "auth/**/*.test.ts"],
     rules: {
       "@typescript-eslint/no-empty-function": "off",
-      "@typescript-eslint/no-unused-expressions": "off"
+      "@typescript-eslint/no-unused-expressions": "off",
     },
   },
   {
@@ -145,6 +161,15 @@ export default tseslint.config(
       promise: promisePlugin,
       importPlugin: importPlugin,
       security: securityPlugin,
-    }
+    },
+    settings: {
+      // eslint-plugin-import doesnt natively understand typescript's path resolution
+      "import/resolver": {
+        typescript: {
+          // Optionally, specify the path to your tsconfig
+          project: "./tsconfig.json",
+        },
+      },
+    },
   }
 );

@@ -1,4 +1,4 @@
-export type FeatureFlags = {
+export interface FeatureFlags {
     ATTESTATION: boolean;
 }
 

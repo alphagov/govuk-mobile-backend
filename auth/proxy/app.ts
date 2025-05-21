@@ -1,7 +1,10 @@
-import { APIGatewayProxyResultV2 } from 'aws-lambda';
-import { FEATURE_FLAGS, FeatureFlags } from './feature-flags';
-import { AttestationUseCase, validateAttestationHeaderOrThrow } from './attestation';
-import { proxy, ProxyInput } from './proxy';
+import type { APIGatewayProxyResultV2 } from 'aws-lambda';
+import type { FeatureFlags } from './feature-flags';
+import { FEATURE_FLAGS } from './feature-flags';
+import type { AttestationUseCase} from './attestation';
+import { validateAttestationHeaderOrThrow } from './attestation';
+import type { ProxyInput } from './proxy';
+import { proxy } from './proxy';
 import { getClientSecret } from './secret';
 import { createHandler } from './handler';
 
