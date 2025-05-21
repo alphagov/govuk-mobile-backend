@@ -1,7 +1,7 @@
-import { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
-import { FeatureFlags } from './feature-flags';
-import { AttestationUseCase } from './attestation';
-import { ProxyInput } from './proxy';
+import type { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
+import type { FeatureFlags } from './feature-flags';
+import type { AttestationUseCase } from './attestation';
+import type { ProxyInput } from './proxy';
 import { FailedToFetchSecretError, MissingAttestationTokenError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
