@@ -97,7 +97,6 @@ export default tseslint.config(
         },
       ],
       "default-param-last": "off",
-      "@typescript-eslint/require-await": "warn",
       "@typescript-eslint/default-param-last": "error",
       "@typescript-eslint/explicit-function-return-type": "error",
       "@typescript-eslint/explicit-member-accessibility": "error",
