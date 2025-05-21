@@ -734,9 +734,6 @@ Outputs:
     Description: The name of the Post Authentication Invoke Permission
     Value: !Ref PostAuthLambdaInvokePermission
 
-  SharedSignalResourceServerId:
-    Description: The ID of the Shared Signal Resource Server
-    Value: !Ref CognitoResourceServer
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
