@@ -27,6 +27,12 @@ repos:
   - id: unit-tests
     name: unit-tests
     language: system
-    entry: npx affected -t test:unit
+    entry: nx affected -t test:unit
+    pass_filenames: false
+    stages: [pre-commit]
+  - id: checkov
+    name: checkov-sam-template-scan
+    language: system
+    entry: nx affected -t checkov
     pass_filenames: false
     stages: [pre-commit]
