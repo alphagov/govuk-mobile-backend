@@ -4,7 +4,6 @@ import { CurlHelper } from '../helper/curl-helper';
 import { Types, Config } from '../common';
 import { CognitoCredentialRetriever } from '../helper/cognito-credential-retriever';
 
-
 const feature = await loadFeature(
     "feature-tests/functional/features/shared-signal-token-verification.feature"
 );

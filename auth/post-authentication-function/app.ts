@@ -1,4 +1,4 @@
-import { PostAuthenticationTriggerEvent } from 'aws-lambda';
+import type { PostAuthenticationTriggerEvent } from 'aws-lambda';
 
 /**
  *

@@ -1,7 +1,7 @@
 {
-  "name": "shared-signals",
+  "name": "pager-duty-test-endpoint",
   "version": "1.0.0",
-  "description": "Shared Signals - Receiver",
+  "description": "Pager Duty Test Endpoint",
   "main": "app.js",
   "author": "govuk-app-backend",
   "license": "MIT",

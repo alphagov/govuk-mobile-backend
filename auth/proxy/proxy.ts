@@ -1,6 +1,6 @@
 import https from 'https';
 import querystring from 'querystring';
-import { APIGatewayProxyResultV2 } from 'aws-lambda';
+import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 
 export interface ProxyInput {
     method: string
@@ -56,7 +56,7 @@ async function _proxyRequest(hostname: string, path: string, body: any, headers:
                     data += chunk
                 });
                 res.on('end', () => {
-                    const respHeaders: { [key: string]: string } = {};
+                    const respHeaders: Record<string, string> = {};
                     for (const [k, v] of Object.entries(res.headers)) {
                         respHeaders[k.toLowerCase()] = Array.isArray(v) ? v.join(', ') : v || '';
                     }

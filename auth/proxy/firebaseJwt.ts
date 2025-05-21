@@ -1,5 +1,7 @@
-import { verify, decode, JwtPayload, JsonWebTokenError } from 'jsonwebtoken';
-import jwkToPem, { JWK } from 'jwk-to-pem';
+import type { JwtPayload} from 'jsonwebtoken';
+import { verify, decode, JsonWebTokenError } from 'jsonwebtoken';
+import type { JWK } from 'jwk-to-pem';
+import jwkToPem from 'jwk-to-pem';
 import { UnknownAppError } from './errors';
 
 const JWKS_URI = 'https://firebaseappcheck.googleapis.com/v1/jwks';

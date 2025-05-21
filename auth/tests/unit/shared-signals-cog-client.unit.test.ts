@@ -1,8 +1,4 @@
-import { Template } from "aws-cdk-lib/assertions";
-import { schema } from "yaml-cfn";
 import { describe, it, beforeAll, expect } from "vitest";
-import { readFileSync } from "fs";
-import { load } from "js-yaml";
 import { loadTemplateFromFile } from "../common/template";
 import path from "path";
 
