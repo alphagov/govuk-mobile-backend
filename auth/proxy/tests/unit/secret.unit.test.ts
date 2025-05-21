@@ -52,7 +52,7 @@ describe('secret', () => {
             null
         ))
             .rejects
-            .toThrow('SecretString is empty or undefined.');
+            .toThrow('FailedToFetchSecretError: Secret does not contain client_secret');
     })
 
     it('should throw error if client_secret is empty', async () => { 
@@ -67,7 +67,7 @@ describe('secret', () => {
         await expect(getClientSecret(
             emptyClientSecret,
             null
-        )).rejects.toThrow('client_secret is empty or undefined.');
+        )).rejects.toThrow('FailedToFetchSecretError: client_secret is empty');
     })
 
     it('should throw error if fetching secret fails', async () => {

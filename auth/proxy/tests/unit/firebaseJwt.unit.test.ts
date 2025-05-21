@@ -63,6 +63,31 @@ describe("firebaseJwt", () => {
         vi.clearAllMocks();
     });
 
+    it("should throw an error if the JWKS fetch fails", async () => {
+        // Mock fetch to simulate a network error
+        (global.fetch as Mock).mockImplementationOnce(() =>
+            Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({}),
+            }),
+        );
+
+        await expect(validateFirebaseJWT({
+            token: "valid-token",
+            firebaseAppIds: ["mocked-app-id"],
+        })).rejects.toThrow("Jwks response is not valid Jwks");
+    });
+
+    it("should throw an error if jwt is not a valid JwtPayload", async () => {
+        (decode as Mock).mockReturnValueOnce("not-an-object");
+
+        await expect(validateFirebaseJWT({
+            token: "valid-token",
+            firebaseAppIds: ["mocked-app-id"],
+        })).rejects.toThrow(JsonWebTokenError);
+    });
+
     it("should return void for a valid token", async () => {
         await expect(validateFirebaseJWT({
             token: "valid-token",
@@ -105,4 +130,5 @@ describe("firebaseJwt", () => {
             firebaseAppIds: ["unknown-app-id"],
         })).rejects.toThrow(UnknownAppError);
     });
+
 });
