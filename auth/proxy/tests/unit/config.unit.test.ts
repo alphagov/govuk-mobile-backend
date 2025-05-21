@@ -1,9 +1,15 @@
 import { getConfig } from '../../config'
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { ConfigError } from '../../errors';
-import { beforeEach } from 'node:test';
 
 describe('getConfig', () => {
+    beforeAll(() => {
+        process.env = {
+            ...process.env,
+            FIREBASE_IOS_APP_ID: 'someval',
+            FIREBASE_ANDROID_APP_ID: 'someval',
+        }
+    })
     it('should return the required environment variables', () => {
         const response = getConfig()
 
