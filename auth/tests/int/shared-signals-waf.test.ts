@@ -2,8 +2,9 @@ import { beforeAll, expect, it, describe } from "vitest";
 import { testConfig } from "../common/config";
 import { LoggingDriver } from "../driver/logging.driver";
 import axios from "axios";
+import { WafDriver } from "../driver/waf.driver";
 
-const _callReceiverEndpoint = async () => {
+const callReceiverEndpoint = async () => {
     const endpoint = testConfig.sharedSignalsEndpoint;
     const response = await axios.post(`${endpoint}/receiver`, {
         headers: {
@@ -17,25 +18,24 @@ const _callReceiverEndpoint = async () => {
         }),
         validateStatus: () => true,
     })
-    return response.status;
-}
-
-const triggerRateLimit = async () => {
-    const sharedSignalsWafRateLimit = 6001;
-    const apiCalls = [...Array(sharedSignalsWafRateLimit)].map(() => _callReceiverEndpoint())
-    return await Promise.all(apiCalls)
+    return response;
 }
 
 describe("Shared Signals WAF", () => {
     const loggingDriver = new LoggingDriver();
-    let responses: number[] = [];
+    const wafDriver = new WafDriver();
+    const sharedSignalsWafRateLimit = 31;
 
     beforeAll(async () => {
-        responses = await triggerRateLimit();
+        await wafDriver.runWafTest(
+            sharedSignalsWafRateLimit,
+            1000,
+            callReceiverEndpoint
+        )
     })
 
     it("should respond with 429 error code when rate limit is exceeded", async () => {
-        expect(responses).toContain(429);
+        expect(wafDriver.hasResponseCode(429)).toBe(true);
     });
 
     it("should write to CloudWatch when rate limit is exceeded", async () => {
