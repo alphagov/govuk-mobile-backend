@@ -22,7 +22,7 @@ export default tseslint.config(
         ecmaFeatures: {
 	  impliedStrict: true
 	},
-        tsconfigRootDir: import.meta.dirname,
+  tsconfigRootDir: import.meta.dirname,
 	sourceType: "module",
 	ecmaVersion: "ES2020",
 	projectService: {
