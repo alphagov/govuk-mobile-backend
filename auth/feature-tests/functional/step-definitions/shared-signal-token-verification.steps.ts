@@ -1,8 +1,8 @@
 import { expect } from 'vitest';
 import { loadFeature, describeFeature } from "@amiceli/vitest-cucumber";
-import { CognitoIdentityProviderClient, DescribeUserPoolClientCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { CurlHelper } from '../helper/curl-helper';
 import { Types, Config } from '../common';
+import { CognitoCredentialRetriever } from '../helper/cognito-credential-retriever';
 
 
 const feature = await loadFeature(
@@ -12,18 +12,21 @@ const feature = await loadFeature(
 describeFeature(feature, async ({ Scenario }) => {
     let credentials: any;
     let authUrl: string;
-    let result: Types.M2MToken;
+    let output: Types.M2MToken;
+    const retriever = new CognitoCredentialRetriever();
     
     Scenario( `Valid shared signal token`,
-        ({ Given, When, Then }) => {
+        ({ Given, When, Then, And }) => {
 
             Given(`a valid client ID and secret are provided`, async () => {
-                credentials = await retrieveCognitoCreds();
-                console.log('Credentials:', credentials);
+                credentials = await retriever.retrieveCognitoCredentials
+                ({
+                    userPoolId: Config.testConfig.userPoolId,
+                    clientId: Config.testConfig.sharedSignalCognitoClientId,
+                });
             });
 
             When(`the token is generated`, async () => {
-                // https://govukapp-integration.auth.eu-west-2.amazoncognito.com/oauth2/token
                 const headers = {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 }
@@ -36,48 +39,64 @@ describeFeature(feature, async ({ Scenario }) => {
                 authUrl = `https://${Config.testConfig.cognitoDomain}.auth.${Config.testConfig.awsRegion}.amazoncognito.com`;
                 const curlHelper = new CurlHelper(authUrl);
                 
-                result = await curlHelper.post('/oauth2/token', data, headers) as unknown as Types.M2MToken;
-                console.log('result:', result);
+                const result: any = await curlHelper.post('/oauth2/token', data, headers);
+                if(result?.data) {
+                    output = result.data;
+                }
             });
 
             Then(`the token should be valid`, () => {
-                console.log('Token:', result.access_token);
-                expect(result).toBeDefined();
+                expect(output.access_token).toBeDefined();
+                expect(output.token_type).toEqual('Bearer');
+                expect(output.expires_in).toBe(3600); // 1 hour
+            });
+            And(`the token should be a valid JWT`, () => {
+                const tokenParts = output.access_token.split('.');
+                expect(tokenParts.length).toBe(3); // JWT has 3 parts
+                expect(tokenParts[0]).toBeDefined(); // Header
+                expect(tokenParts[1]).toBeDefined(); // Payload
+                expect(tokenParts[2]).toBeDefined(); // Signature
+            }); 
+        }
+    );
+
+    Scenario( `Invalid shared signal token`,
+        ({ Given, When, Then }) => {
+
+            Given(`an invalid client ID and secret is provided`, async () => {
+                credentials = {
+                    clientId: 'invalidClientId',
+                    clientSecret: 'invalid',  //pragma: allowlist-secret 
+                }
+            });
+
+            When(`the token generation is attempted`, async () => {
+                const headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+                const data = {
+                    grant_type: 'client_credentials',
+                    client_id: credentials.clientId,
+                    client_secret: credentials.clientSecret,
+                };
+
+                authUrl = `https://${Config.testConfig.cognitoDomain}.auth.${Config.testConfig.awsRegion}.amazoncognito.com`;
+                const curlHelper = new CurlHelper(authUrl);
+                let result: any;
+                
+                try {
+                    result = await curlHelper.post('/oauth2/token', data, headers);
+                } catch (error) {
+                    result = undefined;
+                }     
+                
+                output = result?.data ? result.data: undefined;
+            });
+
+            Then(`the token is not generated`, () => {
+                expect(output).toBeUndefined();
             });
         }
     );
 });
 
-const retrieveCognitoCreds = async () => {
-
-    const cognitoIdentityServiceProvider = new CognitoIdentityProviderClient({
-        region: 'eu-west-2',
-    });
-
-    const userPoolId = Config.testConfig.userPoolId;
-    const sharedSignalClientId = Config.testConfig.sharedSignalCognitoClientId;
-    
-    if(!userPoolId || !sharedSignalClientId) {
-        throw new Error('Missing required environment variables: CFN_UserPoolId or CFN_SharedSignalClientId');
-    }
-    try {
-        const command = new DescribeUserPoolClientCommand({
-            ClientId: sharedSignalClientId, 
-            UserPoolId: userPoolId,
-        });
-
-        const response = await cognitoIdentityServiceProvider.send(command);
-
-        const clientId = response.UserPoolClient?.ClientId;
-        const clientSecret = response.UserPoolClient?.ClientSecret; //  Potentially undefined
-
-        if (!clientId) {
-            throw new Error('Could not retrieve Cognito Client ID');
-        }
-
-        return { clientId, clientSecret };
-    } catch (error) {
-        console.error('Error fetching Cognito client credentials', error);
-        throw error; // Re-throw to be handled by caller.
-    }
-}

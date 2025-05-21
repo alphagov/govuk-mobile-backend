@@ -7,13 +7,9 @@ Feature: Verify Shared Signal Token
         Given a valid client ID and secret are provided
         When the token is generated
         Then the token should be valid
+        And the token should be a valid JWT
 
-    # Scenario: Invalid shared signal token
-    #     Given an invalid shared signal token is provided
-    #     When the token is verified
-    #     Then the verification should fail
-
-    # Scenario: Missing shared signal token
-    #     Given no shared signal token is provided
-    #     When the token is verified
-    #     Then the verification should fail with an error message
+    Scenario: Invalid shared signal token
+        Given an invalid client ID and secret is provided
+        When the token generation is attempted
+        Then the token is not generated
