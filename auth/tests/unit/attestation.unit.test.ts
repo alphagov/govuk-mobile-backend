@@ -52,7 +52,7 @@ describe("attestation", () => {
     it("contains a reference to the cognito secret name", () => {
       expect(resourceUnderTest.Properties.Environment.Variables).containSubset({
         COGNITO_SECRET_NAME: {
-          "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret",
+          "Fn::Sub": "/${ConfigStackName}/cognito/client-secret",
         },
       });
     });
@@ -67,7 +67,7 @@ describe("attestation", () => {
               ],
               "Effect": "Allow",
               "Resource": {
-                "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret",
+                "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*",
               },
             },
           ],

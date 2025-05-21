@@ -916,7 +916,7 @@ Resources:
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue # pragma: allowlist secret
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*
       Environment:
         Variables:
           ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
@@ -934,7 +934,7 @@ Resources:
                 - !Sub ".auth.${AWS::Region}.amazoncognito.com"
           FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
           FIREBASE_ANDROID_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
-          COGNITO_SECRET_NAME: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret
+          COGNITO_SECRET_NAME: !Sub /${ConfigStackName}/cognito/client-secret
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
