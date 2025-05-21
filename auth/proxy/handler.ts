@@ -7,22 +7,37 @@ import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
 // cognito expects consistent casing for header names e.g. x-amz-target
 // host must be removed to avoid ssl hostname unrecognised errors
-const sanitizeHeaders = (headers: APIGatewayProxyEventHeaders) => {
+const sanitizeHeaders = (headers: APIGatewayProxyEventHeaders): APIGatewayProxyEventHeaders => {
   return Object.entries(headers)
     .filter(([key]) => key.toLowerCase() !== 'host')
     .reduce<Record<string, string>>((acc, [key, value]) => {
-      acc[key.toLowerCase()] = value || '';
+      acc[key.toLowerCase()] = value ?? '';
       return acc;
     }, {});
 }
 
 // removes stage i.e. dev/test/prod from the path to allow 
 const stripStageFromPath = (stage: string, path: string): string => {
+  const one = 1;
   if (stage && path.startsWith(`/${stage}`)) {
-    return path.slice(stage.length + 1);
+    return path.slice(stage.length + one);
   }
   return path
 }
+
+
+const generateErrorResponse = ({
+  statusCode,
+  message
+}: {
+  statusCode: number,
+  message: string
+}): APIGatewayProxyResultV2 => ({
+  statusCode,
+  headers: { 'Content-Type': 'application/x-amz-json-1.1' },
+  body: JSON.stringify({ message })
+})
+
 
 interface Dependencies {
   proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>
@@ -36,7 +51,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     console.log('Calling auth proxy')
     const cognitoUrl = process.env["COGNITO_URL"];
 
-    if (!cognitoUrl) {
+    if (cognitoUrl == null) {
       throw new Error('Missing Cognito URL parameter')
     }
 
@@ -68,6 +83,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     })
   } catch (error) {
     console.error('Catchall error:', error);
+    // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
     switch (true) {
       case error instanceof MissingAttestationTokenError:
         return generateErrorResponse({
@@ -102,15 +118,3 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     }
   }
 }
-
-const generateErrorResponse = ({
-  statusCode,
-  message
-}: {
-  statusCode: number,
-  message: string
-}) => ({
-  statusCode,
-  headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-  body: JSON.stringify({ message })
-})

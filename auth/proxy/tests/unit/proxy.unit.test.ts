@@ -69,6 +69,14 @@ describe('proxy', () => {
         expect(response.body).toBe('mock response');
     });
 
+    it('should throw an error if the request body is undefined', async () => {
+        const input = createMockInput({
+            body: undefined,
+            method: 'POST',
+        })
+        await expect(proxy(input)).rejects.toThrow('Request body is undefined');
+    });
+
     it('returns 500 on proxy error', async () => {
         // Replace the implementation temporarily
         vi.spyOn(https, 'request').mockImplementationOnce((options, callback) => {
