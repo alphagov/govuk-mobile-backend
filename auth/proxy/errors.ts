@@ -26,9 +26,18 @@ class JwksFetchError extends Error {
     }
 }
 
+class ConfigError extends Error {
+    public constructor(message: string) {
+        super(message)
+        this.name = 'ConfigError';
+    }
+}
+
+
 export {
     MissingAttestationTokenError,
     UnknownAppError,
     FailedToFetchSecretError,
-    JwksFetchError
+    JwksFetchError,
+    ConfigError
 }

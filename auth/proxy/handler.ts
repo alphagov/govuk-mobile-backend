@@ -1,9 +1,7 @@
 import type { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
-import type { FeatureFlags } from './feature-flags';
-import type { AttestationUseCase } from './attestation';
-import type { ProxyInput } from './proxy';
 import { FailedToFetchSecretError, MissingAttestationTokenError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import type { Dependencies } from './app';
 
 // cognito expects consistent casing for header names e.g. x-amz-target
 // host must be removed to avoid ssl hostname unrecognised errors
@@ -25,7 +23,6 @@ const stripStageFromPath = (stage: string, path: string): string => {
   return path
 }
 
-
 const generateErrorResponse = ({
   statusCode,
   message
@@ -37,14 +34,6 @@ const generateErrorResponse = ({
   headers: { 'Content-Type': 'application/x-amz-json-1.1' },
   body: JSON.stringify({ message })
 })
-
-
-interface Dependencies {
-  proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>
-  attestationUseCase: AttestationUseCase
-  featureFlags: FeatureFlags
-  getClientSecret: () => Promise<string>
-}
 
 export const createHandler = (dependencies: Dependencies) => async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   try {
@@ -65,7 +54,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     const formattedPath = stripStageFromPath(stage, path);
 
     if (featureFlags.ATTESTATION) {
-      await attestationUseCase.validateAttestationHeaderOrThrow(headers, requestContext.http.path, process.env)
+      await attestationUseCase.validateAttestationHeaderOrThrow(headers, requestContext.http.path, dependencies.getConfig())
     }
 
     const targetPath = formattedPath + (rawQueryString ? `?${rawQueryString}` : '');

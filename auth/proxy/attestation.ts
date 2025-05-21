@@ -2,14 +2,10 @@
 import type { APIGatewayProxyEventHeaders } from 'aws-lambda';
 import { MissingAttestationTokenError } from './errors';
 import { validateFirebaseJWT } from './firebaseJwt';
-
-interface FirebaseConfig {
-  FIREBASE_IOS_APP_ID: string
-  FIREBASE_ANDROID_APP_ID: string
-}
+import type { Config } from './config';
 
 export interface AttestationUseCase {
-  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, path: string, config: FirebaseConfig) => Promise<void>
+  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, path: string, config: Config) => Promise<void>
 }
 
 /**
@@ -25,7 +21,7 @@ export interface AttestationUseCase {
 export const validateAttestationHeaderOrThrow = async (
   headers: APIGatewayProxyEventHeaders,
   path: string,
-  config: FirebaseConfig
+  config: Config
 ): Promise<void> => {
   const attestationToken = headers['x-attestation-token'] ?? headers['X-Attestation-Token'];
   const isTokenEndpoint = path.includes('/token');
@@ -41,8 +37,8 @@ export const validateAttestationHeaderOrThrow = async (
   await validateFirebaseJWT({
     token: attestationToken,
     firebaseAppIds: [
-      config.FIREBASE_IOS_APP_ID,
-      config.FIREBASE_ANDROID_APP_ID,
+      config.firebaseAndroidAppId,
+      config.firebaseIosAppId,
     ],
   })
 }
