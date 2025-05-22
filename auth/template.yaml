@@ -1229,3 +1229,7 @@ Outputs:
   CloudWatchAlarmFederationThrottlesName:
     Description: The name of the CloudWatch alarm for federation throttles
     Value: !Ref CloudWatchAlarmFederationThrottles
+  
+  SlackSupportChannelConfigurationARN:
+    Description: ARN for Slack support channel configuration
+    Value: !Ref SlackSupportChannelConfiguration
