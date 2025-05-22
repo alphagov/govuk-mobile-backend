@@ -9,10 +9,6 @@ export type CookieAttributes = {
     sameSite?: 'Strict' | 'Lax' | 'None';
 }
 
-function setProp<T, K extends keyof T> (obj: T, prop: K, value: T[K]) { obj[prop] = value };
-
-const cookie_str_splitter = /[:](?=\s*[a-zA-Z0-9_\-]+\s*[=])/g;
-
 export class Cookie {
     private cookie: Map<string, CookieAttributes>;
 
@@ -51,3 +47,11 @@ export class Cookie {
     }
 }
 
+export type Cookie = {
+    domain: string;
+    path: string;
+}
+
+export class Cookies {
+   
+}
