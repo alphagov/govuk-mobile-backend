@@ -795,6 +795,13 @@ Resources:
         - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
         - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
         - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   ApiGateway:
     Type: AWS::Serverless::Api
@@ -1229,7 +1236,7 @@ Outputs:
   CloudWatchAlarmFederationThrottlesName:
     Description: The name of the CloudWatch alarm for federation throttles
     Value: !Ref CloudWatchAlarmFederationThrottles
-  
+
   SlackSupportChannelConfigurationARN:
     Description: ARN for Slack support channel configuration
     Value: !Ref SlackSupportChannelConfiguration
