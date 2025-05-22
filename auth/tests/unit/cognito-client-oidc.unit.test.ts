@@ -15,7 +15,9 @@ describe("Set up the Cognito User Pool OIDC client", () => {
 
   it("has onelogin as IDP", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
-      SupportedIdentityProviders: ["onelogin"],
+      SupportedIdentityProviders: [{
+        Ref: "UserPoolIdentityProvider"
+      }],
     });
   });
 

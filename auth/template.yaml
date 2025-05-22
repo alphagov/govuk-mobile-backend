@@ -141,7 +141,7 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       SupportedIdentityProviders:
-        - onelogin
+        - !Ref UserPoolIdentityProvider
       AllowedOAuthFlows:
         - code
       AllowedOAuthScopes:
@@ -838,7 +838,7 @@ Resources:
           - app.ts
 
   UserPoolIdentityProvider:
-    Type: "AWS::Cognito::UserPoolIdentityProvider"
+    Type: AWS::Cognito::UserPoolIdentityProvider
     Properties:
       UserPoolId: !Ref CognitoUserPool
       ProviderName: "onelogin"
