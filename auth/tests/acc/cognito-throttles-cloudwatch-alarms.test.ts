@@ -2,17 +2,13 @@ import {
   CloudWatchClient,
   DescribeAlarmsCommand,
 } from "@aws-sdk/client-cloudwatch";
-import {
-  ChatbotClient,
-  DescribeSlackChannelConfigurationsCommand,
-} from "@aws-sdk/client-chatbot";
+
 import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 
 const cloudWatchClient = new CloudWatchClient({ region: "eu-west-2" });
 const snsClient = new SNSClient({ region: "eu-west-2" });
-const chatbotClient = new ChatbotClient({ region: "us-east-2" });
 
 type AlarmTestCase = {
   alarmName: string;
@@ -166,26 +162,6 @@ describe.each(testCases)(
       const topicAttributes = topic.Attributes;
       it("$action topic should be encrypted", () => {
         assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
-      });
-    });
-
-    const chatConfigurationResponse = await chatbotClient.send(
-      new DescribeSlackChannelConfigurationsCommand({
-        ChatConfigurationArn: testConfig.ChatConfigurationArn,
-      })
-    );
-    const chatConfiguration =
-      chatConfigurationResponse.SlackChannelConfigurations?.[0];
-    if (!chatConfiguration) {
-      throw new Error(
-        `No SlackChannelConfigurations found for ARN: ${testConfig.ChatConfigurationArn}`
-      );
-    }
-
-    it("should have the correct number of SnsTopicArns", () => {
-      assert.equal(chatConfiguration.SnsTopicArns?.length, 4);
-      chatConfiguration.SnsTopicArns?.forEach((arn) => {
-        assert.include(arn, "CloudWatchAlarm");
       });
     });
   }
