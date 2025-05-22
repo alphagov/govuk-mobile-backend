@@ -1,4 +1,4 @@
-export interface CookieAttributes {
+export type CookieAttributes = {
     value: string;
     domain?: string;
     path?: string;
@@ -9,34 +9,42 @@ export interface CookieAttributes {
     sameSite?: 'Strict' | 'Lax' | 'None';
 }
 
+function setProp<T, K extends keyof T> (obj: T, prop: K, value: T[K]) { obj[prop] = value };
+
+const cookie_str_splitter = /[:](?=\s*[a-zA-Z0-9_\-]+\s*[=])/g;
+
 export class Cookie {
-    private cookies: Map<string, CookieAttributes>;
+    private cookie: Map<string, CookieAttributes>;
+
     constructor(cookieHeader?: string) {
-	this.cookies = new Map<string, CookieAttributes>();
+	this.cookie = new Map<string, CookieAttributes>();
     }
 
-    static tryParse(cookieHeader: string, domain?: string, path: string = '/'): Map<string, CookieAttributes> | void {
+    static tryParse(cookieHeader: string): Map<string, CookieAttributes> | void {
 	if (!cookieHeader) return;
-	const cookies = new Map<string, CookieAttributes>();
+	const cookie = new Map<string, CookieAttributes>();
 	try {
-	    const pairs = cookieHeader.split(/;\s*/);
 
+	    const pairs = cookieHeader.split(/;\s*/);
+	    
 	    for (const pair of pairs) {
+
 		const separatorIndex = pair.indexOf('=');
-		if (separatorIndex === -1) continue;
+		if (separatorIndex === -1) {
+		    cookie.set(pair, true);
+		    continue;
+		}
 
 		const key = decodeURIComponent(pair.substring(0, separatorIndex).trim());
 		const value = decodeURIComponent(pair.substring(separatorIndex + 1).trim());
 
 		if (key) {
-		    cookies.set(key, {
-			value,
-			domain,
-			path
-		    });
+		    cookie.set(key, value);
 		}
-		return cookies;
+		
 	    }
+
+	    return cookie;
 	} catch (e) {
 	    console.log(e);
 	}
