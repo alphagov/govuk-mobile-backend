@@ -696,6 +696,18 @@ Resources:
               - "kms:Describe*"
             Resource:
               - "*"
+          - Sid: "Allow CWE access"
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource:
+              - "*"
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -758,6 +770,31 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: sns.amazonaws.com
       SourceArn: !Ref CloudWatchAlarmFederationThrottlesTopicSubscriptionPagerDuty
+
+  SlackSupportChannelConfiguration:
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties:
+      ConfigurationName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "support-channel"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      IamRoleArn: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/iam-role-arn}}"
+      SlackChannelId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}"
+      SlackWorkspaceId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}"
+      SnsTopicArns:
+        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
 
   ApiGateway:
     Type: AWS::Serverless::Api
@@ -1172,7 +1209,6 @@ Outputs:
   PostAuthenticationFunctionInvokePermission:
     Description: The name of the Post Authentication Invoke Permission
     Value: !Ref PostAuthLambdaInvokePermission
-
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
