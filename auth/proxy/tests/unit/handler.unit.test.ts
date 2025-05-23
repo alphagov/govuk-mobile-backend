@@ -54,6 +54,7 @@ describe('lambdaHandler', () => {
             ATTESTATION: true,
         },
         getClientSecret: vi.fn(),
+        getConfig: vi.fn()
     }
 
     const createMockDependencies = (overrides: Partial<typeof mockDependencies> = {}) => ({

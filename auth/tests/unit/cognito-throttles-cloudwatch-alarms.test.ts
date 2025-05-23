@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
+import exp from "constants";
 
 const template = loadTemplateFromFile("./template.yaml");
 
@@ -114,6 +115,7 @@ describe.each(testCases)(
 
     const topicPolicies = template.findResources("AWS::SNS::TopicPolicy");
     const topicPolicyUnderTest = topicPolicies[topicPolicyResource] as any;
+
 
     it(`should create a CloudWatch alarm for ${metricName}`, () => {
       expect(cloudWatchAlarmUnderTest).toBeDefined();

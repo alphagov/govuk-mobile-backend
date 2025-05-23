@@ -2,6 +2,7 @@ import {
   CloudWatchClient,
   DescribeAlarmsCommand,
 } from "@aws-sdk/client-cloudwatch";
+
 import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
@@ -148,13 +149,13 @@ describe.each(testCases)(
       });
     });
 
-    const alarAlarmActions = alarm.AlarmActions;
+    const alarmAlarmActions = alarm.AlarmActions;
 
-    if (!alarAlarmActions) {
+    if (!alarmAlarmActions) {
       throw new Error(`No AlarmActions found for alarm: ${alarmName}`);
     }
 
-    alarAlarmActions?.forEach(async (action) => {
+    alarmAlarmActions?.forEach(async (action) => {
       const topic = await snsClient.send(
         new GetTopicAttributesCommand({ TopicArn: action })
       );

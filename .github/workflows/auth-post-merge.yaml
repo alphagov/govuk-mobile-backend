@@ -1,19 +1,20 @@
-name: SAM app test and build and deploy
-run-name: SAM app test and build and deploy using Environment ${{ inputs.environment }}
+name: Auth test, build and deploy
+run-name: Auth test, build and deploy to ${{ inputs.environment }}
 
 on:
+  workflow_call:
+    inputs:
+      environment: { required: true, type: string }
   workflow_dispatch:
     inputs:
       environment:
         description: 'Environment to deploy to'
         type: environment
         required: true
-  push:
-    branches:
-      - main
-    paths:
-      - "auth/**"
-      - ".github/workflows/auth-post-merge.yml"
+
+permissions:
+  id-token: write
+  contents: read
 
 defaults:
   run:
@@ -33,6 +34,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
       - name: Set up SAM cli
         uses: aws-actions/setup-sam@v2
         with:
@@ -41,19 +43,28 @@ jobs:
       - name: Set up AWS creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.GH_ACTIONS_ROLE_ARN }}
           aws-region: eu-west-2
 
       - name: SAM validate
         working-directory: ./auth
         run: sam validate --lint
 
-      - name: SAM build and test
+      - name: SAM build
         run: sam build
 
-      - name: Deploy SAM app
+      - name: Deploy Auth SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
-          artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET_NAME }}
-          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+          artifact-bucket-name: ${{ vars.ARTIFACT_BUCKET_NAME }}
+          signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
           working-directory: ./auth/.aws-sam/build
+
+      - name: Build, tag, and push testing images to Amazon ECR
+        uses: govuk-one-login/devplatform-upload-action-ecr@v1.3.0
+        with:
+          container-sign-kms-key-arn: ${{ vars.CONTAINER_SIGN_KMS_KEY_ARN }}
+          ecr-repo-name: ${{ vars.AUTH_TEST_ECR_REPOSITORY_NAME }}
+          role-to-assume-arn: ${{ vars.GH_ACTIONS_ROLE_ARN }}
+          build-and-push-image-only: true
+          push-latest-tag: true

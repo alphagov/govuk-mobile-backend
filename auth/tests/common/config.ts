@@ -22,4 +22,5 @@ export const testConfig = {
     process.env.CFN_CloudWatchAlarmTokenRefreshThrottlesName!,
   CloudWatchAlarmFederationThrottlesName:
     process.env.CFN_CloudWatchAlarmFederationThrottlesName!,
+  ChatConfigurationArn: process.env.CFN_ChatConfigurationArn!,
 };

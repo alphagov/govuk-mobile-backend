@@ -6,13 +6,16 @@ import { validateAttestationHeaderOrThrow } from './attestation';
 import type { ProxyInput } from './proxy';
 import { proxy } from './proxy';
 import { getClientSecret } from './secret';
+import type { Config} from './config';
+import { getConfig } from './config';
 import { createHandler } from './handler';
 
-interface Dependencies {
+export interface Dependencies {
   proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>
   attestationUseCase: AttestationUseCase
   featureFlags: FeatureFlags
   getClientSecret: () => Promise<string>
+  getConfig: () => Config
 }
 
 const attestationUseCase = {
@@ -23,7 +26,8 @@ const dependencies: Dependencies = {
   proxy,
   attestationUseCase,
   featureFlags: FEATURE_FLAGS,
-  getClientSecret
+  getClientSecret,
+  getConfig
 }
 
 export const lambdaHandler = createHandler(dependencies);

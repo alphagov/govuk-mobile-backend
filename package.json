@@ -8,6 +8,7 @@
     "test:coverage": "nx run-many --target=test:coverage",
     "test:acc": "nx run-many --target=test:acc",
     "test:int": "nx run-many --target=test:int",
+    "lint": "nx run-many --target lint",
     "commit": "cz commit"
   },
   "private": true,

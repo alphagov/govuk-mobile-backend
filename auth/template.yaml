@@ -141,7 +141,7 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       SupportedIdentityProviders:
-        - onelogin
+        - !Ref UserPoolIdentityProvider
       AllowedOAuthFlows:
         - code
       AllowedOAuthScopes:
@@ -696,6 +696,18 @@ Resources:
               - "kms:Describe*"
             Resource:
               - "*"
+          - Sid: "Allow CWE access"
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource:
+              - "*"
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -826,7 +838,7 @@ Resources:
           - app.ts
 
   UserPoolIdentityProvider:
-    Type: "AWS::Cognito::UserPoolIdentityProvider"
+    Type: AWS::Cognito::UserPoolIdentityProvider
     Properties:
       UserPoolId: !Ref CognitoUserPool
       ProviderName: "onelogin"
@@ -916,7 +928,7 @@ Resources:
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue # pragma: allowlist secret
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*
       Environment:
         Variables:
           ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
@@ -934,7 +946,7 @@ Resources:
                 - !Sub ".auth.${AWS::Region}.amazoncognito.com"
           FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
           FIREBASE_ANDROID_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
-          COGNITO_SECRET_NAME: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret
+          COGNITO_SECRET_NAME: !Sub /${ConfigStackName}/cognito/client-secret
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1037,11 +1049,53 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       StageName: !Ref Environment
+      Auth:
+        DefaultAuthorizer: M2MAuthorizer
+        Authorizers:
+          M2MAuthorizer:
+            FunctionArn: !GetAtt M2MAuthorizer.Arn
+            Identity:
+              Header: Authorization
+              ValidationExpression: "Bearer [a-zA-Z0-9._-]+"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
 
+  M2MAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "shared-signals-m2m-authorizer"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      CodeUri: m2m-authorizer/
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+      Policies:      
+        - AWSLambdaBasicExecutionRole
+  metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        SourceMap: false
+        EntryPoints:
+          - app.ts      
+  
   SignalsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1172,7 +1226,6 @@ Outputs:
   PostAuthenticationFunctionInvokePermission:
     Description: The name of the Post Authentication Invoke Permission
     Value: !Ref PostAuthLambdaInvokePermission
-
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
