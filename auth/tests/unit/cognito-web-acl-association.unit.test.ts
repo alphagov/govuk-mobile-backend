@@ -1,7 +1,11 @@
 import { describe, it } from "vitest";
-import { loadTemplateFromFile } from '../common/template'
+import { loadTemplateFromFile } from "../common/template";
 
-const template = loadTemplateFromFile('./template.yaml')
+import path from "path";
+
+const template = loadTemplateFromFile(
+  path.join(__dirname, "..", "..", "template.yaml")
+);
 
 describe("Set up the Web ACL Association for Cognito for GovUK app", () => {
   it("has an associated user pool", () => {
