@@ -1,10 +1,13 @@
 import { describe, it, beforeAll } from "vitest";
-import { loadTemplateFromFile } from '../common/template'
+import { loadTemplateFromFile } from "../common/template";
 
-const template = loadTemplateFromFile('./template.yaml')
+import path from "path";
+
+const template = loadTemplateFromFile(
+  path.join(__dirname, "..", "..", "template.yaml")
+);
 
 describe("Set up the Cognito User Custom Domain", () => {
-
   it("has an associated user pool", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolDomain", {
       UserPoolId: {

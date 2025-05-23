@@ -116,6 +116,14 @@ Resources:
         - AttributeDataType: String
           Name: email
           Required: true
+      UserPoolAddOns: !If
+        - IsNotProduction
+        - !Ref AWS::NoValue
+        - AdvancedSecurityMode: AUDIT
+      UserPoolTier: !If
+        - IsNotProduction
+        - ESSENTIALS
+        - PLUS
       UserPoolTags:
         Product: GOV.UK
         Environment: !Ref Environment

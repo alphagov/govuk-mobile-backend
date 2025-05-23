@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
 
-const template = loadTemplateFromFile("./template.yaml");
+import path from "path";
+
+const template = loadTemplateFromFile(
+  path.join(__dirname, "..", "..", "template.yaml")
+);
 
 type AlarmTestCase = {
   name: string;

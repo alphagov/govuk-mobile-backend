@@ -1,11 +1,11 @@
-import { Template } from "aws-cdk-lib/assertions";
-import { schema } from "yaml-cfn";
 import { describe, it, beforeAll, expect } from "vitest";
-import { readFileSync } from "fs";
-import { load } from "js-yaml";
 import { loadTemplateFromFile } from "../common/template";
 
-const template = loadTemplateFromFile("./template.yaml");
+import path from "path";
+
+const template = loadTemplateFromFile(
+  path.join(__dirname, "..", "..", "template.yaml")
+);
 
 describe("Set up the Post Authentication Lambda for GovUK app", () => {
   let resourceUnderTest: {
