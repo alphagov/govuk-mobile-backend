@@ -1087,7 +1087,7 @@ Resources:
         System: Authentication
       Policies:      
         - AWSLambdaBasicExecutionRole
-  metadata:
+    metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
