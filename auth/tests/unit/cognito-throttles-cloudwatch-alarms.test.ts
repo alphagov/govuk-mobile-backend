@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
-import exp from "constants";
 
 const template = loadTemplateFromFile("./template.yaml");
 
@@ -10,6 +9,7 @@ type AlarmTestCase = {
   topicResource: string;
   subscriptionResource: string;
   topicPolicyResource: string;
+  slackChannelConfigurationResource: string;
   metricName: string;
   alarmDescription: string;
   topicDisplayName: string;
@@ -25,6 +25,7 @@ const testCases: AlarmTestCase[] = [
       "CloudWatchAlarmFederationThrottlesTopicSubscriptionPagerDuty",
     topicPolicyResource:
       "CloudWatchAlarmFederationThrottlesAlarmPublishToTopicPolicy",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "FederationThrottles",
     alarmDescription: "Alarm when federated requests exceeds 5 per minute",
     topicDisplayName: "cognito-federation-alarm-topic",
@@ -42,6 +43,7 @@ const testCases: AlarmTestCase[] = [
       "CloudWatchAlarmSignInThrottlesTopicSubscriptionPagerDuty",
     topicPolicyResource:
       "CloudWatchAlarmSignInThrottlesAlarmPublishToTopicPolicy",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "SignInThrottles",
     alarmDescription: "Alarm when the sign in rate exceeds 5 per minute",
     topicDisplayName: "cognito-sign-in-alarm-topic",
@@ -58,6 +60,7 @@ const testCases: AlarmTestCase[] = [
       "CloudWatchAlarmSignUpThrottlesTopicSubscriptionPagerDuty",
     topicPolicyResource:
       "CloudWatchAlarmSignUpThrottlesAlarmPublishToTopicPolicy",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "SignUpThrottles",
     alarmDescription: "Alarm when the sign up rate exceeds 5 per minute",
     topicDisplayName: "cognito-sign-up-alarm-topic",
@@ -74,6 +77,7 @@ const testCases: AlarmTestCase[] = [
       "CloudWatchAlarmTokenRefreshThrottlesTopicSubscriptionPagerDuty", //pragma: allowlist secret
     topicPolicyResource:
       "CloudWatchAlarmTokenRefreshThrottlesAlarmPublishToTopicPolicy",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "TokenRefreshThrottles",
     alarmDescription: "Alarm when the token refresh rate exceeds 5 per minute",
     topicDisplayName: "cognito-token-refresh-alarm-topic",
@@ -91,6 +95,7 @@ describe.each(testCases)(
     topicResource,
     subscriptionResource,
     topicPolicyResource,
+    slackChannelConfigurationResource,
     metricName,
     alarmDescription,
     topicDisplayName,
@@ -116,6 +121,13 @@ describe.each(testCases)(
     const topicPolicies = template.findResources("AWS::SNS::TopicPolicy");
     const topicPolicyUnderTest = topicPolicies[topicPolicyResource] as any;
 
+    const slackChannelConfigurationResources = template.findResources(
+      "AWS::Chatbot::SlackChannelConfiguration"
+    );
+    const slackChannelConfigurationUnderTest =
+      slackChannelConfigurationResources[
+        slackChannelConfigurationResource
+      ] as any;
 
     it(`should create a CloudWatch alarm for ${metricName}`, () => {
       expect(cloudWatchAlarmUnderTest).toBeDefined();
@@ -238,6 +250,44 @@ describe.each(testCases)(
           },
         ],
       });
+    });
+
+    it(`should create a Slack channel configuration for ${metricName}`, () => {
+      expect(slackChannelConfigurationUnderTest).toBeDefined();
+      expect(slackChannelConfigurationUnderTest.Type).toEqual(
+        "AWS::Chatbot::SlackChannelConfiguration"
+      );
+      expect(slackChannelConfigurationUnderTest.Properties).toBeDefined();
+      expect(
+        slackChannelConfigurationUnderTest.Properties.SlackChannelId
+      ).toEqual({
+        "Fn::Sub":
+          "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}",
+      });
+      expect(
+        slackChannelConfigurationUnderTest.Properties.SlackWorkspaceId
+      ).toEqual({
+        "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}",
+      });
+      expect(slackChannelConfigurationUnderTest.Properties.IamRoleArn).toEqual({
+        "Fn::GetAtt": ["SlackSupportChannelConfigurationIAMRole", "Arn"],
+      });
+      expect(
+        slackChannelConfigurationUnderTest.Properties.SnsTopicArns
+      ).toEqual([
+        {
+          Ref: "CloudWatchAlarmSignUpThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmSignInThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmFederationThrottlesTopicPagerDuty",
+        },
+      ]);
     });
   }
 );

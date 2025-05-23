@@ -771,6 +771,69 @@ Resources:
       Principal: sns.amazonaws.com
       SourceArn: !Ref CloudWatchAlarmFederationThrottlesTopicSubscriptionPagerDuty
 
+  SlackSupportChannelConfiguration:
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties:
+      ConfigurationName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "support-channel"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      IamRoleArn: !GetAtt SlackSupportChannelConfigurationIAMRole.Arn
+      SlackChannelId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}"
+      SlackWorkspaceId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}"
+      SnsTopicArns:
+        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SlackSupportChannelConfigurationIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "support-channel-role"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: chatbot.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -1205,3 +1268,6 @@ Outputs:
     Description: The name of the CloudWatch alarm for federation throttles
     Value: !Ref CloudWatchAlarmFederationThrottles
 
+  SlackSupportChannelConfigurationARN:
+    Description: ARN for Slack support channel configuration
+    Value: !Ref SlackSupportChannelConfiguration
