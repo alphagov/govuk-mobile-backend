@@ -26,7 +26,10 @@
     },
     "lint": {
       "cache": true
-    }
+    },
+    "checkov": {
+      "cache": true
+    },
   },
   "defaultBase": "main",
   "plugins": [

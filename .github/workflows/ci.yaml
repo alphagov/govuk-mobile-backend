@@ -35,6 +35,11 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - run: pip install checkov
+
       - run: npm ci
 
       - uses: nrwl/nx-set-shas@v4
@@ -48,6 +53,9 @@ jobs:
       - name: Unit Test
         run: npx nx affected -t test:unit
 
+      - name: Checkov scan
+        run: npx nx affected -t checkov
+        
       - name: Coverage
         run: npx nx affected -t test:coverage
 
