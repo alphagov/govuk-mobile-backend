@@ -1,28 +1,22 @@
-import { APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
-import * as jwt from 'jsonwebtoken';
+import { APIGatewayTokenAuthorizerEvent, APIGatewayAuthorizerResult } from 'aws-lambda';
 import {
     SecretsManagerClient,
     GetSecretValueCommand,
     GetSecretValueCommandOutput,
   } from "@aws-sdk/client-secrets-manager";
-import {JwtPayload} from "jsonwebtoken";
-
-const audiences: Record<string, string> = {
-    'Prod': 'https://govukapp.auth.eu-west-2.amazoncognito.com', 
-    'Dev': 'https://dev-govukapp.auth.eu-west-2.amazoncognito.com',
-    'integration': 'https://govukapp-integration.auth.eu-west-2.amazoncognito.com',
-};
+import { SecretsConfig } from './types/auth-types';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
 const AWS_REGION = "eu-west-2"; 
 
 const secretsManagerClient = new SecretsManagerClient({ region: AWS_REGION });
 
-export const handler = async (
-    event: APIGatewayRequestAuthorizerEvent
-): Promise<boolean> => {  //APIGatewayAuthorizerResult
+export const lambdaHandler = async (
+    event: APIGatewayTokenAuthorizerEvent
+): Promise<APIGatewayAuthorizerResult> => {  //APIGatewayAuthorizerResult
     console.log('Authorizer event:', JSON.stringify(event, null, 2));
 
-    let token = event.headers?.['Authorization'] || event.headers?.['authorization'];
+    let token = event.authorizationToken; // The token is passed in the Authorization header
 
     if (!token) {
         console.error('Authorization header missing');
@@ -42,37 +36,15 @@ export const handler = async (
     }
 
     try {
-        // Verify the token
-        // const decoded: any = jwt.verify(token, JWT_SECRET);
-        // console.log('Token decoded:', decoded);
-        // Check the issuer
         let decoded = await getValidatedToken(token);
         if (!decoded) {
             console.error('Token validation failed');
             throw new Error('Unauthorized');
-        }   
-
-        decoded = decoded as jwt.JwtPayload; // Cast to any to access properties
-        const expectedIssuer = 'https://ssf.account.gov.uk/'; // Replace with your actual issuer
-        if (decoded.iss !== expectedIssuer) {
-            console.error(`Token issuer invalid: expected ${expectedIssuer}, got ${decoded.iss}`);
-            throw new Error('Unauthorized');
         }
-        const expectedAudience = audiences[process.env['AWS_ENV'] as string]; // Replace with your actual audience
-        if(decoded.aud !== expectedAudience) {
-            console.error(`Token audience invalid: expected ${expectedAudience}, got ${decoded.aud}`);
-            throw new Error('Unauthorized');
-        }
-            
+        
+        console.log('Token successfully validated:', decoded);
 
-        // In a real scenario, you'd perform additional checks here:
-        // - Check 'exp' (expiration) is handled by jwt.verify by default
-        // - Check 'iss' (issuer)
-        // - Check 'aud' (audience)
-        // - Check user roles/permissions based on 'decoded' claims
-
-        // If verification is successful, generate an Allow policy
-        return true; //generatePolicy(decoded.userId || 'user', 'Allow', event.methodArn);
+        return generatePolicy(decoded.sub, 'Allow', event.methodArn);
 
     } catch (error: any) {
         console.error('Token verification failed:', error.message);
@@ -81,37 +53,47 @@ export const handler = async (
     }
 };
 
-// const generatePolicy = (principalId: string, effect: 'Allow' | 'Deny', resource: string): APIGatewayAuthorizerResult => {
-//     const authResponse: APIGatewayAuthorizerResult = {
-//         principalId: principalId,
-//         policyDocument: {
-//             Version: '2012-10-17',
-//             Statement: [
-//                 {
-//                     Action: 'execute-api:Invoke',
-//                     Effect: effect,
-//                     Resource: resource,
-//                 },
-//             ],
-//         },
-//     };
-//     return authResponse;
-// };
+const generatePolicy = (principalId: string, effect: 'Allow' | 'Deny', resource: string): APIGatewayAuthorizerResult => {
+    const authResponse: APIGatewayAuthorizerResult = {
+        principalId: principalId,
+        policyDocument: {
+            Version: '2012-10-17',
+            Statement: [
+                {
+                    Action: 'execute-api:Invoke',
+                    Effect: effect,
+                    Resource: resource,
+                },
+            ],
+        },
+    };
+    return authResponse;
+};
 
-const getValidatedToken = async (token: string): Promise< string | JwtPayload | undefined> => {
+const getValidatedToken = async (token: string): Promise< any | undefined> => {
     try {
-        const secretsName = process.env['secrets_name'];
+        const secretsName = process.env['SHARED_SIGNAL_CLIENT_SECRET_NAME'];
         if (!secretsName) {
-            throw new Error('Environment variable "secrets_name" is not set');
+            throw new Error('Environment variable "SHARED_SIGNAL_CLIENT_SECRET_NAME" is not set');
         }
-        const JWT_SECRET = await getSecret(secretsName); // Replace with your actual secret name
+        const secretsObject = await getSecret(secretsName) as SecretsConfig; 
+
+        console.log('Retrieved JWT secret:', secretsObject);
         
-        if (!JWT_SECRET) {
+        if (!secretsObject) {
             throw new Error('Failed to retrieve JWT secret from Secrets Manager');
         }
-        const decoded = jwt.verify(token, JWT_SECRET);
+
+        console.log('Validating token with secret:', secretsObject.clientSecret);
+
+        const jwtVerifier = CognitoJwtVerifier.create({
+          userPoolId: secretsObject.userPoolId, // The user pool ID from the secret
+          tokenUse: "access", // "id" for ID tokens, "access" for Access tokens
+          clientId: secretsObject.clientId, // The client ID from the secret
+        });
         
-        return decoded;
+        return jwtVerifier.verify(token, secretsObject.clientSecret);  
+        
     } catch (error) {
         console.error('Token validation failed:', error);
 
@@ -119,7 +101,7 @@ const getValidatedToken = async (token: string): Promise< string | JwtPayload | 
     }
 }
 
-async function getSecret(secretName: string): Promise<string | undefined> {
+async function getSecret(secretName: string): Promise<SecretsConfig | string | undefined> {
     try {
       // Create a GetSecretValueCommand with the secret name.
       const command = new GetSecretValueCommand({
@@ -132,7 +114,7 @@ async function getSecret(secretName: string): Promise<string | undefined> {
       // Check if the secret string is present in the response.
       if (data.SecretString) {
         console.log(`Successfully retrieved secret string for: ${secretName}`);
-        return data.SecretString;
+        return JSON.parse(data.SecretString) as SecretsConfig; // Assuming the secret is a JSON string, parse it
       } else if (data.SecretBinary) {
         // If the secret is binary, it's returned as a Base64-encoded string.
         // You might need to decode it based on your application's needs.

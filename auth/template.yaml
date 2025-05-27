@@ -1054,6 +1054,10 @@ Resources:
         Authorizers:
           M2MAuthorizer:
             FunctionArn: !GetAtt M2MAuthorizer.Arn
+            FailureResponse:
+              StatusCode: 401
+              ResponseTemplates:
+                application/json: '{"message": "Unauthorized"}'
             Identity:
               Header: Authorization
               ValidationExpression: "Bearer [a-zA-Z0-9._-]+"
@@ -1087,7 +1091,16 @@ Resources:
         System: Authentication
       Policies:      
         - AWSLambdaBasicExecutionRole
-    metadata:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: 
+                - secretsmanager:GetSecretValue # pragma: allowlist secret
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/shared-signal/secrets-config-*  
+      Environment:
+        Variables:
+          SHARED_SIGNAL_CLIENT_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/secrets-config
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
