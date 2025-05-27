@@ -2,6 +2,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { LoggingDriver } from "../driver/logging.driver"
 import { LambdaClient, InvokeCommand, LogType } from "@aws-sdk/client-lambda";
 import { testConfig } from "../common/config";
+import { repeatedlyRequestEndpoint } from "../driver/waf.driver";
+import axios from "axios";
 const event = require("../fixtures/authProxyEvent.json")
 
 describe("attestation lambda", () => {
@@ -45,4 +47,21 @@ describe("attestation lambda", () => {
             expect(response).toBeDefined()
         })
     })
+
+    describe("waf", () => {
+        const numRequests = 600;
+        const responseCodes = [];
+        const requestFn = async () => {
+            const response = await axios.post(`${testConfig.authProxyUrl}/oauth2/token`)
+            return response
+        }
+
+        beforeAll(async () => {
+            await repeatedlyRequestEndpoint(numRequests, requestFn, responseCodes);
+        });
+
+        it("should respond with 429 error code when rate limit is exceeded", async () => {
+            expect(responseCodes).toContain(429);
+        });
+    });
 })

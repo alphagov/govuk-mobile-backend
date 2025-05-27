@@ -1,14 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHandler } from '../../handler'; // Adjust path as needed
-import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
+import type { APIGatewayProxyEvent, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { FailedToFetchSecretError, MissingAttestationTokenError, UnknownAppError } from '../../errors';
 
-const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 => ({
-    version: '2.0',
-    routeKey: 'POST /token',
-    rawPath: '/token',
-    rawQueryString: '',
+const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent => ({
+    path: '/dev/oauth2/token',
     headers: {
         'content-type': 'application/x-www-form-urlencoded',
         host: 'example.com',
@@ -19,21 +16,21 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEventV2> = {}): APIGa
         apiId: '',
         domainName: '',
         domainPrefix: '',
-        http: {
-            method: 'POST',
-            path: '/token',
-            protocol: 'HTTP/1.1',
-            sourceIp: '127.0.0.1',
-            userAgent: 'test-agent'
-        },
         requestId: '',
         routeKey: 'POST /token',
         stage: '',
         time: '',
         timeEpoch: 0,
-    },
+    } as any,
     body: 'grant_type=authorization_code&code=testcode&redirect_uri=http%3A%2F%2Flocalhost%2Fcallback',
     isBase64Encoded: false,
+    httpMethod: 'POST',
+    multiValueHeaders: {},
+    multiValueQueryStringParameters: {},
+    pathParameters: {},
+    queryStringParameters: {},
+    resource: '',
+    stageVariables: {},
     ...overrides,
 });
 
@@ -54,7 +51,9 @@ describe('lambdaHandler', () => {
             ATTESTATION: true,
         },
         getClientSecret: vi.fn(),
-        getConfig: vi.fn()
+        getConfig: vi.fn().mockReturnValue({
+            cognitoUrl: 'foobar'
+        })
     }
 
     const createMockDependencies = (overrides: Partial<typeof mockDependencies> = {}) => ({
@@ -95,13 +94,13 @@ describe('lambdaHandler', () => {
         process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
     });
 
-    it('proxies a valid GET /authorize request', async () => {
+    it('rejects all requests to non-token endpoint', async () => {
         const response = await lambdaHandler(createMockEvent({
-            routeKey: 'GET /authorize'
+            path: '/dev/oauth2/authorize'
         })) as APIGatewayProxyStructuredResultV2;
 
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toBe('mock response');
+        expect(response.statusCode).toBe(404);
+        expect(JSON.parse(response.body)).toEqual({ "message": "Not Found" });
     });
 
     it('proxies a valid POST /token request', async () => {
@@ -202,40 +201,19 @@ describe('lambdaHandler', () => {
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error, server missing key dependencies' });
     });
 
-    it('should throw if cognito URL is not set', async () => {
-        delete process.env.COGNITO_URL;
-        const response = await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
-        expect(response.statusCode).toBe(500);
-        expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
+    it('should set path name to oauth token endpoint', async () => {
+        await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+
+        expect(mockProxy.mock.calls[0][0].path).toBe('/oauth2/token');
     })
 
-    it('should use path name unmodified if no environment stage is present', async () => {
-        await lambdaHandler(createMockEvent({
-            requestContext: {
-                ...createMockEvent().requestContext,
-                stage: '',
-                http: {
-                    ...createMockEvent().requestContext.http,
-                    path: "/oauth2/token"
-                }
-            }
+    it('should throw an error if the request body is undefined', async () => {
+
+        const response = await lambdaHandler(createMockEvent({
+            body: undefined
         })) as APIGatewayProxyStructuredResultV2;
 
-        expect(mockProxy.mock.calls[0][0].targetPath).toBe('/oauth2/token');
-    })
-
-    it('should strip environment from path if environment stage is present', async () => {
-        await lambdaHandler(createMockEvent({
-            requestContext: {
-                ...createMockEvent().requestContext,
-                stage: 'dev',
-                http: {
-                    ...createMockEvent().requestContext.http,
-                    path: "/dev/oauth2/token"
-                }
-            }
-        })) as APIGatewayProxyStructuredResultV2;
-
-        expect(mockProxy.mock.calls[0][0].targetPath).toBe('/oauth2/token');
-    })
+        expect(response.statusCode).toBe(400);
+        expect(JSON.parse(response.body)).toEqual({ "message": "Invalid Request" });
+    });
 });

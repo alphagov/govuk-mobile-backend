@@ -52,9 +52,6 @@ jobs:
 
       - name: Unit Test
         run: npx nx affected -t test:unit
-
-      - name: Checkov scan
-        run: npx nx affected -t checkov
         
       - name: Coverage
         run: npx nx affected -t test:coverage
@@ -63,3 +60,6 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Checkov scan
+        run: npx nx affected -t checkov

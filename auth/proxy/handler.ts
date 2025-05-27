@@ -1,27 +1,8 @@
-import type { APIGatewayProxyResultV2, APIGatewayProxyEventV2, APIGatewayProxyEventHeaders } from 'aws-lambda';
+import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { FailedToFetchSecretError, MissingAttestationTokenError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
-
-// cognito expects consistent casing for header names e.g. x-amz-target
-// host must be removed to avoid ssl hostname unrecognised errors
-const sanitizeHeaders = (headers: APIGatewayProxyEventHeaders): APIGatewayProxyEventHeaders => {
-  return Object.entries(headers)
-    .filter(([key]) => key.toLowerCase() !== 'host')
-    .reduce<Record<string, string>>((acc, [key, value]) => {
-      acc[key.toLowerCase()] = value ?? '';
-      return acc;
-    }, {});
-}
-
-// removes stage i.e. dev/test/prod from the path to allow 
-const stripStageFromPath = (stage: string, path: string): string => {
-  const one = 1;
-  if (stage && path.startsWith(`/${stage}`)) {
-    return path.slice(stage.length + one);
-  }
-  return path
-}
+import { sanitizeHeaders } from './sanitize-headers';
 
 const generateErrorResponse = ({
   statusCode,
@@ -35,40 +16,41 @@ const generateErrorResponse = ({
   body: JSON.stringify({ message })
 })
 
-export const createHandler = (dependencies: Dependencies) => async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
+export const createHandler = (dependencies: Dependencies) => async (event: APIGatewayEvent): Promise<APIGatewayProxyResultV2> => {
   try {
     console.log('Calling auth proxy')
-    const cognitoUrl = process.env["COGNITO_URL"];
 
-    if (cognitoUrl == null) {
-      throw new Error('Missing Cognito URL parameter')
+    const { proxy, attestationUseCase, featureFlags, getClientSecret, getConfig } = dependencies;
+    const config = getConfig()
+
+    const { headers, body, httpMethod, path } = event;
+
+    // only accept requests to the token endpoint
+    if (!path.includes('/oauth2/token') || httpMethod !== 'POST') {
+      return generateErrorResponse({
+        statusCode: 404,
+        message: 'Not Found'
+      });
     }
 
-    const { proxy, attestationUseCase, featureFlags, getClientSecret } = dependencies;
-
-    const { headers, body, rawQueryString, requestContext } = event;
-
-    const { stage } = requestContext;
-    const { method, path } = requestContext.http;
-
-    const formattedPath = stripStageFromPath(stage, path);
+    if (body == null || body === '') {
+      return generateErrorResponse({
+        statusCode: 400,
+        message: 'Invalid Request'
+      });
+    }
 
     if (featureFlags.ATTESTATION) {
-      await attestationUseCase.validateAttestationHeaderOrThrow(headers, requestContext.http.path, dependencies.getConfig())
+      await attestationUseCase.validateAttestationHeaderOrThrow(headers, config)
     }
 
-    const targetPath = formattedPath + (rawQueryString ? `?${rawQueryString}` : '');
-
     return await proxy({
-      method,
-      path: formattedPath,
-      isBase64Encoded: event.isBase64Encoded,
+      method: httpMethod,
+      path: '/oauth2/token',
       body,
       sanitizedHeaders: sanitizeHeaders(headers),
-      targetPath,
-      // can throw invalid URL
-      parsedUrl: new URL(cognitoUrl),
-      clientSecret: await getClientSecret()
+      parsedUrl: config.cognitoUrl,
+      clientSecret: await getClientSecret(),
     })
   } catch (error) {
     console.error('Catchall error:', error);
