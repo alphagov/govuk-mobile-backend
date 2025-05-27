@@ -827,6 +827,10 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
