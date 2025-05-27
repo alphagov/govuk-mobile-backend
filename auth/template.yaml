@@ -781,6 +781,7 @@ Resources:
 
   SlackSupportChannelConfiguration:
     Type: AWS::Chatbot::SlackChannelConfiguration
+    DependsOn: SlackSupportChannelConfigurationIAMRole
     Properties:
       ConfigurationName: !Join
         - "-"

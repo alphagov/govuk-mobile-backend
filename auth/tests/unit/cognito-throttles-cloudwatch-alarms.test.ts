@@ -132,6 +132,12 @@ describe.each(testCases)(
       slackChannelConfigurationResources[
         slackChannelConfigurationResource
       ] as any;
+    
+    it('should depend on the Slack IAM role', () => {
+      expect(slackChannelConfigurationUnderTest.DependsOn).toContain(
+        "SlackSupportChannelConfigurationIAMRole"
+      );
+    });
 
     it(`should create a CloudWatch alarm for ${metricName}`, () => {
       expect(cloudWatchAlarmUnderTest).toBeDefined();
