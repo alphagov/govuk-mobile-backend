@@ -1,46 +1,9 @@
-import { PostAuthenticationTriggerEvent } from 'aws-lambda';
-import { lambdaHandler } from '../../../post-authentication-function/app';
-import { expect, describe, it, vi, afterAll, beforeEach } from 'vitest';
+import { expect, describe, it, afterAll, beforeEach, vi } from 'vitest';
 import { APIGatewayTokenAuthorizerEvent } from 'aws-lambda';
 import { lambdaHandler } from '../../app';
-import { expect, describe, it, vi, beforeEach, afterAll } from 'vitest';
 import { SecretsService } from '../../service/secrets-service';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
-describe('Unit test for post-authentication handler', function () {
-    const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-
-    beforeEach(() => {
-        consoleMock.mockReset();
-    });
-    it('Handler logs user information', async () => {
-        const event: PostAuthenticationTriggerEvent = {
-            triggerSource: 'PostAuthentication_Authentication',
-            version: '1',
-            region: 'eu-west-2',
-            userPoolId: '123',
-            userName: 'test-user',
-            callerContext: {
-                awsSdkVersion: '1',
-                clientId: 'abc123',
-            },
-            request: {
-                userAttributes: {},
-                newDeviceUsed: false,
-                clientMetadata: {},
-            },
-            response: {},
-        };
-
-        const result: PostAuthenticationTriggerEvent = await lambdaHandler(event);
-
-        expect(consoleMock).toHaveBeenCalledWith('Source = PostAuthentication_Authentication');
-        expect(consoleMock).toHaveBeenCalledWith('User Pool Id = 123');
-        expect(consoleMock).toHaveBeenCalledWith('Client Id = abc123');
-        expect(consoleMock).toHaveBeenCalledWith('Username = test-user');
-        expect(result).toEqual(event);
-    });
-});
 vi.mock('../../../m2m-authorizer/service/secrets-service');
 vi.mock('aws-jwt-verify');
 
@@ -52,10 +15,12 @@ describe('Unit test for m2m-authorizer lambdaHandler', () => {
     consoleMock.mockReset();
     consoleErrorMock.mockReset();
     vi.clearAllMocks();
+    process.env.SHARED_SIGNAL_CLIENT_SECRET_NAME = 'secretsName';
   });
 
   afterAll(() => {
     vi.restoreAllMocks();
+    delete process.env.SHARED_SIGNAL_CLIENT_SECRET_NAME;
   });
 
   it('Should return Allow policy for valid token', async () => {

@@ -1050,10 +1050,10 @@ Resources:
                           - Ref: AWS::StackId
       StageName: !Ref Environment
       Auth:
-        DefaultAuthorizer: M2MAuthorizer
+        DefaultAuthorizer: SharedSignalsAuthorizer
         Authorizers:
-          M2MAuthorizer:
-            FunctionArn: !GetAtt M2MAuthorizer.Arn
+          SharedSignalsAuthorizer:
+            FunctionArn: !GetAtt SharedSignalsAuthorizer.Arn
             FailureResponse:
               StatusCode: 401
               ResponseTemplates:
@@ -1066,13 +1066,13 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
-  M2MAuthorizer:
+  SharedSignalsAuthorizer:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Join
         - "-"
         - - !Ref AWS::StackName
-          - "shared-signals-m2m-authorizer"
+          - "shared-signals-authorizer"
           - Fn::Select:
               - 4
               - Fn::Split:
@@ -1082,7 +1082,7 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
-      CodeUri: m2m-authorizer/
+      CodeUri: shared-signal-authorizer/
       Handler: app.lambdaHandler
       Runtime: nodejs22.x
       Tags:

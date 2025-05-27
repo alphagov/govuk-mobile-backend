@@ -13,4 +13,5 @@ export const testConfig = {
     cognitoDomain: process.env.CFN_Domain!,
     awsRegion: process.env.CFN_Region!,
     sharedSignalCognitoClientId: process.env.CFN_SharedSignalClientId!,
+    
 }

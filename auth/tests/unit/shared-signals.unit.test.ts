@@ -1,4 +1,4 @@
-import { describe, it } from "vitest";
+import { describe, it,expect } from "vitest";
 import { loadTemplateFromFile } from '../common/template'
 
 const template = loadTemplateFromFile('./template.yaml')
@@ -88,4 +88,29 @@ describe('shared signals', () => {
             }
         })
     })
-})
+
+    it('should have authorizer associated', () => {
+        let resourceUnderTest: {
+            Type: any
+            Properties: any
+        }
+        const resources = template.findResources("AWS::Serverless::Api");
+        resourceUnderTest = resources['SharedSignalsApi'] as any;
+        
+        expect(resourceUnderTest.Properties.Auth.DefaultAuthorizer).toBe('SharedSignalsAuthorizer');
+    });
+
+    it('should have a shared signals authorizer lambda', () => {
+        let resourceUnderTest: {
+            Type: any
+            Properties: any
+        }
+        const resources = template.findResources("AWS::Serverless::Function");
+        resourceUnderTest = resources['SharedSignalsAuthorizer'] as any;
+
+        expect(resourceUnderTest.Type).toBeDefined();
+        expect(resourceUnderTest.Properties.Policies).toBeDefined(); // policies should be defined
+        expect(resourceUnderTest.Properties.Policies.length).toBe(2); // should have 2 policies
+        
+    });
+});           
