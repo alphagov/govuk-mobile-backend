@@ -8,6 +8,7 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
  * Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
  * @returns object - API Gateway Lambda Proxy Output Format
  */
+// eslint-disable-next-line @typescript-eslint/require-await
 export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
     console.log("Shared signals receiver called")
     return {
@@ -17,5 +18,4 @@ export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
             message: 'signal received',
         }),
     };
-
 };

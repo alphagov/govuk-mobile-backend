@@ -32,6 +32,14 @@ pipx install commitizen
 pipx upgrade commitizen
 ```
 
+- Install checkov
+
+Install checkov in your system using pipx (https://www.checkov.io/2.Basics/Installing%20Checkov.html):
+
+```bash
+pipx install checkov
+```
+
 ## Commands
 
 ```bash

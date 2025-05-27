@@ -1,10 +1,13 @@
 import { describe, it } from "vitest";
-import { loadTemplateFromFile } from '../common/template'
+import { loadTemplateFromFile } from "../common/template";
 
-const template = loadTemplateFromFile('./template.yaml')
+import path from "path";
+
+const template = loadTemplateFromFile(
+  path.join(__dirname, "..", "..", "template.yaml")
+);
 
 describe("Set up the Cognito User Pool OIDC client", () => {
-
   it("should refer to cognito user pool", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
       UserPoolId: {
@@ -15,9 +18,11 @@ describe("Set up the Cognito User Pool OIDC client", () => {
 
   it("has onelogin as IDP", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
-      SupportedIdentityProviders: [{
-        Ref: "UserPoolIdentityProvider"
-      }],
+      SupportedIdentityProviders: [
+        {
+          Ref: "UserPoolIdentityProvider",
+        },
+      ],
     });
   });
 
