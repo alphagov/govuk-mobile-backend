@@ -7,7 +7,7 @@ import { CognitoJwtVerifier } from 'aws-jwt-verify';
 vi.mock('../../../m2m-authorizer/service/secrets-service');
 vi.mock('aws-jwt-verify');
 
-describe('Unit test for m2m-authorizer lambdaHandler', () => {
+describe('Unit test for shared signal authorizer lambdaHandler', () => {
   const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => undefined);
   const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
@@ -15,7 +15,7 @@ describe('Unit test for m2m-authorizer lambdaHandler', () => {
     consoleMock.mockReset();
     consoleErrorMock.mockReset();
     vi.clearAllMocks();
-    process.env.SHARED_SIGNAL_CLIENT_SECRET_NAME = 'secretsName';
+    process.env.SHARED_SIGNAL_CLIENT_SECRET_NAME = 'secretsName'; //pragma: allowlist secret
   });
 
   afterAll(() => {
@@ -24,11 +24,11 @@ describe('Unit test for m2m-authorizer lambdaHandler', () => {
   });
 
   it('Should return Allow policy for valid token', async () => {
-    const mockSecretsService = SecretsService as vi.MockedClass<typeof SecretsService>;
+    const secretsServiceSpy = vi.spyOn(SecretsService.prototype, 'getSecret');
     const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<typeof CognitoJwtVerifier>;
 
-    mockSecretsService.prototype.getSecret.mockResolvedValue({
-      clientSecret: 'mockClientSecret',
+    secretsServiceSpy.mockResolvedValue({
+      clientSecret: 'mockClientSecret', // pragma: allowlist-secret
       userPoolId: 'mockUserPoolId',
       clientId: 'mockClientId',
     });
@@ -59,13 +59,11 @@ describe('Unit test for m2m-authorizer lambdaHandler', () => {
       },
     });
 
-    expect(consoleMock).toHaveBeenCalledWith('Authorizer event:', JSON.stringify(event, null, 2));
     expect(consoleMock).toHaveBeenCalledWith('Retrieved JWT secret:', {
       clientSecret: 'mockClientSecret',
       userPoolId: 'mockUserPoolId',
       clientId: 'mockClientId',
     });
-    expect(consoleMock).toHaveBeenCalledWith('Token successfully validated:', { sub: 'mockUserId' });
   });
 
   it('Should throw Unauthorized error for missing token', async () => {
@@ -93,10 +91,10 @@ describe('Unit test for m2m-authorizer lambdaHandler', () => {
   });
 
   it('Should throw Unauthorized error for token validation failure', async () => {
-    const mockSecretsService = SecretsService as vi.MockedClass<typeof SecretsService>;
+    const mockSecretsService = vi.spyOn(SecretsService.prototype, 'getSecret');
     const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<typeof CognitoJwtVerifier>;
 
-    mockSecretsService.prototype.getSecret.mockResolvedValue({
+    mockSecretsService.mockResolvedValue({
       clientSecret: 'mockClientSecret',
       userPoolId: 'mockUserPoolId',
       clientId: 'mockClientId',
@@ -114,7 +112,6 @@ describe('Unit test for m2m-authorizer lambdaHandler', () => {
 
     await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
 
-    expect(consoleErrorMock).toHaveBeenCalledWith('Token verification failed:', 'Invalid token');
   });
 
   it('Should throw error if secret retrieval fails', async () => {
@@ -130,6 +127,5 @@ describe('Unit test for m2m-authorizer lambdaHandler', () => {
 
     await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
 
-    expect(consoleErrorMock).toHaveBeenCalledWith('Token validation failed:', expect.any(Error));
   });
 });

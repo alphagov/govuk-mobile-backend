@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { SecretsService } from "../../service/secrets-service";
 import {
     SecretsManagerClient,
@@ -15,7 +15,7 @@ vi.mock("@aws-sdk/client-secrets-manager", () => {
 
 describe("SecretsService", () => {
     let secretsService: SecretsService;
-    let mockSend: vi.Mock;
+    let mockSend: Mock;
 
     beforeEach(() => {
         mockSend = vi.fn();
@@ -24,7 +24,7 @@ describe("SecretsService", () => {
     });
 
     it("should return parsed secret when SecretString is present", async () => {
-        const secretName = "test-secret";
+        const secretName = "test-secret";  //pragma: allowlist secret
         const mockSecretString = JSON.stringify({ key: "value" });
 
         mockSend.mockResolvedValueOnce({
@@ -69,7 +69,7 @@ describe("SecretsService", () => {
     });
 
     it("should handle ResourceNotFoundException", async () => {
-        const secretName = "non-existent-secret";
+        const secretName = "non-existent-secret"; //pragma: allowlist secret
         const error = new Error("Secret not found");
         error.name = "ResourceNotFoundException";
 
@@ -84,7 +84,7 @@ describe("SecretsService", () => {
     });
 
     it("should handle InvalidRequestException", async () => {
-        const secretName = "invalid-request-secret";
+        const secretName = "invalid-request-secret";  //pragma: allowlist secret
         const error = new Error("Invalid request");
         error.name = "InvalidRequestException";
 
@@ -99,7 +99,7 @@ describe("SecretsService", () => {
     });
 
     it("should handle InvalidParameterException", async () => {
-        const secretName = "invalid-parameter-secret";
+        const secretName = "invalid-parameter-secret"; //pragma: allowlist secret
         const error = new Error("Invalid parameter");
         error.name = "InvalidParameterException";
 
@@ -114,7 +114,7 @@ describe("SecretsService", () => {
     });
 
     it("should handle unexpected errors", async () => {
-        const secretName = "unexpected-error-secret";
+        const secretName = "unexpected-error-secret";  //pragma: allowlist secret
         const error = new Error("Unexpected error");
 
         mockSend.mockRejectedValueOnce(error);
