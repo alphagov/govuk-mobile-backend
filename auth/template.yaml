@@ -834,13 +834,6 @@ Resources:
             Principal:
               Service: chatbot.amazonaws.com
             Action: sts:AssumeRole
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
 
   ApiGateway:
     Type: AWS::Serverless::Api
