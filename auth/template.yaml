@@ -1124,10 +1124,66 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       StageName: !Ref Environment
+      Auth:
+        DefaultAuthorizer: SharedSignalsAuthorizer
+        Authorizers:
+          SharedSignalsAuthorizer:
+            FunctionArn: !GetAtt SharedSignalsAuthorizer.Arn
+            FailureResponse:
+              StatusCode: 401
+              ResponseTemplates:
+                application/json: '{"message": "Unauthorized"}'
+            Identity:
+              Header: Authorization
+              ValidationExpression: "Bearer [a-zA-Z0-9._-]+"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+
+  SharedSignalsAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "shared-signals-authorizer"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      CodeUri: shared-signal-authorizer/
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue # pragma: allowlist secret
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/shared-signal/secrets-config-*
+      Environment:
+        Variables:
+          SHARED_SIGNAL_CLIENT_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/secrets-config
+          REGION: !Ref AWS::Region
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        SourceMap: false
+        EntryPoints:
+          - app.ts
 
   SignalsFunction:
     Type: AWS::Serverless::Function

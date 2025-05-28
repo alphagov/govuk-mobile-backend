@@ -13,6 +13,7 @@ export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
     console.log("Shared signals receiver called")
     return {
         statusCode: 200,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             message: 'signal received',
         }),
