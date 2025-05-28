@@ -14,7 +14,7 @@ export default defineConfig({
       },
       {
         test: {
-          include: ["tests/acc/**/*.test.ts"],
+          include: ["**/tests/acc/**/*.test.ts"],
           name: "acc",
           environment: "node",
           // allow for long running tests
@@ -23,7 +23,7 @@ export default defineConfig({
       },
       {
         test: {
-          include: ["tests/int/**/*.test.ts"],
+          include: ["**/tests/int/**/*.test.ts"],
           name: "int",
           environment: "node",
           // allow for long running tests
