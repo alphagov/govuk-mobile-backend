@@ -63,9 +63,13 @@ describe("Set up the Cognito User Pool Identity Provider for GovUK app", () => {
             ],
           ],
         },
-        client_id: "{{resolve:ssm:/onelogin/client_id}}",
-        client_secret:
-          "{{resolve:secretsmanager:/onelogin/client_secret:SecretString}}",
+        client_id: {
+          "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/onelogin/client_id}}",
+        },
+        client_secret: {
+          "Fn::Sub":
+            "{{resolve:secretsmanager:/${ConfigStackName}/onelogin/client_secret:SecretString}}",
+        },
         jwks_uri: {
           "Fn::Join": [
             "",
