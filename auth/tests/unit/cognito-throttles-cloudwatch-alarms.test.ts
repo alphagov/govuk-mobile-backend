@@ -175,6 +175,11 @@ describe.each(testCases)(
           Ref: "CloudWatchAlarmFederationThrottlesTopicPagerDuty",
         },
       ]);
+      expect(slackChannelConfigurationUnderTest.Properties.Tags).toEqual([
+        { Key: "Product", Value: "GOV.UK" },
+        { Key: "Environment", Value: { Ref: "Environment" } },
+        { Key: "System", Value: "Authentication" },
+      ]);
     });
 
     it("should have a Slack Channel IAM Role", () => {
@@ -208,6 +213,11 @@ describe.each(testCases)(
           },
         ],
       });
+      expect(slackChannelIAMRoleUnderTest.Properties.Tags).toEqual([
+        { Key: "Product", Value: "GOV.UK" },
+        { Key: "Environment", Value: { Ref: "Environment" } },
+        { Key: "System", Value: "Authentication" },
+      ]);
     });
 
     it(`should create a CloudWatch alarm for ${metricName}`, () => {
