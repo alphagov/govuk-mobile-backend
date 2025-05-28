@@ -7,6 +7,11 @@ export interface SecretsConfig {
     userPoolId: string;
 }
 
+function parseSecretsConfig(config: string): SecretsConfig {
+    const secretsConfig: SecretsConfig = JSON.parse(config);
+    return secretsConfig;
+}
+
 export class SecretsService {
     private secretsManagerClient: SecretsManagerClient;
 
@@ -23,8 +28,7 @@ export class SecretsService {
             const data: GetSecretValueCommandOutput = await this.secretsManagerClient.send(command);
             
             if (data.SecretString !== undefined ) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return JSON.parse(data.SecretString); 
+		return parseSecretsConfig(data.SecretString);
             } else if (data.SecretBinary) {
                 // For example, to convert it to a UTF-8 string:
                 // return Buffer.from(data.SecretBinary).toString('utf8');
