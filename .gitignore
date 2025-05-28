@@ -175,3 +175,6 @@ service-account.json
 
 # SonarQube
 .scannerwork
+
+# Checkov files
+checkov.xml
