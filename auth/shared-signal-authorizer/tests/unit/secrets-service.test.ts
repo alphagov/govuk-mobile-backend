@@ -20,7 +20,7 @@ describe("SecretsService", () => {
     beforeEach(() => {
         mockSend = vi.fn();
         SecretsManagerClient.prototype.send = mockSend;
-        secretsService = new SecretsService();
+        secretsService = new SecretsService('region');
     });
 
     it("should return parsed secret when SecretString is present", async () => {

@@ -1,22 +1,21 @@
 import type { GetSecretValueCommandOutput } from "@aws-sdk/client-secrets-manager";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
-export interface SecretsConfig {
-    clientId: string;
-    clientSecret: string;
-    userPoolId: string;
-}
-
+/**
+ * @param config as string
+ * @returns SecretsConfig object
+ */
 function parseSecretsConfig(config: string): SecretsConfig {
-    const secretsConfig: SecretsConfig = JSON.parse(config);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const secretsConfig: SecretsConfig = JSON.parse(config) as SecretsConfig;
     return secretsConfig;
 }
 
 export class SecretsService {
     private secretsManagerClient: SecretsManagerClient;
 
-    public constructor() {
-        this.secretsManagerClient = new SecretsManagerClient({region: "eu-west-2"});
+    public constructor(region: string) {
+        this.secretsManagerClient = new SecretsManagerClient({region: region});
     }
 
     public async getSecret(secretName: string): Promise<SecretsConfig | string | undefined> {
@@ -26,9 +25,9 @@ export class SecretsService {
             });
 
             const data: GetSecretValueCommandOutput = await this.secretsManagerClient.send(command);
-            
-            if (data.SecretString !== undefined ) {
-		return parseSecretsConfig(data.SecretString);
+
+            if (data.SecretString !== undefined) {
+                return parseSecretsConfig(data.SecretString);
             } else if (data.SecretBinary) {
                 // For example, to convert it to a UTF-8 string:
                 // return Buffer.from(data.SecretBinary).toString('utf8');
@@ -49,8 +48,15 @@ export class SecretsService {
                     console.error(`Error retrieving secret ${secretName}:`, error);
                 }
             }
-            
+
             return undefined;
         }
     }
+    
+}
+
+export interface SecretsConfig {
+    clientId: string;
+    clientSecret: string;
+    userPoolId: string;
 }

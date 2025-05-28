@@ -1171,6 +1171,7 @@ Resources:
       Environment:
         Variables:
           SHARED_SIGNAL_CLIENT_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/secrets-config
+          REGION: !Ref AWS::Region
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
