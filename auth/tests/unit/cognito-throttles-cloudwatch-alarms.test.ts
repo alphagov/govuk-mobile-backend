@@ -133,6 +133,83 @@ describe.each(testCases)(
         slackChannelConfigurationResource
       ] as any;
 
+    const slackChannelIAMRole = template.findResources("AWS::IAM::Role");
+
+    const slackChannelIAMRoleUnderTest = slackChannelIAMRole[
+      "SlackSupportChannelConfigurationIAMRole"
+    ] as any;
+
+    it("should have a Slack Channel Configuration resource", () => {
+      expect(slackChannelConfigurationUnderTest).toBeDefined();
+      expect(slackChannelConfigurationUnderTest.Type).toEqual(
+        "AWS::Chatbot::SlackChannelConfiguration"
+      );
+      expect(slackChannelConfigurationUnderTest.Properties).toBeDefined();
+      expect(
+        slackChannelConfigurationUnderTest.Properties.SlackChannelId
+      ).toEqual({
+        "Fn::Sub":
+          "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}",
+      });
+      expect(
+        slackChannelConfigurationUnderTest.Properties.SlackWorkspaceId
+      ).toEqual({
+        "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}",
+      });
+      expect(slackChannelConfigurationUnderTest.Properties.IamRoleArn).toEqual({
+        "Fn::GetAtt": ["SlackSupportChannelConfigurationIAMRole", "Arn"],
+      });
+      expect(
+        slackChannelConfigurationUnderTest.Properties.SnsTopicArns
+      ).toEqual([
+        {
+          Ref: "CloudWatchAlarmSignUpThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmSignInThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmFederationThrottlesTopicPagerDuty",
+        },
+      ]);
+    });
+
+    it("should have a Slack Channel IAM Role", () => {
+      expect(slackChannelIAMRoleUnderTest).toBeDefined();
+      expect(slackChannelIAMRoleUnderTest.Type).toEqual("AWS::IAM::Role");
+      expect(slackChannelIAMRoleUnderTest.Properties).toBeDefined();
+      expect(
+        slackChannelIAMRoleUnderTest.Properties.PermissionsBoundary
+      ).toEqual({
+        "Fn::If": [
+          "UsePermissionsBoundary",
+          {
+            Ref: "PermissionsBoundary",
+          },
+          {
+            Ref: "AWS::NoValue",
+          },
+        ],
+      });
+      expect(
+        slackChannelIAMRoleUnderTest.Properties.AssumeRolePolicyDocument
+      ).toEqual({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: {
+              Service: "chatbot.amazonaws.com",
+            },
+            Action: "sts:AssumeRole",
+          },
+        ],
+      });
+    });
+
     it(`should create a CloudWatch alarm for ${metricName}`, () => {
       expect(cloudWatchAlarmUnderTest).toBeDefined();
       expect(cloudWatchAlarmUnderTest.Type).toEqual("AWS::CloudWatch::Alarm");
