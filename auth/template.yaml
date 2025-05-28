@@ -38,6 +38,11 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
+  TestRoleArn:
+    Type: String
+    Description: The ARN of the role the post-deploy tests are run from
+    Default: "none"
+
 Mappings:
   OneLogin:
     Environment:
@@ -77,6 +82,12 @@ Conditions:
       - Fn::Equals:
           - !Ref Environment
           - "production"
+
+  GrantTestPermissions:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref TestRoleArn
+          - "none"
 
 Globals:
   Function:
@@ -1565,3 +1576,8 @@ Outputs:
   SlackSupportChannelConfigurationARN:
     Description: ARN for Slack support channel configuration
     Value: !Ref SlackSupportChannelConfiguration
+
+  CognitoSecretName:
+    Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
+    Value: !Sub /${ConfigStackName}/cognito/client-secret
+    

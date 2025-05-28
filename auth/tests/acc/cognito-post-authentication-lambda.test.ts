@@ -2,11 +2,8 @@ import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 import {
   GetFunctionCommand,
-  GetFunctionConfigurationCommand,
-  GetPolicyCommand,
   LambdaClient,
 } from "@aws-sdk/client-lambda";
-
 import { IAMClient, GetRoleCommand } from "@aws-sdk/client-iam";
 
 const lambdaClient = new LambdaClient({ region: "eu-west-2" });
