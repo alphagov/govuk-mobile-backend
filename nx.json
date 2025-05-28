@@ -29,7 +29,7 @@
     },
     "checkov": {
       "cache": true
-    },
+    }
   },
   "defaultBase": "main",
   "plugins": [
