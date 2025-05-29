@@ -33,11 +33,18 @@ class ConfigError extends Error {
     }
 }
 
+class HeaderSanitizationError extends Error {
+    public constructor(message: string) {
+        super(message)
+        this.name = 'HeaderSanitizationError';
+    }
+}
 
 export {
     MissingAttestationTokenError,
     UnknownAppError,
     FailedToFetchSecretError,
     JwksFetchError,
-    ConfigError
+    ConfigError,
+    HeaderSanitizationError
 }

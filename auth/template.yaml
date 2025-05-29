@@ -956,8 +956,85 @@ Resources:
         email_verified: email_verified
         username: sub
 
+  AuthProxyWaf:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "waf-auth-proxy"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      Description: "Web Application Firewall for Auth Proxy"
+      DefaultAction:
+        Allow: {}
+      Scope: REGIONAL
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        MetricName: !Join
+          - "-"
+          - - !Ref AWS::StackName
+            - "waf-auth-proxy-acl-rules"
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - "/"
+                            - Ref: AWS::StackId
+        SampledRequestsEnabled: true
+      Rules:
+        - Name: RateLimitRule
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          Priority: 1
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              Limit: 300
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join
+              - "-"
+              - - !Ref AWS::StackName
+                - "rate-limit-rule"
+                - Fn::Select:
+                    - 4
+                    - Fn::Split:
+                        - "-"
+                        - Fn::Select:
+                            - 2
+                            - Fn::Split:
+                                - "/"
+                                - Ref: AWS::StackId
+            SampledRequestsEnabled: true
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AuthProxyWafAssociation:
+      Type: AWS::WAFv2::WebACLAssociation
+      Properties:
+        ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AuthProxyApi}/stages/${AuthProxyApi.Stage}"
+        WebACLArn: !GetAtt AuthProxyWaf.Arn
+
   AuthProxyApi:
-    Type: AWS::ApiGatewayV2::Api
+    Type: AWS::Serverless::Api
     Properties:
       Name: !Join
         - "-"
@@ -972,7 +1049,7 @@ Resources:
                       - Fn::Split:
                           - "/"
                           - Ref: AWS::StackId
-      ProtocolType: HTTP
+      StageName: !Ref Environment
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -996,6 +1073,14 @@ Resources:
                           - Ref: AWS::StackId
       Description: "Auth proxy - performs app integrity checks and forwards requests to the Cognito User Pool"
       CodeUri: proxy/
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /oauth2/token
+            Method: post
+            RestApiId:
+              Ref: AuthProxyApi
       Handler: app.lambdaHandler
       Policies:
         - Version: "2012-10-17"
@@ -1034,29 +1119,6 @@ Resources:
         Sourcemap: true
         EntryPoints:
           - app.ts
-
-  AuthProxyIntegration:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref AuthProxyApi
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt AuthProxyFunction.Arn
-      IntegrationMethod: POST
-      PayloadFormatVersion: "2.0"
-
-  AuthProxyRouteCatchAll:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref AuthProxyApi
-      RouteKey: "ANY /{proxy+}"
-      Target: !Join ["/", ["integrations", !Ref AuthProxyIntegration]]
-
-  AuthProxyStage:
-    Type: AWS::ApiGatewayV2::Stage
-    Properties:
-      ApiId: !Ref AuthProxyApi
-      StageName: !Ref Environment
-      AutoDeploy: true
 
   LambdaInvokePermission:
     Type: AWS::Lambda::Permission

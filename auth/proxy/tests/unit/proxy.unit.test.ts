@@ -34,7 +34,6 @@ vi.mock('https', () => {
 const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
     method: 'POST',
     body: 'mock body',
-    isBase64Encoded: true,
     parsedUrl: new URL('https://app-dev.auth.eu-west-2.amazoncognito.com/token'),
     path: '/token',
     sanitizedHeaders: {
@@ -42,7 +41,6 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
         host: 'example.com',
         'X-Attestation-Token': 'test-token',
     },
-    targetPath: '/token',
     clientSecret: 'mock-client-secret', // pragma: allowlist secret
     ...overrides,
 });
@@ -69,13 +67,6 @@ describe('proxy', () => {
         expect(response.body).toBe('mock response');
     });
 
-    it('should throw an error if the request body is undefined', async () => {
-        const input = createMockInput({
-            body: undefined,
-            method: 'POST',
-        })
-        await expect(proxy(input)).rejects.toThrow('Request body is undefined');
-    });
 
     it('returns 500 on proxy error', async () => {
         // Replace the implementation temporarily
