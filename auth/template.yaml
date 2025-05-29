@@ -1106,6 +1106,8 @@ Resources:
                 - !Sub ".auth.${AWS::Region}.amazoncognito.com"
           FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
           FIREBASE_ANDROID_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
+          FIREBASE_PROJECT_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/project-id}}"
+          FIREBASE_AUDIENCE: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/audience}}"
           COGNITO_SECRET_NAME: !Sub /${ConfigStackName}/cognito/client-secret
       Tags:
         Product: GOV.UK

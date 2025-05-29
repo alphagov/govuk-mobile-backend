@@ -20,10 +20,20 @@ const validateCognitoUrl = (url: string): URL => {
     }
 }
 
-export function getConfig(): Config {
+export interface AppConfig {
+    firebaseIosAppId: string;
+    firebaseAndroidAppId: string;
+    cognitoUrl: URL;
+    projectId: string;
+    audience: string;
+}
+
+export function getConfig(): AppConfig {
     const firebaseIosAppId = process.env['FIREBASE_IOS_APP_ID'];
     const firebaseAndroidAppId = process.env['FIREBASE_ANDROID_APP_ID'];
     const cognitoUrl = process.env['COGNITO_URL'];
+    const projectId = process.env['FIREBASE_PROJECT_ID'];
+    const audience = process.env['FIREBASE_AUDIENCE'];
 
     if (firebaseIosAppId == null) {
         throw new ConfigError('FIREBASE_IOS_APP_ID environment variable is required');
@@ -39,15 +49,18 @@ export function getConfig(): Config {
 
     const sanitizedUrl = validateCognitoUrl(cognitoUrl);
 
+    if (projectId == null) {
+        throw new ConfigError('FIREBASE_PROJECT_ID environment variable is required');
+    }
+    if (audience == null) {
+        throw new ConfigError('FIREBASE_AUDIENCE environment variable is required');
+    }
+
     return {
         firebaseIosAppId,
         firebaseAndroidAppId,
-        cognitoUrl: sanitizedUrl
-    };
-}
-
-export interface Config {
-    firebaseIosAppId: string;
-    firebaseAndroidAppId: string;
-    cognitoUrl: URL;
-}
+        cognitoUrl: sanitizedUrl,
+        projectId,
+        audience,
+    }
+};

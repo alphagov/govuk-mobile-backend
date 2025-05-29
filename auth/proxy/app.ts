@@ -6,7 +6,7 @@ import { validateAttestationHeaderOrThrow } from './attestation';
 import type { ProxyInput } from './proxy';
 import { proxy } from './proxy';
 import { getClientSecret } from './secret';
-import type { Config} from './config';
+import type { AppConfig} from './config';
 import { getConfig } from './config';
 import { createHandler } from './handler';
 
@@ -29,5 +29,5 @@ export interface Dependencies {
   attestationUseCase: AttestationUseCase
   featureFlags: FeatureFlags
   getClientSecret: () => Promise<string>
-  getConfig: () => Config
+  getConfig: () => AppConfig
 }
