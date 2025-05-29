@@ -20,6 +20,13 @@ export const sanitizeHeaders = (headers: APIGatewayProxyEventHeaders): APIGatewa
     const firstChar = 0;
     return Object.entries(headers)
         .filter(([key]) => allowedHeaders.includes(key.toLowerCase()))
+        .filter(([, value]) => {
+            // Only allow ASCII characters in header values
+            if (typeof value !== 'string') return false;
+            // Check for non-ASCII (unicode) characters
+            // eslint-disable-next-line no-control-regex, sonarjs/no-control-regex
+            return /^[\x00-\x7F]*$/.test(value);  
+        })
         .reduce<Record<string, string>>((acc, [key, value]) => {
             const sanitizedValue = (value ?? '').substring(firstChar, maxHeaderValueLength);
             // Optionally, add further character validation here

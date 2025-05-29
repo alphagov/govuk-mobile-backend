@@ -60,4 +60,13 @@ describe('sanitizeHeaders', () => {
         sanitizeHeaders(headers);
         expect(headers).toEqual(copy);
     });
+
+    it('should prevent non-ascii characters in header values', () => {
+        const headers = {
+            'x-attestation-token': '𝓣𝓮𝓼𝓽', // Unicode Mathematical Script
+            'accept': 'application/json✓',    // Unicode checkmark
+        };
+        const sanitized = sanitizeHeaders(headers);
+        expect(sanitized).toEqual({});
+    })
 });
