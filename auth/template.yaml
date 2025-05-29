@@ -216,7 +216,7 @@ Resources:
             Block:
               CustomResponse:
                 ResponseCode: 429
-          Priority: 1
+          Priority: 0
           Statement:
             RateBasedStatement:
               AggregateKeyType: IP
@@ -237,6 +237,18 @@ Resources:
                                 - "/"
                                 - Ref: AWS::StackId
             SampledRequestsEnabled: true
+        - Name: AWSManagedRulesKnownBadInputsRuleSet
+          Priority: 1
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesKnownBadInputsRuleSet
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -846,28 +858,6 @@ Resources:
         - Key: System
           Value: Authentication
 
-  ApiGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "api-gateway"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      StageName: !Ref Environment
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-
   PostAuthenticationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -882,32 +872,6 @@ Resources:
       BuildProperties:
         Minify: true
         Target: "es2020"
-        SourceMap: false
-        EntryPoints:
-          - app.ts
-
-  TestFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: ApiGateway
-            Path: /test
-            Method: GET
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
         SourceMap: false
         EntryPoints:
           - app.ts
@@ -997,6 +961,7 @@ Resources:
       Description: "Auth proxy - performs app integrity checks and forwards requests to the Cognito User Pool"
       CodeUri: proxy/
       Handler: app.lambdaHandler
+      KmsKeyArn: !GetAtt AuthProxyFunctionKMSKey.Arn
       Policies:
         - Version: "2012-10-17"
           Statement:
@@ -1035,6 +1000,37 @@ Resources:
         EntryPoints:
           - app.ts
 
+  AuthProxyFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting auth proxy secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - "kms:*"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "lambda.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+            Resource:
+              - "*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   AuthProxyIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
@@ -1054,9 +1050,63 @@ Resources:
   AuthProxyStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
+      AccessLogSettings:
+        DestinationArn: !GetAtt AuthProxyAccessLogGroup.Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
       ApiId: !Ref AuthProxyApi
       StageName: !Ref Environment
       AutoDeploy: true
+
+  AuthProxyAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/api-gateway/auth-proxy-${AWS::StackName}
+      KmsKeyId: !GetAtt AuthProxyAccessLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AuthProxyAccessLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the Auth Proxy Access Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - "kms:*"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   LambdaInvokePermission:
     Type: AWS::Lambda::Permission
@@ -1124,6 +1174,9 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       StageName: !Ref Environment
+      AccessLogSetting:
+        DestinationArn: !GetAtt SharedSignalsAccessLogGroup.Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
       Auth:
         DefaultAuthorizer: SharedSignalsAuthorizer
         Authorizers:
@@ -1140,6 +1193,57 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+
+  SharedSignalsAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
+      KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalsAccessLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the Shared Signals Access Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - "kms:*"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   SharedSignalsAuthorizer:
     Type: AWS::Serverless::Function
@@ -1159,7 +1263,7 @@ Resources:
                           - Ref: AWS::StackId
       CodeUri: shared-signal-authorizer/
       Handler: app.lambdaHandler
-      Runtime: nodejs22.x
+      KmsKeyArn: !GetAtt SharedSignalsLambdaKMSKey.Arn
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1184,6 +1288,37 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
+
+  SharedSignalsLambdaKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting Shared Signals authorizer secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - "kms:*"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "lambda.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+            Resource:
+              - "*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   SignalsFunction:
     Type: AWS::Serverless::Function
@@ -1226,10 +1361,6 @@ Resources:
           - app.ts
 
 Outputs:
-  ApiGateway:
-    Description: API Gateway endpoint URL Hello World function
-    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/
-
   AuthProxyUrl:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
@@ -1287,10 +1418,6 @@ Outputs:
   AppClientId:
     Description: The App Client ID for the Cognito User Pool
     Value: !Ref CognitoUserPoolClient
-
-  RedirectUri:
-    Description: The redirect URI for the Cognito User Pool
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/test/"
 
   SharedSignalClientId:
     Description: The id of the shared signal user pool client
