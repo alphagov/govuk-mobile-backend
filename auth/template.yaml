@@ -38,11 +38,6 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
-  TestRoleArn:
-    Type: String
-    Description: The ARN of the role the post-deploy tests are run from
-    Default: "none"
-
 Mappings:
   OneLogin:
     Environment:
@@ -82,12 +77,6 @@ Conditions:
       - Fn::Equals:
           - !Ref Environment
           - "production"
-
-  GrantTestPermissions:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref TestRoleArn
-          - "none"
 
 Globals:
   Function:
