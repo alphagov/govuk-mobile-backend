@@ -216,4 +216,15 @@ describe('lambdaHandler', () => {
         expect(response.statusCode).toBe(400);
         expect(JSON.parse(response.body)).toEqual({ "message": "Invalid Request" });
     });
+
+    it('should throw an error if the request headers are invalid', async () => {
+        const response = await lambdaHandler(createMockEvent({
+            headers: {
+                'x-attestation-token': '𝓣𝓮𝓼𝓽'
+            }
+        })) as APIGatewayProxyStructuredResultV2;
+
+        expect(response.statusCode).toBe(400);
+        expect(JSON.parse(response.body)).toEqual({ "message": "Invalid Request" });
+    });
 });

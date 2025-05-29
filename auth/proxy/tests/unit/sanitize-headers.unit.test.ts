@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sanitizeHeaders } from '../../sanitize-headers';
+import { HeaderSanitizationError } from '../../errors';
 
 describe('sanitizeHeaders', () => {
     it('should remove sensitive headers', () => {
@@ -61,12 +62,17 @@ describe('sanitizeHeaders', () => {
         expect(headers).toEqual(copy);
     });
 
-    it('should prevent non-ascii characters in header values', () => {
-        const headers = {
-            'x-attestation-token': '𝓣𝓮𝓼𝓽', // Unicode Mathematical Script
-            'accept': 'application/json✓',    // Unicode checkmark
-        };
-        const sanitized = sanitizeHeaders(headers);
-        expect(sanitized).toEqual({});
-    })
+    it.each([
+        [{
+            'x-attestation-token': '𝓣𝓮𝓼𝓽',
+            'accept': 'application/json✓',
+        }, "Non-ascii characters found in header x-attestation-token"],
+        [{
+            'x-attestation-token': null,
+        }, "Header value for x-attestation-token is not a string"],
+    ])
+        ('should prevent non-ascii characters in header values', (headers, message) => {
+            expect(() => sanitizeHeaders(headers as any))
+                .toThrowError(new HeaderSanitizationError(message))
+        })
 });

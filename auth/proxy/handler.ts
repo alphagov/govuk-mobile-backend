@@ -1,5 +1,5 @@
 import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
-import { FailedToFetchSecretError, MissingAttestationTokenError, UnknownAppError } from './errors';
+import { FailedToFetchSecretError, HeaderSanitizationError, MissingAttestationTokenError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
 import { sanitizeHeaders } from './sanitize-headers';
@@ -40,6 +40,8 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       });
     }
 
+    const sanitizedHeaders = sanitizeHeaders(headers)
+
     if (featureFlags.ATTESTATION) {
       await attestationUseCase.validateAttestationHeaderOrThrow(headers, config)
     }
@@ -48,7 +50,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       method: httpMethod,
       path: '/oauth2/token',
       body,
-      sanitizedHeaders: sanitizeHeaders(headers),
+      sanitizedHeaders,
       parsedUrl: config.cognitoUrl,
       clientSecret: await getClientSecret(),
     })
@@ -80,6 +82,11 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
         return generateErrorResponse({
           statusCode: 500,
           message: 'Internal server error, server missing key dependencies'
+        });
+      case error instanceof HeaderSanitizationError:
+        return generateErrorResponse({
+          statusCode: 400,
+          message: 'Invalid Request'
         });
       default:
         return generateErrorResponse({
