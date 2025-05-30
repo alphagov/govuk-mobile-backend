@@ -1028,12 +1028,12 @@ Resources:
           Value: Authentication
 
   AuthProxyWafAssociation:
-    Type: AWS::WAFv2::WebACLAssociation
-    Properties:
-      ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AuthProxyApi}/stages/${AuthProxyApi.Stage}"
-      WebACLArn: !GetAtt AuthProxyWaf.Arn
+      Type: AWS::WAFv2::WebACLAssociation
+      Properties:
+        ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}"
+        WebACLArn: !GetAtt AuthProxyWaf.Arn
 
-  AuthProxyApi:
+  AttestationProxyApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Join
@@ -1051,18 +1051,18 @@ Resources:
                           - Ref: AWS::StackId
       StageName: !Ref Environment
       AccessLogSetting:
-        DestinationArn: !GetAtt AuthProxyApiAccessLogGroup.Arn
+        DestinationArn: !GetAtt AttestationProxyApiAccessLogGroup.Arn
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
 
-  AuthProxyApiAccessLogGroup:
+  AttestationProxyApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/auth-proxy-api-${AWS::StackName}
-      KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
+      LogGroupName: !Sub /aws/api-gateway/attestation-proxy-api-${AWS::StackName}
+      KmsKeyId: !GetAtt AttestationProxyApiAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
       Tags:
         - Key: Product
@@ -1072,7 +1072,7 @@ Resources:
         - Key: System
           Value: Authentication
 
-  AuthProxyApiAccessLogGroupKMSKey:
+  AttestationProxyApiAccessLogGroupKMSKey:
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting the Auth Proxy Api Access Log Group
@@ -1134,7 +1134,7 @@ Resources:
             Path: /oauth2/token
             Method: post
             RestApiId:
-              Ref: AuthProxyApi
+              Ref: AttestationProxyApi
       Handler: app.lambdaHandler
       KmsKeyArn: !GetAtt AuthProxyFunctionKMSKey.Arn
       Policies:
@@ -1212,7 +1212,7 @@ Resources:
       FunctionName: !Ref AuthProxyFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AuthProxyApi}/*/*/*
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AttestationProxyApi}/*/*/*
 
   PostAuthLambdaInvokePermission:
     Type: AWS::Lambda::Permission
@@ -1462,7 +1462,7 @@ Resources:
 Outputs:
   AuthProxyUrl:
     Description: Auth Proxy Gateway endpoint URL
-    Value: !Sub https://${AuthProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+    Value: !Sub https://${AttestationProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
   CognitoUrl:
     Description: The domain name for the Cognito User Pool
@@ -1565,3 +1565,8 @@ Outputs:
   SlackSupportChannelConfigurationARN:
     Description: ARN for Slack support channel configuration
     Value: !Ref SlackSupportChannelConfiguration
+
+  CognitoSecretName:
+    Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
+    Value: !Sub /${ConfigStackName}/cognito/client-secret
+    

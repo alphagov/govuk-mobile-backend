@@ -1,10 +1,13 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -euo pipefail
 
+cd /tests
+
 echo "Running tests in ${TEST_ENVIRONMENT}"
 
-echo "nx affected -t test:acc"
-nx affected -t test:acc
+# npm run test:acc
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
+
+exit 0

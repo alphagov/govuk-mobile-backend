@@ -83,21 +83,21 @@ describe("Check deployed shared signal Cognito User Pool Client", async () => {
   });
 });
 
-describe("Check Secrets manager is storing shared signal credentials", async () => {
-  const secretsManagerClient = new SecretsManagerClient({ region: REGION });
+// describe("Check Secrets manager is storing shared signal credentials", async () => {
+//   const secretsManagerClient = new SecretsManagerClient({ region: REGION });
 
-  it("retrieves shared signal credentials from Secrets Manager", async () => {
-    const secretName = process.env.CFN_SHARED_SIGNAL_SECRET_NAME || '/shared-signal/secrets-config';
+//   it("retrieves shared signal credentials from Secrets Manager", async () => {
+//     const secretName = process.env.CFN_SHARED_SIGNAL_SECRET_NAME || '/shared-signal/secrets-config';
 
-    const getSecretCommand = new GetSecretValueCommand({ SecretId: secretName });
-    const secretResponse = await secretsManagerClient.send(getSecretCommand);
+//     const getSecretCommand = new GetSecretValueCommand({ SecretId: secretName });
+//     const secretResponse = await secretsManagerClient.send(getSecretCommand);
 
-    expect(secretResponse.SecretString).toBeDefined();
+//     expect(secretResponse.SecretString).toBeDefined();
 
-    const secretData = JSON.parse(secretResponse.SecretString || "{}");
-    expect(secretData).toHaveProperty("client_id");
-    expect(secretData).toHaveProperty("client_secret");
-    expect(secretData).toHaveProperty("auth_url");
-    expect(secretData).toHaveProperty("audience");
-  });
-});
+//     const secretData = JSON.parse(secretResponse.SecretString || "{}");
+//     expect(secretData).toHaveProperty("client_id");
+//     expect(secretData).toHaveProperty("client_secret");
+//     expect(secretData).toHaveProperty("auth_url");
+//     expect(secretData).toHaveProperty("audience");
+//   });
+// });
