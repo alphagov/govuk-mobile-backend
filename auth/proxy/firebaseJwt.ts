@@ -1,8 +1,9 @@
-import type { JwtPayload} from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
 import { verify, decode, JsonWebTokenError } from 'jsonwebtoken';
 import type { JWK } from 'jwk-to-pem';
 import jwkToPem from 'jwk-to-pem';
 import { JwksFetchError, UnknownAppError } from './errors';
+import type { AppConfig } from './config';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const JWKS_URI = 'https://firebaseappcheck.googleapis.com/v1/jwks';
@@ -41,7 +42,7 @@ const getJwks = async (): Promise<Jwks> => {
     }
     const jwksResponse = await response.json();
 
-    if(!isJwks(jwksResponse)) {
+    if (!isJwks(jwksResponse)) {
         throw new JwksFetchError('Jwks response is not valid Jwks')
     }
 
@@ -77,14 +78,42 @@ const isJwtPayload = (payload: string | JwtPayload | undefined): payload is JwtP
 
 interface ValidateFirebase {
     token: string
-    firebaseAppIds: string[]
+    configValues: AppConfig
 }
 
-export const validateFirebaseJWT = async ({
-    token,
-    firebaseAppIds,
-}: ValidateFirebase): Promise<void> => {
-    const decodedTokenHeader = decode(token, { complete: true })?.header;
+const hasValidIss = (
+    payload: object,
+    firebaseProjectNumber: string,
+): payload is JwtPayload =>
+    'iss' in payload &&
+    typeof payload.iss === 'string' &&
+    payload.iss === `https://firebaseappcheck.googleapis.com/${firebaseProjectNumber}`;
+
+const hasCorrectAudiences = (
+    payload: Record<string, unknown> | JwtPayload,
+    configValues: AppConfig,
+): boolean => {
+    const audiences: string[] = [
+        `projects/${configValues.audience}`,
+        `projects/${configValues.projectId}`];
+
+    const incomingAudience = payload.aud;
+
+    return Array.isArray(incomingAudience)
+        ? incomingAudience.some((aud: string) => audiences.includes(aud))
+        : false;
+}
+
+const hasValidAud = (
+    payload: object,
+    configValues: AppConfig,
+): payload is JwtPayload =>
+    'aud' in payload
+    && Array.isArray(payload.aud)
+    && hasCorrectAudiences(payload, configValues);
+
+export const validateFirebaseJWT = async (values: ValidateFirebase): Promise<void> => {
+    const decodedTokenHeader = decode(values.token, { complete: true })?.header;
 
     if ((decodedTokenHeader?.kid) == null) {
         throw new JsonWebTokenError('JWT is missing the "kid" header');
@@ -94,9 +123,9 @@ export const validateFirebaseJWT = async ({
 
     // eslint-disable-next-line promise/avoid-new
     const verifyPromise = new Promise<string | JwtPayload | undefined>((resolve, reject) => {
-        verify(token, signingKey, {
+        verify(values.token, signingKey, {
             algorithms: ['RS256'],
-        // eslint-disable-next-line promise/prefer-await-to-callbacks
+            // eslint-disable-next-line promise/prefer-await-to-callbacks
         }, (err, payload) => {
             if (err) reject(err);
             else resolve(payload);
@@ -105,13 +134,23 @@ export const validateFirebaseJWT = async ({
 
     const decodedPayload = await verifyPromise;
 
-    if(!isJwtPayload(decodedPayload)) {
+    if (!isJwtPayload(decodedPayload)) {
         throw new JsonWebTokenError('Payload is not a valid JWT payload')
     }
 
-    if (!isKnownApp(decodedPayload, firebaseAppIds)) {
+    if (!isKnownApp(decodedPayload, [values.configValues.firebaseAndroidAppId, values.configValues.firebaseIosAppId])) {
         throw new UnknownAppError('App ID mismatch, please check subject claim includes a known app in firebase.')
+    }
+
+    if (!hasValidIss(decodedPayload, values.configValues.projectId)) {
+        throw new JsonWebTokenError('Invalid "iss" claim in the JWT payload');
+    }
+
+    if (!hasValidAud(decodedPayload, values.configValues)) {
+        throw new JsonWebTokenError('Invalid "aud" claim in the JWT payload');
     }
 
     console.log('Attestation token is valid');
 };
+
+

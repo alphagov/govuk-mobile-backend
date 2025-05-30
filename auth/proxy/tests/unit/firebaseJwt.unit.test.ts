@@ -2,6 +2,14 @@ import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import { validateFirebaseJWT } from "../../firebaseJwt";
 import { JsonWebTokenError, decode } from "jsonwebtoken";
 import { UnknownAppError } from "../../errors";
+import { AppConfig } from "../../config";
+
+const configValues: AppConfig = {
+    firebaseIosAppId: "mocked-app-id",
+    firebaseAndroidAppId: "mocked-app-id",
+    projectId: "mocked-project-id",
+    audience: "mocked-audience",
+}
 
 vi.mock('jsonwebtoken', async (importOriginal) => {
     const originalModule = await importOriginal<typeof import('jsonwebtoken')>();
@@ -10,8 +18,38 @@ vi.mock('jsonwebtoken', async (importOriginal) => {
         ...originalModule, // Include all original exports
         verify: vi.fn((token, secretOrPublicKey, options, callback) => {
             if (token === "valid-token") {
-                callback(null, { sub: "mocked-app-id", exp: Math.floor(Date.now() / 1000) + 3600 });
-            } else if (token === "expired-token") {
+                callback(null, {
+                    sub: configValues.firebaseAndroidAppId,
+                    exp: Math.floor(Date.now() / 1000) + 3600,
+                    iss: `https://firebaseappcheck.googleapis.com/${configValues.projectId}`,
+                    aud: [`projects/${configValues.projectId}`],
+                });
+            }
+            else if (token === "invalid-app-id") {
+                callback(null, {
+                    sub: 'invalid-app-id',
+                    exp: Math.floor(Date.now() / 1000) + 3600,
+                    iss: `https://firebaseappcheck.googleapis.com/${configValues.projectId}`,
+                    aud: [`projects/${configValues.projectId}`],
+                });
+            }
+            else if (token === "invalid-issuer") {
+                callback(null, {
+                    sub: configValues.firebaseIosAppId,
+                    exp: Math.floor(Date.now() / 1000) + 3600,
+                    iss: "https://invalid-issuer.com",
+                    aud: [`projects/${configValues.projectId}`],
+                });
+            }
+            else if (token === "invalid audience") {
+                callback(null, {
+                    sub: configValues.firebaseIosAppId,
+                    exp: Math.floor(Date.now() / 1000) + 3600,
+                    iss: `https://firebaseappcheck.googleapis.com/${configValues.projectId}`,
+                    aud: ['invalid-audience'],
+                });
+            }
+            else if (token === "expired-token") {
                 callback(new JsonWebTokenError("Token expired"));
             } else {
                 callback(new JsonWebTokenError("Invalid token"));
@@ -75,23 +113,23 @@ describe("firebaseJwt", () => {
 
         await expect(validateFirebaseJWT({
             token: "valid-token",
-            firebaseAppIds: ["mocked-app-id"],
+            configValues,
         })).rejects.toThrow("Jwks response is not valid Jwks");
     });
 
     it("should throw an error if jwt is not a valid JwtPayload", async () => {
-        (decode as Mock).mockReturnValueOnce("not-an-object");
+        (decode as Mock).mockReturnValueOnce("not-an-object"); //not a valid JwtPayload object
 
         await expect(validateFirebaseJWT({
             token: "valid-token",
-            firebaseAppIds: ["mocked-app-id"],
+            configValues,
         })).rejects.toThrow(JsonWebTokenError);
     });
 
     it("should return void for a valid token", async () => {
         await expect(validateFirebaseJWT({
             token: "valid-token",
-            firebaseAppIds: ["mocked-app-id"],
+            configValues: configValues,
         })).resolves.toBeUndefined();
     });
 
@@ -106,29 +144,43 @@ describe("firebaseJwt", () => {
 
         await expect(validateFirebaseJWT({
             token: "valid-token",
-            firebaseAppIds: ["mocked-app-id"],
+            configValues,
         })).rejects.toThrow(JsonWebTokenError);
     })
 
     it("should throw an error if the token is invalid", async () => {
         await expect(validateFirebaseJWT({
             token: "invalid-token",
-            firebaseAppIds: ["mocked-app-id"],
+            configValues: configValues,
         })).rejects.toThrow(JsonWebTokenError);
     });
 
     it("should throw an error if the token is expired", async () => {
         await expect(validateFirebaseJWT({
             token: "expired-token",
-            firebaseAppIds: ["mocked-app-id"],
+            configValues: configValues,
         })).rejects.toThrow(JsonWebTokenError);
     });
 
     it("should throw an error if the app ID is not known", async () => {
         await expect(validateFirebaseJWT({
-            token: "valid-token",
-            firebaseAppIds: ["unknown-app-id"],
+            token: "invalid-app-id",
+            configValues: configValues,
         })).rejects.toThrow(UnknownAppError);
+    });
+
+    it("should throw an error if issuer is invalid", async () => {
+        await expect(validateFirebaseJWT({
+            token: "invalid-issuer",
+            configValues: configValues,
+        })).rejects.toThrow(JsonWebTokenError);
+    });
+
+    it("should throw an error if audience is invalid", async () => {
+        await expect(validateFirebaseJWT({
+            token: "invalid-audience",
+            configValues: configValues,
+        })).rejects.toThrow(JsonWebTokenError);
     });
 
 });

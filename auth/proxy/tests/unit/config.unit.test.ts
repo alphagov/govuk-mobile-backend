@@ -8,7 +8,9 @@ describe('getConfig', () => {
             ...process.env,
             FIREBASE_IOS_APP_ID: 'someval',
             FIREBASE_ANDROID_APP_ID: 'someval',
-            COGNITO_URL: 'https://www.govukapp.com'
+            COGNITO_URL: 'https://www.govukapp.com',
+            FIREBASE_PROJECT_ID: 'someval',
+            FIREBASE_AUDIENCE: 'someval',
         }
     })
     it('should return the required environment variables', () => {
@@ -23,6 +25,8 @@ describe('getConfig', () => {
         ['FIREBASE_IOS_APP_ID', 'FIREBASE_IOS_APP_ID environment variable is required'],
         ['FIREBASE_ANDROID_APP_ID', 'FIREBASE_ANDROID_APP_ID environment variable is required'],
         ['COGNITO_URL', 'COGNITO_URL environment variable is required'],
+        ['FIREBASE_PROJECT_ID', 'FIREBASE_PROJECT_ID environment variable is required'],
+        ['FIREBASE_AUDIENCE', 'FIREBASE_AUDIENCE environment variable is required'],
     ])('should throw if variables are undefined', (key, message) => {
         const originalEnv = { ...process.env };
         delete process.env[key];
