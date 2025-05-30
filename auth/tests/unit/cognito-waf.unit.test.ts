@@ -154,6 +154,54 @@ describe("Set up the Web ACL Association for Cognito for GovUK app", () => {
             SampledRequestsEnabled: true,
           },
         },
+        {
+          Name: "AWSManagedRulesKnownBadInputsRuleSet",
+          Priority: 2,
+          Statement: {
+            ManagedRuleGroupStatement: {
+              VendorName: "AWS",
+              Name: "AWSManagedRulesKnownBadInputsRuleSet",
+            },
+          },
+          VisibilityConfig: {
+            CloudWatchMetricsEnabled: true,
+            MetricName: {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    Ref: "AWS::StackName",
+                  },
+                  "aws-managed-rules-known-bad-inputs-rule-set",
+                  {
+                    "Fn::Select": [
+                      4,
+                      {
+                        "Fn::Split": [
+                          "-",
+                          {
+                            "Fn::Select": [
+                              2,
+                              {
+                                "Fn::Split": [
+                                  "/",
+                                  {
+                                    Ref: "AWS::StackId",
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              ],
+            },
+            SampledRequestsEnabled: true,
+          },
+        },
       ],
     });
   });
