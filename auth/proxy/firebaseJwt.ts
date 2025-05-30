@@ -1,4 +1,4 @@
-import type { JwtPayload} from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
 import { verify, decode, JsonWebTokenError } from 'jsonwebtoken';
 import type { JWK } from 'jwk-to-pem';
 import jwkToPem from 'jwk-to-pem';
@@ -42,7 +42,7 @@ const getJwks = async (): Promise<Jwks> => {
     }
     const jwksResponse = await response.json();
 
-    if(!isJwks(jwksResponse)) {
+    if (!isJwks(jwksResponse)) {
         throw new JwksFetchError('Jwks response is not valid Jwks')
     }
 
@@ -63,14 +63,13 @@ const getSigningKey = async (kid: string): Promise<string> => {
 
 const isKnownApp = (
     payload: JwtPayload,
-    configValues: AppConfig,
+    firebaseAppIds: string[],
 ): boolean => {
-    if(payload.sub === undefined) {
-        return false; //if sub is not present, we cannot validate the app ID
-    }
-
-    return !(configValues.firebaseIosAppId !== payload.sub || configValues.firebaseAndroidAppId !== payload.sub); //if sub matches one of the known Firebase app IDs, we can validate the app ID
-    
+    return (
+        'sub' in payload &&
+        typeof payload.sub === 'string' &&
+        firebaseAppIds.includes(payload.sub)
+    )
 }
 
 const isJwtPayload = (payload: string | JwtPayload | undefined): payload is JwtPayload => {
@@ -82,13 +81,7 @@ interface ValidateFirebase {
     configValues: AppConfig
 }
 
-/**
- * 
- * @param payload incoming JWT payload
- * @param firebaseProjectNumber string representing the Firebase project number
- * @returns boolean indicating whether the payload has a valid 'iss' claim
- */
-export const hasValidIss = (
+const hasValidIss = (
     payload: object,
     firebaseProjectNumber: string,
 ): payload is JwtPayload =>
@@ -96,37 +89,28 @@ export const hasValidIss = (
     typeof payload.iss === 'string' &&
     payload.iss === `https://firebaseappcheck.googleapis.com/${firebaseProjectNumber}`;
 
-    const hasCorrectAudiences = (
-        payload: Record<string, unknown> | JwtPayload,
-        configValues: AppConfig,
-    ): boolean => {
-        const audiences:string[] = [
-            `projects/${configValues.audience}`, 
-            `projects/${configValues.projectId}`];
-        
-        const incomingAudience = payload.aud;
-        
-        return Array.isArray(incomingAudience) 
-            ? incomingAudience.some((aud: string) => audiences.includes(aud)) 
-            : false;
-        
-    }
+const hasCorrectAudiences = (
+    payload: Record<string, unknown> | JwtPayload,
+    configValues: AppConfig,
+): boolean => {
+    const audiences: string[] = [
+        `projects/${configValues.audience}`,
+        `projects/${configValues.projectId}`];
 
-/**
- * 
- * @param payload incoming JWT payload
- * @param configValues string representing the Firebase project number
- * @returns boolean indicating whether the payload has a valid 'aud' claim
- */
-export const hasValidAud = (
+    const incomingAudience = payload.aud;
+
+    return Array.isArray(incomingAudience)
+        ? incomingAudience.some((aud: string) => audiences.includes(aud))
+        : false;
+}
+
+const hasValidAud = (
     payload: object,
     configValues: AppConfig,
-): payload is JwtPayload => {
-
-    return 'aud' in payload
+): payload is JwtPayload =>
+    'aud' in payload
     && Array.isArray(payload.aud)
     && hasCorrectAudiences(payload, configValues);
-};
 
 export const validateFirebaseJWT = async (values: ValidateFirebase): Promise<void> => {
     const decodedTokenHeader = decode(values.token, { complete: true })?.header;
@@ -141,7 +125,7 @@ export const validateFirebaseJWT = async (values: ValidateFirebase): Promise<voi
     const verifyPromise = new Promise<string | JwtPayload | undefined>((resolve, reject) => {
         verify(values.token, signingKey, {
             algorithms: ['RS256'],
-        // eslint-disable-next-line promise/prefer-await-to-callbacks
+            // eslint-disable-next-line promise/prefer-await-to-callbacks
         }, (err, payload) => {
             if (err) reject(err);
             else resolve(payload);
@@ -150,11 +134,11 @@ export const validateFirebaseJWT = async (values: ValidateFirebase): Promise<voi
 
     const decodedPayload = await verifyPromise;
 
-    if(!isJwtPayload(decodedPayload)) {
+    if (!isJwtPayload(decodedPayload)) {
         throw new JsonWebTokenError('Payload is not a valid JWT payload')
     }
 
-    if (!isKnownApp(decodedPayload, values.configValues)) {
+    if (!isKnownApp(decodedPayload, [values.configValues.firebaseAndroidAppId, values.configValues.firebaseIosAppId])) {
         throw new UnknownAppError('App ID mismatch, please check subject claim includes a known app in firebase.')
     }
 
@@ -162,7 +146,7 @@ export const validateFirebaseJWT = async (values: ValidateFirebase): Promise<voi
         throw new JsonWebTokenError('Invalid "iss" claim in the JWT payload');
     }
 
-    if( !hasValidAud(decodedPayload, values.configValues)) {
+    if (!hasValidAud(decodedPayload, values.configValues)) {
         throw new JsonWebTokenError('Invalid "aud" claim in the JWT payload');
     }
 
