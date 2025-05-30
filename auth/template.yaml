@@ -1061,8 +1061,8 @@ Resources:
   AttestationProxyApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/auth-proxy-api-${AWS::StackName}
-      KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
+      LogGroupName: !Sub /aws/api-gateway/attestation-proxy-api-${AWS::StackName}
+      KmsKeyId: !GetAtt AttestationProxyApiAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
       Tags:
         - Key: Product
