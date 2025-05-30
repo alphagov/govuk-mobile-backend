@@ -89,7 +89,7 @@ describe("attestation", () => {
 
   describe("api gateway", () => {
     it("should provision an auth proxy api gateway", () => {
-      template.hasResourceProperties("AWS::ApiGatewayV2::Api", {
+      template.hasResourceProperties("AWS::Serverless::Api", {
         Name: {
           "Fn::Join": [
             "-",
@@ -127,10 +127,49 @@ describe("attestation", () => {
       });
     });
 
-    it("should have a catchall endpoint", () => {
-      template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
-        RouteKey: "ANY /{proxy+}",
-      });
+    it("should only have an oauth token endpoint", () => {
+      expect(resourceUnderTest.Properties.Events.ApiEvent.Properties.Path).toBe("/oauth2/token")
+      expect(resourceUnderTest.Properties.Events.ApiEvent.Properties.Method).toBe("post")
     });
   });
+
+  describe('waf', () => {
+    const authProxyWaf = template.findResources("AWS::WAFv2::WebACL")["AuthProxyWaf"] as any;
+    const association = template.findResources("AWS::WAFv2::WebACLAssociation")["AuthProxyWafAssociation"] as any;
+
+    it("should allow all requests that are not match", () => {
+      expect(authProxyWaf.Properties.DefaultAction).toEqual({
+        Allow: {}
+      });
+    });
+
+    it('should have a regional scope', () => {
+      expect(authProxyWaf.Properties.Scope).toEqual("REGIONAL");
+    });
+
+    it('should have the required tags', () => {
+      expect(authProxyWaf.Properties.Tags).toEqual([
+        {
+          "Key": "Product",
+          "Value": "GOV.UK",
+        },
+        {
+          "Key": "Environment",
+          "Value": {
+            "Ref": "Environment",
+          },
+        },
+        {
+          "Key": "System",
+          "Value": "Authentication",
+        },
+      ])
+    });
+
+    it('should be associated with the api gateway', () => {
+      expect(association.Properties.ResourceArn).toEqual({
+        "Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AuthProxyApi}/stages/${AuthProxyApi.Stage}",
+      });
+    });
+  })
 });

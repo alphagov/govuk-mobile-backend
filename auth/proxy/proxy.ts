@@ -2,17 +2,6 @@ import https from 'https';
 import querystring from 'querystring';
 import type { APIGatewayProxyEventHeaders, APIGatewayProxyResultV2 } from 'aws-lambda';
 
-export interface ProxyInput {
-    method: string
-    path: string
-    isBase64Encoded: boolean
-    body: string | undefined
-    sanitizedHeaders: APIGatewayProxyEventHeaders
-    targetPath: string
-    parsedUrl: URL
-    clientSecret: string
-}
-
 /**
  * Proxies an HTTP request to the specified hostname and path using HTTPS.
  * @param hostname - The target server's hostname.
@@ -45,7 +34,6 @@ async function _proxyRequest(hostname: string, path: string, body: string | unde
 
                     const internalServerError = 500;
 
-
                     resolve({
                         statusCode: res.statusCode ?? internalServerError,
                         headers: respHeaders,
@@ -76,29 +64,24 @@ export const proxy = async ({
     method,
     path,
     parsedUrl,
-    isBase64Encoded,
     body,
     sanitizedHeaders,
-    targetPath,
     clientSecret,
 }: ProxyInput): Promise<APIGatewayProxyResultV2> => {
-    if (method === "POST" && path.includes('/token')) {
-        if (body === undefined) {
-            throw new Error("Request body is undefined");
-        }
-        // In API Gateway Proxy v2, if the request body is base64-encoded (e.g. from a frontend form or custom client), you need to handle decoding it manually.
-        const rawBody = isBase64Encoded ? Buffer.from(body, 'base64').toString('utf-8') : body;
-        const parsedBody = querystring.parse(rawBody);
-        const encodedBody = querystring.stringify({
-            ...parsedBody,
-            client_secret: clientSecret,
-        });
+    const parsedBody = querystring.parse(body);
+    const encodedBody = querystring.stringify({
+        ...parsedBody,
+        client_secret: clientSecret,
+    });
 
-        sanitizedHeaders['content-length'] = Buffer.byteLength(encodedBody).toString();
-        sanitizedHeaders['content-type'] = 'application/x-www-form-urlencoded'; // just to be safe
+    return await _proxyRequest(parsedUrl.hostname, path, encodedBody, sanitizedHeaders, method);
+}
 
-
-        return await _proxyRequest(parsedUrl.hostname, targetPath, encodedBody, sanitizedHeaders, method);
-    }
-    return await _proxyRequest(parsedUrl.hostname, targetPath, body, sanitizedHeaders, method);
+export interface ProxyInput {
+    method: string
+    path: string
+    body: string
+    sanitizedHeaders: APIGatewayProxyEventHeaders
+    parsedUrl: URL
+    clientSecret: string
 }

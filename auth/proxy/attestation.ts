@@ -5,7 +5,7 @@ import { validateFirebaseJWT } from './firebaseJwt';
 import type { Config } from './config';
 
 export interface AttestationUseCase {
-  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, path: string, config: Config) => Promise<void>
+  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, config: Config) => Promise<void>
 }
 
 /**
@@ -20,14 +20,9 @@ export interface AttestationUseCase {
  */
 export const validateAttestationHeaderOrThrow = async (
   headers: APIGatewayProxyEventHeaders,
-  path: string,
   config: Config
 ): Promise<void> => {
   const attestationToken = headers['x-attestation-token'] ?? headers['X-Attestation-Token'];
-  const isTokenEndpoint = path.includes('/token');
-
-  // attestation checks is only made on token endpoint (this includes refresh tokens)
-  if (!isTokenEndpoint) return
 
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!attestationToken) { // empty string or undefined treated as missing

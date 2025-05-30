@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { validateAttestationHeaderOrThrow } from "../../attestation";
 import { MissingAttestationTokenError } from "../../errors";
+import { Config } from "../../config";
 
 const validateFirebaseMock = vi.fn();
 vi.mock('../../firebaseJwt', async (importOriginal) => {
@@ -17,7 +18,7 @@ describe('attestation', () => {
         vi.clearAllMocks();
     });
 
-    const mockConfig = (overrides?: any) => ({
+    const mockConfig = (overrides?: any): Config => ({
         ...process.env,
         ...overrides
     })
@@ -27,14 +28,14 @@ describe('attestation', () => {
     it('should not validate attestation token if the path is not the token endpoint', async () => {
         await expect(validateAttestationHeaderOrThrow({
             [attestationTokenHeaderName]: 'Bad-Token'
-        }, '/jwks', mockConfig()))
+        }, mockConfig()))
             .resolves
             .not
             .toThrow()
     })
 
     it('should throw missing attestation token header if no header provided', async () => {
-        await expect(validateAttestationHeaderOrThrow({}, '/token', mockConfig()))
+        await expect(validateAttestationHeaderOrThrow({}, mockConfig()))
             .rejects
             .toThrow(MissingAttestationTokenError)
     })
@@ -42,7 +43,7 @@ describe('attestation', () => {
     it('should return void for valid attesation checks', async () => {
         await expect(validateAttestationHeaderOrThrow({
             [attestationTokenHeaderName]: 'valid-token'
-        }, '/token', mockConfig()))
+        }, mockConfig()))
             .resolves
             .not
             .toThrow()
@@ -51,7 +52,7 @@ describe('attestation', () => {
     it('should allow case insensitive headers', async () => {
         await expect(validateAttestationHeaderOrThrow({
             'x-attestation-token': 'valid-token'
-        }, '/token', mockConfig()))
+        }, mockConfig()))
             .resolves
             .not
             .toThrow()
@@ -65,7 +66,7 @@ describe('attestation', () => {
         await expect(
             validateAttestationHeaderOrThrow({
                 [attestationTokenHeaderName]: 'Bad-Token'
-            }, '/token', mockConfig())
+            }, mockConfig())
         ).rejects.toThrow('Invalid token');
     });
 })
