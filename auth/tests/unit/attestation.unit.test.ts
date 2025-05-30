@@ -168,7 +168,7 @@ describe("attestation", () => {
 
     it('should be associated with the api gateway', () => {
       expect(association.Properties.ResourceArn).toEqual({
-        "Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AuthProxyApi}/stages/${AuthProxyApi.Stage}",
+        "Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}",
       });
     });
   })
