@@ -9,7 +9,8 @@ const configValues: AppConfig = {
     firebaseAndroidAppId: "mocked-app-id",
     projectId: "mocked-project-id",
     audience: "mocked-audience",
-}
+    cognitoUrl: new URL("https://mocked-cognito-url.com"),
+};
 
 vi.mock('jsonwebtoken', async (importOriginal) => {
     const originalModule = await importOriginal<typeof import('jsonwebtoken')>();
@@ -61,6 +62,7 @@ vi.mock('jsonwebtoken', async (importOriginal) => {
             header: {
                 alg: "RS256",
                 kid: "mocked-kid",
+                typ: "JWT",
             },
         }),
         JsonWebTokenError: class extends Error {
@@ -126,6 +128,24 @@ describe("firebaseJwt", () => {
         })).rejects.toThrow(JsonWebTokenError);
     });
 
+    it("should throw an error when typ is not JWT ", async () => {
+        (decode as Mock).mockReturnValueOnce({
+            sub: "mocked-app-id",
+            exp: Math.floor(Date.now() / 1000) + 3600,
+            header: {
+                alg: "RS256",
+                kid: "mocked-kid",
+                typ: "not-JWT", // Invalid type
+            },
+        });
+
+        await expect(validateFirebaseJWT({
+            token: "valid-token",
+            configValues,
+        })).rejects.toThrow(JsonWebTokenError);
+    });
+
+
     it("should return void for a valid token", async () => {
         await expect(validateFirebaseJWT({
             token: "valid-token",
@@ -147,6 +167,25 @@ describe("firebaseJwt", () => {
             configValues,
         })).rejects.toThrow(JsonWebTokenError);
     })
+
+    it.each(['HS256', 'HS384', 'HS512', 'None'])(
+        "should throw an error when Algorithm is %s",
+        async (algorithm) => {
+            (decode as Mock).mockReturnValueOnce({
+                sub: "mocked-app-id",
+                exp: Math.floor(Date.now() / 1000) + 3600,
+                header: {
+                    kid: "mocked-kid",
+                    alg: algorithm, // Invalid algorithm
+                },
+            });
+
+            await expect(validateFirebaseJWT({
+                token: "valid-token",
+                configValues,
+            })).rejects.toThrow(JsonWebTokenError);
+        }
+    )
 
     it("should throw an error if the token is invalid", async () => {
         await expect(validateFirebaseJWT({

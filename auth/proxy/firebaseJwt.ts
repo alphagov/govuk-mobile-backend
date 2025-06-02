@@ -21,6 +21,8 @@ interface Jwks {
     keys: Key[];
 }
 
+const alg = 'RS256';
+
 let cachedJwks: Jwks | null = null;
 
 const isJwks = (responseJson: unknown): responseJson is Jwks => {
@@ -76,6 +78,10 @@ const isJwtPayload = (payload: string | JwtPayload | undefined): payload is JwtP
     return typeof payload === 'object';
 }
 
+const isAlgorithmValid = (suppliedAlgo: string): boolean => {
+    return suppliedAlgo === alg;
+};
+
 interface ValidateFirebase {
     token: string
     configValues: AppConfig
@@ -119,12 +125,20 @@ export const validateFirebaseJWT = async (values: ValidateFirebase): Promise<voi
         throw new JsonWebTokenError('JWT is missing the "kid" header');
     }
 
+    if (!isAlgorithmValid(decodedTokenHeader.alg)) {
+        throw new JsonWebTokenError(`Invalid algorithm "${decodedTokenHeader.alg}" in JWT header`);
+    }
+
+    if (decodedTokenHeader.typ !== 'JWT') {
+        throw new JsonWebTokenError('JWT is missing the "typ" header or has an invalid type');
+    }
+
     const signingKey = await getSigningKey(decodedTokenHeader.kid);
 
     // eslint-disable-next-line promise/avoid-new
     const verifyPromise = new Promise<string | JwtPayload | undefined>((resolve, reject) => {
         verify(values.token, signingKey, {
-            algorithms: ['RS256'],
+            algorithms: [alg],
             // eslint-disable-next-line promise/prefer-await-to-callbacks
         }, (err, payload) => {
             if (err) reject(err);
