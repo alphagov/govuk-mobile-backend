@@ -1,8 +1,9 @@
 import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
-import { FailedToFetchSecretError, HeaderSanitizationError, MissingAttestationTokenError, UnknownAppError } from './errors';
+import { FailedToFetchSecretError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
 import { sanitizeHeaders } from './sanitize-headers';
+import { ZodError } from 'zod';
 
 const generateErrorResponse = ({
   statusCode,
@@ -40,10 +41,10 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       });
     }
 
-    const sanitizedHeaders = sanitizeHeaders(headers)
+    const sanitizedHeaders = await sanitizeHeaders(headers)
 
     if (featureFlags.ATTESTATION) {
-      await attestationUseCase.validateAttestationHeaderOrThrow(headers, config)
+      await attestationUseCase.validateAttestationHeaderOrThrow(sanitizedHeaders, config)
     }
 
     return await proxy({
@@ -58,10 +59,10 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     console.error('Catchall error:', error);
     // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
     switch (true) {
-      case error instanceof MissingAttestationTokenError:
+      case error instanceof ZodError:
         return generateErrorResponse({
           statusCode: 400,
-          message: 'Attestation token is missing'
+          message: 'Invalid Request'
         });
       case error instanceof TokenExpiredError:
         return generateErrorResponse({
@@ -82,11 +83,6 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
         return generateErrorResponse({
           statusCode: 500,
           message: 'Internal server error, server missing key dependencies'
-        });
-      case error instanceof HeaderSanitizationError:
-        return generateErrorResponse({
-          statusCode: 400,
-          message: 'Invalid Request'
         });
       default:
         return generateErrorResponse({

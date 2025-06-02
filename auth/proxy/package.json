@@ -15,7 +15,8 @@
     "dotenv": "^16.5.0",
     "esbuild": "^0.14.14",
     "jsonwebtoken": "^9.0.2",
-    "jwk-to-pem": "^2.0.7"
+    "jwk-to-pem": "^2.0.7",
+    "zod": "^3.25.48"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.92",

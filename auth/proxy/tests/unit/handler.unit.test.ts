@@ -8,7 +8,6 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGate
     path: '/dev/oauth2/token',
     headers: {
         'content-type': 'application/x-www-form-urlencoded',
-        host: 'example.com',
         'X-Attestation-Token': 'test-token',
     },
     requestContext: {
@@ -169,16 +168,6 @@ describe('lambdaHandler', () => {
             statusCode: 401,
             message: 'Attestation token has expired'
         }],
-        [createHandler(createMockDependencies({
-            attestationUseCase: {
-                validateAttestationHeaderOrThrow: vi.fn(() => {
-                    throw new MissingAttestationTokenError('err');
-                })
-            },
-        })), {
-            statusCode: 400,
-            message: 'Attestation token is missing'
-        }],
     ])
         ('returns correct response on attestation token errors', async (handler, expectedResponse) => {
             const response = await handler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
@@ -208,7 +197,6 @@ describe('lambdaHandler', () => {
     })
 
     it('should throw an error if the request body is undefined', async () => {
-
         const response = await lambdaHandler(createMockEvent({
             body: undefined
         })) as APIGatewayProxyStructuredResultV2;
@@ -217,14 +205,36 @@ describe('lambdaHandler', () => {
         expect(JSON.parse(response.body)).toEqual({ "message": "Invalid Request" });
     });
 
-    it('should throw an error if the request headers are invalid', async () => {
-        const response = await lambdaHandler(createMockEvent({
-            headers: {
+    it.each([
+        [
+            {
                 'x-attestation-token': '𝓣𝓮𝓼𝓽'
+            },
+            {
+                status: 400,
+                body: { "message": "Invalid Request" }
             }
-        })) as APIGatewayProxyStructuredResultV2;
+        ],
+        [
+            {
+                'x-attestation-token': 'valid',
+                'content-type': 'application/json'
+            },
+            {
+                status: 400,
+                body: { "message": "Invalid Request" }
+            }
+        ]
+    ])
+        ('should throw an error if the request headers are invalid', async (headers, expectedResponse) => {
+            const response = await lambdaHandler(createMockEvent({
+                headers: {
+                    ...createMockEvent().headers,
+                    ...headers
+                }
+            })) as APIGatewayProxyStructuredResultV2;
 
-        expect(response.statusCode).toBe(400);
-        expect(JSON.parse(response.body)).toEqual({ "message": "Invalid Request" });
-    });
+            expect(response.statusCode).toBe(expectedResponse.status);
+            expect(JSON.parse(response.body)).toEqual(expectedResponse.body);
+        });
 });

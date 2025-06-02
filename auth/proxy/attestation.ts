@@ -1,11 +1,9 @@
-
-import type { APIGatewayProxyEventHeaders } from 'aws-lambda';
-import { MissingAttestationTokenError } from './errors';
 import { validateFirebaseJWT } from './firebaseJwt';
 import type { AppConfig } from './config';
+import type { SanitizedRequestHeaders } from './sanitize-headers';
 
 export interface AttestationUseCase {
-  validateAttestationHeaderOrThrow: (headers: APIGatewayProxyEventHeaders, config: AppConfig) => Promise<void>
+  validateAttestationHeaderOrThrow: (headers: SanitizedRequestHeaders, config: AppConfig) => Promise<void>
 }
 
 /**
@@ -19,15 +17,10 @@ export interface AttestationUseCase {
  * @throws {MissingAttestationTokenError} 
  */
 export const validateAttestationHeaderOrThrow = async (
-  headers: APIGatewayProxyEventHeaders,
+  headers: SanitizedRequestHeaders,
   config: AppConfig
 ): Promise<void> => {
-  const attestationToken = headers['x-attestation-token'] ?? headers['X-Attestation-Token'];
-
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  if (!attestationToken) { // empty string or undefined treated as missing
-    throw new MissingAttestationTokenError('No attestation token header provided.')
-  }
+  const attestationToken = headers['x-attestation-token'];
 
   await validateFirebaseJWT({
     token: attestationToken,
