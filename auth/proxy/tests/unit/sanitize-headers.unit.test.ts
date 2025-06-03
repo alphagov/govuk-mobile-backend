@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sanitizeHeaders } from '../../sanitize-headers';
-import { ZodError, ZodIssue } from 'zod';
+import { ZodError } from 'zod/v4';
 
 describe('sanitizeHeaders', () => {
     const validHeaders = {

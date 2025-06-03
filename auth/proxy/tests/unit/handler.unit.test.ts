@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHandler } from '../../handler'; // Adjust path as needed
 import type { APIGatewayProxyEvent, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { FailedToFetchSecretError, MissingAttestationTokenError, UnknownAppError } from '../../errors';
+import { FailedToFetchSecretError, UnknownAppError } from '../../errors';
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent => ({
     path: '/dev/oauth2/token',

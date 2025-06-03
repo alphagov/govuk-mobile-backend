@@ -1,7 +1,7 @@
 
 
 import type { APIGatewayProxyEventHeaders } from "aws-lambda";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 const maxHeaderValueLength = 1024; // adjust as appropriate
 

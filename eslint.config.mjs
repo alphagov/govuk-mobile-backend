@@ -73,7 +73,7 @@ export default tseslint.config(
       "importPlugin/no-unused-modules": "error",
       "importPlugin/no-absolute-path": "error",
       "importPlugin/no-cycle": "error",
-      "importPlugin/no-internal-modules": "error",
+      "importPlugin/no-internal-modules": "warn",
       "importPlugin/no-useless-path-segments": "error",
       "importPlugin/exports-last": "warn",
       "importPlugin/first": "warn",

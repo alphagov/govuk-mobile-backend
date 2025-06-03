@@ -3,7 +3,7 @@ import { FailedToFetchSecretError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
 import { sanitizeHeaders } from './sanitize-headers';
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v4';
 
 const generateErrorResponse = ({
   statusCode,
