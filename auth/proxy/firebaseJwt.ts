@@ -118,11 +118,24 @@ const hasValidAud = (
     && Array.isArray(payload.aud)
     && hasCorrectAudiences(payload, configValues);
 
+const isKidFormatSafe = (kid: unknown): boolean => {
+    if (typeof kid !== 'string') {
+        return false;
+    }
+    // Allows alphanumeric characters, hyphens, and underscores between 5-10 characters long
+    const kidRegex = /^[a-zA-Z0-9_-]{5,10}$/;
+    return kidRegex.test(kid);
+}
+
 export const validateFirebaseJWT = async (values: ValidateFirebase): Promise<void> => {
     const decodedTokenHeader = decode(values.token, { complete: true })?.header;
 
     if ((decodedTokenHeader?.kid) == null) {
         throw new JsonWebTokenError('JWT is missing the "kid" header');
+    }
+
+    if(!isKidFormatSafe(decodedTokenHeader.kid)) {
+        throw new JsonWebTokenError('"kid" header is in unsafe format');
     }
 
     if (!isAlgorithmValid(decodedTokenHeader.alg)) {

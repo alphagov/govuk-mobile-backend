@@ -222,4 +222,25 @@ describe("firebaseJwt", () => {
         })).rejects.toThrow(JsonWebTokenError);
     });
 
+    it.each([
+        "key1|/usr/bin/uname",
+        "../../../../../../dev/null",
+        "SELECT key FROM keys WHERE key='key1'"
+    ])
+        ("should throw an error if kid contains harmful content", async (kid) => {
+            (decode as Mock).mockReturnValueOnce({
+                sub: "mocked-app-id",
+                exp: Math.floor(Date.now() / 1000) + 3600,
+                header: {
+                    kid: kid,
+                    alg: "RS256",
+                    typ: "JWT"
+                },
+            });
+
+            await expect(validateFirebaseJWT({
+                token: "invalid-audience",
+                configValues: configValues,
+            })).rejects.toThrow(new JsonWebTokenError(`"kid" header is in unsafe format`));
+        });
 });
