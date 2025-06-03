@@ -30,5 +30,5 @@ Feature: App Attestation
             | user  | header      | status | message                                       |
             | valid | invalid     | 401    | Attestation token is invalid                  |
             | valid | expired     | 401    | Attestation token has expired                 |
-            | valid | missing     | 400    | Attestation token is missing                  |
+            | valid | missing     | 400    | Invalid Request                               |
             | valid | unknown_app | 401    | Unknown app associated with attestation token |

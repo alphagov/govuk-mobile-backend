@@ -1,6 +1,7 @@
 import https from 'https';
 import querystring from 'querystring';
-import type { APIGatewayProxyEventHeaders, APIGatewayProxyResultV2 } from 'aws-lambda';
+import type { APIGatewayProxyResultV2 } from 'aws-lambda';
+import type { SanitizedRequestHeaders } from './sanitize-headers';
 
 /**
  * Proxies an HTTP request to the specified hostname and path using HTTPS.
@@ -11,7 +12,7 @@ import type { APIGatewayProxyEventHeaders, APIGatewayProxyResultV2 } from 'aws-l
  * @param method - The HTTP method to use (default is 'GET').
  * @returns A promise that resolves to an APIGatewayProxyResultV2 containing the response.
  */
-async function _proxyRequest(hostname: string, path: string, body: string | undefined, headers: APIGatewayProxyEventHeaders, method = 'GET'): Promise<APIGatewayProxyResultV2> {
+async function _proxyRequest(hostname: string, path: string, body: string | undefined, headers: SanitizedRequestHeaders, method = 'GET'): Promise<APIGatewayProxyResultV2> {
     // eslint-disable-next-line promise/avoid-new
     return new Promise((resolve) => {
         const req = https.request(
@@ -81,7 +82,7 @@ export interface ProxyInput {
     method: string
     path: string
     body: string
-    sanitizedHeaders: APIGatewayProxyEventHeaders
+    sanitizedHeaders: SanitizedRequestHeaders
     parsedUrl: URL
     clientSecret: string
 }

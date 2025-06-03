@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { sanitizeHeaders } from '../../sanitize-headers';
-import { HeaderSanitizationError } from '../../errors';
+import { ZodError } from 'zod/v4';
 
 describe('sanitizeHeaders', () => {
-    it('should remove sensitive headers', () => {
+    const validHeaders = {
+        "content-type": "application/x-www-form-urlencoded",
+        "x-attestation-token": "foobar",
+    }
+
+    it('should remove non-recognised headers', async () => {
         const headers = {
             "X-Forwarded-Host": "malicious.com",
             "X-Original-Host": "attacker.net",
@@ -15,64 +20,64 @@ describe('sanitizeHeaders', () => {
             "X-Original-URL": "/admin/login",
             "X-Rewrite-URL": "/api/v1/auth",
             "X-HTTP-Method-Override": "PUT",
-            "X-Internal-Secret": "internal-value",
-            "Host": "example.com"
+            "Host": "example.com",
         }
 
-        const sanitized = sanitizeHeaders(headers);
-
-        expect(sanitized).toEqual({}) // An empty object, as all these headers should be stripped.
+        await expect(sanitizeHeaders({
+            ...headers,
+            ...validHeaders
+        }))
+            .resolves
+            .toEqual(validHeaders) // An empty object, as all these headers should be stripped.
     });
 
-    it('should handle empty headers', () => {
-        const headers = {};
-        const sanitized = sanitizeHeaders(headers);
-        expect(sanitized).toEqual({});
-    });
-
-    it('should allow whitelisted headers', () => {
+    it('should allow whitelisted headers', async () => {
         const headers = {
-            'x-attestation-token': 'bar',
+            ...validHeaders,
             'accept': 'application/json',
-            'content-type': 'application/x-www-form-urlencoded',
-            'authorization': 'bearer',
             'user-agent': 'mozilla',
-            'x-requested-with': 'foo',
+            'connection': 'keep-alive'
         };
-        const sanitized = sanitizeHeaders(headers);
+        const sanitized = await sanitizeHeaders(headers);
         expect(sanitized).toEqual(headers);
     });
 
-    it('should lower case headers', () => {
+    it('should lower case headers', async () => {
         const headers = {
-            'Authorization': 'secret',
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Attestation-Token": "foobar",
         };
-        const sanitized = sanitizeHeaders(headers);
-        expect(sanitized).not.toHaveProperty('Authorization');
-        expect(sanitized).toHaveProperty('authorization');
+        const sanitized = await sanitizeHeaders(headers);
+
+        expect(sanitized).not.toHaveProperty('Content-Type');
+        expect(sanitized).toHaveProperty('content-type');
+        expect(sanitized).not.toHaveProperty('X-Attestation-Token');
+        expect(sanitized).toHaveProperty('x-attestation-token');
     });
 
-    it('should not mutate the original headers object', () => {
-        const headers = {
-            'authorization': 'secret',
-            'x-header': 'value'
-        };
-        const copy = { ...headers };
-        sanitizeHeaders(headers);
-        expect(headers).toEqual(copy);
+    it('should not mutate the original headers object', async () => {
+        const copy = { ...validHeaders };
+        await sanitizeHeaders(validHeaders);
+        expect(validHeaders).toEqual(copy);
     });
 
     it.each([
-        [{
-            'x-attestation-token': '𝓣𝓮𝓼𝓽',
-            'accept': 'application/json✓',
-        }, "Non-ascii characters found in header x-attestation-token"],
-        [{
-            'x-attestation-token': null,
-        }, "Header value for x-attestation-token is not a string"],
+        [
+            {
+                ...validHeaders,
+                'x-attestation-token': '𝓣𝓮𝓼𝓽',
+            }
+        ],
+        [
+            {
+                ...validHeaders,
+                'content-type': '𝓣𝓮𝓼𝓽',
+            },
+        ],
     ])
-        ('should prevent non-ascii characters in header values', (headers, message) => {
-            expect(() => sanitizeHeaders(headers as any))
-                .toThrowError(new HeaderSanitizationError(message))
+        ('should prevent non-ascii characters in header values', async (headers) => {
+            await expect(sanitizeHeaders(headers as any))
+                .rejects
+                .toThrowError(ZodError)
         })
 });

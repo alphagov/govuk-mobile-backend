@@ -1,0 +1,38 @@
+{
+   "$schema":"https://json-schema.org/draft/2020-12/schema",
+   "type":"object",
+   "properties":{
+      "content-type":{
+         "type":"string",
+         "const":"application/x-www-form-urlencoded"
+      },
+      "x-attestation-token":{
+         "type":"string",
+         "pattern":"^[\\x00-\\x7F]*$"
+      },
+      "accept":{
+         "description":"Client's preferred response format from Cognito.",
+         "type":"string",
+         "maxLength":1024,
+         "pattern":"^[\\x00-\\x7F]*$"
+      },
+      "user-agent":{
+         "description":"Identifies the client or proxy software making the request.",
+         "type":"string",
+         "maxLength":1024,
+         "pattern":"^[\\x00-\\x7F]*$"
+      },
+      "connection":{
+         "type":"string",
+         "enum":[
+            "keep-alive",
+            "close"
+         ]
+      }
+   },
+   "required":[
+      "content-type",
+      "x-attestation-token"
+   ],
+   "additionalProperties":false
+}

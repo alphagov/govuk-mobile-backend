@@ -34,12 +34,6 @@ describe('attestation', () => {
             .toThrow()
     })
 
-    it('should throw missing attestation token header if no header provided', async () => {
-        await expect(validateAttestationHeaderOrThrow({}, mockConfig()))
-            .rejects
-            .toThrow(MissingAttestationTokenError)
-    })
-
     it('should return void for valid attesation checks', async () => {
         await expect(validateAttestationHeaderOrThrow({
             [attestationTokenHeaderName]: 'valid-token'

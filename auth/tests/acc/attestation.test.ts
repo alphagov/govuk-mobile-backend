@@ -20,5 +20,5 @@ describe("attestation", async () => {
       const secretData = JSON.parse(secretResponse.SecretString as string);
       expect(secretData).toHaveProperty("client_secret");
     });
-  })
+  });
 });
