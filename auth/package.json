@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "devDependencies": {
-        "@amiceli/vitest-cucumber": "^4.7.0",
+        "@amiceli/vitest-cucumber": "^5.1.0",
         "@aws-sdk/client-api-gateway": "^3.804.0",
         "@aws-sdk/client-chatbot": "^3.812.0",
         "@aws-sdk/client-cloudwatch": "^3.812.0",
