@@ -11,7 +11,11 @@ const asciiString = z.string().regex(/^[\x00-\x7F]*$/, { message: "Non-ASCII cha
 const headerSchema = z.object({
     'content-type': z.enum([
         "application/x-www-form-urlencoded",
-        "application/json"
+        "application/x-www-form-urlencoded; charset=UTF-8",
+        "application/json",
+        "application/json; charset=UTF-8",
+        "application/jwt", // sometimes used for JWT assertions
+        "multipart/form-data" // rarely, but possible for some extensions
     ]),
     'x-attestation-token': asciiString, 
     'accept': asciiString

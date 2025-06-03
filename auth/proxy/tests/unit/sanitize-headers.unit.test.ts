@@ -33,7 +33,8 @@ describe('sanitizeHeaders', () => {
 
     it.each([
         'application/json',
-        'application/x-www-form-urlencoded'
+        'application/x-www-form-urlencoded',
+        "application/x-www-form-urlencoded; charset=UTF-8"
     ])('should allow specific content-type headers', async (contentType) => {
         await expect(sanitizeHeaders({
             ...validHeaders,
