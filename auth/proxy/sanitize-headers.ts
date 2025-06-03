@@ -8,7 +8,7 @@ const maxHeaderValueLength = 1024; // adjust as appropriate
 // eslint-disable-next-line no-control-regex, sonarjs/no-control-regex
 const asciiString = z.string().regex(/^[\x00-\x7F]*$/, { message: "Non-ASCII character found" });
 
-export const headerSchema = z.object({
+const headerSchema = z.object({
     'content-type': z.enum([
         "application/x-www-form-urlencoded",
         "application/json"
@@ -29,7 +29,7 @@ export const headerSchema = z.object({
             'close' // close connection after request
         ])
         .optional()
-})
+}) // by default, any unrecognized keys in the input object will be automatically stripped from the parsed result
 
 export type SanitizedRequestHeaders = z.infer<typeof headerSchema>;
 
