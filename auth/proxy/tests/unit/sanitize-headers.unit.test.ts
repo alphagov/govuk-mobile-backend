@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeHeaders } from '../../sanitize-headers';
-import { ZodError } from 'zod/v4';
+import { headerSchema, sanitizeHeaders } from '../../sanitize-headers';
+import { z, ZodError } from 'zod/v4';
 
 describe('sanitizeHeaders', () => {
     const validHeaders = {
@@ -30,6 +30,17 @@ describe('sanitizeHeaders', () => {
             .resolves
             .toEqual(validHeaders) // An empty object, as all these headers should be stripped.
     });
+
+    it.each([
+        'application/json',
+        'application/x-www-form-urlencoded'
+    ])('should allow specific content-type headers', async (contentType) => {
+        await expect(sanitizeHeaders({
+            ...validHeaders,
+            'Content-Type': contentType,
+        }))
+            .resolves
+    })
 
     it('should allow whitelisted headers', async () => {
         const headers = {
