@@ -9,7 +9,10 @@ const maxHeaderValueLength = 1024; // adjust as appropriate
 const asciiString = z.string().regex(/^[\x00-\x7F]*$/, { message: "Non-ASCII character found" });
 
 const headerSchema = z.object({
-    'content-type': z.literal("application/x-www-form-urlencoded"),
+    'content-type': z.enum([
+        "application/x-www-form-urlencoded",
+        "application/json"
+    ]),
     'x-attestation-token': asciiString, 
     'accept': asciiString
         .max(maxHeaderValueLength)

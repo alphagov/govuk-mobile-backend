@@ -80,4 +80,15 @@ describe('sanitizeHeaders', () => {
                 .rejects
                 .toThrowError(ZodError)
         })
+
+    it.each([
+        'application/json',
+        'application/x-www-form-urlencoded'
+    ])('should allow specific content-type headers', async (contentType) => {
+        await expect(sanitizeHeaders({
+            ...validHeaders,
+            'Content-Type': contentType,
+        }))
+            .resolves
+    })
 });
