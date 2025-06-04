@@ -8,9 +8,7 @@
                 "application/x-www-form-urlencoded",
                 "application/x-www-form-urlencoded; charset=UTF-8",
                 "application/json",
-                "application/json; charset=UTF-8",
-                "application/jwt",
-                "multipart/form-data"
+                "application/json; charset=UTF-8"
             ]
         },
         "x-attestation-token": {
@@ -22,19 +20,6 @@
             "type": "string",
             "maxLength": 1024,
             "pattern": "^[\\x00-\\x7F]*$"
-        },
-        "user-agent": {
-            "description": "Identifies the client or proxy software making the request.",
-            "type": "string",
-            "maxLength": 1024,
-            "pattern": "^[\\x00-\\x7F]*$"
-        },
-        "connection": {
-            "type": "string",
-            "enum": [
-                "keep-alive",
-                "close"
-            ]
         }
     },
     "required": [

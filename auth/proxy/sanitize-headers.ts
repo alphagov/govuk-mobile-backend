@@ -18,17 +18,6 @@ const headerSchema = z.object({
         .max(maxHeaderValueLength)
         .optional()
         .describe("Client's preferred response format from Cognito."),
-    'user-agent': asciiString
-        .max(maxHeaderValueLength)
-        .optional()
-        .describe("Identifies the client or proxy software making the request."),
-    // 'host': asciiString.optional(),
-    'connection': z
-        .enum([
-            'keep-alive', // for persistent connections
-            'close' // close connection after request
-        ])
-        .optional()
 }) // by default, any unrecognized keys in the input object will be automatically stripped from the parsed result
 
 export type SanitizedRequestHeaders = z.infer<typeof headerSchema>;

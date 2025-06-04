@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sanitizeHeaders } from '../../sanitize-headers';
-import { ZodError } from 'zod/v4';
+import { ZodError, z } from 'zod/v4';
 
 describe('sanitizeHeaders', () => {
     const validHeaders = {
@@ -43,12 +43,20 @@ describe('sanitizeHeaders', () => {
             .resolves
     })
 
+    it('should check content length of accept', async (header) => {
+        const longString = 'a'.repeat(1025)
+        await expect(sanitizeHeaders({
+            ...validHeaders,
+            accept: longString,
+        }))
+            .rejects
+            .toThrow(ZodError)
+    })
+
     it('should allow whitelisted headers', async () => {
         const headers = {
             ...validHeaders,
             'accept': 'application/json',
-            'user-agent': 'mozilla',
-            'connection': 'keep-alive'
         };
         const sanitized = await sanitizeHeaders(headers);
         expect(sanitized).toEqual(headers);
