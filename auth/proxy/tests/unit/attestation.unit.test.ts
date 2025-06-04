@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { validateAttestationHeaderOrThrow } from "../../attestation";
-import { MissingAttestationTokenError } from "../../errors";
-import { Config } from "../../config";
+import { AppConfig } from "../../config";
 
 const validateFirebaseMock = vi.fn();
 vi.mock('../../firebaseJwt', async (importOriginal) => {
@@ -18,7 +17,7 @@ describe('attestation', () => {
         vi.clearAllMocks();
     });
 
-    const mockConfig = (overrides?: any): Config => ({
+    const mockConfig = (overrides?: any): AppConfig => ({
         ...process.env,
         ...overrides
     })
