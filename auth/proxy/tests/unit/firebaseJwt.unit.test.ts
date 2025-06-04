@@ -243,4 +243,31 @@ describe("firebaseJwt", () => {
                 configValues: configValues,
             })).rejects.toThrow(new JsonWebTokenError(`"kid" header is in unsafe format`));
         });
+
+    
+    it.each([
+        "F_NePg",
+        "j7Oozg",
+        "D_o00g",
+        "kLTLjA",
+        "00yavg"
+    ])
+        ("should allow valid values", async (kid) => {
+            (decode as Mock).mockReturnValueOnce({
+                sub: "mocked-app-id",
+                exp: Math.floor(Date.now() / 1000) + 3600,
+                header: {
+                    kid: kid,
+                    alg: "RS256",
+                    typ: "JWT"
+                },
+            });
+
+            await expect(validateFirebaseJWT({
+                token: "invalid-audience",
+                configValues: configValues,
+            }))
+                .rejects
+                .toThrow(new JsonWebTokenError(`No matching key found for kid "${kid}"`));
+        });
 });
