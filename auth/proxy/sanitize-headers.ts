@@ -1,5 +1,3 @@
-
-
 import type { APIGatewayProxyEventHeaders } from "aws-lambda";
 import { z } from "zod/v4";
 
@@ -14,8 +12,6 @@ const headerSchema = z.object({
         "application/x-www-form-urlencoded; charset=UTF-8",
         "application/json",
         "application/json; charset=UTF-8",
-        "application/jwt", // sometimes used for JWT assertions
-        "multipart/form-data" // rarely, but possible for some extensions
     ]),
     'x-attestation-token': asciiString, 
     'accept': asciiString
