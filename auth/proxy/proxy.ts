@@ -3,19 +3,38 @@ import querystring from 'querystring';
 import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 import type { SanitizedRequestHeaders } from './sanitize-headers';
 
+interface ProxyRequest {
+    hostname: string
+    path: string
+    body: string
+    headers: SanitizedRequestHeaders
+    method: string
+    requestFn: typeof https.request
+}
+
 /**
- * Proxies an HTTP request to the specified hostname and path using HTTPS.
- * @param hostname - The target server's hostname.
- * @param path - The request path on the target server.
- * @param body - The request body as a string, or undefined if not applicable.
- * @param headers - The HTTP headers to send with the request.
- * @param method - The HTTP method to use (default is 'GET').
+ * Request to the specified hostname and path using HTTPS.
+ * @param input
+ * @param input.headers - The HTTP headers to send with the request.
+ * @param input.hostname - The target server's hostname.
+ * @param input.body  - The request body as a string, or undefined if not applicable.
+ * @param input.method - The HTTP method to use (default is 'GET').
+ * @param input.path - The request path on the target server.
+ * @param input.requestFn - HTTP client.
  * @returns A promise that resolves to an APIGatewayProxyResultV2 containing the response.
  */
-async function _proxyRequest(hostname: string, path: string, body: string | undefined, headers: SanitizedRequestHeaders, method = 'GET'): Promise<APIGatewayProxyResultV2> {
+async function _makeRequest(
+    {
+        headers,
+        hostname,
+        body = "POST",
+        method,
+        path,
+        requestFn
+    }: ProxyRequest): Promise<APIGatewayProxyResultV2> {
     // eslint-disable-next-line promise/avoid-new
     return new Promise((resolve) => {
-        const req = https.request(
+        const req = requestFn(
             {
                 hostname,
                 path,
@@ -53,7 +72,7 @@ async function _proxyRequest(hostname: string, path: string, body: string | unde
             });
         });
 
-        if (method === 'POST' && (body != null)) {
+        if (method === 'POST') {
             req.write(body);
         }
 
@@ -68,6 +87,7 @@ export const proxy = async ({
     body,
     sanitizedHeaders,
     clientSecret,
+    requestFn = https.request
 }: ProxyInput): Promise<APIGatewayProxyResultV2> => {
     const parsedBody = querystring.parse(body);
     const encodedBody = querystring.stringify({
@@ -75,7 +95,14 @@ export const proxy = async ({
         client_secret: clientSecret,
     });
 
-    return await _proxyRequest(parsedUrl.hostname, path, encodedBody, sanitizedHeaders, method);
+    return await _makeRequest({
+        hostname: parsedUrl.hostname,
+        path,
+        body: encodedBody,
+        headers: sanitizedHeaders,
+        method,
+        requestFn
+    });
 }
 
 export interface ProxyInput {
@@ -85,4 +112,5 @@ export interface ProxyInput {
     sanitizedHeaders: SanitizedRequestHeaders
     parsedUrl: URL
     clientSecret: string
+    requestFn?: typeof https.request
 }

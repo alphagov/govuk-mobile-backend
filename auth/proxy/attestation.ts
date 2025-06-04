@@ -13,8 +13,8 @@ export interface AttestationUseCase {
  * @param headers 
  * @param path
  * @param config
- * @returns 
- * @throws {MissingAttestationTokenError} 
+ * @returns
+ * @throws {import('jsonwebtoken').JsonWebTokenError} 
  */
 export const validateAttestationHeaderOrThrow = async (
   headers: SanitizedRequestHeaders,

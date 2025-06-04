@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
-import https from "https";
 import { proxy, ProxyInput } from '../../proxy'
+import EventEmitter from 'events';
 
 vi.mock('https', () => {
     beforeEach(() => vi.resetAllMocks())
@@ -38,8 +38,7 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
     path: '/token',
     sanitizedHeaders: {
         'content-type': 'application/x-www-form-urlencoded',
-        host: 'example.com',
-        'X-Attestation-Token': 'test-token',
+        "x-attestation-token": 'test-token'
     },
     clientSecret: 'mock-client-secret', // pragma: allowlist secret
     ...overrides,
@@ -69,13 +68,19 @@ describe('proxy', () => {
 
 
     it('returns 500 on proxy error', async () => {
-        // Replace the implementation temporarily
-        vi.spyOn(https, 'request').mockImplementationOnce((options, callback) => {
-            const req = {
-                on: vi.fn(),
-                write: vi.fn(),
-                end: vi.fn(),
-            };
+        const genericProxyError = vi.fn((options, callback) => {
+            const mockResponse = new EventEmitter() as any;
+            mockResponse.statusCode = 200;
+            mockResponse.headers = { 'content-type': 'application/json' };
+            // Call response callback with our mockResponse
+            setImmediate(() => {
+                callback(mockResponse)
+            });
+
+            const req = new EventEmitter() as any;
+            req.write = vi.fn();
+            req.on = vi.fn();
+            req.end = vi.fn();
 
             // the 'error' listener is attached after https.request() is called - gives proxy time to add an error to on 'error' callback
             setTimeout(() => {
@@ -84,14 +89,45 @@ describe('proxy', () => {
                     .forEach(([, handler]) => handler(new Error('Mocked failure')));
             }, 0);
 
-            // No callback needed — we simulate error
-            return req as any;
+            return req;
         });
 
-        const brokenEvent = createMockInput({ path: '' });
+        const brokenEvent = createMockInput({ path: '', requestFn: genericProxyError });
         const response = await proxy(brokenEvent) as APIGatewayProxyStructuredResultV2;
 
         expect(response.statusCode).toBe(500);
         expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
+    });
+
+    it('does not resolve more than once if both end and error events are emitted', async () => {
+        const doubleResolutionRequest = vi.fn((options, callback) => {
+            const mockResponse = new EventEmitter() as any;
+            mockResponse.statusCode = 200;
+            mockResponse.headers = { 'content-type': 'application/json' };
+            // Call response callback with our mockResponse
+            setImmediate(() => {
+                callback(mockResponse)
+            });
+
+            const req = new EventEmitter() as any;
+            req.write = vi.fn();
+            req.end = () => {
+                // Simulate normal data and end
+                mockResponse.emit('data', '{"foo":"bar"}');
+                mockResponse.emit('end');
+
+                // Then simulate an error afterward
+                req.emit('error', new Error('Simulated error'));
+            };
+            return req;
+        });
+
+        const response = await proxy(createMockInput({
+            requestFn: doubleResolutionRequest
+        })) as APIGatewayProxyStructuredResultV2;
+
+        expect(response.statusCode).toBe(500);
+        expect(JSON.parse(response.body as string)).toEqual({ "message": "Internal server error" });
+        expect(doubleResolutionRequest).toHaveBeenCalledOnce();
     });
 });
