@@ -3,6 +3,7 @@ import { createHandler } from '../../handler'; // Adjust path as needed
 import type { APIGatewayProxyEvent, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { FailedToFetchSecretError, UnknownAppError } from '../../errors';
+import querystring from 'querystring';
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent => ({
     path: '/dev/oauth2/token',
@@ -21,7 +22,14 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGate
         time: '',
         timeEpoch: 0,
     } as any,
-    body: 'grant_type=authorization_code&code=testcode&redirect_uri=http%3A%2F%2Flocalhost%2Fcallback',
+    body: querystring.stringify({
+        grant_type: "authorization_code",
+        client_id: "jsfalkgjojn",
+        redirect_uri: "govuk://govuk/login-auth-callback",
+        code: "sag36=-ga9sg0uioga",
+        code_verifier: 'abcd1234',
+        scope: "openid email",
+    }),
     isBase64Encoded: false,
     httpMethod: 'POST',
     multiValueHeaders: {},
@@ -236,5 +244,21 @@ describe('lambdaHandler', () => {
 
             expect(response.statusCode).toBe(expectedResponse.status);
             expect(JSON.parse(response.body)).toEqual(expectedResponse.body);
+        });
+
+    it.each([
+        "",
+        undefined,
+        querystring.stringify({
+            missing_all_fields: true
+        })
+    ])
+        ('should throw an error if the request body is invalid', async (body) => {
+            const response = await lambdaHandler(createMockEvent({
+                body
+            })) as APIGatewayProxyStructuredResultV2;
+
+            expect(response.statusCode).toBe(400);
+            expect(JSON.parse(response.body)).toEqual({ "message": "Invalid Request" });
         });
 });

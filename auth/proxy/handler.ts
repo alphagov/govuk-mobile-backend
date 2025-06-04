@@ -5,6 +5,7 @@ import type { Dependencies } from './app';
 import type { SanitizedRequestHeadersWithAttestation} from './sanitize-headers';
 import { sanitizeHeaders } from './sanitize-headers';
 import { ZodError } from 'zod/v4';
+import { validateRequestBodyOrThrow } from './validation/body';
 
 const generateErrorResponse = ({
   statusCode,
@@ -35,12 +36,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       });
     }
 
-    if (body == null || body === '') {
-      return generateErrorResponse({
-        statusCode: 400,
-        message: 'Invalid Request'
-      });
-    }
+    const validatedBody = await validateRequestBodyOrThrow(body);
 
     const sanitizedHeaders = await sanitizeHeaders(headers, featureFlags.ATTESTATION)
 
@@ -52,7 +48,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     return await proxy({
       method: httpMethod,
       path: '/oauth2/token',
-      body,
+      body: validatedBody,
       sanitizedHeaders,
       parsedUrl: config.cognitoUrl,
       clientSecret: await getClientSecret(),
