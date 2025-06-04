@@ -27,8 +27,8 @@ async function _makeRequest(
     {
         headers,
         hostname,
-        body = "POST",
-        method,
+        body,
+        method = "POST",
         path,
         requestFn
     }: ProxyRequest): Promise<APIGatewayProxyResultV2> {
