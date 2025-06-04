@@ -1,5 +1,3 @@
-
-
 import type { APIGatewayProxyEventHeaders } from "aws-lambda";
 import { z } from "zod/v4";
 
@@ -9,7 +7,12 @@ const maxHeaderValueLength = 1024; // adjust as appropriate
 const asciiString = z.string().regex(/^[\x00-\x7F]*$/, { message: "Non-ASCII character found" });
 
 const headerSchema = z.object({
-    'content-type': z.literal("application/x-www-form-urlencoded"),
+    'content-type': z.enum([
+        "application/x-www-form-urlencoded",
+        "application/x-www-form-urlencoded; charset=UTF-8",
+        "application/json",
+        "application/json; charset=UTF-8",
+    ]),
     'x-attestation-token': asciiString, 
     'accept': asciiString
         .max(maxHeaderValueLength)

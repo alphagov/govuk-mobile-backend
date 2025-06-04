@@ -31,6 +31,18 @@ describe('sanitizeHeaders', () => {
             .toEqual(validHeaders) // An empty object, as all these headers should be stripped.
     });
 
+    it.each([
+        'application/json',
+        'application/x-www-form-urlencoded',
+        "application/x-www-form-urlencoded; charset=UTF-8"
+    ])('should allow specific content-type headers', async (contentType) => {
+        await expect(sanitizeHeaders({
+            ...validHeaders,
+            'Content-Type': contentType,
+        }))
+            .resolves
+    })
+
     it('should allow whitelisted headers', async () => {
         const headers = {
             ...validHeaders,

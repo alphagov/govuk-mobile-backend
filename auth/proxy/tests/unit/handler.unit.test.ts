@@ -218,7 +218,7 @@ describe('lambdaHandler', () => {
         [
             {
                 'x-attestation-token': 'valid',
-                'content-type': 'application/json'
+                'content-type': 'text/javascript;'
             },
             {
                 status: 400,
