@@ -1,6 +1,5 @@
 import type { APIGatewayProxyEventHeaders } from "aws-lambda";
 import { z } from "zod/v4";
-import { FEATURE_FLAGS } from "./feature-flags";
 
 const maxHeaderValueLength = 1024; // adjust as appropriate
 
@@ -35,14 +34,17 @@ const attestationEnabledSchema = baseHeaderSchema.extend({
     'x-attestation-token': asciiString,
 });
 
-const headerSchema = FEATURE_FLAGS.ATTESTATION
-    ? attestationEnabledSchema
-    : baseHeaderSchema;
-
-export type SanitizedRequestHeaders = z.infer<typeof headerSchema>;
+export type SanitizedRequestHeaders = z.infer<typeof baseHeaderSchema>;
 export type SanitizedRequestHeadersWithAttestation = z.infer<typeof attestationEnabledSchema>;
 
-export const sanitizeHeaders = async (headers: APIGatewayProxyEventHeaders): Promise<SanitizedRequestHeaders> => {
+export const sanitizeHeaders = async (
+    headers: APIGatewayProxyEventHeaders,
+    enableAttestation: boolean
+): Promise<SanitizedRequestHeaders | SanitizedRequestHeadersWithAttestation> => {
+    const headerSchema = enableAttestation
+        ? attestationEnabledSchema
+        : baseHeaderSchema;
+
     const normalizedHeaders = Object.entries(headers)
         .reduce<Record<string, string>>((acc, [key, value]) => {
             if (typeof value === 'string') {

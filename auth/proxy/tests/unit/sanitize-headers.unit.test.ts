@@ -1,23 +1,15 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { sanitizeHeaders } from '../../sanitize-headers';
 import { ZodError } from 'zod/v4';
-
-vi.mock('../../feature-flags', async (importOriginal) => {
-    const originalModule = await importOriginal<typeof import('../../feature-flags')>();
-    return {
-        ...originalModule, // Include all original exports
-        ATTESTATION: true,
-        FEATURE_FLAGS: {
-            ATTESTATION: true, // Or false, depending on your test case
-        },
-    };
-});
 
 describe('sanitizeHeaders', () => {
     const validHeaders = {
         "content-type": "application/x-www-form-urlencoded",
         "x-attestation-token": "foobar",
     }
+
+    const enableAttestation = true;
+    const disableAttestation = false;
 
     it('should remove non-recognised headers', async () => {
         const headers = {
@@ -37,7 +29,7 @@ describe('sanitizeHeaders', () => {
         await expect(sanitizeHeaders({
             ...headers,
             ...validHeaders
-        }))
+        }, enableAttestation))
             .resolves
             .toEqual(validHeaders) // An empty object, as all these headers should be stripped.
     });
@@ -50,7 +42,7 @@ describe('sanitizeHeaders', () => {
         await expect(sanitizeHeaders({
             ...validHeaders,
             'Content-Type': contentType,
-        }))
+        }, enableAttestation))
             .resolves
     })
 
@@ -61,7 +53,7 @@ describe('sanitizeHeaders', () => {
             'user-agent': 'mozilla',
             'connection': 'keep-alive'
         };
-        const sanitized = await sanitizeHeaders(headers);
+        const sanitized = await sanitizeHeaders(headers, enableAttestation);
         expect(sanitized).toEqual(headers);
     });
 
@@ -70,7 +62,7 @@ describe('sanitizeHeaders', () => {
             "Content-Type": "application/x-www-form-urlencoded",
             "X-Attestation-Token": "foobar",
         };
-        const sanitized = await sanitizeHeaders(headers);
+        const sanitized = await sanitizeHeaders(headers, enableAttestation);
 
         expect(sanitized).not.toHaveProperty('Content-Type');
         expect(sanitized).toHaveProperty('content-type');
@@ -80,7 +72,7 @@ describe('sanitizeHeaders', () => {
 
     it('should not mutate the original headers object', async () => {
         const copy = { ...validHeaders };
-        await sanitizeHeaders(validHeaders);
+        await sanitizeHeaders(validHeaders, enableAttestation);
         expect(validHeaders).toEqual(copy);
     });
 
@@ -99,55 +91,18 @@ describe('sanitizeHeaders', () => {
         ],
     ])
         ('should prevent non-ascii characters in header values', async (headers) => {
-            await expect(sanitizeHeaders(headers as any))
+            await expect(sanitizeHeaders(headers as any, enableAttestation))
                 .rejects
                 .toThrowError(ZodError)
         })
 
-    describe('when ATTESTATION feature flag is DISABLED', () => {
-        beforeAll(() => {
-            vi.doUnmock('../../feature-flags');
-            vi.doMock('../../feature-flags', () => ({
-                FEATURE_FLAGS: {
-                    ATTESTATION: false, // Feature flag DISABLED
-                },
-            }));
-            vi.resetModules();
-        });
+    it('should not require x-attestation-token when feature flag is disabled', async () => {
+        const headersWithoutToken = {
+            "content-type": "application/x-www-form-urlencoded",
+        };
 
-        afterAll(() => {
-            vi.restoreAllMocks(); 
-        });
-
-        it('should NOT require x-attestation-token when feature flag is DISABLED', async () => {
-            // IMPORTANT: Re-import sanitizeHeaders inside this describe block
-            // because we reset the modules cache with vi.resetModules().
-            const { sanitizeHeaders: disabledSanitizeHeaders } = await import('../../sanitize-headers');
-
-            const headersWithoutToken = {
-                "content-type": "application/x-www-form-urlencoded",
-            };
-
-            // Feature flag DISABLED: missing x-attestation-token should now pass
-            await expect(
-                disabledSanitizeHeaders(headersWithoutToken)
-            ).resolves.toEqual(headersWithoutToken);
-        });
-
-        it('should still allow x-attestation-token if present when DISABLED', async () => {
-             const { sanitizeHeaders: disabledSanitizeHeaders } = await import('../../sanitize-headers');
-
-             const headersWithToken = {
-                 "content-type": "application/x-www-form-urlencoded",
-                 "x-attestation-token": "foobar",
-             };
-
-             // Feature flag DISABLED: present x-attestation-token should still pass
-             await expect(
-                 disabledSanitizeHeaders(headersWithToken)
-             ).resolves.toEqual({
-                 "content-type": "application/x-www-form-urlencoded",
-             });
-        });
+        await expect(
+            sanitizeHeaders(headersWithoutToken, disableAttestation)
+        ).resolves.toEqual(headersWithoutToken);
     });
 });
