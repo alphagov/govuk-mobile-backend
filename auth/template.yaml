@@ -46,13 +46,6 @@ Mappings:
       staging: "staging"
       integration: "integration"
       production: "production"
-  CustomDomain:
-    Environment:
-      build: "govukapp-build"
-      dev: "govukapp-dev"
-      staging: "govukapp-staging"
-      integration: "govukapp-integration"
-      production: "govukapp"
 
 Conditions:
   UseCodeSigning:
@@ -359,9 +352,9 @@ Resources:
         - IsDev
         - !Join
           - ""
-          - - !FindInMap [CustomDomain, Environment, !Ref Environment]
+          - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
             - !Sub "-${AWS::StackName}"
-        - !FindInMap [CustomDomain, Environment, !Ref Environment]
+        - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
 
   CloudWatchAlarmSignUpThrottles:
     Type: AWS::CloudWatch::Alarm
@@ -1152,12 +1145,12 @@ Resources:
             - !Join
               - ""
               - - "https://"
-                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
                 - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
             - !Join
               - ""
               - - "https://"
-                - !FindInMap [CustomDomain, Environment, !Ref Environment]
+                - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
                 - !Sub ".auth.${AWS::Region}.amazoncognito.com"
           FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
           FIREBASE_ANDROID_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
@@ -1472,11 +1465,11 @@ Outputs:
       - IsDev
       - !Join
         - ""
-        - - !FindInMap [CustomDomain, Environment, !Ref Environment]
+        - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
           - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
       - !Join
         - ""
-        - - !FindInMap [CustomDomain, Environment, !Ref Environment]
+        - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
           - !Sub ".auth.${AWS::Region}.amazoncognito.com"
 
   AppUserPoolClientId:
