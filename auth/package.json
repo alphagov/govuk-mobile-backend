@@ -42,5 +42,4 @@
         "test:integration": "vitest run --project integration",
         "test:functional": "vitest run --project functional"
     }
-    
 }

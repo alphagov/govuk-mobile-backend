@@ -1,0 +1,78 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "anyOf": [
+        {
+            "type": "object",
+            "properties": {
+                "grant_type": {
+                    "description": "Must be \"authorization_code\" for this grant type",
+                    "type": "string",
+                    "const": "authorization_code"
+                },
+                "client_id": {
+                    "description": "The client identifier issued to the client during the registration process",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                },
+                "redirect_uri": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                },
+                "code": {
+                    "description": "The authorization code received from the authorization server",
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 512
+                },
+                "code_verifier": {
+                    "description": "The PKCE code verifier used to obtain the authorization code",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                },
+                "scope": {
+                    "description": "The scope of the access request, as a space-delimited string",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                }
+            },
+            "required": [
+                "grant_type",
+                "client_id",
+                "redirect_uri",
+                "code",
+                "code_verifier",
+                "scope"
+            ],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "grant_type": {
+                    "type": "string",
+                    "const": "refresh_token"
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "client_id": {
+                    "description": "The client identifier issued to the client during the registration process",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                }
+            },
+            "required": [
+                "grant_type",
+                "refresh_token",
+                "client_id"
+            ],
+            "additionalProperties": false
+        }
+    ]
+}
