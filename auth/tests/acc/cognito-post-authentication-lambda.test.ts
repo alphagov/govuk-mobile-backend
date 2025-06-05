@@ -1,10 +1,12 @@
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
+import { GetFunctionCommand, LambdaClient } from "@aws-sdk/client-lambda";
 import {
-  GetFunctionCommand,
-  LambdaClient,
-} from "@aws-sdk/client-lambda";
-import { IAMClient, GetRoleCommand } from "@aws-sdk/client-iam";
+  IAMClient,
+  GetRoleCommand,
+  GetPolicyCommand,
+  GetPolicyVersionCommand,
+} from "@aws-sdk/client-iam";
 
 const lambdaClient = new LambdaClient({ region: "eu-west-2" });
 const functionCommand = new GetFunctionCommand({
@@ -12,8 +14,11 @@ const functionCommand = new GetFunctionCommand({
 });
 
 const iamClient = new IAMClient({ region: "eu-west-2" });
-const iamCommand = new GetRoleCommand({
-  RoleName: testConfig.PostAuthenticationFunctionInvokePermission,
+const iamCommandForInvokePermission = new GetRoleCommand({
+  RoleName: testConfig.postAuthenticationFunctionInvokePermission,
+});
+const iamCommandForPostAuthenticationLambdaRole = new GetRoleCommand({
+  RoleName: testConfig.postAuthenticationFunctionIAMRoleName,
 });
 
 describe("Check deployed Post Authentication Lambda", async () => {
@@ -66,13 +71,42 @@ describe("Check deployed Post Authentication Lambda", async () => {
 });
 
 describe("Check deployed Post Authentication Lambda Policy Document", async () => {
-  const response = await iamClient.send(iamCommand);
+  const response = await iamClient.send(iamCommandForInvokePermission);
   const iamPermissionsRole = response.Role!;
 
   it("has the correct assume role policy document", () => {
     assert.deepEqual(
       JSON.parse(
         decodeURIComponent(iamPermissionsRole.AssumeRolePolicyDocument!)
+      ),
+      {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: {
+              Service: "lambda.amazonaws.com",
+            },
+            Action: "sts:AssumeRole",
+          },
+        ],
+      }
+    );
+  });
+});
+
+describe("Check deployed Post Authentication Lambda IAM Role", async () => {
+  const response = await iamClient.send(
+    iamCommandForPostAuthenticationLambdaRole
+  );
+  const postAuthenticationLambdaRole = response.Role!;
+
+  it("has the correct assume role policy document", () => {
+    assert.deepEqual(
+      JSON.parse(
+        decodeURIComponent(
+          postAuthenticationLambdaRole.AssumeRolePolicyDocument!
+        )
       ),
       {
         Version: "2012-10-17",

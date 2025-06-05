@@ -2,8 +2,10 @@ import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { FailedToFetchSecretError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
+import type { SanitizedRequestHeadersWithAttestation} from './sanitize-headers';
 import { sanitizeHeaders } from './sanitize-headers';
 import { ZodError } from 'zod/v4';
+import { validateRequestBodyOrThrow } from './validation/body';
 
 const generateErrorResponse = ({
   statusCode,
@@ -22,7 +24,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     console.log('Calling auth proxy')
 
     const { proxy, attestationUseCase, featureFlags, getClientSecret, getConfig } = dependencies;
-    const config = getConfig()
+    const config = await getConfig()
 
     const { headers, body, httpMethod, path } = event;
 
@@ -34,23 +36,19 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       });
     }
 
-    if (body == null || body === '') {
-      return generateErrorResponse({
-        statusCode: 400,
-        message: 'Invalid Request'
-      });
-    }
+    const validatedBody = await validateRequestBodyOrThrow(body);
 
-    const sanitizedHeaders = await sanitizeHeaders(headers)
+    const sanitizedHeaders = await sanitizeHeaders(headers, featureFlags.ATTESTATION)
 
     if (featureFlags.ATTESTATION) {
-      await attestationUseCase.validateAttestationHeaderOrThrow(sanitizedHeaders, config)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion 
+      await attestationUseCase.validateAttestationHeaderOrThrow(sanitizedHeaders as SanitizedRequestHeadersWithAttestation, config)
     }
 
     return await proxy({
       method: httpMethod,
       path: '/oauth2/token',
-      body,
+      body: validatedBody,
       sanitizedHeaders,
       parsedUrl: config.cognitoUrl,
       clientSecret: await getClientSecret(),

@@ -25,22 +25,14 @@ describe("Set up the Cognito User Custom Domain", () => {
               "",
               [
                 {
-                  "Fn::FindInMap": [
-                    "CustomDomain",
-                    "Environment",
-                    { Ref: "Environment" },
-                  ],
+                  "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
                 },
                 { "Fn::Sub": "-${AWS::StackName}" },
               ],
             ],
           },
           {
-            "Fn::FindInMap": [
-              "CustomDomain",
-              "Environment",
-              { Ref: "Environment" },
-            ],
+            "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
           },
         ],
       },

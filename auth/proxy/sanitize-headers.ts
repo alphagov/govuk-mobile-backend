@@ -6,14 +6,13 @@ const maxHeaderValueLength = 1024; // adjust as appropriate
 // eslint-disable-next-line no-control-regex, sonarjs/no-control-regex
 const asciiString = z.string().regex(/^[\x00-\x7F]*$/, { message: "Non-ASCII character found" });
 
-const headerSchema = z.object({
+const baseHeaderSchema = z.object({
     'content-type': z.enum([
         "application/x-www-form-urlencoded",
         "application/x-www-form-urlencoded; charset=UTF-8",
         "application/json",
         "application/json; charset=UTF-8",
     ]),
-    'x-attestation-token': asciiString, 
     'accept': asciiString
         .max(maxHeaderValueLength)
         .optional()
@@ -29,11 +28,23 @@ const headerSchema = z.object({
             'close' // close connection after request
         ])
         .optional()
-}) // by default, any unrecognized keys in the input object will be automatically stripped from the parsed result
+});
 
-export type SanitizedRequestHeaders = z.infer<typeof headerSchema>;
+const attestationEnabledSchema = baseHeaderSchema.extend({
+    'x-attestation-token': asciiString,
+});
 
-export const sanitizeHeaders = async (headers: APIGatewayProxyEventHeaders): Promise<SanitizedRequestHeaders> => {
+export type SanitizedRequestHeaders = z.infer<typeof baseHeaderSchema>;
+export type SanitizedRequestHeadersWithAttestation = z.infer<typeof attestationEnabledSchema>;
+
+export const sanitizeHeaders = async (
+    headers: APIGatewayProxyEventHeaders,
+    enableAttestation: boolean
+): Promise<SanitizedRequestHeaders | SanitizedRequestHeadersWithAttestation> => {
+    const headerSchema = enableAttestation
+        ? attestationEnabledSchema
+        : baseHeaderSchema;
+
     const normalizedHeaders = Object.entries(headers)
         .reduce<Record<string, string>>((acc, [key, value]) => {
             if (typeof value === 'string') {

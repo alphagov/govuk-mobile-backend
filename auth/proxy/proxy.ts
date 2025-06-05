@@ -2,6 +2,7 @@ import https from 'https';
 import querystring from 'querystring';
 import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 import type { SanitizedRequestHeaders } from './sanitize-headers';
+import type { RequestBody } from './validation/body';
 
 /**
  * Proxies an HTTP request to the specified hostname and path using HTTPS.
@@ -12,7 +13,13 @@ import type { SanitizedRequestHeaders } from './sanitize-headers';
  * @param method - The HTTP method to use (default is 'GET').
  * @returns A promise that resolves to an APIGatewayProxyResultV2 containing the response.
  */
-async function _proxyRequest(hostname: string, path: string, body: string | undefined, headers: SanitizedRequestHeaders, method = 'GET'): Promise<APIGatewayProxyResultV2> {
+async function _proxyRequest(
+    hostname: string, 
+    path: string, 
+    body: string | undefined, 
+    headers: SanitizedRequestHeaders, 
+    method = 'GET'
+): Promise<APIGatewayProxyResultV2> {
     // eslint-disable-next-line promise/avoid-new
     return new Promise((resolve) => {
         const req = https.request(
@@ -69,19 +76,18 @@ export const proxy = async ({
     sanitizedHeaders,
     clientSecret,
 }: ProxyInput): Promise<APIGatewayProxyResultV2> => {
-    const parsedBody = querystring.parse(body);
-    const encodedBody = querystring.stringify({
-        ...parsedBody,
+    const encodedBodyWithClientSecret = querystring.stringify({
+        ...body,
         client_secret: clientSecret,
     });
 
-    return await _proxyRequest(parsedUrl.hostname, path, encodedBody, sanitizedHeaders, method);
+    return await _proxyRequest(parsedUrl.hostname, path, encodedBodyWithClientSecret, sanitizedHeaders, method);
 }
 
 export interface ProxyInput {
     method: string
     path: string
-    body: string
+    body: RequestBody
     sanitizedHeaders: SanitizedRequestHeaders
     parsedUrl: URL
     clientSecret: string
