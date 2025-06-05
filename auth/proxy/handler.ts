@@ -2,6 +2,7 @@ import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { FailedToFetchSecretError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
+import type { SanitizedRequestHeadersWithAttestation} from './sanitize-headers';
 import { sanitizeHeaders } from './sanitize-headers';
 import { ZodError } from 'zod/v4';
 
@@ -41,10 +42,11 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
       });
     }
 
-    const sanitizedHeaders = await sanitizeHeaders(headers)
+    const sanitizedHeaders = await sanitizeHeaders(headers, featureFlags.ATTESTATION)
 
     if (featureFlags.ATTESTATION) {
-      await attestationUseCase.validateAttestationHeaderOrThrow(sanitizedHeaders, config)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion 
+      await attestationUseCase.validateAttestationHeaderOrThrow(sanitizedHeaders as SanitizedRequestHeadersWithAttestation, config)
     }
 
     return await proxy({

@@ -8,14 +8,8 @@
                 "application/x-www-form-urlencoded",
                 "application/x-www-form-urlencoded; charset=UTF-8",
                 "application/json",
-                "application/json; charset=UTF-8",
-                "application/jwt",
-                "multipart/form-data"
+                "application/json; charset=UTF-8"
             ]
-        },
-        "x-attestation-token": {
-            "type": "string",
-            "pattern": "^[\\x00-\\x7F]*$"
         },
         "accept": {
             "description": "Client's preferred response format from Cognito.",
@@ -35,6 +29,10 @@
                 "keep-alive",
                 "close"
             ]
+        },
+        "x-attestation-token": {
+            "type": "string",
+            "pattern": "^[\\x00-\\x7F]*$"
         }
     },
     "required": [

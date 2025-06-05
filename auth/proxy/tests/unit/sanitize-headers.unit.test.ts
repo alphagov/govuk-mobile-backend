@@ -8,6 +8,9 @@ describe('sanitizeHeaders', () => {
         "x-attestation-token": "foobar",
     }
 
+    const enableAttestation = true;
+    const disableAttestation = false;
+
     it('should remove non-recognised headers', async () => {
         const headers = {
             "X-Forwarded-Host": "malicious.com",
@@ -26,7 +29,7 @@ describe('sanitizeHeaders', () => {
         await expect(sanitizeHeaders({
             ...headers,
             ...validHeaders
-        }))
+        }, enableAttestation))
             .resolves
             .toEqual(validHeaders) // An empty object, as all these headers should be stripped.
     });
@@ -39,7 +42,7 @@ describe('sanitizeHeaders', () => {
         await expect(sanitizeHeaders({
             ...validHeaders,
             'Content-Type': contentType,
-        }))
+        }, enableAttestation))
             .resolves
     })
 
@@ -50,7 +53,7 @@ describe('sanitizeHeaders', () => {
             'user-agent': 'mozilla',
             'connection': 'keep-alive'
         };
-        const sanitized = await sanitizeHeaders(headers);
+        const sanitized = await sanitizeHeaders(headers, enableAttestation);
         expect(sanitized).toEqual(headers);
     });
 
@@ -59,7 +62,7 @@ describe('sanitizeHeaders', () => {
             "Content-Type": "application/x-www-form-urlencoded",
             "X-Attestation-Token": "foobar",
         };
-        const sanitized = await sanitizeHeaders(headers);
+        const sanitized = await sanitizeHeaders(headers, enableAttestation);
 
         expect(sanitized).not.toHaveProperty('Content-Type');
         expect(sanitized).toHaveProperty('content-type');
@@ -69,7 +72,7 @@ describe('sanitizeHeaders', () => {
 
     it('should not mutate the original headers object', async () => {
         const copy = { ...validHeaders };
-        await sanitizeHeaders(validHeaders);
+        await sanitizeHeaders(validHeaders, enableAttestation);
         expect(validHeaders).toEqual(copy);
     });
 
@@ -88,8 +91,18 @@ describe('sanitizeHeaders', () => {
         ],
     ])
         ('should prevent non-ascii characters in header values', async (headers) => {
-            await expect(sanitizeHeaders(headers as any))
+            await expect(sanitizeHeaders(headers as any, enableAttestation))
                 .rejects
                 .toThrowError(ZodError)
         })
+
+    it('should not require x-attestation-token when feature flag is disabled', async () => {
+        const headersWithoutToken = {
+            "content-type": "application/x-www-form-urlencoded",
+        };
+
+        await expect(
+            sanitizeHeaders(headersWithoutToken, disableAttestation)
+        ).resolves.toEqual(headersWithoutToken);
+    });
 });
