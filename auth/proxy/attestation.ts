@@ -1,6 +1,6 @@
 import { validateFirebaseJWT } from './firebaseJwt';
 import type { AppConfig } from './config';
-import type { SanitizedRequestHeaders } from './sanitize-headers';
+import type { SanitizedRequestHeaders, SanitizedRequestHeadersWithAttestation } from './sanitize-headers';
 
 export interface AttestationUseCase {
   validateAttestationHeaderOrThrow: (headers: SanitizedRequestHeaders, config: AppConfig) => Promise<void>
@@ -11,13 +11,12 @@ export interface AttestationUseCase {
  * - attestation check is only made on authorize endpoint - token exchange handled by cognito and third-party
  * - attestation token is present
  * @param headers 
- * @param path
  * @param config
- * @returns 
+ * @returns
  * @throws {MissingAttestationTokenError} 
  */
 export const validateAttestationHeaderOrThrow = async (
-  headers: SanitizedRequestHeaders,
+  headers: SanitizedRequestHeadersWithAttestation,
   config: AppConfig
 ): Promise<void> => {
   const attestationToken = headers['x-attestation-token'];

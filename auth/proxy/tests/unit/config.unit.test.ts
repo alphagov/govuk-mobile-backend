@@ -13,6 +13,7 @@ describe('getConfig', () => {
             FIREBASE_AUDIENCE: 'someval',
         }
     })
+    
     it('should return the required environment variables', () => {
         const response = getConfig()
 
