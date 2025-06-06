@@ -29,5 +29,5 @@ export interface Dependencies {
   attestationUseCase: AttestationUseCase
   featureFlags: FeatureFlags
   getClientSecret: () => Promise<string>
-  getConfig: () => AppConfig
+  getConfig: () => Promise<AppConfig>
 }

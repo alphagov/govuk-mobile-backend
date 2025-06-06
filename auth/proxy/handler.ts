@@ -24,7 +24,7 @@ export const createHandler = (dependencies: Dependencies) => async (event: APIGa
     console.log('Calling auth proxy')
 
     const { proxy, attestationUseCase, featureFlags, getClientSecret, getConfig } = dependencies;
-    const config = getConfig()
+    const config = await getConfig()
 
     const { headers, body, httpMethod, path } = event;
 

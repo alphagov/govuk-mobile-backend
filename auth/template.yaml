@@ -38,6 +38,7 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
+
 Mappings:
   OneLogin:
     Environment:
@@ -1205,6 +1206,8 @@ Resources:
           FIREBASE_PROJECT_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/project-id}}"
           FIREBASE_AUDIENCE: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/audience}}"
           COGNITO_SECRET_NAME: !Sub /${ConfigStackName}/cognito/client-secret
+          REGION: !Ref AWS::Region
+          COGNITO_CUSTOM_DOMAIN_SSM_NAME: !Sub /${ConfigStackName}/cognito/custom-domain
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment

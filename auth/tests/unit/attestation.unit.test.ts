@@ -57,6 +57,22 @@ describe("attestation", () => {
       });
     });
 
+    it("contains a reference cognito custom domain config name", () => {
+      expect(resourceUnderTest.Properties.Environment.Variables).containSubset({
+        COGNITO_CUSTOM_DOMAIN_SSM_NAME: {
+          "Fn::Sub": "/${ConfigStackName}/cognito/custom-domain",
+        },
+      });
+    });
+
+    it("contains a reference to AWS region", () => {
+      expect(resourceUnderTest.Properties.Environment.Variables).containSubset({
+        REGION: {
+          "Ref": "AWS::Region",
+        },
+      });
+    });
+
     it("should have permission to read the client secret", () => {
       expect(resourceUnderTest.Properties.Policies).toEqual([
         {
