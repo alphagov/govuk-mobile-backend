@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SSMService } from '../../../service/ssm-service';
+import { SSMService } from '../../service/ssm-service';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 
 vi.mock('@aws-sdk/client-ssm', () => {
@@ -35,6 +35,14 @@ describe('SSMService', () => {
                 WithDecryption: true,
             })
         );
+    });
+
+    it('should throw error when value is undefined', async () => {
+        const mockResponse = { Parameter: { Value: undefined } };
+        mockSend.mockResolvedValueOnce(mockResponse);
+
+        await expect(ssmService.getParameterValue('mockParameterName')).rejects.toThrowError();
+       
     });
 
     it('should throw an error if parameter retrieval fails', async () => {
