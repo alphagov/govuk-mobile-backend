@@ -3,13 +3,13 @@ import { z, ZodError } from "zod/v4";
 import querystring from 'querystring';
 
 const clientId = z.string()
-        .min(1, { message: 'client_id is required' })
-        .max(100, { message: 'client_id is too long' })
-        .describe('The client identifier issued to the client during the registration process')
+    .min(1, { message: 'client_id is required' })
+    .max(100, { message: 'client_id is too long' })
+    .describe('The client identifier issued to the client during the registration process')
 
 const authorizationCodeSchema = z.object({
     grant_type: z.literal('authorization_code')
-        .describe('Must be "authorization_code" for this grant type'),
+        .describe('OAuth2 grant type'),
     client_id: clientId,
     redirect_uri: z.string()
         .min(1)
@@ -30,33 +30,36 @@ const authorizationCodeSchema = z.object({
 
 // Define the schema for 'refresh_token' grant type
 const refreshTokenSchema = z.object({
-  grant_type: z.literal('refresh_token'),
-  refresh_token: z.string().min(1, 'Refresh token is required'),
-  client_id: clientId,
+    grant_type: z.literal('refresh_token')
+        .describe('OAuth2 grant type'),
+    refresh_token: z.string()
+        .min(1, 'Refresh token is required')
+        .describe('Refresh token'),
+    client_id: clientId,
 });
 
 const grantUnionSchema = z.discriminatedUnion('grant_type', [
-  authorizationCodeSchema,
-  refreshTokenSchema,
+    authorizationCodeSchema,
+    refreshTokenSchema,
 ]);
 
 export type RequestBody = z.infer<typeof grantUnionSchema>;
 
 export const validateRequestBodyOrThrow = async (body: unknown): Promise<RequestBody> => {
     if (body == null || body === '' || typeof body !== 'string') {
-      throw new ZodError([
-        {
-            code: 'invalid_value',
-            values: [
-                "body"
-            ],
-            path: [
-                "body"
-            ],
-            "message": "Invalid input: body is undefined",
-            input: body
-        }
-      ])
+        throw new ZodError([
+            {
+                code: 'invalid_value',
+                values: [
+                    "body"
+                ],
+                path: [
+                    "body"
+                ],
+                "message": "Invalid input: body is undefined",
+                input: body
+            }
+        ])
     }
 
     const parsedBody = querystring.parse(body);

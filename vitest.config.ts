@@ -39,7 +39,16 @@ export default defineConfig({
           // allow for long running tests
           testTimeout: 120000,
         }
-      }
+      },
+      {
+        test: {
+          include: ["**/tests/api/**/*.test.ts"],
+          name: "api",
+          environment: "node",
+          // allow for long running tests
+          testTimeout: 120000,
+        },
+      },
     ],
     // Common test configurations
     globals: true,
