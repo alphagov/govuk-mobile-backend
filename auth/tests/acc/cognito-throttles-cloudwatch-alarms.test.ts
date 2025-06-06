@@ -25,7 +25,7 @@ type AlarmTestCase = {
 
 const testCases: AlarmTestCase[] = [
   {
-    alarmName: testConfig.CloudWatchAlarmFederationThrottlesName,
+    alarmName: testConfig.cloudWatchAlarmFederationThrottlesName,
     actionsEnabled: true,
     metricName: "FederationThrottles",
     alarmDescription: "Alarm when federated requests exceeds 5 per minute",
@@ -37,7 +37,7 @@ const testCases: AlarmTestCase[] = [
     ],
   },
   {
-    alarmName: testConfig.CloudWatchAlarmSignInThrottlesName,
+    alarmName: testConfig.cloudWatchAlarmSignInThrottlesName,
     actionsEnabled: true,
     metricName: "SignInThrottles",
     alarmDescription: "Alarm when the sign in rate exceeds 5 per minute",
@@ -48,7 +48,7 @@ const testCases: AlarmTestCase[] = [
     ],
   },
   {
-    alarmName: testConfig.CloudWatchAlarmSignUpThrottlesName,
+    alarmName: testConfig.cloudWatchAlarmSignUpThrottlesName,
     actionsEnabled: true,
     metricName: "SignUpThrottles",
     alarmDescription: "Alarm when the sign up rate exceeds 5 per minute",
@@ -59,7 +59,7 @@ const testCases: AlarmTestCase[] = [
     ],
   },
   {
-    alarmName: testConfig.CloudWatchAlarmTokenRefreshThrottlesName,
+    alarmName: testConfig.cloudWatchAlarmTokenRefreshThrottlesName,
     actionsEnabled: true,
     metricName: "TokenRefreshThrottles",
     alarmDescription: "Alarm when the token refresh rate exceeds 5 per minute",
@@ -171,14 +171,14 @@ describe.each(testCases)(
 
     const chatConfigurationResponse = await chatbotClient.send(
       new DescribeSlackChannelConfigurationsCommand({
-        ChatConfigurationArn: testConfig.ChatConfigurationArn,
+        ChatConfigurationArn: testConfig.chatConfigurationArn,
       })
     );
     const chatConfiguration =
       chatConfigurationResponse.SlackChannelConfigurations?.[0];
     if (!chatConfiguration) {
       throw new Error(
-        `No SlackChannelConfigurations found for ARN: ${testConfig.ChatConfigurationArn}`
+        `No SlackChannelConfigurations found for ARN: ${testConfig.chatConfigurationArn}`
       );
     }
 

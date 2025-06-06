@@ -873,8 +873,10 @@ Resources:
   PostAuthenticationFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-post-authentication-function"
       CodeUri: post-authentication-function/
       Handler: app.lambdaHandler
+      Role: !GetAtt PostAuthenticationFunctionIAMRole.Arn
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -887,6 +889,52 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
+
+  PostAuthenticationFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "post-authentication-role"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PostAuthenticationFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication-function:*"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   UserPoolIdentityProvider:
     Type: AWS::Cognito::UserPoolIdentityProvider
@@ -1028,10 +1076,10 @@ Resources:
           Value: Authentication
 
   AuthProxyWafAssociation:
-      Type: AWS::WAFv2::WebACLAssociation
-      Properties:
-        ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}"
-        WebACLArn: !GetAtt AuthProxyWaf.Arn
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}"
+      WebACLArn: !GetAtt AuthProxyWaf.Arn
 
   AttestationProxyApi:
     Type: AWS::Serverless::Api
@@ -1571,4 +1619,3 @@ Outputs:
   CognitoSecretName:
     Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
     Value: !Sub /${ConfigStackName}/cognito/client-secret
-    
