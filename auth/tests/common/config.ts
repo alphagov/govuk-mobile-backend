@@ -12,19 +12,22 @@ const getTestConfig = () => {
     "CFN_SharedSignalsReceiverLogGroupName",
     "CFN_SharedSignalsApiId",
     "CFN_PostAuthenticationFunctionInvokePermission",
-    "CFN_CloudWatchAlarmSignUpThrottlesName",
+    "CFN_CloudWatchAlarmSignUpThrottlesName", // pragma: allowlist-secret
     "CFN_CloudWatchAlarmSignInThrottlesName",
     "CFN_CloudWatchAlarmTokenRefreshThrottlesName",
     "CFN_CloudWatchAlarmFederationThrottlesName",
     "CFN_SlackSupportChannelConfigurationARN",
     "CFN_CognitoSecretName",
     "CFN_SharedSignalClientId",
-    "CFN_PostAuthenticationFunctionName"
+    "CFN_PostAuthenticationFunctionName",
+    "CFN_AWSAccountId",
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
   if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    throw new Error(
+      `Missing required environment variables: ${missing.join(", ")}`
+    );
   }
 
   return {
@@ -39,19 +42,22 @@ const getTestConfig = () => {
       process.env.CFN_SharedSignalsReceiverLogGroupName!,
     sharedSignalsApiId: process.env.CFN_SharedSignalsApiId!,
     postAuthenticationLambda: process.env.CFN_PostAuthenticationFunctionName!,
-    PostAuthenticationFunctionInvokePermission:
+    postAuthenticationFunctionInvokePermission:
       process.env.CFN_PostAuthenticationFunctionInvokePermission!,
-    CloudWatchAlarmSignUpThrottlesName:
+    postAuthenticationFunctionIAMRoleName:
+      process.env.CFN_PostAuthenticationFunctionIAMRoleName!,
+    cloudWatchAlarmSignUpThrottlesName:
       process.env.CFN_CloudWatchAlarmSignUpThrottlesName!,
-    CloudWatchAlarmSignInThrottlesName:
+    cloudWatchAlarmSignInThrottlesName:
       process.env.CFN_CloudWatchAlarmSignInThrottlesName!,
-    CloudWatchAlarmTokenRefreshThrottlesName:
+    cloudWatchAlarmTokenRefreshThrottlesName:
       process.env.CFN_CloudWatchAlarmTokenRefreshThrottlesName!,
-    CloudWatchAlarmFederationThrottlesName:
+    cloudWatchAlarmFederationThrottlesName:
       process.env.CFN_CloudWatchAlarmFederationThrottlesName!,
-    ChatConfigurationArn: process.env.CFN_SlackSupportChannelConfigurationARN!,
+    chatConfigurationArn: process.env.CFN_SlackSupportChannelConfigurationARN!,
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
     authProxyUrl: process.env.CFN_AuthProxyUrl!,
+    awsAccountId: process.env.CFN_AWSAccountId!,
   };
 };
 

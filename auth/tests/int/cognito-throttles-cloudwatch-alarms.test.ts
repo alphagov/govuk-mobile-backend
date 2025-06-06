@@ -9,10 +9,10 @@ import { testConfig } from "../common/config";
 const cloudWatchClient = new CloudWatchClient({ region: "eu-west-2" });
 
 const alarmsToTest = [
-  testConfig.CloudWatchAlarmSignUpThrottlesName,
-  testConfig.CloudWatchAlarmSignInThrottlesName,
-  testConfig.CloudWatchAlarmTokenRefreshThrottlesName,
-  testConfig.CloudWatchAlarmFederationThrottlesName,
+  testConfig.cloudWatchAlarmSignUpThrottlesName,
+  testConfig.cloudWatchAlarmSignInThrottlesName,
+  testConfig.cloudWatchAlarmTokenRefreshThrottlesName,
+  testConfig.cloudWatchAlarmFederationThrottlesName,
 ];
 
 describe.each(alarmsToTest)("Cognito CloudWatch Alarm: %s", (alarmName) => {
