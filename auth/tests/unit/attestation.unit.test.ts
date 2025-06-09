@@ -86,6 +86,15 @@ describe("attestation", () => {
                 "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*",
               },
             },
+            {
+              "Action": [
+                "ssm:GetParameter",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain",
+              },
+            },
           ],
           "Version": "2012-10-17",
         },
