@@ -11,9 +11,9 @@ import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 import { AlarmTestCase } from "../acc/alarm-test-case";
 
-const cloudWatchClient = new CloudWatchClient({ region: "eu-west-2" });
-const snsClient = new SNSClient({ region: "eu-west-2" });
-const chatbotClient = new ChatbotClient({ region: "us-east-2" });
+const cloudWatchClient = new CloudWatchClient({ region: testConfig.region });
+const snsClient = new SNSClient({ region: testConfig.region });
+const chatbotClient = new ChatbotClient({ region: testConfig.region });
 
 const testCases: AlarmTestCase[] = [
   {

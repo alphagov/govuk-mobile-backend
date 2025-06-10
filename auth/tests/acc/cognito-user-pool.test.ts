@@ -5,7 +5,7 @@ import {
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 
-const client = new CognitoIdentityProviderClient({ region: "eu-west-2" });
+const client = new CognitoIdentityProviderClient({ region: testConfig.region });
 const command = new DescribeUserPoolCommand({
   UserPoolId: testConfig.userPoolId,
 });

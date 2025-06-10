@@ -3,18 +3,16 @@ import {
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
-import {SecretsManagerClient, GetSecretValueCommand} from "@aws-sdk/client-secrets-manager";
 import { assert, describe, it, expect } from "vitest";
+import { testConfig } from "../common/config";
 
 const input = {
-  UserPoolId: process.env.CFN_UserPoolId, 
-  ClientId: process.env.CFN_SharedSignalClientId,
-  TestEnvironment: process.env.TEST_ENVIRONMENT, 
+  UserPoolId: testConfig.userPoolId, 
+  ClientId: testConfig.sharedSignalsClientId,
+  TestEnvironment: testConfig.environment, 
 };
 
-const REGION = process.env.CFN_AWS_REGION || "eu-west-2";
-
-const client = new CognitoIdentityProviderClient({ region: REGION });
+const client = new CognitoIdentityProviderClient({ region: testConfig.region });
 const command = new DescribeUserPoolClientCommand(input);
 let response: any;
 let userPoolClient: any;

@@ -11,13 +11,15 @@ import {
   GetRoleCommand,
   GetRolePolicyCommand,
 } from "@aws-sdk/client-iam";
+import { CloudWatchClient, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
+import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
 
-const lambdaClient = new LambdaClient({ region: "eu-west-2" });
+const lambdaClient = new LambdaClient({ region: testConfig.region });
 const functionCommand = new GetFunctionCommand({
   FunctionName: testConfig.authProxyFunctionName,
 });
 
-const iamClient = new IAMClient({ region: "eu-west-2" });
+const iamClient = new IAMClient({ region: testConfig.region });
 
 const iamCommandForAuthProxyLambdaRole = new GetRoleCommand({
   RoleName: testConfig.authProxyFunctionIAMRoleName,
@@ -28,11 +30,10 @@ const iamCommandGetRolePolicy = new GetRolePolicyCommand({
   PolicyName: testConfig.authProxyFunctionIAMRolePolicyName,
 });
 
-const REGION = process.env.CFN_AWS_REGION || "eu-west-2";
 
 describe("attestation", async () => {
   describe("attestation proxy is a confidential client", () => {
-    const secretsManagerClient = new SecretsManagerClient({ region: REGION });
+    const secretsManagerClient = new SecretsManagerClient({ region: testConfig.region });
 
     it("retrieves shared signal credentials from Secrets Manager", async () => {
       const secretId = testConfig.cognitoSecretName;
@@ -180,4 +181,42 @@ describe("attestation", async () => {
       );
     });
   });
+
+  describe("alarms", async () => {
+    const cloudWatchClient = new CloudWatchClient({ region: testConfig.region });
+
+    const alarms = await cloudWatchClient.send(
+      new DescribeAlarmsCommand()
+    );
+
+    const attestationAlarms = alarms.MetricAlarms?.filter((ma) => ma.AlarmName?.includes("attestation"))
+
+    const action = attestationAlarms[0].OKActions[0];
+
+    describe("notifications", () => {
+      const snsClient = new SNSClient({ region: testConfig.region });
+      it('alarm topic should encrpyt messages', async () => {
+        const topic = await snsClient.send(
+          new GetTopicAttributesCommand({ TopicArn: action })
+        );
+        expect(topic.Attributes.KmsMasterKeyId).toBeDefined();
+      });
+    });
+
+    it.each([
+      'attestation-low-200-response-proportion',
+      'attestation-low-completion',
+      'attestation-lambda-error-rate',
+    ])('generate a %s alarm to monitor attestation lambda', (alarmName) => {
+      expect(attestationAlarms?.find((a) => a.AlarmName?.includes(alarmName))).toBeTruthy()
+    })
+
+    describe('low 200 response proportion alarm', () => {
+      it('should be disabled', () => {
+        const alarm = attestationAlarms?.find((a) => a.AlarmName?.includes("attestation-low-200-response"));
+
+        expect(alarm?.ActionsEnabled).toBe(false)
+      })
+    })
+  })
 });

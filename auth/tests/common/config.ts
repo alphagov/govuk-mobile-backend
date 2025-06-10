@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { config } from "process";
 
 const getTestConfig = () => {
   const requiredVars = [
@@ -34,6 +33,11 @@ const getTestConfig = () => {
     "CFN_AuthProxyLogGroupName",
     "CFN_StackName",
     "CFN_ConfigStackName",
+    "CFN_UserPoolProviderUrl",
+    "CFN_AWS_REGION",
+    "CFN_AttestationLowCompletionAlarmName",
+    "CFN_AttestationLow200ResponseProportionAlarmName",
+    "CFN_AttestationLambdaErrorRateAlarmName",
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -50,7 +54,6 @@ const getTestConfig = () => {
     authProxyFunctionIAMRolePolicyName:
       process.env.CFN_AuthProxyFunctionIAMRolePolicyName!,
     userPoolId: process.env.CFN_UserPoolId!,
-    clientId: process.env.CFN_AppUserPoolClientId!,
     testEnvironment: process.env.TEST_ENVIRONMENT!,
     cognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName!,
     sharedSignalsEndpoint: process.env.CFN_SharedSignalsEndpoint!,
@@ -62,6 +65,12 @@ const getTestConfig = () => {
       process.env.CFN_PostAuthenticationFunctionIAMRoleName!,
     postAuthenticationFunctionIAMRolePolicyName:
       process.env.CFN_PostAuthenticationFunctionIAMRolePolicyName!,
+    authProxyUrl: process.env.CFN_AuthProxyUrl!,
+    attestationLowCompletionAlarmName: process.env.CFN_AttestationLowCompletionAlarmName!,
+    attestationLow200ResponseProportionAlarmName: process.env.CFN_AttestationLow200ResponseProportionAlarmName!,
+    attestationLambdaErrorRateAlarmName: process.env.CFN_AttestationLambdaErrorRateAlarmName!,
+    chatConfigurationArn: process.env.CFN_SlackSupportChannelConfigurationARN!,
+    clientId: process.env.CFN_AppUserPoolClientId!,
     cloudWatchAlarmSignUpThrottlesName:
       process.env.CFN_CloudWatchAlarmSignUpThrottlesName!,
     cloudWatchAlarmSignInThrottlesName:
@@ -76,13 +85,17 @@ const getTestConfig = () => {
       process.env.CFN_CloudwatchAlarmAuthProxy5xxErrors!,
     cloudWatchAlarmAuthProxyLatencyErrors:
       process.env.CFN_CloudwatchAlarmAuthProxyLatencyErrors!,
-    chatConfigurationArn: process.env.CFN_SlackSupportChannelConfigurationARN!,
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
-    authProxyUrl: process.env.CFN_AuthProxyUrl!,
     authProxyId: process.env.CFN_AuthProxyId!,
+    environment: process.env.TEST_ENVIRONMENT,
+    postAuthenticationFunctionInvokePermission:
+      process.env.CFN_PostAuthenticationFunctionInvokePermission!,
+    region: process.env.CFN_AWS_REGION,
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName,
     configStackName: process.env.CFN_ConfigStackName,
+    sharedSignalsClientId: process.env.CFN_SharedSignalClientId!,
+    userPoolProviderId: process.env.CFN_UserPoolProviderUrl!,
   };
 };
 

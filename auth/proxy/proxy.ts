@@ -21,7 +21,7 @@ async function _proxyRequest(
     method = 'GET'
 ): Promise<APIGatewayProxyResultV2> {
     // eslint-disable-next-line promise/avoid-new
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const req = https.request(
             {
                 hostname,
@@ -52,12 +52,7 @@ async function _proxyRequest(
         );
 
         req.on('error', (e) => {
-            console.error("Error proxying request to Cognito:", e);
-            resolve({
-                statusCode: 500,
-                headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-                body: JSON.stringify({ message: 'Internal server error' })
-            });
+            reject(e);
         });
 
         if (method === 'POST' && (body != null)) {
