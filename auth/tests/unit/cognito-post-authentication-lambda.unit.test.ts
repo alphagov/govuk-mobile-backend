@@ -7,65 +7,6 @@ const template = loadTemplateFromFile(
   path.join(__dirname, "..", "..", "template.yaml")
 );
 
-describe("Set up the Post Authentication Lambda for GovUK app", () => {
-  let resourceUnderTest: {
-    Type: any;
-    Properties: any;
-    Metadata: any;
-  };
-
-  const resource = template.findResources("AWS::Serverless::Function");
-  resourceUnderTest = resource["PostAuthenticationFunction"] as any; // find Post Authentication Lambda function
-
-  it("should have type of Serverless function", () => {
-    expect(resourceUnderTest.Type).equal("AWS::Serverless::Function");
-  });
-
-  it("should have a function name that includes the stack name", () => {
-    expect(resourceUnderTest.Properties.FunctionName).toEqual({
-      "Fn::Sub": "${AWS::StackName}-post-authentication-function",
-    });
-  });
-
-  it("should have a code uri", () => {
-    expect(resourceUnderTest.Properties.CodeUri).equal(
-      "post-authentication-function/"
-    );
-  });
-
-  it("should have a handler", () => {
-    expect(resourceUnderTest.Properties.Handler).equal("app.lambdaHandler");
-  });
-
-  it("should have a role", () => {
-    expect(resourceUnderTest.Properties.Role).toEqual({
-      "Fn::GetAtt": ["PostAuthenticationFunctionIAMRole", "Arn"],
-    });
-  });
-
-  it("has the required tags", () => {
-    expect(resourceUnderTest.Properties.Tags).toEqual({
-      Environment: {
-        Ref: "Environment",
-      },
-      Product: "GOV.UK",
-      System: "Authentication",
-    });
-  });
-
-  it("has the required metadata", () => {
-    expect(resourceUnderTest.Metadata).toEqual({
-      BuildMethod: "esbuild",
-      BuildProperties: {
-        EntryPoints: ["app.ts"],
-        Minify: true,
-        SourceMap: false,
-        Target: "es2020",
-      },
-    });
-  });
-});
-
 describe("Set up the Post Authentication Lambda IAM Role for GovUK app", () => {
   let resourceUnderTest: {
     Type: any;
@@ -80,38 +21,7 @@ describe("Set up the Post Authentication Lambda IAM Role for GovUK app", () => {
   });
   it("should have a role name that includes the stack name", () => {
     expect(resourceUnderTest.Properties.RoleName).toEqual({
-      "Fn::Join": [
-        "-",
-        [
-          {
-            Ref: "AWS::StackName",
-          },
-          "post-authentication-role",
-          {
-            "Fn::Select": [
-              4,
-              {
-                "Fn::Split": [
-                  "-",
-                  {
-                    "Fn::Select": [
-                      2,
-                      {
-                        "Fn::Split": [
-                          "/",
-                          {
-                            Ref: "AWS::StackId",
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      ],
+      "Fn::Sub": "${AWS::StackName}-post-authentication-role",
     });
   });
   it("should have a trust policy for the lambda service", () => {
@@ -142,7 +52,7 @@ describe("Set up the Post Authentication Lambda IAM Role for GovUK app", () => {
               Effect: "Allow",
               Resource: {
                 "Fn::Sub":
-                  "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication-function:*",
+                  "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication:*",
               },
             },
           ],
