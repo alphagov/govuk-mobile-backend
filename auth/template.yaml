@@ -168,6 +168,33 @@ Resources:
       EnableTokenRevocation: true
       AllowedOAuthFlowsUserPoolClient: true
 
+  CognitoWebApplicationFirewallAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm when the Cognito Web Application Firewall exceeds error threshold"
+      MetricName: WAFErrorRate
+      Namespace: AWS/WAFV2
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: WebACL
+          Value: !Ref CognitoWebApplicationFirewall
+      AlarmActions:
+        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty  
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication    
+
   CognitoWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
     Properties:
@@ -385,6 +412,44 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
+
+CloudWatchAlarmWafThrottlesTopicPagerDuty:
+  Type: AWS::SNS::Topic
+  Properties:
+    KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
+    DisplayName: !Join
+      - "-"
+      - - !Ref AWS::StackName
+        - "cognito-waf-alarm-topic"
+        - Fn::Select:
+            - 4
+            - Fn::Split:
+                - "-"
+                - Fn::Select:
+                    - 2
+                    - Fn::Split:
+                        - "/"
+                        - Ref: AWS::StackId
+    Tags:
+      - Key: Product
+        Value: GOV.UK
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: System
+        Value: Authentication
+
+CloudWatchAlarmWafThrottlesTopicSubscriptionPagerDuty:
+  Type: AWS::SNS::Subscription
+  Properties:
+    TopicArn: !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
+    Endpoint: !If
+      - IsNotProduction
+      - !GetAtt PagerDutyTestFunction.Arn
+      - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
+    Protocol: !If
+      - IsNotProduction
+      - lambda
+      - https
 
   CloudWatchAlarmSignUpThrottlesTopicPagerDuty:
     Type: AWS::SNS::Topic
@@ -821,6 +886,7 @@ Resources:
         - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
         - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
         - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
