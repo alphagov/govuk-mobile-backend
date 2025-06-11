@@ -1,9 +1,12 @@
 import "dotenv/config";
+import { config } from "process";
 
 const getTestConfig = () => {
   const requiredVars = [
     "CFN_AuthProxyFunctionName",
     "CFN_AuthProxyLogGroupName",
+    "CFN_AuthProxyFunctionIAMRoleName",
+    "CFN_AuthProxyFunctionIAMRolePolicyName",
     "CFN_UserPoolId",
     "CFN_AppUserPoolClientId",
     "TEST_ENVIRONMENT",
@@ -11,7 +14,9 @@ const getTestConfig = () => {
     "CFN_SharedSignalsEndpoint",
     "CFN_SharedSignalsReceiverLogGroupName",
     "CFN_SharedSignalsApiId",
-    "CFN_PostAuthenticationFunctionInvokePermission",
+    "CFN_PostAuthenticationFunctionName",
+    "CFN_PostAuthenticationFunctionIAMRoleName",
+    "CFN_PostAuthenticationFunctionIAMRolePolicyName",
     "CFN_CloudWatchAlarmSignUpThrottlesName", // pragma: allowlist-secret
     "CFN_CloudWatchAlarmSignInThrottlesName",
     "CFN_CloudWatchAlarmTokenRefreshThrottlesName",
@@ -21,6 +26,10 @@ const getTestConfig = () => {
     "CFN_SharedSignalClientId",
     "CFN_PostAuthenticationFunctionName",
     "CFN_AWSAccountId",
+    "CFN_AuthProxyFunctionName",
+    "CFN_AuthProxyLogGroupName",
+    "CFN_StackName",
+    "CFN_ConfigStackName",
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -33,6 +42,9 @@ const getTestConfig = () => {
   return {
     authProxyFunctionName: process.env.CFN_AuthProxyFunctionName!,
     authProxyLogGroup: process.env.CFN_AuthProxyLogGroupName!,
+    authProxyFunctionIAMRoleName: process.env.CFN_AuthProxyFunctionIAMRoleName!,
+    authProxyFunctionIAMRolePolicyName:
+      process.env.CFN_AuthProxyFunctionIAMRolePolicyName!,
     userPoolId: process.env.CFN_UserPoolId!,
     clientId: process.env.CFN_AppUserPoolClientId!,
     testEnvironment: process.env.TEST_ENVIRONMENT!,
@@ -42,10 +54,10 @@ const getTestConfig = () => {
       process.env.CFN_SharedSignalsReceiverLogGroupName!,
     sharedSignalsApiId: process.env.CFN_SharedSignalsApiId!,
     postAuthenticationLambda: process.env.CFN_PostAuthenticationFunctionName!,
-    postAuthenticationFunctionInvokePermission:
-      process.env.CFN_PostAuthenticationFunctionInvokePermission!,
     postAuthenticationFunctionIAMRoleName:
       process.env.CFN_PostAuthenticationFunctionIAMRoleName!,
+    postAuthenticationFunctionIAMRolePolicyName:
+      process.env.CFN_PostAuthenticationFunctionIAMRolePolicyName!,
     cloudWatchAlarmSignUpThrottlesName:
       process.env.CFN_CloudWatchAlarmSignUpThrottlesName!,
     cloudWatchAlarmSignInThrottlesName:
@@ -58,6 +70,8 @@ const getTestConfig = () => {
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
     authProxyUrl: process.env.CFN_AuthProxyUrl!,
     awsAccountId: process.env.CFN_AWSAccountId!,
+    stackName: process.env.CFN_StackName,
+    configStackName: process.env.CFN_ConfigStackName,
   };
 };
 
