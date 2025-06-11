@@ -5,11 +5,12 @@ import {
   CloudWatchLogsClient,
   FilterLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
+import { testConfig } from "../common/config";
 
 const input = {
-  CognitoIdpUrl: process.env.CFN_UserPoolProviderUrl,
-  ClientId: process.env.CFN_AppUserPoolClientId,
-  WafLogGroupName: process.env.CFN_CognitoWafLogGroupName,
+  CognitoIdpUrl: testConfig.userPoolProviderId,
+  ClientId: testConfig.clientId,
+  WafLogGroupName: testConfig.cognitoWafLogGroupName,
 };
 
 const maxAttempts = 10;

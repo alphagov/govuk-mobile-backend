@@ -4,8 +4,7 @@ import { GetFunctionCommand, LambdaClient } from "@aws-sdk/client-lambda";
 import {
   IAMClient,
   GetRoleCommand,
-  GetPolicyCommand,
-  GetPolicyVersionCommand,
+  GetRolePolicyCommand,
 } from "@aws-sdk/client-iam";
 
 const lambdaClient = new LambdaClient({ region: "eu-west-2" });
@@ -14,11 +13,14 @@ const functionCommand = new GetFunctionCommand({
 });
 
 const iamClient = new IAMClient({ region: "eu-west-2" });
-const iamCommandForInvokePermission = new GetRoleCommand({
-  RoleName: testConfig.postAuthenticationFunctionInvokePermission,
-});
+
 const iamCommandForPostAuthenticationLambdaRole = new GetRoleCommand({
   RoleName: testConfig.postAuthenticationFunctionIAMRoleName,
+});
+
+const iamCommandGetRolePolicy = new GetRolePolicyCommand({
+  RoleName: testConfig.postAuthenticationFunctionIAMRoleName,
+  PolicyName: testConfig.postAuthenticationFunctionIAMRolePolicyName,
 });
 
 describe("Check deployed Post Authentication Lambda", async () => {
@@ -70,36 +72,14 @@ describe("Check deployed Post Authentication Lambda", async () => {
   });
 });
 
-describe("Check deployed Post Authentication Lambda Policy Document", async () => {
-  const response = await iamClient.send(iamCommandForInvokePermission);
-  const iamPermissionsRole = response.Role!;
-
-  it("has the correct assume role policy document", () => {
-    assert.deepEqual(
-      JSON.parse(
-        decodeURIComponent(iamPermissionsRole.AssumeRolePolicyDocument!)
-      ),
-      {
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Principal: {
-              Service: "lambda.amazonaws.com",
-            },
-            Action: "sts:AssumeRole",
-          },
-        ],
-      }
-    );
-  });
-});
-
 describe("Check deployed Post Authentication Lambda IAM Role", async () => {
-  const response = await iamClient.send(
+  const roleResponse = await iamClient.send(
     iamCommandForPostAuthenticationLambdaRole
   );
-  const postAuthenticationLambdaRole = response.Role!;
+  const postAuthenticationLambdaRole = roleResponse.Role!;
+
+  const rolePolicyResponse = await iamClient.send(iamCommandGetRolePolicy);
+  const postAuthenticationLambdaRolePolicy = rolePolicyResponse.PolicyDocument!;
 
   it("has the correct assume role policy document", () => {
     assert.deepEqual(
@@ -117,6 +97,26 @@ describe("Check deployed Post Authentication Lambda IAM Role", async () => {
               Service: "lambda.amazonaws.com",
             },
             Action: "sts:AssumeRole",
+          },
+        ],
+      }
+    );
+  });
+
+  it("has the correct role policy document", () => {
+    assert.deepEqual(
+      JSON.parse(decodeURIComponent(postAuthenticationLambdaRolePolicy)),
+      {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Action: [
+              "logs:CreateLogGroup",
+              "logs:CreateLogStream",
+              "logs:PutLogEvents",
+            ],
+            Effect: "Allow",
+            Resource: `arn:aws:logs:eu-west-2:${testConfig.awsAccountId}:log-group:/aws/lambda/${testConfig.stackName}-post-authentication:*`,
           },
         ],
       }

@@ -38,7 +38,6 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
-
 Mappings:
   OneLogin:
     Environment:
@@ -47,6 +46,16 @@ Mappings:
       staging: "staging"
       integration: "integration"
       production: "production"
+
+  # this flag is used to disable alarms that require an understanding of a normal baseline load
+  EnableBaselineLoadAlarms:
+    Environment:
+      local: "False"
+      build: "False"
+      dev: "False"
+      staging: "False"
+      integration: "False"
+      production: "False"
 
 Conditions:
   UseCodeSigning:
@@ -60,11 +69,6 @@ Conditions:
       - Fn::Equals:
           - !Ref PermissionsBoundary
           - "none"
-
-  IsDev:
-    Fn::Equals:
-      - !Ref Environment
-      - "dev"
 
   IsNotProduction:
     Fn::Not:
@@ -349,17 +353,12 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      Domain: !If
-        - IsDev
-        - !Join
-          - ""
-          - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-            - !Sub "-${AWS::StackName}"
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
+      Domain: !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
 
   CloudWatchAlarmSignUpThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-sign-up-throttles
       AlarmDescription: "Alarm when the sign up rate exceeds 5 per minute"
       MetricName: SignUpThrottles
       Namespace: AWS/Cognito
@@ -374,10 +373,11 @@ Resources:
           Value: !Ref CognitoUserPool
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
+      ActionsEnabled: true
       AlarmActions:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -385,65 +385,11 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
-
-  CloudWatchAlarmSignUpThrottlesTopicPagerDuty:
-    Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "cognito-sign-up-alarm-topic"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  CloudWatchAlarmSignUpThrottlesTopicSubscriptionPagerDuty:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-      Endpoint: !If
-        - IsNotProduction
-        - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
-      Protocol: !If
-        - IsNotProduction
-        - lambda
-        - https
-
-  CloudWatchAlarmSignUpThrottlesAlarmPublishToTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Condition:
-              ArnLike:
-                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
 
   CloudWatchAlarmSignInThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-sign-in-throttles
       AlarmDescription: "Alarm when the sign in rate exceeds 5 per minute"
       MetricName: SignInThrottles
       Namespace: AWS/Cognito
@@ -458,10 +404,11 @@ Resources:
           Value: !Ref CognitoUserPool
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
+      ActionsEnabled: true
       AlarmActions:
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -469,65 +416,11 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
-
-  CloudWatchAlarmSignInThrottlesTopicPagerDuty:
-    Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "cognito-sign-in-alarm-topic"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  CloudWatchAlarmSignInThrottlesTopicSubscriptionPagerDuty:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-      Endpoint: !If
-        - IsNotProduction
-        - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
-      Protocol: !If
-        - IsNotProduction
-        - lambda
-        - https
-
-  CloudWatchAlarmSignInThrottlesAlarmPublishToTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Condition:
-              ArnLike:
-                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
 
   CloudWatchAlarmTokenRefreshThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-token-refresh-throttles
       AlarmDescription: "Alarm when the token refresh rate exceeds 5 per minute"
       MetricName: TokenRefreshThrottles
       Namespace: AWS/Cognito
@@ -542,10 +435,11 @@ Resources:
           Value: !Ref CognitoUserPool
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
+      ActionsEnabled: true
       AlarmActions:
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -553,65 +447,11 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
-
-  CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty:
-    Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "cognito-token-refresh-alarm-topic"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  CloudWatchAlarmTokenRefreshThrottlesTopicSubscriptionPagerDuty:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-      Endpoint: !If
-        - IsNotProduction
-        - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
-      Protocol: !If
-        - IsNotProduction
-        - lambda
-        - https
-
-  CloudWatchAlarmTokenRefreshThrottlesAlarmPublishToTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Condition:
-              ArnLike:
-                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
 
   CloudWatchAlarmFederationThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-federation-throttles
       AlarmDescription: "Alarm when federated requests exceeds 5 per minute"
       MetricName: FederationThrottles
       Namespace: AWS/Cognito
@@ -628,10 +468,11 @@ Resources:
           Value: !Ref CognitoUserPoolClient
         - Name: IdentityProvider
           Value: !Ref UserPoolIdentityProvider
+      ActionsEnabled: true
       AlarmActions:
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -640,14 +481,107 @@ Resources:
         - Key: System
           Value: Authentication
 
-  CloudWatchAlarmFederationThrottlesTopicPagerDuty:
+  CloudwatchAlarmAuthProxy4xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-auth-proxy-4xx-errors
+      AlarmDescription: "Alarm detects a high rate of client-side errors."
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 4XXError
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref AttestationProxyApi
+        - Name: Resource
+          Value: /oauth2/token
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Method
+          Value: POST
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudwatchAlarmAuthProxy5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-auth-proxy-5xx-errors
+      AlarmDescription: "Alarm detects a high rate of server-side errors."
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 5XXError
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref AttestationProxyApi
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudwatchAlarmAuthProxyLatencyErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-auth-proxy-latency-errors
+      AlarmDescription: "Alarm detects a high rate of latency errors."
+      Namespace: AWS/ApiGateway
+      ExtendedStatistic: p90
+      ActionsEnabled: true
+      MetricName: Latency
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 2500
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref AttestationProxyApi
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudWatchAlarmTopicPagerDuty:
     Type: AWS::SNS::Topic
     Properties:
       KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
       DisplayName: !Join
         - "-"
         - - !Ref AWS::StackName
-          - "cognito-federation-alarm-topic"
+          - "cloudwatch-alarm-topic"
           - Fn::Select:
               - 4
               - Fn::Split:
@@ -665,10 +599,10 @@ Resources:
         - Key: System
           Value: Authentication
 
-  CloudWatchAlarmFederationThrottlesTopicSubscriptionPagerDuty:
+  CloudWatchAlarmTopicSubscriptionPagerDuty:
     Type: AWS::SNS::Subscription
     Properties:
-      TopicArn: !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+      TopicArn: !Ref CloudWatchAlarmTopicPagerDuty
       Endpoint: !If
         - IsNotProduction
         - !GetAtt PagerDutyTestFunction.Arn
@@ -678,17 +612,17 @@ Resources:
         - lambda
         - https
 
-  CloudWatchAlarmFederationThrottlesAlarmPublishToTopicPolicy:
+  CloudWatchAlarmPublishToTopicPolicy:
     Type: AWS::SNS::TopicPolicy
     Properties:
       Topics:
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       PolicyDocument:
         Version: 2012-10-17
         Statement:
           - Effect: Allow
             Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+            Resource: !Ref CloudWatchAlarmTopicPagerDuty
             Principal:
               Service: cloudwatch.amazonaws.com
             Condition:
@@ -745,6 +679,7 @@ Resources:
   PagerDutyTestFunction:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
+    #checkov:skip=CKV2_GOVUKAPP_1:Ensure lambda function has a permissions boundary via an IAM role
     Properties:
       CodeUri: pager-duty-test-endpoint/
       Handler: app.lambdaHandler
@@ -761,41 +696,14 @@ Resources:
         EntryPoints:
           - app.ts
 
-  PagerDutyTestFunctionCloudWatchAlarmSignUpThrottlesPermission:
+  PagerDutyTestFunctionCloudWatchAlarmPermission:
     Condition: IsNotProduction
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt PagerDutyTestFunction.Arn
       Action: lambda:InvokeFunction
       Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmSignUpThrottlesTopicSubscriptionPagerDuty
-
-  PagerDutyTestFunctionCloudWatchAlarmSignInThrottlesPermission:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PagerDutyTestFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmSignInThrottlesTopicSubscriptionPagerDuty
-
-  PagerDutyTestFunctionCloudWatchTokenRefreshThrottlesPermission:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PagerDutyTestFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmTokenRefreshThrottlesTopicSubscriptionPagerDuty
-
-  PagerDutyTestFunctionCloudWatchFederationThrottlesPermission:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PagerDutyTestFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmFederationThrottlesTopicSubscriptionPagerDuty
+      SourceArn: !Ref CloudWatchAlarmTopicSubscriptionPagerDuty
 
   SlackSupportChannelConfiguration:
     Type: AWS::Chatbot::SlackChannelConfiguration
@@ -817,10 +725,7 @@ Resources:
       SlackChannelId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}"
       SlackWorkspaceId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}"
       SnsTopicArns:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -832,19 +737,8 @@ Resources:
   SlackSupportChannelConfigurationIAMRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "support-channel-role"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+      #checkov:skip=CKV2_GOVUKAPP_1:Ensure lambda function has a permissions boundary via an IAM role
+      RoleName: !Sub "${AWS::StackName}-support-channel-role"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -867,8 +761,8 @@ Resources:
   PostAuthenticationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-post-authentication-function"
-      CodeUri: post-authentication-function/
+      FunctionName: !Sub "${AWS::StackName}-post-authentication"
+      CodeUri: post-authentication/
       Handler: app.lambdaHandler
       Role: !GetAtt PostAuthenticationFunctionIAMRole.Arn
       Tags:
@@ -887,19 +781,7 @@ Resources:
   PostAuthenticationFunctionIAMRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "post-authentication-role"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+      RoleName: !Sub "${AWS::StackName}-post-authentication-role"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -917,7 +799,7 @@ Resources:
                   - "logs:CreateLogGroup"
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication-function:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication:*"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1151,22 +1033,23 @@ Resources:
         - Key: System
           Value: Authentication
 
+  AttestationAlarms:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: proxy/alarms.yaml
+      Parameters:
+        ApiId: !Ref AttestationProxyApi
+        ApiLogGroupName: !Ref AttestationProxyApiAccessLogGroup
+        AlarmTopic: !Ref CloudWatchAlarmTopicPagerDuty
+        Environment: !Ref Environment
+        LambaName: !Ref AuthProxyFunction
+        FunctionLogGroupName: !Sub /aws/lambda/${AuthProxyFunction}
+        EnableAlarm: !FindInMap [EnableBaselineLoadAlarms, Environment, !Ref Environment]
+
   AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "auth-proxy"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+      FunctionName: !Sub "${AWS::StackName}-auth-proxy"
       Description: "Auth proxy - performs app integrity checks and forwards requests to the Cognito User Pool"
       CodeUri: proxy/
       Events:
@@ -1178,29 +1061,12 @@ Resources:
             RestApiId:
               Ref: AttestationProxyApi
       Handler: app.lambdaHandler
+      Role: !GetAtt AuthProxyFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt AuthProxyFunctionKMSKey.Arn
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue # pragma: allowlist secret
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain
       Environment:
         Variables:
           ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
-          COGNITO_URL: !If
-            - IsDev
-            - !Join
-              - ""
-              - - "https://"
-                - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-            - !Join
+          COGNITO_URL: !Join
               - ""
               - - "https://"
                 - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
@@ -1221,9 +1087,51 @@ Resources:
       BuildProperties:
         Minify: true
         Target: "es2020"
-        Sourcemap: true
+        SourceMap: false
         EntryPoints:
           - app.ts
+
+  AuthProxyFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-auth-proxy-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AuthProxyFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   AuthProxyFunctionKMSKey:
     Type: AWS::KMS::Key
@@ -1273,6 +1181,7 @@ Resources:
       SourceArn: !GetAtt CognitoUserPool.Arn
 
   CognitoResourceServer:
+    Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolResourceServer
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -1284,6 +1193,7 @@ Resources:
 
   # Shared signal user pool client
   CognitoM2MClient:
+    Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -1306,6 +1216,7 @@ Resources:
       AccessTokenValidity: 3600 # 1 hour in seconds
 
   SharedSignalsApi:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Api
     Properties:
       Name: !Join
@@ -1343,6 +1254,7 @@ Resources:
         System: Authentication
 
   SharedSignalsAccessLogGroup:
+    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
@@ -1357,6 +1269,7 @@ Resources:
           Value: Authentication
 
   SharedSignalsAccessLogGroupKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting the Shared Signals Access Log Group
@@ -1394,37 +1307,18 @@ Resources:
           Value: Authentication
 
   SharedSignalsAuthorizer:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "shared-signals-authorizer"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+      FunctionName: !Sub "${AWS::StackName}-shared-signal-authorizer"
       CodeUri: shared-signal-authorizer/
       Handler: app.lambdaHandler
+      Role: !GetAtt SharedSignalsAuthorizerIAMRole.Arn
       KmsKeyArn: !GetAtt SharedSignalsLambdaKMSKey.Arn
-      Runtime: nodejs22.x
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue # pragma: allowlist secret
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/shared-signal/secrets-config-*
       Environment:
         Variables:
           SHARED_SIGNAL_CLIENT_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/secrets-config
@@ -1438,7 +1332,47 @@ Resources:
         EntryPoints:
           - app.ts
 
+  SharedSignalsAuthorizerIAMRole:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-shared-signals-authorizer-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SharedSignalsAuthorizerPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/shared-signal/secrets-config-*
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-authorizer:*"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   SharedSignalsLambdaKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting Shared Signals authorizer secrets
@@ -1470,32 +1404,23 @@ Resources:
           Value: Authentication
 
   SignalsFunction:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "shared-signals-receiver"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+      FunctionName: !Sub "${AWS::StackName}-shared-signals-receiver"
       Description: "Shared Signals receiver function"
       CodeUri: shared-signals/
       Handler: app.lambdaHandler
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: SharedSignalsApi
-            Path: /receiver
-            Method: POST
+      Role: !GetAtt SignalsFunctionIAMRole.Arn
+      # TODO: add back in, as sam validate --lint fails with the IsNotProduction check
+      # Events:
+      #   HelloWorldApi:
+      #     Type: Api
+      #     Properties:
+      #       RestApiId:
+      #         Ref: SharedSignalsApi
+      #       Path: /receiver
+      #       Method: POST
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1509,20 +1434,53 @@ Resources:
         EntryPoints:
           - app.ts
 
+  SignalsFunctionIAMRole:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-signals-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SignalsFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-receiver:*"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
 Outputs:
+  AWSAccountId:
+    Description: AWS Account ID
+    Value: !Ref AWS::AccountId
+
   AuthProxyUrl:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AttestationProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
   CognitoUrl:
     Description: The domain name for the Cognito User Pool
-    Value: !If
-      - IsDev
-      - !Join
-        - ""
-        - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-          - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-      - !Join
+    Value: !Join
         - ""
         - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
           - !Sub ".auth.${AWS::Region}.amazoncognito.com"
@@ -1552,6 +1510,14 @@ Outputs:
     Description: The name of the Auth Proxy Lambda function log group
     Value: !Sub /aws/lambda/${AuthProxyFunction}
 
+  AuthProxyFunctionIAMRoleName:
+    Description: The name of the Auth Proxy Lambda function IAM role
+    Value: !GetAtt AuthProxyFunctionIAMRole.Arn
+
+  AuthProxyFunctionIAMRolePolicyName:
+    Description: The name of the Auth Proxy Lambda function IAM role policy name
+    Value: AuthProxyFunctionPolicy
+
   FirebaseIosAppId:
     Description: The Firebase iOS App ID
     Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
@@ -1569,24 +1535,36 @@ Outputs:
     Value: !Ref CognitoUserPoolClient
 
   SharedSignalClientId:
+    Condition: IsNotProduction
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
 
   SharedSignalsEndpoint:
+    Condition: IsNotProduction
     Description: The endpoint for the Shared Signals API
     Value: !Sub https://${SharedSignalsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
   SharedSignalsReceiverLogGroupName:
+    Condition: IsNotProduction
     Description: The name of the Shared Signals Receiver Lambda function log group
     Value: !Sub /aws/lambda/${SignalsFunction}
 
   SharedSignalsApiId:
+    Condition: IsNotProduction
     Description: The ID of the Shared Signals API
     Value: !Ref SharedSignalsApi
 
   PostAuthenticationFunctionName:
     Description: The name of the Post Authentication function
     Value: !Ref PostAuthenticationFunction
+
+  PostAuthenticationFunctionIAMRoleName:
+    Description: The name of the Post Authentication Lambda function IAM role
+    Value: !GetAtt PostAuthenticationFunctionIAMRole.Arn
+
+  PostAuthenticationFunctionIAMRolePolicyName:
+    Description: The name of the Post Authentication Lambda function IAM role policy name
+    Value: PostAuthenticationFunctionPolicy
 
   PostAuthenticationFunctionInvokePermission:
     Description: The name of the Post Authentication Invoke Permission
@@ -1619,3 +1597,20 @@ Outputs:
   CognitoSecretName:
     Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
     Value: !Sub /${ConfigStackName}/cognito/client-secret
+
+  StackName:
+    Description: The name of the main stack
+    Value: !Ref AWS::StackName
+
+  ConfigStackName:
+    Description: The name of the configuration stack
+    Value: !Ref ConfigStackName
+    
+  AttestationLambdaErrorRateAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLambdaErrorRateAlarmName
+
+  AttestationLowCompletionAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLowCompletionAlarmName
+
+  AttestationLow200ResponseProportionAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLow200ResponseProportionAlarmName

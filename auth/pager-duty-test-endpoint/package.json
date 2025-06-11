@@ -6,11 +6,9 @@
   "author": "govuk-app-backend",
   "license": "MIT",
   "scripts": {
-    "unit": "vitest run",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify",
-    "test": "npm run compile && npm run unit"
+    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify"
   },
   "dependencies": {
     "esbuild": "^0.25.0"

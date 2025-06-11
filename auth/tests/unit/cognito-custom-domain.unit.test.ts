@@ -18,23 +18,7 @@ describe("Set up the Cognito User Custom Domain", () => {
   it("has a custom domain", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolDomain", {
       Domain: {
-        "Fn::If": [
-          "IsDev",
-          {
-            "Fn::Join": [
-              "",
-              [
-                {
-                  "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-                },
-                { "Fn::Sub": "-${AWS::StackName}" },
-              ],
-            ],
-          },
-          {
-            "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-          },
-        ],
+       "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
       },
     });
   });

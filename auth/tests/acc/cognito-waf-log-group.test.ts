@@ -6,7 +6,7 @@ import {
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config"
 
-const client = new CloudWatchLogsClient({ region: "eu-west-2" });
+const client = new CloudWatchLogsClient({ region: testConfig.region });
 const commandInput: DescribeLogGroupsCommandInput = {
   logGroupNamePrefix: testConfig.cognitoWafLogGroupName,
 };
