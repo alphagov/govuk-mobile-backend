@@ -374,9 +374,9 @@ Resources:
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
       AlarmActions:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -384,61 +384,6 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
-
-  CloudWatchAlarmSignUpThrottlesTopicPagerDuty:
-    Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "cognito-sign-up-alarm-topic"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  CloudWatchAlarmSignUpThrottlesTopicSubscriptionPagerDuty:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-      Endpoint: !If
-        - IsNotProduction
-        - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
-      Protocol: !If
-        - IsNotProduction
-        - lambda
-        - https
-
-  CloudWatchAlarmSignUpThrottlesAlarmPublishToTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Condition:
-              ArnLike:
-                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
 
   CloudWatchAlarmSignInThrottles:
     Type: AWS::CloudWatch::Alarm
@@ -458,9 +403,9 @@ Resources:
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
       AlarmActions:
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -468,61 +413,6 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
-
-  CloudWatchAlarmSignInThrottlesTopicPagerDuty:
-    Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "cognito-sign-in-alarm-topic"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  CloudWatchAlarmSignInThrottlesTopicSubscriptionPagerDuty:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-      Endpoint: !If
-        - IsNotProduction
-        - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
-      Protocol: !If
-        - IsNotProduction
-        - lambda
-        - https
-
-  CloudWatchAlarmSignInThrottlesAlarmPublishToTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Condition:
-              ArnLike:
-                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
 
   CloudWatchAlarmTokenRefreshThrottles:
     Type: AWS::CloudWatch::Alarm
@@ -542,9 +432,9 @@ Resources:
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
       AlarmActions:
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -552,61 +442,6 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
-
-  CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty:
-    Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "cognito-token-refresh-alarm-topic"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  CloudWatchAlarmTokenRefreshThrottlesTopicSubscriptionPagerDuty:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-      Endpoint: !If
-        - IsNotProduction
-        - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
-      Protocol: !If
-        - IsNotProduction
-        - lambda
-        - https
-
-  CloudWatchAlarmTokenRefreshThrottlesAlarmPublishToTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Condition:
-              ArnLike:
-                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
 
   CloudWatchAlarmFederationThrottles:
     Type: AWS::CloudWatch::Alarm
@@ -628,9 +463,9 @@ Resources:
         - Name: IdentityProvider
           Value: !Ref UserPoolIdentityProvider
       AlarmActions:
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -639,14 +474,14 @@ Resources:
         - Key: System
           Value: Authentication
 
-  CloudWatchAlarmFederationThrottlesTopicPagerDuty:
+  CloudWatchAlarmTopicPagerDuty:
     Type: AWS::SNS::Topic
     Properties:
       KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
       DisplayName: !Join
         - "-"
         - - !Ref AWS::StackName
-          - "cognito-federation-alarm-topic"
+          - "cloudwatch-alarm-topic"
           - Fn::Select:
               - 4
               - Fn::Split:
@@ -664,10 +499,10 @@ Resources:
         - Key: System
           Value: Authentication
 
-  CloudWatchAlarmFederationThrottlesTopicSubscriptionPagerDuty:
+  CloudWatchAlarmTopicSubscriptionPagerDuty:
     Type: AWS::SNS::Subscription
     Properties:
-      TopicArn: !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+      TopicArn: !Ref CloudWatchAlarmTopicPagerDuty
       Endpoint: !If
         - IsNotProduction
         - !GetAtt PagerDutyTestFunction.Arn
@@ -677,17 +512,17 @@ Resources:
         - lambda
         - https
 
-  CloudWatchAlarmFederationThrottlesAlarmPublishToTopicPolicy:
+  CloudWatchAlarmPublishToTopicPolicy:
     Type: AWS::SNS::TopicPolicy
     Properties:
       Topics:
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       PolicyDocument:
         Version: 2012-10-17
         Statement:
           - Effect: Allow
             Action: sns:Publish
-            Resource: !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+            Resource: !Ref CloudWatchAlarmTopicPagerDuty
             Principal:
               Service: cloudwatch.amazonaws.com
             Condition:
@@ -761,41 +596,14 @@ Resources:
         EntryPoints:
           - app.ts
 
-  PagerDutyTestFunctionCloudWatchAlarmSignUpThrottlesPermission:
+  PagerDutyTestFunctionCloudWatchAlarmPermission:
     Condition: IsNotProduction
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt PagerDutyTestFunction.Arn
       Action: lambda:InvokeFunction
       Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmSignUpThrottlesTopicSubscriptionPagerDuty
-
-  PagerDutyTestFunctionCloudWatchAlarmSignInThrottlesPermission:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PagerDutyTestFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmSignInThrottlesTopicSubscriptionPagerDuty
-
-  PagerDutyTestFunctionCloudWatchTokenRefreshThrottlesPermission:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PagerDutyTestFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmTokenRefreshThrottlesTopicSubscriptionPagerDuty
-
-  PagerDutyTestFunctionCloudWatchFederationThrottlesPermission:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PagerDutyTestFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmFederationThrottlesTopicSubscriptionPagerDuty
+      SourceArn: !Ref CloudWatchAlarmTopicSubscriptionPagerDuty
 
   SlackSupportChannelConfiguration:
     Type: AWS::Chatbot::SlackChannelConfiguration
@@ -817,10 +625,7 @@ Resources:
       SlackChannelId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}"
       SlackWorkspaceId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}"
       SnsTopicArns:
-        - !Ref CloudWatchAlarmSignUpThrottlesTopicPagerDuty
-        - !Ref CloudWatchAlarmSignInThrottlesTopicPagerDuty
-        - !Ref CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty
-        - !Ref CloudWatchAlarmFederationThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK

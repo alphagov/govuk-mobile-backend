@@ -183,7 +183,7 @@ describe.each(testCases)(
     }
 
     it("should have the correct number of SnsTopicArns", () => {
-      assert.equal(chatConfiguration.SnsTopicArns?.length, 4);
+      assert.equal(chatConfiguration.SnsTopicArns?.length, 1);
       chatConfiguration.SnsTopicArns?.forEach((arn) => {
         assert.include(arn, "CloudWatchAlarm");
       });

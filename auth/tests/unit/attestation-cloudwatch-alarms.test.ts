@@ -10,70 +10,62 @@ const template = loadTemplateFromFile(
 
 const testCases: AlarmTestCase[] = [
   {
-    name: "FederationThrottles",
-    alarmResource: "CloudWatchAlarmFederationThrottles",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
+    name: "4xx",
+    alarmResource: "CloudWatchAlarmAttestation4xxErrors",
+    topicResource: "CloudWatchAlarmAttestation4xxTopicPagerDuty",
+    subscriptionResource:
+      "CloudWatchAlarmAttestation4xxTopicSubscriptionPagerDuty",
+    topicPolicyResource:
+      "CloudWatchAlarmAttestation4xxAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "FederationThrottles",
-    alarmDescription: "Alarm when federated requests exceeds 5 per minute",
-    topicDisplayName: "cloudwatch-alarm-topic",
+    metricName: "4XXError",
+    alarmDescription: "Alarm detects a high rate of client-side errors.",
+    topicDisplayName: "attestation-4xx-alarm-topic",
     dimensions: [
-      { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
-      { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
-      { Name: "IdentityProvider", Value: { Ref: "UserPoolIdentityProvider" } },
+      { Name: "ApiName", Value: { Ref: "AttestationProxyApi" } },
+      { Name: "Stage", Value: { Ref: "AttestationProxyApi" } },
     ],
   },
   {
-    name: "SignInThrottles",
-    alarmResource: "CloudWatchAlarmSignInThrottles",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
+    name: "5xx",
+    alarmResource: "CloudWatchAlarmAttestation5xxErrors",
+    topicResource: "CloudWatchAlarmAttestation5xxTopicPagerDuty",
+    subscriptionResource:
+      "CloudWatchAlarmAttestation5xxTopicSubscriptionPagerDuty",
+    topicPolicyResource:
+      "CloudWatchAlarmAttestation5xxAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "SignInThrottles",
-    alarmDescription: "Alarm when the sign in rate exceeds 5 per minute",
-    topicDisplayName: "cloudwatch-alarm-topic",
+    metricName: "5XXError",
+    alarmDescription:
+      "Alarm helps to detect a high rate of server-side errors.",
+    topicDisplayName: "attestation-5xx-alarm-topic",
     dimensions: [
-      { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
-      { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
+      { Name: "ApiName", Value: { Ref: "AttestationProxyApi" } },
+      { Name: "Stage", Value: { Ref: "AttestationProxyApi" } },
     ],
   },
   {
-    name: "SignUpThrottles",
-    alarmResource: "CloudWatchAlarmSignUpThrottles",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
+    name: "Latency",
+    alarmResource: "CloudWatchAlarmAttestationLatencyErrors",
+    topicResource: "CloudWatchAlarmAttestationLatencyTopicPagerDuty",
+    subscriptionResource:
+      "CloudWatchAlarmAttestationLatencyTopicSubscriptionPagerDuty",
+    topicPolicyResource:
+      "CloudWatchAlarmAttestationLatencyAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "SignUpThrottles",
-    alarmDescription: "Alarm when the sign up rate exceeds 5 per minute",
-    topicDisplayName: "cloudwatch-alarm-topic",
+    metricName: "Latency",
+    alarmDescription:
+      "Alarm helps to detect when the API Gateway requests in a stage have high latency.",
+    topicDisplayName: "attestation-latency-alarm-topic",
     dimensions: [
-      { Name: "UserPool", Value: { Ref: "CognitoUserPool" } }, //pragma: allowlist secret
-      { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } }, //pragma: allowlist secret
-    ], //pragma: allowlist secret
-  },
-  {
-    name: "TokenRefreshThrottles",
-    alarmResource: "CloudWatchAlarmTokenRefreshThrottles",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
-    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "TokenRefreshThrottles",
-    alarmDescription: "Alarm when the token refresh rate exceeds 5 per minute",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    dimensions: [
-      { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
-      { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
+      { Name: "ApiName", Value: { Ref: "AttestationProxyApi" } },
+      { Name: "Stage", Value: { Ref: "AttestationProxyApi" } },
     ],
   },
 ];
 
 describe.each(testCases)(
-  "Set up CloudWatch Alarm for Cognito $name with supporting alarm resources",
+  "Set up CloudWatch Alarm for Attestation Api Gateway $name errors with supporting alarm resources",
   ({
     alarmResource,
     topicResource,
@@ -143,7 +135,16 @@ describe.each(testCases)(
         slackChannelConfigurationUnderTest.Properties.SnsTopicArns
       ).toEqual([
         {
-          Ref: "CloudWatchAlarmTopicPagerDuty",
+          Ref: "CloudWatchAlarmSignUpThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmSignInThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty",
+        },
+        {
+          Ref: "CloudWatchAlarmFederationThrottlesTopicPagerDuty",
         },
       ]);
       expect(slackChannelConfigurationUnderTest.Properties.Tags).toEqual([
@@ -202,7 +203,7 @@ describe.each(testCases)(
         metricName
       );
       expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(
-        "AWS/Cognito"
+        "AWS/ApiGateway"
       );
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual("Sum");
       expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(60);
@@ -312,35 +313,6 @@ describe.each(testCases)(
           },
         ],
       });
-    });
-
-    it(`should create a Slack channel configuration for ${metricName}`, () => {
-      expect(slackChannelConfigurationUnderTest).toBeDefined();
-      expect(slackChannelConfigurationUnderTest.Type).toEqual(
-        "AWS::Chatbot::SlackChannelConfiguration"
-      );
-      expect(slackChannelConfigurationUnderTest.Properties).toBeDefined();
-      expect(
-        slackChannelConfigurationUnderTest.Properties.SlackChannelId
-      ).toEqual({
-        "Fn::Sub":
-          "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}",
-      });
-      expect(
-        slackChannelConfigurationUnderTest.Properties.SlackWorkspaceId
-      ).toEqual({
-        "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}",
-      });
-      expect(slackChannelConfigurationUnderTest.Properties.IamRoleArn).toEqual({
-        "Fn::GetAtt": ["SlackSupportChannelConfigurationIAMRole", "Arn"],
-      });
-      expect(
-        slackChannelConfigurationUnderTest.Properties.SnsTopicArns
-      ).toEqual([
-        {
-          Ref: "CloudWatchAlarmTopicPagerDuty",
-        },
-      ]);
     });
   }
 );
