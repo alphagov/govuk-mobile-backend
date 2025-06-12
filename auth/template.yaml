@@ -1176,6 +1176,7 @@ Resources:
       SourceArn: !GetAtt CognitoUserPool.Arn
 
   CognitoResourceServer:
+    Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolResourceServer
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -1188,6 +1189,7 @@ Resources:
   # Shared signal user pool client
   CognitoM2MClient:
     Type: AWS::Cognito::UserPoolClient
+    Condition: IsNotProduction
     Properties:
       UserPoolId: !Ref CognitoUserPool
       ClientName: !Join
@@ -1209,6 +1211,7 @@ Resources:
       AccessTokenValidity: 3600 # 1 hour in seconds
 
   SharedSignalsApi:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Api
     Properties:
       Name: !Join
@@ -1246,6 +1249,7 @@ Resources:
         System: Authentication
 
   SharedSignalsAccessLogGroup:
+    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
@@ -1260,6 +1264,7 @@ Resources:
           Value: Authentication
 
   SharedSignalsAccessLogGroupKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting the Shared Signals Access Log Group
@@ -1297,6 +1302,7 @@ Resources:
           Value: Authentication
 
   SharedSignalsAuthorizer:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-shared-signal-authorizer"
@@ -1322,6 +1328,7 @@ Resources:
           - app.ts
 
   SharedSignalsAuthorizerIAMRole:
+    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${AWS::StackName}-shared-signals-authorizer-role"
@@ -1360,6 +1367,7 @@ Resources:
           Value: Authentication
 
   SharedSignalsLambdaKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting Shared Signals authorizer secrets
@@ -1391,6 +1399,7 @@ Resources:
           Value: Authentication
 
   SignalsFunction:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-shared-signals-receiver"
@@ -1420,6 +1429,7 @@ Resources:
           - app.ts
 
   SignalsFunctionIAMRole:
+    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${AWS::StackName}-signals-role"
