@@ -69,7 +69,7 @@ const testCases: AlarmTestCase[] = [
     dimensions: [
       { Name: "UserPool", Value: testConfig.userPoolId },
       { Name: "UserPoolClient", Value: testConfig.clientId },
-    ], //pragma: allowlist secret
+    ],
   },
   {
     name: "TokenRefreshThrottles",
