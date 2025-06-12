@@ -102,6 +102,27 @@ const testCases: AlarmTestCase[] = [
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
     ],
   },
+  {
+    name: "CognitoWafThrottles",
+    alarmName: "cognito-waf-error-rate",
+    alarmResource: "CognitoWebApplicationFirewallAlarm",
+    actionsEnabled: true,
+    topicResource: "CloudWatchAlarmTopicPagerDuty",
+    alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
+    metricName: "WAFErrorRate",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
+    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 5,
+    comparisonOperator: "GreaterThanThreshold",
+    dimensions: [
+      { Name: "WebACL", Value: { Ref: "CognitoWebApplicationFirewall" } },
+    ],
+  }
 ];
 
 describe.each(testCases)(
@@ -150,7 +171,7 @@ describe.each(testCases)(
     );
     const slackChannelConfigurationUnderTest =
       slackChannelConfigurationResources[
-        slackChannelConfigurationResource
+      slackChannelConfigurationResource
       ] as any;
 
     const slackChannelIAMRole = template.findResources("AWS::IAM::Role");
@@ -247,18 +268,18 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(
-        "AWS/Cognito"
-      );
-      expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
-      expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(period);
-      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(
-        evaluationPeriods
-      );
-      expect(cloudWatchAlarmUnderTest.Properties.DatapointsToAlarm).toEqual(
-        datapointsToAlarm
-      );
-      expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(threshold);
+
+      if (metricName.includes("WAF")) {
+        expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual("AWS/WAFV2");
+      }
+      else {
+        expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual("AWS/Cognito");
+      }
+
+      expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual("Sum");
+      expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(60);
+      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(5);
+      expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(5);
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
         comparisonOperator
       );

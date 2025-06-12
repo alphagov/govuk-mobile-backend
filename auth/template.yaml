@@ -366,6 +366,35 @@ Resources:
             - !Sub "-${AWS::StackName}"
         - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
 
+  CognitoWebApplicationFirewallAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-waf-error-rate
+      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
+      MetricName: WAFErrorRate
+      Namespace: AWS/WAFV2
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: WebACL
+          Value: !Ref CognitoWebApplicationFirewall
+      ActionsEnabled: true    
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty  
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication    
+  
   CloudWatchAlarmSignUpThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -1606,6 +1635,10 @@ Outputs:
     Description: The name of the CloudWatch alarm for sign in throttles
     Value: !Ref CloudWatchAlarmSignInThrottles
 
+  CloudWatchWafRateLimitingAlarmName:
+    Description: The name of the CloudWatch alarm for WAF throttles
+    Value: !Ref CognitoWebApplicationFirewallAlarm  
+
   CloudWatchAlarmTokenRefreshThrottlesName:
     Description: The name of the CloudWatch alarm for token refresh throttles
     Value: !Ref CloudWatchAlarmTokenRefreshThrottles
@@ -1621,6 +1654,10 @@ Outputs:
   CognitoSecretName:
     Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
     Value: !Sub /${ConfigStackName}/cognito/client-secret
+
+  CognitoWebApplicationFirewall:
+    Description: The Cognito Web Application Firewall
+    Value: ! Ref CognitoWebApplicationFirewall
 
   StackName:
     Description: The name of the main stack

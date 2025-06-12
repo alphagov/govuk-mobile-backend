@@ -17,7 +17,7 @@ describe("shared signals", () => {
         })
 
         expect(response.ok).toBe(true);
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(202);
     })
 
     it('should only accept POST requests', async () => {

@@ -13,6 +13,7 @@ const alarmsToTest = [
   testConfig.cloudWatchAlarmSignInThrottlesName,
   testConfig.cloudWatchAlarmTokenRefreshThrottlesName,
   testConfig.cloudWatchAlarmFederationThrottlesName,
+  testConfig.cloudWatchWafRateLimitingAlarmName
 ];
 
 describe.each(alarmsToTest)("Cognito CloudWatch Alarm: %s", (alarmName) => {
