@@ -1199,6 +1199,7 @@ Resources:
       SourceArn: !GetAtt CognitoUserPool.Arn
 
   CognitoResourceServer:
+    Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolResourceServer
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -1210,6 +1211,7 @@ Resources:
 
   # Shared signal user pool client
   CognitoM2MClient:
+    Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -1232,6 +1234,7 @@ Resources:
       AccessTokenValidity: 3600 # 1 hour in seconds
 
   SharedSignalsApi:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Api
     Properties:
       Name: !Join
@@ -1269,6 +1272,7 @@ Resources:
         System: Authentication
 
   SharedSignalsAccessLogGroup:
+    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
@@ -1283,6 +1287,7 @@ Resources:
           Value: Authentication
 
   SharedSignalsAccessLogGroupKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting the Shared Signals Access Log Group
@@ -1320,6 +1325,7 @@ Resources:
           Value: Authentication
 
   SharedSignalsAuthorizer:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-shared-signal-authorizer"
@@ -1345,6 +1351,7 @@ Resources:
           - app.ts
 
   SharedSignalsAuthorizerIAMRole:
+    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${AWS::StackName}-shared-signals-authorizer-role"
@@ -1383,6 +1390,7 @@ Resources:
           Value: Authentication
 
   SharedSignalsLambdaKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting Shared Signals authorizer secrets
@@ -1414,6 +1422,7 @@ Resources:
           Value: Authentication
 
   SignalsFunction:
+    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-shared-signals-receiver"
@@ -1421,14 +1430,15 @@ Resources:
       CodeUri: shared-signals/
       Handler: app.lambdaHandler
       Role: !GetAtt SignalsFunctionIAMRole.Arn
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: SharedSignalsApi
-            Path: /receiver
-            Method: POST
+      # TODO: add back in, as sam validate --lint fails with the IsNotProduction check
+      # Events:
+      #   HelloWorldApi:
+      #     Type: Api
+      #     Properties:
+      #       RestApiId:
+      #         Ref: SharedSignalsApi
+      #       Path: /receiver
+      #       Method: POST
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1443,6 +1453,7 @@ Resources:
           - app.ts
 
   SignalsFunctionIAMRole:
+    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${AWS::StackName}-signals-role"
@@ -1548,18 +1559,22 @@ Outputs:
     Value: !Ref CognitoUserPoolClient
 
   SharedSignalClientId:
+    Condition: IsNotProduction
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
 
   SharedSignalsEndpoint:
+    Condition: IsNotProduction
     Description: The endpoint for the Shared Signals API
     Value: !Sub https://${SharedSignalsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
   SharedSignalsReceiverLogGroupName:
+    Condition: IsNotProduction
     Description: The name of the Shared Signals Receiver Lambda function log group
     Value: !Sub /aws/lambda/${SignalsFunction}
 
   SharedSignalsApiId:
+    Condition: IsNotProduction
     Description: The ID of the Shared Signals API
     Value: !Ref SharedSignalsApi
 
