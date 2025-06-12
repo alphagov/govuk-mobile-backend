@@ -171,14 +171,14 @@ Resources:
   CognitoWebApplicationFirewallAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: "Alarm when the Cognito Web Application Firewall exceeds error threshold"
+      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
       MetricName: WAFErrorRate
       Namespace: AWS/WAFV2
       Statistic: Sum
       Period: 60
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: 0
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 5
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: WebACL
@@ -413,43 +413,43 @@ Resources:
         - Key: System
           Value: Authentication
 
-CloudWatchAlarmWafThrottlesTopicPagerDuty:
-  Type: AWS::SNS::Topic
-  Properties:
-    KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-    DisplayName: !Join
-      - "-"
-      - - !Ref AWS::StackName
-        - "cognito-waf-alarm-topic"
-        - Fn::Select:
-            - 4
-            - Fn::Split:
-                - "-"
-                - Fn::Select:
-                    - 2
-                    - Fn::Split:
-                        - "/"
-                        - Ref: AWS::StackId
-    Tags:
-      - Key: Product
-        Value: GOV.UK
-      - Key: Environment
-        Value: !Ref Environment
-      - Key: System
-        Value: Authentication
+  CloudWatchAlarmWafThrottlesTopicPagerDuty:
+    Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
+      DisplayName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "cognito-waf-alarm-topic"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
-CloudWatchAlarmWafThrottlesTopicSubscriptionPagerDuty:
-  Type: AWS::SNS::Subscription
-  Properties:
-    TopicArn: !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
-    Endpoint: !If
-      - IsNotProduction
-      - !GetAtt PagerDutyTestFunction.Arn
-      - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
-    Protocol: !If
-      - IsNotProduction
-      - lambda
-      - https
+  CloudWatchAlarmWafThrottlesTopicSubscriptionPagerDuty:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
+      Endpoint: !If
+        - IsNotProduction
+        - !GetAtt PagerDutyTestFunction.Arn
+        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
+      Protocol: !If
+        - IsNotProduction
+        - lambda
+        - https
 
   CloudWatchAlarmSignUpThrottlesTopicPagerDuty:
     Type: AWS::SNS::Topic
@@ -589,6 +589,23 @@ CloudWatchAlarmWafThrottlesTopicSubscriptionPagerDuty:
             Condition:
               ArnLike:
                 AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
+
+  CloudWatchAlarmWafThrottlesAlarmPublishToTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sns:Publish
+            Resource: !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Condition:
+              ArnLike:
+                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*              
 
   CloudWatchAlarmTokenRefreshThrottles:
     Type: AWS::CloudWatch::Alarm
@@ -1670,6 +1687,10 @@ Outputs:
     Description: The name of the CloudWatch alarm for sign in throttles
     Value: !Ref CloudWatchAlarmSignInThrottles
 
+  CloudWatchWafRateLimitingAlarmName:
+    Description: The name of the CloudWatch alarm for WAF throttles
+    Value: !Ref CognitoWebApplicationFirewallAlarm  
+
   CloudWatchAlarmTokenRefreshThrottlesName:
     Description: The name of the CloudWatch alarm for token refresh throttles
     Value: !Ref CloudWatchAlarmTokenRefreshThrottles
@@ -1685,3 +1706,7 @@ Outputs:
   CognitoSecretName:
     Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
     Value: !Sub /${ConfigStackName}/cognito/client-secret
+
+  CognitoWebApplicationFirewallId:
+    Description: The Cognito Web Application Firewall
+    Value: !GetAtt CognitoWebApplicationFirewall.Id

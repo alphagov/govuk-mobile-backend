@@ -21,6 +21,9 @@ const getTestConfig = () => {
     "CFN_SharedSignalClientId",
     "CFN_PostAuthenticationFunctionName",
     "CFN_AWSAccountId",
+    // WAF configurations
+    "CFN_CloudWatchWafRateLimitingAlarmName",  //WAF Rate limit alarm name
+    "CFN_CognitoWebApplicationFirewall", //WAF
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -58,6 +61,11 @@ const getTestConfig = () => {
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
     authProxyUrl: process.env.CFN_AuthProxyUrl!,
     awsAccountId: process.env.CFN_AWSAccountId!,
+    //WAF configurations
+    cloudWatchWafRateLimitingAlarmName: process.env.CFN_CloudWatchWafRateLimitingAlarmName!,  
+    cognitoWebApplicationFirewall: process.env.CFN_CognitoWebApplicationFirewall!,
+
+
   };
 };
 
