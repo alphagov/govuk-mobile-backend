@@ -70,11 +70,6 @@ Conditions:
           - !Ref PermissionsBoundary
           - "none"
 
-  IsDev:
-    Fn::Equals:
-      - !Ref Environment
-      - "dev"
-
   IsNotProduction:
     Fn::Not:
       - Fn::Equals:
@@ -358,13 +353,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      Domain: !If
-        - IsDev
-        - !Join
-          - ""
-          - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-            - !Sub "-${AWS::StackName}"
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
+      Domain: !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
 
   CloudWatchAlarmSignUpThrottles:
     Type: AWS::CloudWatch::Alarm
@@ -1077,14 +1066,7 @@ Resources:
       Environment:
         Variables:
           ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
-          COGNITO_URL: !If
-            - IsDev
-            - !Join
-              - ""
-              - - "https://"
-                - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-            - !Join
+          COGNITO_URL: !Join
               - ""
               - - "https://"
                 - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
@@ -1498,13 +1480,7 @@ Outputs:
 
   CognitoUrl:
     Description: The domain name for the Cognito User Pool
-    Value: !If
-      - IsDev
-      - !Join
-        - ""
-        - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-          - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-      - !Join
+    Value: !Join
         - ""
         - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
           - !Sub ".auth.${AWS::Region}.amazoncognito.com"
