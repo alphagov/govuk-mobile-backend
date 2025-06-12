@@ -1051,7 +1051,7 @@ Resources:
       Parameters:
         ApiId: !Ref AttestationProxyApi
         ApiLogGroupName: !Ref AttestationProxyApiAccessLogGroup
-        AlarmTopic: !Ref CloudWatchAlarmsTopicPagerDuty
+        AlarmTopic: !Ref CloudWatchAlarmTopicPagerDuty
         Environment: !Ref Environment
         LambaName: !Ref AuthProxyFunction
         FunctionLogGroupName: !Sub /aws/lambda/${AuthProxyFunction}
