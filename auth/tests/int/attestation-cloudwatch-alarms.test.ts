@@ -14,7 +14,7 @@ const alarmsToTest = [
   testConfig.cloudWatchAlarmAuthProxyLatencyErrors,
 ];
 
-describe.each(alarmsToTest)("Cognito CloudWatch Alarm: %s", (alarmName) => {
+describe.each(alarmsToTest)("Auth Proxy Api CloudWatch Alarm: %s", (alarmName) => {
   it("should successfully execute its actions", async () => {
     // Set the alarm state to ALARM
     await cloudWatchClient.send(
