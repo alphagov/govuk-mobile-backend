@@ -75,7 +75,6 @@ describe.each(testCases)(
     actionsEnabled,
     metricName,
     alarmDescription,
-    topicDisplayName,
     dimensions,
     statistic,
     extendedStatistic,
@@ -111,6 +110,10 @@ describe.each(testCases)(
 
     it(`should have Statistic as ${statistic}`, () => {
       assert.equal(alarm.Statistic, statistic);
+    });
+
+    it(`should have ExtendedStatistic as ${extendedStatistic}`, () => {
+      assert.equal(alarm.ExtendedStatistic, extendedStatistic);
     });
 
     it(`should have Period of ${period} seconds`, () => {
