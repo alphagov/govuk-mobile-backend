@@ -29,6 +29,9 @@ else
   echo "" > "$ENV_FILE_PATH"
 fi
 
+# --- Add a newline separator if .env.static was copied or file was just created ---
+echo "" >> "$ENV_FILE_PATH"
+
 # Check if AWS CLI is installed
 if ! command -v aws &> /dev/null; then
   echo "Error: AWS CLI is not installed. Please install it to proceed."

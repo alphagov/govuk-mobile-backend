@@ -68,7 +68,7 @@ describe('proxy', () => {
     });
 
 
-    it('returns 500 on proxy error', async () => {
+    it('throws an exception if an error event is triggered', async () => {
         // Replace the implementation temporarily
         vi.spyOn(https, 'request').mockImplementationOnce((options, callback) => {
             const req = {
@@ -89,9 +89,8 @@ describe('proxy', () => {
         });
 
         const brokenEvent = createMockInput({ path: '' });
-        const response = await proxy(brokenEvent) as APIGatewayProxyStructuredResultV2;
-
-        expect(response.statusCode).toBe(500);
-        expect(JSON.parse(response.body as string)).toEqual({ message: 'Internal server error' });
+        await expect(proxy(brokenEvent) as APIGatewayProxyStructuredResultV2)
+            .rejects
+            .toThrow(Error('Mocked failure'));
     });
 });

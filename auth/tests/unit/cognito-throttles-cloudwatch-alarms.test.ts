@@ -390,7 +390,7 @@ describe.each(testCases)(
       ).toEqual([
         {
           Ref: "CloudWatchAlarmTopicPagerDuty",
-        },
+        }
       ]);
     });
   }

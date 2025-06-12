@@ -229,4 +229,71 @@ describe("waf", () => {
         "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}",
     });
   });
+
+  describe('alarms', () => {
+    it('should have a reference to the attestation alarms definition', () => {
+      const subTemplate = template.findResources("AWS::Serverless::Application")["AttestationAlarms"]
+      expect(subTemplate).toBeDefined();
+    });
+
+    const alarmTemplate = loadTemplateFromFile(
+      path.join(
+        __dirname,
+        "..",
+        "..",
+        "./proxy",
+        "alarms.yaml",
+      )
+    );
+
+    it('should have a reference to the attestation alarms definition', () => {
+      const subTemplate = template.findResources("AWS::Serverless::Application")["AttestationAlarms"]
+      expect(subTemplate).toBeDefined();
+    });
+
+    it('should send alerts to slack and pager duty', () => {
+      const topic = template.findResources("AWS::SNS::Subscription")["CloudWatchAlarmTopicSubscriptionPagerDuty"]
+      expect(topic.Properties.TopicArn).toEqual({
+        "Ref": "CloudWatchAlarmTopicPagerDuty", // pragma: allowlist-secret
+      })
+    })
+
+    it(`should alert if the percentage of lambda invocation errors is 
+      greater than or equal 10% per minute for at least 10 invocations`, () => {
+      const lambdaErrorRateAlarm = alarmTemplate.findResources("AWS::CloudWatch::Alarm")["AttestationLambdaErrorRateAlarm"]
+
+      // atleast 10 invocations
+      expect(lambdaErrorRateAlarm.Properties.Metrics[3].Expression).toBe("IF(lambdaInvocations>=10, lambdaErrorPercentage)")
+
+      expect(lambdaErrorRateAlarm.Properties.Threshold).toBe(10)
+      expect(lambdaErrorRateAlarm.Properties.ComparisonOperator).toBe("GreaterThanOrEqualToThreshold")
+    })
+
+    it(`should alert if the percentage of successful attestation completions 
+      drops to 75% or lower for at least 50 attempts in a minute`, () => {
+      const lambdaErrorRateAlarm = alarmTemplate.findResources("AWS::CloudWatch::Alarm")["AttestationLowCompletionAlarm"]
+
+      // atleast 50 attempts
+      expect(lambdaErrorRateAlarm.Properties.Metrics[3].Expression).toBe("IF(lambdaLogStarted>=50, lambdaLogCompletePercentage)")
+
+      expect(lambdaErrorRateAlarm.Properties.Threshold).toBe(75)
+      expect(lambdaErrorRateAlarm.Properties.ComparisonOperator).toBe("LessThanOrEqualToThreshold")
+    })
+
+    it(`should alert if there is an anomaly in the proportion of 200 responses 
+      from the /oauth2/token endpoint`, () => {
+      const lambdaErrorRateAlarm = alarmTemplate.findResources("AWS::CloudWatch::Alarm")["AttestationLow200ResponseProportionAlarm"]
+
+      // detects anomalies with a standard deviation of 2
+      expect(lambdaErrorRateAlarm.Properties.Metrics[3].Expression).toBe("ANOMALY_DETECTION_BAND(m3, 2)")
+      expect(lambdaErrorRateAlarm.Properties.ComparisonOperator).toBe("LessThanLowerThreshold")
+    })
+
+    it('the low proportion alarm should be toggled from a parameter', () => {
+      const lambdaErrorRateAlarm = alarmTemplate.findResources("AWS::CloudWatch::Alarm")["AttestationLow200ResponseProportionAlarm"]
+      expect(lambdaErrorRateAlarm.Properties.ActionsEnabled).toEqual({
+        "Ref": "EnableAlarm",
+      })
+    })
+  });
 });

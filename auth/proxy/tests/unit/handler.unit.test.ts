@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createHandler } from '../../handler'; // Adjust path as needed
 import type { APIGatewayProxyEvent, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { FailedToFetchSecretError, UnknownAppError } from '../../errors';
 import querystring from 'querystring';
+import { logMessages } from '../../log-messages';
 
 const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent => ({
     path: '/dev/oauth2/token',
@@ -42,6 +43,8 @@ const createMockEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGate
 });
 
 describe('lambdaHandler', () => {
+    let consoleErrorSpy: vi.SpyInstance;
+    let consoleSpy: vi.SpyInstance;
 
     const mockProxy = vi.fn().mockResolvedValue({
         statusCode: 200,
@@ -99,7 +102,14 @@ describe('lambdaHandler', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
+        consoleErrorSpy = vi.spyOn(console, 'error');
+        consoleSpy = vi.spyOn(console, 'log');
     });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
+        consoleSpy.mockRestore();
+    })
 
     it('rejects all requests to non-token endpoint', async () => {
         const response = await lambdaHandler(createMockEvent({
@@ -261,4 +271,49 @@ describe('lambdaHandler', () => {
             expect(response.statusCode).toBe(400);
             expect(JSON.parse(response.body)).toEqual({ "message": "Invalid Request" });
         });
+
+    it.each([
+        [createHandler(createMockDependencies({
+            attestationUseCase: {
+                validateAttestationHeaderOrThrow: vi.fn(() => {
+                    throw new JsonWebTokenError('err');
+                })
+            },
+        }))],
+        [createHandler(createMockDependencies({
+            attestationUseCase: {
+                validateAttestationHeaderOrThrow: vi.fn(() => {
+                    throw new UnknownAppError('err');
+                })
+            },
+        }))],
+        [createHandler(createMockDependencies({
+            attestationUseCase: {
+                validateAttestationHeaderOrThrow: vi.fn(() => {
+                    throw new TokenExpiredError('err', new Date());
+                })
+            },
+        }))],
+    ])
+        ('attestation errors should have a consistent log prefix to enable log filtering', async (handler) => {
+            await handler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+
+            expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                expect.stringContaining('ERROR_ATTESTATION_'),
+                expect.any(String) // The error message
+            );
+        });
+
+    it('should add a attestation start and end log message', async () => {
+        await lambdaHandler(createMockEvent()) as APIGatewayProxyStructuredResultV2;
+
+        expect(consoleSpy).toHaveBeenCalledTimes(2);
+        expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringContaining(logMessages.ATTESTATION_STARTED),
+        );
+        expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringContaining(logMessages.ATTESTATION_COMPLETED),
+        );
+    });
 });

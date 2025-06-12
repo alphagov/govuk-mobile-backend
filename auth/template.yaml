@@ -47,6 +47,16 @@ Mappings:
       integration: "integration"
       production: "production"
 
+  # this flag is used to disable alarms that require an understanding of a normal baseline load
+  EnableBaselineLoadAlarms:
+    Environment:
+      local: "False"
+      build: "False"
+      dev: "False"
+      staging: "False"
+      integration: "False"
+      production: "False"
+
 Conditions:
   UseCodeSigning:
     Fn::Not:
@@ -1034,6 +1044,19 @@ Resources:
         - Key: System
           Value: Authentication
 
+  AttestationAlarms:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: proxy/alarms.yaml
+      Parameters:
+        ApiId: !Ref AttestationProxyApi
+        ApiLogGroupName: !Ref AttestationProxyApiAccessLogGroup
+        AlarmTopic: !Ref CloudWatchAlarmTopicPagerDuty
+        Environment: !Ref Environment
+        LambaName: !Ref AuthProxyFunction
+        FunctionLogGroupName: !Sub /aws/lambda/${AuthProxyFunction}
+        EnableAlarm: !FindInMap [EnableBaselineLoadAlarms, Environment, !Ref Environment]
+
   AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -1454,6 +1477,10 @@ Resources:
           Value: Authentication
 
 Outputs:
+  AWSAccountId:
+    Description: AWS Account ID
+    Value: !Ref AWS::AccountId
+
   AuthProxyUrl:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${AttestationProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
@@ -1500,6 +1527,10 @@ Outputs:
     Description: The name of the Auth Proxy Lambda function IAM role
     Value: !GetAtt AuthProxyFunctionIAMRole.Arn
 
+  AuthProxyFunctionIAMRolePolicyName:
+    Description: The name of the Auth Proxy Lambda function IAM role policy name
+    Value: AuthProxyFunctionPolicy
+
   FirebaseIosAppId:
     Description: The Firebase iOS App ID
     Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
@@ -1540,6 +1571,10 @@ Outputs:
     Description: The name of the Post Authentication Lambda function IAM role
     Value: !GetAtt PostAuthenticationFunctionIAMRole.Arn
 
+  PostAuthenticationFunctionIAMRolePolicyName:
+    Description: The name of the Post Authentication Lambda function IAM role policy name
+    Value: PostAuthenticationFunctionPolicy
+
   PostAuthenticationFunctionInvokePermission:
     Description: The name of the Post Authentication Invoke Permission
     Value: !Ref PostAuthLambdaInvokePermission
@@ -1579,3 +1614,12 @@ Outputs:
   ConfigStackName:
     Description: The name of the configuration stack
     Value: !Ref ConfigStackName
+    
+  AttestationLambdaErrorRateAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLambdaErrorRateAlarmName
+
+  AttestationLowCompletionAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLowCompletionAlarmName
+
+  AttestationLow200ResponseProportionAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLow200ResponseProportionAlarmName
