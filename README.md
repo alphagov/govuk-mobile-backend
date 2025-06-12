@@ -110,3 +110,33 @@ There are five workflows automating our tests, publishing and general checks:
 | Workflow | Runs on            | Jobs                          |
 | -------- | ------------------ | ----------------------------- |
 | CI       | Pull Request, Main | `build` <ul><li>...</li></ul> |
+
+# Testing
+
+## Getting CloudFormation Outputs to a `.env` File
+
+We use a helper script to automate the process of extracting outputs from your AWS CloudFormation stacks and writing them into a `.env` file, making it easy to use these values in your local applications or CI/CD pipelines. All output keys are prefixed with `CFN_`.
+
+## Prerequisites
+
+Before running this script, ensure you have the following installed and configured:
+
+* AWS CLI
+* jq
+
+### Running the script
+
+Execute the script, providing your CloudFormation stack name as the first argument.
+
+```sh
+cd auth
+sh ./get-cloudformation-outputs.sh <your-stack-name>
+```
+
+This will generate a `.env` file in the current directory (`auth`) containing your CloudFormation outputs.
+
+**Optional:** You can specify a different output file path as the second argument:
+
+```sh
+./get-cloudformation-outputs.sh <your-stack-name> config/my_app_variables.env
+```

@@ -5,7 +5,7 @@
 
 # --- Configuration ---
 STACK_NAME="$1"
-ENV_FILE_PATH="${2:-.env.test}" # Default to .env if not provided
+ENV_FILE_PATH="${2:-.env}" # Default to .env if not provided
 
 # --- Prerequisites Check ---
 # Check if a stack name was provided
@@ -14,6 +14,19 @@ if [ -z "$STACK_NAME" ]; then
   echo "Example: $0 MyDemoAppStack"
   echo "Example: $0 MyDemoAppStack my_app.env"
   exit 1
+fi
+
+if ! touch "$ENV_FILE_PATH" 2>/dev/null; then
+  echo "Error: Cannot write to $ENV_FILE_PATH"
+  exit 1
+fi
+
+# Start by copying .env.static contents (if it exists) to the target env file
+if [ -f .env.static ]; then
+  cat .env.static > "$ENV_FILE_PATH"
+else
+  echo "Warning: .env.static not found, static values will be skipped."
+  echo "" > "$ENV_FILE_PATH"
 fi
 
 # Check if AWS CLI is installed
@@ -46,16 +59,12 @@ if [ $? -ne 0 ] || [ -z "$STACK_OUTPUTS" ] || [ "$STACK_OUTPUTS" = "[]" ]; then
   exit 1
 fi
 
-# Clear or create the .env file
-echo "" > "$ENV_FILE_PATH"
 echo "Writing stack outputs to ${ENV_FILE_PATH}:"
 
-# Loop through each output using jq to parse and format
+# Append CloudFormation outputs
 echo "$STACK_OUTPUTS" | jq -r '.[] | "\(.OutputKey)=\(.OutputValue)"' | while IFS='=' read -r key value; do
-  # Prepend 'CFN_' to the key
   FORMATTED_KEY="CFN_${key}"
-  echo "${FORMATTED_KEY}=\"${value}\"" >> "$ENV_FILE_PATH" # Enclose value in quotes for robustness
-  echo "  ${FORMATTED_KEY}=\"${value}\""
+  echo "${FORMATTED_KEY}=\"${value}\"" >> "$ENV_FILE_PATH"
 done
 
 echo ""
