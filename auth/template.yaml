@@ -1077,14 +1077,7 @@ Resources:
       Environment:
         Variables:
           ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
-          COGNITO_URL: !If
-            - IsDev
-            - !Join
-              - ""
-              - - "https://"
-                - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-            - !Join
+          COGNITO_URL: !Join
               - ""
               - - "https://"
                 - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
@@ -1536,7 +1529,7 @@ Outputs:
 
   AuthProxyFunctionIAMRoleName:
     Description: The name of the Auth Proxy Lambda function IAM role
-    Value: !GetAtt AuthProxyFunctionIAMRole.Arn
+    Value: !Sub "${AWS::StackName}-auth-proxy-role"
 
   AuthProxyFunctionIAMRolePolicyName:
     Description: The name of the Auth Proxy Lambda function IAM role policy name
@@ -1584,7 +1577,7 @@ Outputs:
 
   PostAuthenticationFunctionIAMRoleName:
     Description: The name of the Post Authentication Lambda function IAM role
-    Value: !GetAtt PostAuthenticationFunctionIAMRole.Arn
+    Value: !Sub "${AWS::StackName}-post-authentication-role"
 
   PostAuthenticationFunctionIAMRolePolicyName:
     Description: The name of the Post Authentication Lambda function IAM role policy name
@@ -1638,3 +1631,15 @@ Outputs:
 
   AttestationLow200ResponseProportionAlarmName:
     Value: !GetAtt AttestationAlarms.Outputs.AttestationLow200ResponseProportionAlarmName
+
+  CloudwatchAlarmAuthProxy4xxErrors:
+    Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
+
+  CloudwatchAlarmAuthProxy5xxErrors:
+    Value: !Ref CloudwatchAlarmAuthProxy5xxErrors
+
+  CloudwatchAlarmAuthProxyLatencyErrors:
+    Value: !Ref CloudwatchAlarmAuthProxyLatencyErrors
+
+  AuthProxyId:
+    Value: !Ref AttestationProxyApi

@@ -1,36 +1,122 @@
 {
-    "version": "2.0",
-    "routeKey": "ANY /example",
-    "rawPath": "/example",
-    "rawQueryString": "",
-    "headers": {
-        "accept": "*/*",
-        "content-type": "application/json",
-        "host": "example.com",
-        "user-agent": "PostmanRuntime/7.29.0",
-        "x-amzn-trace-id": "Root=1-67891233-abcdef012345678912345678",
-        "x-forwarded-for": "192.0.2.1",
-        "x-forwarded-port": "443",
-        "x-forwarded-proto": "https"
+  "resource": "/oauth2/token",
+  "path": "/oauth2/token",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Encoding": "gzip, compress, deflate, br",
+    "CloudFront-Forwarded-Proto": "https",
+    "CloudFront-Is-Desktop-Viewer": "true",
+    "CloudFront-Is-Mobile-Viewer": "false",
+    "CloudFront-Is-SmartTV-Viewer": "false",
+    "CloudFront-Is-Tablet-Viewer": "false",
+    "CloudFront-Viewer-ASN": "16509",
+    "CloudFront-Viewer-Country": "GB",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Host": "le5s0p6bcl.execute-api.eu-west-2.amazonaws.com",
+    "User-Agent": "axios/1.9.0",
+    "Via": "1.1 xx (CloudFront)",
+    "X-Amz-Cf-Id": "xx==",
+    "X-Amzn-Trace-Id": "Root=1-xx",
+    "X-Attestation-Token": "xx",
+    "X-Forwarded-For": "51.149.8.28, 3.172.36.115",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept": [
+      "application/json, text/plain, */*"
+    ],
+    "Accept-Encoding": [
+      "gzip, compress, deflate, br"
+    ],
+    "CloudFront-Forwarded-Proto": [
+      "https"
+    ],
+    "CloudFront-Is-Desktop-Viewer": [
+      "true"
+    ],
+    "CloudFront-Is-Mobile-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-SmartTV-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-Tablet-Viewer": [
+      "false"
+    ],
+    "CloudFront-Viewer-ASN": [
+      "16509"
+    ],
+    "CloudFront-Viewer-Country": [
+      "GB"
+    ],
+    "Content-Type": [
+      "application/x-www-form-urlencoded"
+    ],
+    "Host": [
+      "le5s0p6bcl.execute-api.eu-west-2.amazonaws.com"
+    ],
+    "User-Agent": [
+      "axios/1.9.0"
+    ],
+    "Via": [
+      "1.1 x"
+    ],
+    "X-Amz-Cf-Id": [
+      "xx=="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-x-x"
+    ],
+    "X-Attestation-Token": [
+      "x.xx"
+    ],
+    "X-Forwarded-For": [
+      "51.149.8.28, 3.172.36.115"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "rz9m3y",
+    "resourcePath": "/oauth2/token",
+    "httpMethod": "POST",
+    "extendedRequestId": "MDm6mHFJLPEEZJg=",
+    "requestTime": "12/Jun/2025:15:00:06 +0000",
+    "path": "/dev/oauth2/token",
+    "accountId": "xx",
+    "protocol": "HTTP/1.1",
+    "stage": "dev",
+    "domainPrefix": "le5s0p6bcl",
+    "requestTimeEpoch": 1749740406669,
+    "requestId": "xxx",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": null,
+      "cognitoIdentityId": null,
+      "caller": null,
+      "sourceIp": "xx",
+      "principalOrgId": null,
+      "accessKey": null,
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": null,
+      "userAgent": "axios/1.9.0",
+      "user": null
     },
-    "requestContext": {
-        "accountId": "123456789012",
-        "apiId": "api-id",
-        "domainName": "example.com",
-        "domainPrefix": "example",
-        "http": {
-            "method": "GET",
-            "path": "/example",
-            "protocol": "HTTP/1.1",
-            "sourceIp": "192.0.2.1",
-            "userAgent": "PostmanRuntime/7.29.0"
-        },
-        "requestId": "id",
-        "routeKey": "ANY /example",
-        "stage": "$default",
-        "time": "12/Mar/2023:19:03:58 +0000",
-        "timeEpoch": 1678653838000
-    },
-    "body": null,
-    "isBase64Encoded": false
+    "domainName": "le5s0p6bcl.execute-api.eu-west-2.amazonaws.com",
+    "deploymentId": "xx",
+    "apiId": "le5s0p6bcl"
+  },
+  "body": "grant_type=refresh_token&client_id=foobar&refresh_token=asf",
+  "isBase64Encoded": false
 }
