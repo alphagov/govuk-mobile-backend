@@ -1753,6 +1753,14 @@ Outputs:
     Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
     Value: !Sub /${ConfigStackName}/cognito/client-secret
 
-  CognitoWebApplicationFirewallId:
+  CognitoWebApplicationFirewall:
     Description: The Cognito Web Application Firewall
-    Value: !GetAtt CognitoWebApplicationFirewall.Id
+    Value: ! Ref CognitoWebApplicationFirewall
+
+  StackName:
+    Description: The name of the main stack
+    Value: !Ref AWS::StackName
+
+  ConfigStackName:
+    Description: The name of the configuration stack
+    Value: !Ref ConfigStackName  

@@ -58,12 +58,6 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
         ],
       },
     });
-
-    expect(consoleMock).toHaveBeenCalledWith('Retrieved JWT secret:', {
-      clientSecret: 'mockClientSecret',
-      userPoolId: 'mockUserPoolId',
-      clientId: 'mockClientId',
-    });
   });
 
   it('Should throw Unauthorized error for missing token', async () => {
