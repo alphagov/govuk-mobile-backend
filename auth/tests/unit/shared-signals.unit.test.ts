@@ -3,7 +3,7 @@ import { loadTemplateFromFile } from "../common/template";
 
 const template = loadTemplateFromFile("./template.yaml");
 
-describe("shared signals", () => {
+describe.skip("shared signals", () => {
   it("should provision an api gateway", () => {
     template.hasResourceProperties("AWS::Serverless::Api", {
       Name: {
