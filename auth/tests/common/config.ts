@@ -30,6 +30,9 @@ const getTestConfig = () => {
     "CFN_AuthProxyLogGroupName",
     "CFN_StackName",
     "CFN_ConfigStackName",
+    // WAF configurations
+    "CFN_CloudWatchWafRateLimitingAlarmName",  //WAF Rate limit alarm name
+    "CFN_CognitoWebApplicationFirewall", //WAF
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -72,6 +75,11 @@ const getTestConfig = () => {
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName,
     configStackName: process.env.CFN_ConfigStackName,
+    //WAF configurations
+    cloudWatchWafRateLimitingAlarmName: process.env.CFN_CloudWatchWafRateLimitingAlarmName!,  
+    cognitoWebApplicationFirewall: process.env.CFN_CognitoWebApplicationFirewall!,
+
+
   };
 };
 

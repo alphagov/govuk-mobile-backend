@@ -90,6 +90,22 @@ const testCases: AlarmTestCase[] = [
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
     ],
   },
+  {
+    name: "CognitoWafThrottles",
+    alarmResource: "CognitoWebApplicationFirewallAlarm",
+    topicResource: "CloudWatchAlarmWafThrottlesTopicPagerDuty",
+    alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
+    metricName: "WAFErrorRate",
+    topicDisplayName: "cognito-waf-alarm-topic",
+    topicPolicyResource:
+      "CloudWatchAlarmWafThrottlesAlarmPublishToTopicPolicy",
+    subscriptionResource:
+      "CloudWatchAlarmWafThrottlesTopicSubscriptionPagerDuty",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
+    dimensions: [
+      { Name: "WebACL", Value: { Ref: "CognitoWebApplicationFirewall" } },
+    ],
+  }
 ];
 
 describe.each(testCases)(
@@ -130,7 +146,7 @@ describe.each(testCases)(
     );
     const slackChannelConfigurationUnderTest =
       slackChannelConfigurationResources[
-        slackChannelConfigurationResource
+      slackChannelConfigurationResource
       ] as any;
 
     const slackChannelIAMRole = template.findResources("AWS::IAM::Role");
@@ -174,6 +190,9 @@ describe.each(testCases)(
         {
           Ref: "CloudWatchAlarmFederationThrottlesTopicPagerDuty",
         },
+        {
+          Ref: "CloudWatchAlarmWafThrottlesTopicPagerDuty",
+        }
       ]);
       expect(slackChannelConfigurationUnderTest.Properties.Tags).toEqual([
         { Key: "Product", Value: "GOV.UK" },
@@ -230,9 +249,14 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(
-        "AWS/Cognito"
-      );
+
+      if (metricName.includes("WAF")) {
+        expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual("AWS/WAFV2");
+      }
+      else {
+        expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual("AWS/Cognito");
+      }
+
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual("Sum");
       expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(60);
       expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(5);
@@ -378,6 +402,9 @@ describe.each(testCases)(
         {
           Ref: "CloudWatchAlarmFederationThrottlesTopicPagerDuty",
         },
+        {
+          Ref: "CloudWatchAlarmWafThrottlesTopicPagerDuty",
+        }
       ]);
     });
   }
