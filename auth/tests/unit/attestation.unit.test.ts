@@ -252,9 +252,9 @@ describe("waf", () => {
     });
 
     it('should send alerts to slack and pager duty', () => {
-      const topic = template.findResources("AWS::SNS::Subscription")["CloudWatchAlarmInfoTopicSubscriptionPagerDuty"]
+      const topic = template.findResources("AWS::SNS::Subscription")["CloudWatchAlarmTopicSubscriptionPagerDuty"]
       expect(topic.Properties.TopicArn).toEqual({
-        "Ref": "CloudWatchInfoAlarmsTopicPagerDuty", // pragma: allowlist-secret
+        "Ref": "CloudWatchAlarmTopicPagerDuty", // pragma: allowlist-secret
       })
     })
 
