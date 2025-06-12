@@ -7,7 +7,7 @@ import { expect, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 
 const client = new APIGatewayClient({
-  region: "eu-west-2",
+  region: testConfig.region,
 });
 
 const command = new GetResourcesCommand({

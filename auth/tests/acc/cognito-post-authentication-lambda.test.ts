@@ -116,7 +116,7 @@ describe("Check deployed Post Authentication Lambda IAM Role", async () => {
               "logs:PutLogEvents",
             ],
             Effect: "Allow",
-            Resource: `arn:aws:logs:eu-west-2:${testConfig.awsAccountId}:log-group:/aws/lambda/${testConfig.stackName}-post-authentication-function:*`,
+            Resource: `arn:aws:logs:eu-west-2:${testConfig.awsAccountId}:log-group:/aws/lambda/${testConfig.stackName}-post-authentication:*`,
           },
         ],
       }

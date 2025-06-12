@@ -37,8 +37,6 @@ const validateAndReturnSubject = async (token: string): Promise<string> => {
         }
         const secretsObject = await secretsService.getSecret(secretsName); 
 
-        console.log('Retrieved JWT secret:', secretsObject);
-        
         if (secretsObject === undefined) {
             throw new Error('Failed to retrieve JWT secret from Secrets Manager');
         }

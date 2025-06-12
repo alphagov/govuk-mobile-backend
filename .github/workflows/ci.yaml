@@ -28,7 +28,9 @@ jobs:
       
       - name: SAM validate
         working-directory: ./auth
-        run: sam validate --lint
+        run: |
+          sam validate --lint
+          sam validate --lint -t proxy/alarms.yaml
 
       - uses: actions/setup-node@v3
         with:

@@ -1,0 +1,22 @@
+export type AlarmTestCase = {
+  name: string;
+  alarmName:string;
+  actionsEnabled: boolean;
+  alarmResource: string;
+  topicResource: string;
+  subscriptionResource: string;
+  topicPolicyResource: string;
+  slackChannelConfigurationResource: string;
+  metricName: string;
+  alarmDescription: string;
+  topicDisplayName: string;
+  period: number;
+  evaluationPeriods: number;
+  datapointsToAlarm: number;
+  threshold: number;
+  comparisonOperator: string;
+  namespace: string;
+  dimensions: any[];
+  statistic?: string;
+  extendedStatistic?: string;
+};

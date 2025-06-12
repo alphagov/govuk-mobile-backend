@@ -11,95 +11,60 @@ import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 import { AlarmTestCase } from "../acc/alarm-test-case";
 
-const cloudWatchClient = new CloudWatchClient({ region: testConfig.region });
-const snsClient = new SNSClient({ region: testConfig.region });
-const chatbotClient = new ChatbotClient({
-  region: 'eu-west-1' // only supported region
-}); 
+const cloudWatchClient = new CloudWatchClient({ region: "eu-west-2" });
+const snsClient = new SNSClient({ region: "eu-west-2" });
+const chatbotClient = new ChatbotClient({ region: "us-east-2" });
 
 const testCases: AlarmTestCase[] = [
   {
-    name: "FederationThrottles",
-    alarmName: `${testConfig.stackName}-cognito-federation-throttles`,
+    name: "4xx",
+    alarmName: `${testConfig.stackName}-auth-proxy-4xx-errors`,
     actionsEnabled: true,
-    metricName: "FederationThrottles",
-    alarmDescription: "Alarm when federated requests exceeds 5 per minute",
+    metricName: "4XXError",
+    alarmDescription: "Alarm detects a high rate of client-side errors.",
     topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
+    statistic: "Average",
     period: 60,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
-    threshold: 5,
+    threshold: 0.05,
     comparisonOperator: "GreaterThanThreshold",
     dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-      { Name: "IdentityProvider", Value: "onelogin" },
+      { Name: "ApiName", Value: testConfig.authProxyId },
+      { Name: "Resource", Value: "/oauth2/token" },
+      { Name: "Stage", Value: testConfig.testEnvironment },
+      { Name: "Method", Value: "POST" },
     ],
   },
   {
-    name: "SignInThrottles",
-    alarmName: `${testConfig.stackName}-cognito-sign-in-throttles`,
+    name: "5xx",
+    alarmName: `${testConfig.stackName}-auth-proxy-5xx-errors`,
     actionsEnabled: true,
-    metricName: "SignInThrottles",
-    alarmDescription: "Alarm when the sign in rate exceeds 5 per minute",
+    metricName: "5XXError",
+    alarmDescription: "Alarm detects a high rate of server-side errors.",
     topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
+    statistic: "Average",
+    period: 60,
+    evaluationPeriods: 3,
+    datapointsToAlarm: 3,
+    threshold: 0.05,
+    comparisonOperator: "GreaterThanThreshold",
+    dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
+  },
+  {
+    name: "Latency",
+    alarmName: `${testConfig.stackName}-auth-proxy-latency-errors`,
+    actionsEnabled: true,
+    metricName: "Latency",
+    alarmDescription: "Alarm detects a high rate of latency errors.",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    extendedStatistic: "p90",
     period: 60,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
-    threshold: 5,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-    ],
-  },
-  {
-    name: "SignUpThrottles",
-    alarmName: `${testConfig.stackName}-cognito-sign-up-throttles`,
-    actionsEnabled: true,
-    metricName: "SignUpThrottles",
-    alarmDescription: "Alarm when the sign up rate exceeds 5 per minute",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 5,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-    ],
-  },
-  {
-    name: "TokenRefreshThrottles",
-    alarmName: `${testConfig.stackName}-cognito-token-refresh-throttles`,
-    actionsEnabled: true,
-    metricName: "TokenRefreshThrottles",
-    alarmDescription: "Alarm when the token refresh rate exceeds 5 per minute",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 5,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-    ],
-  },
-  {
-    alarmName: testConfig.cloudWatchWafRateLimitingAlarmName,
-    actionsEnabled: true,
-    metricName: "WAFErrorRate",
-    alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
-    dimensions: [
-      { Name: "WebACL", Value: testConfig.cognitoWebApplicationFirewall },
-    ],
-    topicDisplayName: "cognito-waf-alarm-topic",
+    threshold: 2500,
+    comparisonOperator: "GreaterThanOrEqualToThreshold",
+    dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
   },
 ];
 
@@ -112,6 +77,7 @@ describe.each(testCases)(
     alarmDescription,
     dimensions,
     statistic,
+    extendedStatistic,
     period,
     evaluationPeriods,
     datapointsToAlarm,
@@ -138,13 +104,16 @@ describe.each(testCases)(
       assert.equal(alarm.MetricName, metricName);
     });
 
-    it("should have Namespace as 'AWS/Cognito'", () => {
-      const expectedNamespace = ['AWS/Cognito', 'AWS/WAFV2'];
-      assert.include(expectedNamespace, alarm.Namespace);
+    it("should have Namespace as 'AWS/ApiGateway'", () => {
+      assert.equal(alarm.Namespace, "AWS/ApiGateway");
     });
 
     it(`should have Statistic as ${statistic}`, () => {
       assert.equal(alarm.Statistic, statistic);
+    });
+
+    it(`should have ExtendedStatistic as ${extendedStatistic}`, () => {
+      assert.equal(alarm.ExtendedStatistic, extendedStatistic);
     });
 
     it(`should have Period of ${period} seconds`, () => {
