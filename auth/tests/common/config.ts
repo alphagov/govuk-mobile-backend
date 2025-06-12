@@ -21,11 +21,15 @@ const getTestConfig = () => {
     "CFN_CloudWatchAlarmSignInThrottlesName",
     "CFN_CloudWatchAlarmTokenRefreshThrottlesName",
     "CFN_CloudWatchAlarmFederationThrottlesName",
+    "CFN_CloudwatchAlarmAuthProxy4xxErrors",
+    "CFN_CloudwatchAlarmAuthProxy5xxErrors",
+    "CFN_CloudwatchAlarmAuthProxyLatencyErrors",
     "CFN_SlackSupportChannelConfigurationARN",
     "CFN_CognitoSecretName",
     "CFN_SharedSignalClientId",
     "CFN_PostAuthenticationFunctionName",
     "CFN_AWSAccountId",
+    "CFN_AuthProxyId",
     "CFN_AuthProxyFunctionName",
     "CFN_AuthProxyLogGroupName",
     "CFN_StackName",
@@ -66,9 +70,16 @@ const getTestConfig = () => {
       process.env.CFN_CloudWatchAlarmTokenRefreshThrottlesName!,
     cloudWatchAlarmFederationThrottlesName:
       process.env.CFN_CloudWatchAlarmFederationThrottlesName!,
+    cloudWatchAlarmAuthProxy4xxErrors:
+      process.env.CFN_CloudwatchAlarmAuthProxy4xxErrors!,
+    cloudWatchAlarmAuthProxy5xxErrors:
+      process.env.CFN_CloudwatchAlarmAuthProxy5xxErrors!,
+    cloudWatchAlarmAuthProxyLatencyErrors:
+      process.env.CFN_CloudwatchAlarmAuthProxyLatencyErrors!,
     chatConfigurationArn: process.env.CFN_SlackSupportChannelConfigurationARN!,
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
     authProxyUrl: process.env.CFN_AuthProxyUrl!,
+    authProxyId: process.env.CFN_AuthProxyId!,
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName,
     configStackName: process.env.CFN_ConfigStackName,
