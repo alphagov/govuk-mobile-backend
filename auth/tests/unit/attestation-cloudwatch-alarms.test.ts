@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
-
+import { testConfig } from "../common/config";
 import path from "path";
-import { AlarmTestCase } from "../common/alarm-test-case";
+import { AlarmTestCase } from "./alarm-test-case";
 
 const template = loadTemplateFromFile(
   path.join(__dirname, "..", "..", "template.yaml")
@@ -11,62 +11,76 @@ const template = loadTemplateFromFile(
 const testCases: AlarmTestCase[] = [
   {
     name: "4xx",
-    alarmResource: "CloudWatchAlarmAttestation4xxErrors",
-    topicResource: "CloudWatchAlarmAttestation4xxTopicPagerDuty",
-    subscriptionResource:
-      "CloudWatchAlarmAttestation4xxTopicSubscriptionPagerDuty",
-    topicPolicyResource:
-      "CloudWatchAlarmAttestation4xxAlarmPublishToTopicPolicy",
+    alarmName: `auth-proxy-4xx-errors`,
+    actionsEnabled: true,
+    alarmResource: "CloudwatchAlarmAuthProxy4xxErrors",
+    topicResource: "CloudWatchAlarmTopicPagerDuty",
+    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
+    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "4XXError",
     alarmDescription: "Alarm detects a high rate of client-side errors.",
-    topicDisplayName: "attestation-4xx-alarm-topic",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    statistic: "Average",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 0.05,
+    comparisonOperator: "GreaterThanThreshold",
     dimensions: [
       { Name: "ApiName", Value: { Ref: "AttestationProxyApi" } },
-      { Name: "Stage", Value: { Ref: "AttestationProxyApi" } },
+      { Name: "Resource", Value: "/oauth2/token" },
+      { Name: "Stage", Value: { Ref: "Environment" } },
+      { Name: "Method", Value: "POST" },
     ],
   },
   {
     name: "5xx",
-    alarmResource: "CloudWatchAlarmAttestation5xxErrors",
-    topicResource: "CloudWatchAlarmAttestation5xxTopicPagerDuty",
-    subscriptionResource:
-      "CloudWatchAlarmAttestation5xxTopicSubscriptionPagerDuty",
-    topicPolicyResource:
-      "CloudWatchAlarmAttestation5xxAlarmPublishToTopicPolicy",
+    alarmName: `auth-proxy-5xx-errors`,
+    actionsEnabled: true,
+    alarmResource: "CloudwatchAlarmAuthProxy5xxErrors",
+    topicResource: "CloudWatchAlarmTopicPagerDuty",
+    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
+    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "5XXError",
-    alarmDescription:
-      "Alarm helps to detect a high rate of server-side errors.",
-    topicDisplayName: "attestation-5xx-alarm-topic",
-    dimensions: [
-      { Name: "ApiName", Value: { Ref: "AttestationProxyApi" } },
-      { Name: "Stage", Value: { Ref: "AttestationProxyApi" } },
-    ],
+    alarmDescription: "Alarm detects a high rate of server-side errors.",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    statistic: "Average",
+    period: 60,
+    evaluationPeriods: 3,
+    datapointsToAlarm: 3,
+    threshold: 0.05,
+    comparisonOperator: "GreaterThanThreshold",
+    dimensions: [{ Name: "ApiName", Value: { Ref: "AttestationProxyApi" } }],
   },
   {
     name: "Latency",
-    alarmResource: "CloudWatchAlarmAttestationLatencyErrors",
-    topicResource: "CloudWatchAlarmAttestationLatencyTopicPagerDuty",
-    subscriptionResource:
-      "CloudWatchAlarmAttestationLatencyTopicSubscriptionPagerDuty",
-    topicPolicyResource:
-      "CloudWatchAlarmAttestationLatencyAlarmPublishToTopicPolicy",
+    alarmName: `auth-proxy-latency-errors`,
+    actionsEnabled: true,
+    alarmResource: "CloudwatchAlarmAuthProxyLatencyErrors",
+    topicResource: "CloudWatchAlarmTopicPagerDuty",
+    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
+    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "Latency",
-    alarmDescription:
-      "Alarm helps to detect when the API Gateway requests in a stage have high latency.",
-    topicDisplayName: "attestation-latency-alarm-topic",
-    dimensions: [
-      { Name: "ApiName", Value: { Ref: "AttestationProxyApi" } },
-      { Name: "Stage", Value: { Ref: "AttestationProxyApi" } },
-    ],
+    alarmDescription: "Alarm detects a high rate of latency errors.",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    extendedStatistic: "p90",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 2500,
+    comparisonOperator: "GreaterThanOrEqualToThreshold",
+    dimensions: [{ Name: "ApiName", Value: { Ref: "AttestationProxyApi" } }],
   },
 ];
 
 describe.each(testCases)(
   "Set up CloudWatch Alarm for Attestation Api Gateway $name errors with supporting alarm resources",
   ({
+    alarmName,
+    actionsEnabled,
     alarmResource,
     topicResource,
     subscriptionResource,
@@ -76,6 +90,13 @@ describe.each(testCases)(
     alarmDescription,
     topicDisplayName,
     dimensions,
+    statistic,
+    extendedStatistic,
+    period,
+    evaluationPeriods,
+    datapointsToAlarm,
+    threshold,
+    comparisonOperator,
   }) => {
     const cloudWatchAlarmResources = template.findResources(
       "AWS::CloudWatch::Alarm"
@@ -135,16 +156,7 @@ describe.each(testCases)(
         slackChannelConfigurationUnderTest.Properties.SnsTopicArns
       ).toEqual([
         {
-          Ref: "CloudWatchAlarmSignUpThrottlesTopicPagerDuty",
-        },
-        {
-          Ref: "CloudWatchAlarmSignInThrottlesTopicPagerDuty",
-        },
-        {
-          Ref: "CloudWatchAlarmTokenRefreshThrottlesTopicPagerDuty",
-        },
-        {
-          Ref: "CloudWatchAlarmFederationThrottlesTopicPagerDuty",
+          Ref: "CloudWatchAlarmTopicPagerDuty",
         },
       ]);
       expect(slackChannelConfigurationUnderTest.Properties.Tags).toEqual([
@@ -196,6 +208,12 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest).toBeDefined();
       expect(cloudWatchAlarmUnderTest.Type).toEqual("AWS::CloudWatch::Alarm");
       expect(cloudWatchAlarmUnderTest.Properties).toBeDefined();
+      expect(cloudWatchAlarmUnderTest.Properties.AlarmName).toEqual({
+        "Fn::Sub": "${AWS::StackName}-" + alarmName,
+      });
+      expect(cloudWatchAlarmUnderTest.Properties.ActionsEnabled).toEqual(
+        actionsEnabled
+      );
       expect(cloudWatchAlarmUnderTest.Properties.AlarmDescription).toEqual(
         alarmDescription
       );
@@ -205,12 +223,21 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(
         "AWS/ApiGateway"
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual("Sum");
-      expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(60);
-      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(5);
-      expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(5);
+
+      expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
+      expect(cloudWatchAlarmUnderTest.Properties.ExtendedStatistic).toEqual(
+        extendedStatistic
+      );
+      expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(period);
+      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(
+        evaluationPeriods
+      );
+      expect(cloudWatchAlarmUnderTest.Properties.DatapointsToAlarm).toEqual(
+        datapointsToAlarm
+      );
+      expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(threshold);
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
-        "GreaterThanThreshold"
+        comparisonOperator
       );
       expect(cloudWatchAlarmUnderTest.Properties.Dimensions).toEqual(
         dimensions

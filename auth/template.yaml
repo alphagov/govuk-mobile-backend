@@ -359,6 +359,7 @@ Resources:
   CloudWatchAlarmSignUpThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-sign-up-throttles
       AlarmDescription: "Alarm when the sign up rate exceeds 5 per minute"
       MetricName: SignUpThrottles
       Namespace: AWS/Cognito
@@ -373,6 +374,7 @@ Resources:
           Value: !Ref CognitoUserPool
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
+      ActionsEnabled: true
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -388,6 +390,7 @@ Resources:
   CloudWatchAlarmSignInThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-sign-in-throttles
       AlarmDescription: "Alarm when the sign in rate exceeds 5 per minute"
       MetricName: SignInThrottles
       Namespace: AWS/Cognito
@@ -402,6 +405,7 @@ Resources:
           Value: !Ref CognitoUserPool
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
+      ActionsEnabled: true
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -417,6 +421,7 @@ Resources:
   CloudWatchAlarmTokenRefreshThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-token-refresh-throttles
       AlarmDescription: "Alarm when the token refresh rate exceeds 5 per minute"
       MetricName: TokenRefreshThrottles
       Namespace: AWS/Cognito
@@ -431,6 +436,7 @@ Resources:
           Value: !Ref CognitoUserPool
         - Name: UserPoolClient
           Value: !Ref CognitoUserPoolClient
+      ActionsEnabled: true
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -446,6 +452,7 @@ Resources:
   CloudWatchAlarmFederationThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-federation-throttles
       AlarmDescription: "Alarm when federated requests exceeds 5 per minute"
       MetricName: FederationThrottles
       Namespace: AWS/Cognito
@@ -462,6 +469,100 @@ Resources:
           Value: !Ref CognitoUserPoolClient
         - Name: IdentityProvider
           Value: !Ref UserPoolIdentityProvider
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudwatchAlarmAuthProxy4xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-auth-proxy-4xx-errors
+      AlarmDescription: "Alarm detects a high rate of client-side errors."
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 4XXError
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref AttestationProxyApi
+        - Name: Resource
+          Value: /oauth2/token
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Method
+          Value: POST
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudwatchAlarmAuthProxy5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-auth-proxy-5xx-errors
+      AlarmDescription: "Alarm detects a high rate of server-side errors."
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 5XXError
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref AttestationProxyApi
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudwatchAlarmAuthProxyLatencyErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-auth-proxy-latency-errors
+      AlarmDescription: "Alarm detects a high rate of latency errors."
+      Namespace: AWS/ApiGateway
+      ExtendedStatistic: p90
+      ActionsEnabled: true
+      MetricName: Latency
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 2500
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref AttestationProxyApi
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
-
+import { testConfig } from "../common/config";
 import path from "path";
-import { AlarmTestCase } from "../common/alarm-test-case";
+import { AlarmTestCase } from "./alarm-test-case";
 
 const template = loadTemplateFromFile(
   path.join(__dirname, "..", "..", "template.yaml")
@@ -11,6 +11,8 @@ const template = loadTemplateFromFile(
 const testCases: AlarmTestCase[] = [
   {
     name: "FederationThrottles",
+    alarmName: "cognito-federation-throttles",
+    actionsEnabled: true,
     alarmResource: "CloudWatchAlarmFederationThrottles",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
@@ -19,6 +21,12 @@ const testCases: AlarmTestCase[] = [
     metricName: "FederationThrottles",
     alarmDescription: "Alarm when federated requests exceeds 5 per minute",
     topicDisplayName: "cloudwatch-alarm-topic",
+    statistic: "Sum",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 5,
+    comparisonOperator: "GreaterThanThreshold",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
@@ -27,6 +35,8 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: "SignInThrottles",
+    alarmName: "cognito-sign-in-throttles",
+    actionsEnabled: true,
     alarmResource: "CloudWatchAlarmSignInThrottles",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
@@ -35,6 +45,12 @@ const testCases: AlarmTestCase[] = [
     metricName: "SignInThrottles",
     alarmDescription: "Alarm when the sign in rate exceeds 5 per minute",
     topicDisplayName: "cloudwatch-alarm-topic",
+    statistic: "Sum",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 5,
+    comparisonOperator: "GreaterThanThreshold",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
@@ -42,6 +58,8 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: "SignUpThrottles",
+    alarmName: "cognito-sign-up-throttles",
+    actionsEnabled: true,
     alarmResource: "CloudWatchAlarmSignUpThrottles",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
@@ -50,6 +68,12 @@ const testCases: AlarmTestCase[] = [
     metricName: "SignUpThrottles",
     alarmDescription: "Alarm when the sign up rate exceeds 5 per minute",
     topicDisplayName: "cloudwatch-alarm-topic",
+    statistic: "Sum",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 5,
+    comparisonOperator: "GreaterThanThreshold",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } }, //pragma: allowlist secret
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } }, //pragma: allowlist secret
@@ -57,6 +81,8 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: "TokenRefreshThrottles",
+    alarmName: "cognito-token-refresh-throttles",
+    actionsEnabled: true,
     alarmResource: "CloudWatchAlarmTokenRefreshThrottles",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
@@ -65,6 +91,12 @@ const testCases: AlarmTestCase[] = [
     metricName: "TokenRefreshThrottles",
     alarmDescription: "Alarm when the token refresh rate exceeds 5 per minute",
     topicDisplayName: "cloudwatch-alarm-topic",
+    statistic: "Sum",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 5,
+    comparisonOperator: "GreaterThanThreshold",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
@@ -75,6 +107,8 @@ const testCases: AlarmTestCase[] = [
 describe.each(testCases)(
   "Set up CloudWatch Alarm for Cognito $name with supporting alarm resources",
   ({
+    alarmName,
+    actionsEnabled,
     alarmResource,
     topicResource,
     subscriptionResource,
@@ -84,6 +118,12 @@ describe.each(testCases)(
     alarmDescription,
     topicDisplayName,
     dimensions,
+    statistic,
+    period,
+    evaluationPeriods,
+    datapointsToAlarm,
+    threshold,
+    comparisonOperator,
   }) => {
     const cloudWatchAlarmResources = template.findResources(
       "AWS::CloudWatch::Alarm"
@@ -195,6 +235,12 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest).toBeDefined();
       expect(cloudWatchAlarmUnderTest.Type).toEqual("AWS::CloudWatch::Alarm");
       expect(cloudWatchAlarmUnderTest.Properties).toBeDefined();
+      expect(cloudWatchAlarmUnderTest.Properties.AlarmName).toEqual({
+        "Fn::Sub": "${AWS::StackName}-" + alarmName,
+      });
+      expect(cloudWatchAlarmUnderTest.Properties.ActionsEnabled).toEqual(
+        actionsEnabled
+      );
       expect(cloudWatchAlarmUnderTest.Properties.AlarmDescription).toEqual(
         alarmDescription
       );
@@ -204,12 +250,17 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(
         "AWS/Cognito"
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual("Sum");
-      expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(60);
-      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(5);
-      expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(5);
+      expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
+      expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(period);
+      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(
+        evaluationPeriods
+      );
+      expect(cloudWatchAlarmUnderTest.Properties.DatapointsToAlarm).toEqual(
+        datapointsToAlarm
+      );
+      expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(threshold);
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
-        "GreaterThanThreshold"
+        comparisonOperator
       );
       expect(cloudWatchAlarmUnderTest.Properties.Dimensions).toEqual(
         dimensions

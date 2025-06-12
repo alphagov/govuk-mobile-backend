@@ -17,77 +17,54 @@ const chatbotClient = new ChatbotClient({ region: "us-east-2" });
 
 const testCases: AlarmTestCase[] = [
   {
-    name: "FederationThrottles",
-    alarmName: `${testConfig.stackName}-cognito-federation-throttles`,
+    name: "4xx",
+    alarmName: `${testConfig.stackName}-auth-proxy-4xx-errors`,
     actionsEnabled: true,
-    metricName: "FederationThrottles",
-    alarmDescription: "Alarm when federated requests exceeds 5 per minute",
+    metricName: "4XXError",
+    alarmDescription: "Alarm detects a high rate of client-side errors.",
     topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
+    statistic: "Average",
     period: 60,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
-    threshold: 5,
+    threshold: 0.05,
     comparisonOperator: "GreaterThanThreshold",
     dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-      { Name: "IdentityProvider", Value: "onelogin" },
+      { Name: "ApiName", Value: testConfig.authProxyId },
+      { Name: "Resource", Value: "/oauth2/token" },
+      { Name: "Stage", Value: testConfig.testEnvironment },
+      { Name: "Method", Value: "POST" },
     ],
   },
   {
-    name: "SignInThrottles",
-    alarmName: `${testConfig.stackName}-cognito-sign-in-throttles`,
+    name: "5xx",
+    alarmName: `${testConfig.stackName}-auth-proxy-5xx-errors`,
     actionsEnabled: true,
-    metricName: "SignInThrottles",
-    alarmDescription: "Alarm when the sign in rate exceeds 5 per minute",
+    metricName: "5XXError",
+    alarmDescription: "Alarm detects a high rate of server-side errors.",
     topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
+    statistic: "Average",
     period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 5,
+    evaluationPeriods: 3,
+    datapointsToAlarm: 3,
+    threshold: 0.05,
     comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-    ],
+    dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
   },
   {
-    name: "SignUpThrottles",
-    alarmName: `${testConfig.stackName}-cognito-sign-up-throttles`,
+    name: "Latency",
+    alarmName: `${testConfig.stackName}-auth-proxy-latency-errors`,
     actionsEnabled: true,
-    metricName: "SignUpThrottles",
-    alarmDescription: "Alarm when the sign up rate exceeds 5 per minute",
+    metricName: "Latency",
+    alarmDescription: "Alarm detects a high rate of latency errors.",
     topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
+    extendedStatistic: "p90",
     period: 60,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
-    threshold: 5,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-    ], //pragma: allowlist secret
-  },
-  {
-    name: "TokenRefreshThrottles",
-    alarmName: `${testConfig.stackName}-cognito-token-refresh-throttles`,
-    actionsEnabled: true,
-    metricName: "TokenRefreshThrottles",
-    alarmDescription: "Alarm when the token refresh rate exceeds 5 per minute",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 5,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "UserPool", Value: testConfig.userPoolId },
-      { Name: "UserPoolClient", Value: testConfig.clientId },
-    ],
+    threshold: 2500,
+    comparisonOperator: "GreaterThanOrEqualToThreshold",
+    dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
   },
 ];
 
@@ -128,8 +105,8 @@ describe.each(testCases)(
       assert.equal(alarm.MetricName, metricName);
     });
 
-    it("should have Namespace as 'AWS/Cognito'", () => {
-      assert.equal(alarm.Namespace, "AWS/Cognito");
+    it("should have Namespace as 'AWS/ApiGateway'", () => {
+      assert.equal(alarm.Namespace, "AWS/ApiGateway");
     });
 
     it(`should have Statistic as ${statistic}`, () => {
