@@ -47,16 +47,6 @@ Mappings:
       integration: "integration"
       production: "production"
 
-  # this flag is used to disable alarms that require an understanding of a normal baseline load
-  EnableBaselineLoadAlarms:
-    Environment:
-      local: "False"
-      build: "False"
-      dev: "False"
-      staging: "False"
-      integration: "False"
-      production: "False"
-
 Conditions:
   UseCodeSigning:
     Fn::Not:
