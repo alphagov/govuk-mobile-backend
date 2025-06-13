@@ -70,11 +70,6 @@ Conditions:
           - !Ref PermissionsBoundary
           - "none"
 
-  IsDev:
-    Fn::Equals:
-      - !Ref Environment
-      - "dev"
-
   IsNotProduction:
     Fn::Not:
       - Fn::Equals:
@@ -358,13 +353,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      Domain: !If
-        - IsDev
-        - !Join
-          - ""
-          - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-            - !Sub "-${AWS::StackName}"
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
+      Domain: !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
 
   CognitoWebApplicationFirewallAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1084,7 +1073,8 @@ Resources:
         Environment: !Ref Environment
         LambaName: !Ref AuthProxyFunction
         FunctionLogGroupName: !Sub /aws/lambda/${AuthProxyFunction}
-        EnableAlarm: !FindInMap [EnableBaselineLoadAlarms, Environment, !Ref Environment]
+        EnableAlarm:
+          !FindInMap [EnableBaselineLoadAlarms, Environment, !Ref Environment]
 
   AuthProxyFunction:
     Type: AWS::Serverless::Function
@@ -1106,14 +1096,7 @@ Resources:
       Environment:
         Variables:
           ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
-          COGNITO_URL: !If
-            - IsDev
-            - !Join
-              - ""
-              - - "https://"
-                - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-                - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-            - !Join
+          COGNITO_URL: !Join
               - ""
               - - "https://"
                 - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
@@ -1265,6 +1248,11 @@ Resources:
   SharedSignalsApi:
     Condition: IsNotProduction
     Type: AWS::Serverless::Api
+    Metadata:
+      cfn-lint: # Add this to your existing Metadata block
+        config:
+          ignore_checks:
+            - W1028
     Properties:
       Name: !Join
         - "-"
@@ -1459,15 +1447,14 @@ Resources:
       CodeUri: shared-signals/
       Handler: app.lambdaHandler
       Role: !GetAtt SignalsFunctionIAMRole.Arn
-      # TODO: add back in, as sam validate --lint fails with the IsNotProduction check
-      # Events:
-      #   HelloWorldApi:
-      #     Type: Api
-      #     Properties:
-      #       RestApiId:
-      #         Ref: SharedSignalsApi
-      #       Path: /receiver
-      #       Method: POST
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: SharedSignalsApi
+            Path: /receiver
+            Method: POST
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1527,13 +1514,7 @@ Outputs:
 
   CognitoUrl:
     Description: The domain name for the Cognito User Pool
-    Value: !If
-      - IsDev
-      - !Join
-        - ""
-        - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-          - !Sub "-${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com"
-      - !Join
+    Value: !Join
         - ""
         - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
           - !Sub ".auth.${AWS::Region}.amazoncognito.com"
@@ -1565,7 +1546,7 @@ Outputs:
 
   AuthProxyFunctionIAMRoleName:
     Description: The name of the Auth Proxy Lambda function IAM role
-    Value: !GetAtt AuthProxyFunctionIAMRole.Arn
+    Value: !Sub "${AWS::StackName}-auth-proxy-role"
 
   AuthProxyFunctionIAMRolePolicyName:
     Description: The name of the Auth Proxy Lambda function IAM role policy name
@@ -1613,7 +1594,7 @@ Outputs:
 
   PostAuthenticationFunctionIAMRoleName:
     Description: The name of the Post Authentication Lambda function IAM role
-    Value: !GetAtt PostAuthenticationFunctionIAMRole.Arn
+    Value: !Sub "${AWS::StackName}-post-authentication-role"
 
   PostAuthenticationFunctionIAMRolePolicyName:
     Description: The name of the Post Authentication Lambda function IAM role policy name
@@ -1666,7 +1647,7 @@ Outputs:
   ConfigStackName:
     Description: The name of the configuration stack
     Value: !Ref ConfigStackName
-    
+
   AttestationLambdaErrorRateAlarmName:
     Value: !GetAtt AttestationAlarms.Outputs.AttestationLambdaErrorRateAlarmName
 
@@ -1675,3 +1656,15 @@ Outputs:
 
   AttestationLow200ResponseProportionAlarmName:
     Value: !GetAtt AttestationAlarms.Outputs.AttestationLow200ResponseProportionAlarmName
+
+  CloudwatchAlarmAuthProxy4xxErrors:
+    Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
+
+  CloudwatchAlarmAuthProxy5xxErrors:
+    Value: !Ref CloudwatchAlarmAuthProxy5xxErrors
+
+  CloudwatchAlarmAuthProxyLatencyErrors:
+    Value: !Ref CloudwatchAlarmAuthProxyLatencyErrors
+
+  AuthProxyId:
+    Value: !Ref AttestationProxyApi

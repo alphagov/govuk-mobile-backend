@@ -13,7 +13,9 @@ import { AlarmTestCase } from "../acc/alarm-test-case";
 
 const cloudWatchClient = new CloudWatchClient({ region: testConfig.region });
 const snsClient = new SNSClient({ region: testConfig.region });
-const chatbotClient = new ChatbotClient({ region: testConfig.region });
+const chatbotClient = new ChatbotClient({
+  region: 'eu-west-1' // only supported region
+}); 
 
 const testCases: AlarmTestCase[] = [
   {
@@ -108,10 +110,8 @@ describe.each(testCases)(
     actionsEnabled,
     metricName,
     alarmDescription,
-    topicDisplayName,
     dimensions,
     statistic,
-    extendedStatistic,
     period,
     evaluationPeriods,
     datapointsToAlarm,
