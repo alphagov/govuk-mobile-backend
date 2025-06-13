@@ -40,7 +40,7 @@ describe("attestation lambda", () => {
     })
 
     describe("waf", () => {
-        const numRequests = 600;
+        const numRequests = 1000;
         let responseCodes: number[] = [];
         const failRequestFn = async () => {
             return axios.post(`${testConfig.authProxyUrl}/oauth2/token`)
@@ -59,6 +59,8 @@ describe("attestation lambda", () => {
         it("should respond with 429 error code when rate limit is exceeded", async () => {
             expect(responseCodes).toContain(429);
         });
+    }, {
+        repeats: 1,
     });
 
     describe('cloudwatch', () => {
