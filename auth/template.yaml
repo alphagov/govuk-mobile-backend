@@ -162,6 +162,35 @@ Resources:
       EnableTokenRevocation: true
       AllowedOAuthFlowsUserPoolClient: true
 
+  CognitoWebApplicationFirewallAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-waf-error-rate
+      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
+      ActionsEnabled: true
+      MetricName: WAFErrorRate
+      Namespace: AWS/WAFV2
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: WebACL
+          Value: !Ref CognitoWebApplicationFirewall
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty  
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication    
+
   CognitoWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
     Properties:
@@ -1753,6 +1782,10 @@ Outputs:
     Description: The name of the CloudWatch alarm for sign in throttles
     Value: !Ref CloudWatchAlarmSignInThrottles
 
+  CloudWatchWafRateLimitingAlarmName:
+    Description: The name of the CloudWatch alarm for WAF throttles
+    Value: !Ref CognitoWebApplicationFirewallAlarm  
+
   CloudWatchAlarmTokenRefreshThrottlesName:
     Description: The name of the CloudWatch alarm for token refresh throttles
     Value: !Ref CloudWatchAlarmTokenRefreshThrottles
@@ -1786,14 +1819,14 @@ Outputs:
   AttestationLow200ResponseProportionAlarmName:
     Value: !Ref AttestationLow200ResponseProportionAlarm
 
-  CloudwatchAlarmAuthProxy4xxErrors:
-    Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
-
   CloudwatchAlarmAuthProxy5xxErrors:
     Value: !Ref CloudwatchAlarmAuthProxy5xxErrors
 
   CloudwatchAlarmAuthProxyLatencyErrors:
     Value: !Ref CloudwatchAlarmAuthProxyLatencyErrors
+
+  CloudwatchAlarmAuthProxy4xxErrors:
+    Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
 
   AuthProxyId:
     Value: !Ref AttestationProxyApi

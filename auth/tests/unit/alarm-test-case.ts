@@ -10,12 +10,13 @@ export type AlarmTestCase = {
   metricName: string;
   alarmDescription: string;
   topicDisplayName: string;
-  statistic?: string;
-  extendedStatistic?: string;
   period: number;
   evaluationPeriods: number;
   datapointsToAlarm: number;
   threshold: number;
   comparisonOperator: string;
+  namespace: string;
   dimensions: any[];
+  statistic?: string;
+  extendedStatistic?: string;
 };
