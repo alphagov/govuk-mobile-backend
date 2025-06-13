@@ -1055,7 +1055,8 @@ Resources:
         Environment: !Ref Environment
         LambaName: !Ref AuthProxyFunction
         FunctionLogGroupName: !Sub /aws/lambda/${AuthProxyFunction}
-        EnableAlarm: !FindInMap [EnableBaselineLoadAlarms, Environment, !Ref Environment]
+        EnableAlarm:
+          !FindInMap [EnableBaselineLoadAlarms, Environment, !Ref Environment]
 
   AuthProxyFunction:
     Type: AWS::Serverless::Function
@@ -1229,6 +1230,11 @@ Resources:
   SharedSignalsApi:
     Condition: IsNotProduction
     Type: AWS::Serverless::Api
+    Metadata:
+      cfn-lint: # Add this to your existing Metadata block
+        config:
+          ignore_checks:
+            - W1028
     Properties:
       Name: !Join
         - "-"
@@ -1423,15 +1429,14 @@ Resources:
       CodeUri: shared-signals/
       Handler: app.lambdaHandler
       Role: !GetAtt SignalsFunctionIAMRole.Arn
-      # TODO: add back in, as sam validate --lint fails with the IsNotProduction check
-      # Events:
-      #   HelloWorldApi:
-      #     Type: Api
-      #     Properties:
-      #       RestApiId:
-      #         Ref: SharedSignalsApi
-      #       Path: /receiver
-      #       Method: POST
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: SharedSignalsApi
+            Path: /receiver
+            Method: POST
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1622,7 +1627,7 @@ Outputs:
   ConfigStackName:
     Description: The name of the configuration stack
     Value: !Ref ConfigStackName
-    
+
   AttestationLambdaErrorRateAlarmName:
     Value: !GetAtt AttestationAlarms.Outputs.AttestationLambdaErrorRateAlarmName
 
