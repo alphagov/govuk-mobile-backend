@@ -175,7 +175,9 @@ Resources:
   CognitoWebApplicationFirewallAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
+      AlarmName: !Sub ${AWS::StackName}-cognito-waf-error-rate
       AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
+      ActionsEnabled: true
       MetricName: WAFErrorRate
       Namespace: AWS/WAFV2
       Statistic: Sum
@@ -188,9 +190,9 @@ Resources:
         - Name: WebACL
           Value: !Ref CognitoWebApplicationFirewall
       AlarmActions:
-        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
+        - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty  
+        - !Ref CloudWatchAlarmTopicPagerDuty  
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1827,35 +1829,14 @@ Outputs:
   AttestationLow200ResponseProportionAlarmName:
     Value: !Ref AttestationLow200ResponseProportionAlarm
 
-  CloudwatchAlarmAuthProxy4xxErrors:
-    Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
-
   CloudwatchAlarmAuthProxy5xxErrors:
     Value: !Ref CloudwatchAlarmAuthProxy5xxErrors
 
   CloudwatchAlarmAuthProxyLatencyErrors:
     Value: !Ref CloudwatchAlarmAuthProxyLatencyErrors
 
-  AuthProxyId:
-    Value: !Ref AttestationProxyApi
-
-  AttestationLambdaErrorRateAlarmName:
-    Value: !GetAtt AttestationAlarms.Outputs.AttestationLambdaErrorRateAlarmName
-
-  AttestationLowCompletionAlarmName:
-    Value: !GetAtt AttestationAlarms.Outputs.AttestationLowCompletionAlarmName
-
-  AttestationLow200ResponseProportionAlarmName:
-    Value: !GetAtt AttestationAlarms.Outputs.AttestationLow200ResponseProportionAlarmName
-
   CloudwatchAlarmAuthProxy4xxErrors:
     Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
-
-  CloudwatchAlarmAuthProxy5xxErrors:
-    Value: !Ref CloudwatchAlarmAuthProxy5xxErrors
-
-  CloudwatchAlarmAuthProxyLatencyErrors:
-    Value: !Ref CloudwatchAlarmAuthProxyLatencyErrors
 
   AuthProxyId:
     Value: !Ref AttestationProxyApi

@@ -108,15 +108,15 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: "CognitoWafThrottles",
+    alarmName: "cognito-waf-error-rate",
+    actionsEnabled: true,
     alarmResource: "CognitoWebApplicationFirewallAlarm",
-    topicResource: "CloudWatchAlarmWafThrottlesTopicPagerDuty",
+    topicResource: "CloudWatchAlarmTopicPagerDuty",
     alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
     metricName: "WAFErrorRate",
-    topicDisplayName: "cognito-waf-alarm-topic",
-    topicPolicyResource:
-      "CloudWatchAlarmWafThrottlesAlarmPublishToTopicPolicy",
-    subscriptionResource:
-      "CloudWatchAlarmWafThrottlesTopicSubscriptionPagerDuty",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
+    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     statistic: "Sum",
     period: 60,
