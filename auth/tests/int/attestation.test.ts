@@ -3,7 +3,7 @@ import { LoggingDriver } from "../driver/logging.driver"
 import { LambdaClient, InvokeCommand, LogType } from "@aws-sdk/client-lambda";
 import { testConfig } from "../common/config";
 import { repeatedlyRequestEndpoint } from "../driver/waf.driver";
-import axios from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { CloudWatchClient, DescribeAlarmsCommand, SetAlarmStateCommand } from "@aws-sdk/client-cloudwatch";
 const event = require("../fixtures/authProxyEvent.json")
 
@@ -40,18 +40,23 @@ describe("attestation lambda", () => {
     })
 
     describe("waf", () => {
-        const numRequests = 45000;
-        const responseCodes = [];
-        const requestFn = async () => {
-            const response = await axios.post(`${testConfig.authProxyUrl}/oauth2/token`)
-            return response
+        const numRequests = 600;
+        let responseCodes: number[] = [];
+        const failRequestFn = async () => {
+            return axios.post(`${testConfig.authProxyUrl}/oauth2/token`)
+                .then((response: AxiosResponse) => {
+                    return response.status as number;
+                })
+                .catch((error: AxiosError) => {
+                    return error?.status as number; 
+                })
         }
 
         beforeAll(async () => {
-            await repeatedlyRequestEndpoint(numRequests, requestFn, responseCodes, 2000);
+            responseCodes = await repeatedlyRequestEndpoint(numRequests, failRequestFn);
         });
 
-        it.skip("should respond with 429 error code when rate limit is exceeded", async () => {
+        it("should respond with 429 error code when rate limit is exceeded", async () => {
             expect(responseCodes).toContain(429);
         });
     });
