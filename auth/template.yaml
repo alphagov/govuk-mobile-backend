@@ -47,6 +47,16 @@ Mappings:
       integration: "integration"
       production: "production"
 
+  # this flag is used to disable alarms that require an understanding of a normal baseline load
+  EnableBaselineLoadAlarms:
+    Environment:
+      local: "False"
+      build: "False"
+      dev: "False"
+      staging: "False"
+      integration: "False"
+      production: "False"
+
 Conditions:
   UseCodeSigning:
     Fn::Not:
@@ -161,6 +171,33 @@ Resources:
       RefreshTokenValidity: 31536000 # 1 year in seconds (365 days * 24 hours * 3600 seconds)
       EnableTokenRevocation: true
       AllowedOAuthFlowsUserPoolClient: true
+
+  CognitoWebApplicationFirewallAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
+      MetricName: WAFErrorRate
+      Namespace: AWS/WAFV2
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: WebACL
+          Value: !Ref CognitoWebApplicationFirewall
+      AlarmActions:
+        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmWafThrottlesTopicPagerDuty  
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication    
 
   CognitoWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
@@ -1753,6 +1790,10 @@ Outputs:
     Description: The name of the CloudWatch alarm for sign in throttles
     Value: !Ref CloudWatchAlarmSignInThrottles
 
+  CloudWatchWafRateLimitingAlarmName:
+    Description: The name of the CloudWatch alarm for WAF throttles
+    Value: !Ref CognitoWebApplicationFirewallAlarm  
+
   CloudWatchAlarmTokenRefreshThrottlesName:
     Description: The name of the CloudWatch alarm for token refresh throttles
     Value: !Ref CloudWatchAlarmTokenRefreshThrottles
@@ -1785,6 +1826,27 @@ Outputs:
 
   AttestationLow200ResponseProportionAlarmName:
     Value: !Ref AttestationLow200ResponseProportionAlarm
+
+  CloudwatchAlarmAuthProxy4xxErrors:
+    Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
+
+  CloudwatchAlarmAuthProxy5xxErrors:
+    Value: !Ref CloudwatchAlarmAuthProxy5xxErrors
+
+  CloudwatchAlarmAuthProxyLatencyErrors:
+    Value: !Ref CloudwatchAlarmAuthProxyLatencyErrors
+
+  AuthProxyId:
+    Value: !Ref AttestationProxyApi
+
+  AttestationLambdaErrorRateAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLambdaErrorRateAlarmName
+
+  AttestationLowCompletionAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLowCompletionAlarmName
+
+  AttestationLow200ResponseProportionAlarmName:
+    Value: !GetAtt AttestationAlarms.Outputs.AttestationLow200ResponseProportionAlarmName
 
   CloudwatchAlarmAuthProxy4xxErrors:
     Value: !Ref CloudwatchAlarmAuthProxy4xxErrors

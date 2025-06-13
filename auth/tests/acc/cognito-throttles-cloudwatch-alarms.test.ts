@@ -91,6 +91,16 @@ const testCases: AlarmTestCase[] = [
       { Name: "UserPoolClient", Value: testConfig.clientId },
     ],
   },
+  {
+    alarmName: testConfig.cloudWatchWafRateLimitingAlarmName,
+    actionsEnabled: true,
+    metricName: "WAFErrorRate",
+    alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
+    dimensions: [
+      { Name: "WebACL", Value: testConfig.cognitoWebApplicationFirewall },
+    ],
+    topicDisplayName: "cognito-waf-alarm-topic",
+  },
 ];
 
 describe.each(testCases)(
@@ -129,7 +139,8 @@ describe.each(testCases)(
     });
 
     it("should have Namespace as 'AWS/Cognito'", () => {
-      assert.equal(alarm.Namespace, "AWS/Cognito");
+      const expectedNamespace = ['AWS/Cognito', 'AWS/WAFV2'];
+      assert.include(expectedNamespace, alarm.Namespace);
     });
 
     it(`should have Statistic as ${statistic}`, () => {
