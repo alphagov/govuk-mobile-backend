@@ -15,6 +15,7 @@
     "@aws-sdk/client-ssm": "^3.825.0",
     "dotenv": "^16.5.0",
     "esbuild": "^0.25.0",
+    "json-schema-to-openapi-schema": "^0.4.0",
     "jsonwebtoken": "^9.0.2",
     "jwk-to-pem": "^2.0.7",
     "zod": "^3.25.49"
