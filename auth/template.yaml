@@ -47,16 +47,6 @@ Mappings:
       integration: "integration"
       production: "production"
 
-  # this flag is used to disable alarms that require an understanding of a normal baseline load
-  EnableBaselineLoadAlarms:
-    Environment:
-      local: "False"
-      build: "False"
-      dev: "False"
-      staging: "False"
-      integration: "False"
-      production: "False"
-
 Conditions:
   UseCodeSigning:
     Fn::Not:
@@ -1033,19 +1023,195 @@ Resources:
         - Key: System
           Value: Authentication
 
-  AttestationAlarms:
-    Type: AWS::Serverless::Application
+  Attestation200ResponseCountMetricFilter:
+    Type: AWS::Logs::MetricFilter
     Properties:
-      Location: proxy/alarms.yaml
-      Parameters:
-        ApiId: !Ref AttestationProxyApi
-        ApiLogGroupName: !Ref AttestationProxyApiAccessLogGroup
-        AlarmTopic: !Ref CloudWatchAlarmTopicPagerDuty
-        Environment: !Ref Environment
-        LambaName: !Ref AuthProxyFunction
-        FunctionLogGroupName: !Sub /aws/lambda/${AuthProxyFunction}
-        EnableAlarm:
-          !FindInMap [EnableBaselineLoadAlarms, Environment, !Ref Environment]
+      FilterPattern: '{ ($.resourcePath = "/oauth2/token") && ($.status = "200") }'
+      LogGroupName: !Ref AttestationProxyApiAccessLogGroup
+      MetricTransformations:
+        - MetricName: Attestation200ResponseCount
+          MetricNamespace: !Sub ${AWS::StackName}/Responses
+          MetricValue: "1"
+
+  AttestationLambdaErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: true
+      AlarmDescription: "Alarm for high number of attestation errors. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmName: !Sub ${AWS::StackName}-attestation-lambda-error-rate
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      Metrics:
+        - Id: lambdaInvocations
+          Label: Sum of invocations
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: Resource
+                  Value: !Ref AuthProxyFunction
+                - Name: FunctionName
+                  Value: !Ref AuthProxyFunction
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+            Period: 60
+            Stat: Sum
+          ReturnData: false
+        - Id: lambdaErrors
+          Label: Sum of attestation errors
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: Resource
+                  Value: !Ref AuthProxyFunction
+                - Name: FunctionName
+                  Value: !Ref AuthProxyFunction
+              MetricName: Errors
+              Namespace: AWS/Lambda
+            Period: 60
+            Stat: Sum
+          ReturnData: false
+        - Expression: (lambdaErrors / lambdaInvocations)*100
+          Id: lambdaErrorPercentage
+          Label: Percentage of invocations that result in a function error
+          ReturnData: false
+        - Expression: IF(lambdaInvocations>=10, lambdaErrorPercentage)
+          Id: lambdaErrorPercentageHighTraffic
+          Label: Percentage of invocations that result in a function error with at least 10 invocations a minute
+          ReturnData: true
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Threshold: 10
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AttestationLowCompletionAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: true
+      AlarmDescription: "A large proportion of Attestation requests have not completed successfully.\nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmName: !Sub ${AWS::StackName}-attestation-low-completion
+      ComparisonOperator: LessThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      Metrics:
+        - Id: lambdaLogStarted
+          Label: Sum of ATTESTATION_STARTED messageCodes for lambda
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: MessageCode
+                  Value: ATTESTATION_STARTED
+                - Name: Level
+                  Value: INFO
+              MetricName: ClientAttestationMessageCode
+              Namespace: !Sub ${AWS::StackName}/LogMessages
+            Period: 60
+            Stat: Sum
+          ReturnData: false
+        - Id: lambdaLogCompleted
+          Label: Sum of ATTESTATION_COMPLETED messageCodes for lambda
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: MessageCode
+                  Value: ATTESTATION_COMPLETED
+                - Name: Level
+                  Value: INFO
+              MetricName: ClientAttestationMessageCode
+              Namespace: !Sub ${AWS::StackName}/LogMessages
+            Period: 60
+            Stat: Sum
+          ReturnData: false
+        - Expression: (lambdaLogCompleted / lambdaLogStarted)*100
+          Id: lambdaLogCompletePercentage
+          Label: Percentage of invocations that log a SUCCESS code against a STARTED code
+          ReturnData: false
+        - Expression: IF(lambdaLogStarted>=50, lambdaLogCompletePercentage)
+          Id: lambdaLogCompletePercentageHighTraffic
+          Label: Completion threshold calculation
+          ReturnData: true
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Threshold: 75
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AttestationLow200ResponseProportionAlarm:
+    Type: AWS::CloudWatch::Alarm
+    DependsOn:
+      - Attestation200ResponseCountMetricFilter
+    Properties:
+      ActionsEnabled: false # disable until baseline is established
+      AlarmDescription: "A decrease has been detected in the proportion of 200 responses returned from the attestation endpoint, \nbased on the anomaly detection model.\nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmName: !Sub ${AWS::StackName}-attestation-low-200-response-proportion
+      ComparisonOperator: LessThanLowerThreshold
+      DatapointsToAlarm: 5
+      EvaluationPeriods: 5
+      Metrics:
+        - Id: m1
+          Label: Count of 200 responses from attestation
+          MetricStat:
+            Metric:
+              MetricName: Attestation200ResponseCount
+              Namespace: !Sub ${AWS::StackName}/Responses
+            Period: 120
+            Stat: Sum
+          ReturnData: false
+        - Id: m2
+          Label: Sum of API requests sent to the /oauth2/token endpoint
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: Method
+                  Value: POST
+                - Name: ApiId
+                  Value: !Ref AttestationProxyApi
+                - Name: Stage
+                  Value: !Ref Environment
+                - Name: Resource
+                  Value: /oauth2/token
+              MetricName: Count
+              Namespace: AWS/ApiGateway
+            Period: 120
+            Stat: Sum
+          ReturnData: false
+        - Expression: IF(m2>=4,(m1/m2)*100)
+          Id: m3
+          Label: Percentage of invocations resulting in a 200 response
+          ReturnData: true
+        - Expression: ANOMALY_DETECTION_BAND(m3, 2)
+          Id: ad1
+          ReturnData: true
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      ThresholdMetricId: ad1
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   AuthProxyFunction:
     Type: AWS::Serverless::Function
@@ -1068,10 +1234,10 @@ Resources:
         Variables:
           ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
           COGNITO_URL: !Join
-              - ""
-              - - "https://"
-                - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-                - !Sub ".auth.${AWS::Region}.amazoncognito.com"
+            - ""
+            - - "https://"
+              - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
+              - !Sub ".auth.${AWS::Region}.amazoncognito.com"
           FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
           FIREBASE_ANDROID_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
           FIREBASE_PROJECT_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/project-id}}"
@@ -1486,9 +1652,9 @@ Outputs:
   CognitoUrl:
     Description: The domain name for the Cognito User Pool
     Value: !Join
-        - ""
-        - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-          - !Sub ".auth.${AWS::Region}.amazoncognito.com"
+      - ""
+      - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
+        - !Sub ".auth.${AWS::Region}.amazoncognito.com"
 
   AppUserPoolClientId:
     Description: The id of the cognito user pool
@@ -1612,13 +1778,13 @@ Outputs:
     Value: !Ref ConfigStackName
 
   AttestationLambdaErrorRateAlarmName:
-    Value: !GetAtt AttestationAlarms.Outputs.AttestationLambdaErrorRateAlarmName
+    Value: !Ref AttestationLambdaErrorRateAlarm
 
   AttestationLowCompletionAlarmName:
-    Value: !GetAtt AttestationAlarms.Outputs.AttestationLowCompletionAlarmName
+    Value: !Ref AttestationLowCompletionAlarm
 
   AttestationLow200ResponseProportionAlarmName:
-    Value: !GetAtt AttestationAlarms.Outputs.AttestationLow200ResponseProportionAlarmName
+    Value: !Ref AttestationLow200ResponseProportionAlarm
 
   CloudwatchAlarmAuthProxy4xxErrors:
     Value: !Ref CloudwatchAlarmAuthProxy4xxErrors
