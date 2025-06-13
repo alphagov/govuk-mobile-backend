@@ -3,7 +3,6 @@ import "dotenv/config";
 const getTestConfig = () => {
   const requiredVars = [
     "CFN_AuthProxyFunctionName",
-    "CFN_AuthProxyLogGroupName",
     "CFN_AuthProxyFunctionIAMRoleName",
     "CFN_AuthProxyFunctionIAMRolePolicyName",
     "CFN_UserPoolId",
@@ -29,7 +28,6 @@ const getTestConfig = () => {
     "CFN_PostAuthenticationFunctionName",
     "CFN_AWSAccountId",
     "CFN_AuthProxyId",
-    "CFN_AuthProxyFunctionName",
     "CFN_AuthProxyLogGroupName",
     "CFN_StackName",
     "CFN_ConfigStackName",
