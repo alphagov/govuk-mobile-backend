@@ -143,6 +143,7 @@ describe.each(testCases)(
     metricName,
     alarmDescription,
     topicDisplayName,
+    namespace,
     dimensions,
     statistic,
     period,
@@ -273,14 +274,7 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );
-
-      if (metricName.includes("WAF")) {
-        expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual("AWS/WAFV2");
-      }
-      else {
-        expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual("AWS/Cognito");
-      }
-
+      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(namespace);
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
       expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(period);
       expect(cloudWatchAlarmUnderTest.Properties.DatapointsToAlarm).toEqual(
