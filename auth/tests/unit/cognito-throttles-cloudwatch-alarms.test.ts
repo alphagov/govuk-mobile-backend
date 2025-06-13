@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
-import { testConfig } from "../common/config";
 import path from "path";
 import { AlarmTestCase } from "./alarm-test-case";
 
@@ -27,6 +26,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 5,
     comparisonOperator: "GreaterThanThreshold",
+    namespace: "AWS/Cognito",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
@@ -51,6 +51,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 5,
     comparisonOperator: "GreaterThanThreshold",
+    namespace: "AWS/Cognito",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
@@ -74,6 +75,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 5,
     comparisonOperator: "GreaterThanThreshold",
+    namespace: "AWS/Cognito",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } }, //pragma: allowlist secret
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } }, //pragma: allowlist secret
@@ -97,11 +99,35 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 5,
     comparisonOperator: "GreaterThanThreshold",
+    namespace: "AWS/Cognito",
     dimensions: [
       { Name: "UserPool", Value: { Ref: "CognitoUserPool" } },
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
     ],
   },
+  {
+    name: "CognitoWafThrottles",
+    alarmName: "cognito-waf-error-rate",
+    alarmResource: "CognitoWebApplicationFirewallAlarm",
+    actionsEnabled: true,
+    topicResource: "CloudWatchAlarmTopicPagerDuty",
+    alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
+    metricName: "WAFErrorRate",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
+    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
+    statistic: "Sum",
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    namespace: "AWS/WAFV2",
+    threshold: 5,
+    comparisonOperator: "GreaterThanThreshold",
+    dimensions: [
+      { Name: "WebACL", Value: { Ref: "CognitoWebApplicationFirewall" } },
+    ],
+  }
 ];
 
 describe.each(testCases)(
@@ -117,6 +143,7 @@ describe.each(testCases)(
     metricName,
     alarmDescription,
     topicDisplayName,
+    namespace,
     dimensions,
     statistic,
     period,
@@ -150,7 +177,7 @@ describe.each(testCases)(
     );
     const slackChannelConfigurationUnderTest =
       slackChannelConfigurationResources[
-        slackChannelConfigurationResource
+      slackChannelConfigurationResource
       ] as any;
 
     const slackChannelIAMRole = template.findResources("AWS::IAM::Role");
@@ -247,17 +274,13 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(
-        "AWS/Cognito"
-      );
+      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(namespace);
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
       expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(period);
-      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(
-        evaluationPeriods
-      );
       expect(cloudWatchAlarmUnderTest.Properties.DatapointsToAlarm).toEqual(
         datapointsToAlarm
       );
+      expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(evaluationPeriods);
       expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(threshold);
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
         comparisonOperator
