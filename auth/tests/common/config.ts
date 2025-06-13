@@ -102,8 +102,6 @@ const getTestConfig = () => {
     //WAF configurations
     cloudWatchWafRateLimitingAlarmName: process.env.CFN_CloudWatchWafRateLimitingAlarmName!,  
     cognitoWebApplicationFirewall: process.env.CFN_CognitoWebApplicationFirewall!,
-
-
   };
 };
 
