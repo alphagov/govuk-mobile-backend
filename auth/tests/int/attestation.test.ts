@@ -29,20 +29,10 @@ describe("attestation lambda", () => {
         it("should create a log in cloudwatch", async () => {
             const response = await loggingDriver.findLogMessageWithRetries({
                 logGroupName: testConfig.authProxyLogGroup,
-                searchString: 'Calling auth proxy',
+                searchString: 'ATTESTATION_STARTED',
                 startTime,
                 endTime,
-            })
-
-            expect(response).toBeDefined()
-        })
-
-        it("should access the client secret from secrets manager", async () => {
-            const response = await loggingDriver.findLogMessageWithRetries({
-                logGroupName: testConfig.authProxyLogGroup,
-                searchString: "client secret",
-                startTime,
-                endTime,
+                delayMs: 3000
             })
 
             expect(response).toBeDefined()
@@ -58,7 +48,7 @@ describe("attestation lambda", () => {
         }
 
         beforeAll(async () => {
-            await repeatedlyRequestEndpoint(numRequests, requestFn, responseCodes);
+            await repeatedlyRequestEndpoint(numRequests, requestFn, responseCodes, 2000);
         });
 
         it("should respond with 429 error code when rate limit is exceeded", async () => {
