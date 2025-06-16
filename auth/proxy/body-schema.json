@@ -1,5 +1,5 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "anyOf": [
         {
             "type": "object",
@@ -7,7 +7,7 @@
                 "grant_type": {
                     "description": "Must be \"authorization_code\" for this grant type",
                     "type": "string",
-                    "const": "authorization_code"
+                    "enum": ["authorization_code"]
                 },
                 "client_id": {
                     "description": "The client identifier issued to the client during the registration process",
@@ -53,8 +53,9 @@
             "type": "object",
             "properties": {
                 "grant_type": {
+                    "description": "Must be \"refresh_token\" for this grant type",
                     "type": "string",
-                    "const": "refresh_token"
+                    "enum": ["refresh_token"]
                 },
                 "refresh_token": {
                     "type": "string",

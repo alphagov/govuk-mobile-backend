@@ -1,0 +1,99 @@
+openapi: "3.0.1"
+info:
+  title: "ps-auth-auth-proxy-0ad2c205b45f"
+  version: "1.0"
+
+paths:
+  /oauth2/token:
+    post:
+      summary: Exchange authorization code or refresh token for tokens
+      parameters:
+      - name: "Content-Type"
+        in: "header"
+        schema:
+          type: "string"
+      requestBody:
+        content:
+          $default:
+            schema:
+              $ref: "#/components/schemas/AttestationProxyApiBodyModel"
+        required: true
+      x-amazon-apigateway-request-validator: "Validate body, query string parameters,\
+        \ and headers"
+      x-amazon-apigateway-integration:
+        passthroughBehavior: "when_no_match"
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub:
+            "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AuthProxyFunction}/invocations"
+components:
+  schemas:
+    AttestationProxyApiBodyModel:
+      anyOf:
+      - required:
+        - "client_id"
+        - "code"
+        - "code_verifier"
+        - "grant_type"
+        - "redirect_uri"
+        - "scope"
+        type: "object"
+        properties:
+          code:
+            maxLength: 512
+            minLength: 8
+            type: "string"
+            description: "The authorization code received from the authorization server"
+          grant_type:
+            type: "string"
+            description: "Must be \"authorization_code\" for this grant type"
+            enum:
+            - "authorization_code"
+          scope:
+            maxLength: 1000
+            minLength: 1
+            type: "string"
+            description: "The scope of the access request, as a space-delimited string"
+          redirect_uri:
+            maxLength: 2000
+            minLength: 1
+            type: "string"
+          client_id:
+            maxLength: 100
+            minLength: 1
+            type: "string"
+            description: "The client identifier issued to the client during the registration\
+              \ process"
+          code_verifier:
+            maxLength: 128
+            minLength: 1
+            type: "string"
+            description: "The PKCE code verifier used to obtain the authorization\
+              \ code"
+        additionalProperties: false
+      - required:
+        - "client_id"
+        - "grant_type"
+        - "refresh_token"
+        type: "object"
+        properties:
+          refresh_token:
+            minLength: 1
+            type: "string"
+          grant_type:
+            type: "string"
+            description: "Must be \"refresh_token\" for this grant type"
+            enum:
+            - "refresh_token"
+          client_id:
+            maxLength: 100
+            minLength: 1
+            type: "string"
+            description: "The client identifier issued to the client during the registration\
+              \ process"
+        additionalProperties: false
+x-amazon-apigateway-request-validators:
+  Validate body, query string parameters, and headers:
+    validateRequestParameters: true
+    validateRequestBody: true

@@ -1000,6 +1000,31 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ./proxy/openapi.yaml
+
+  AttestationProxyApiBodyModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref AttestationProxyApi
+      ContentType: application/json
+      Name: AttestationProxyApiBodyModel
+      Schema:
+        Fn::Transform:
+          Name: "AWS::Include"
+          Parameters:
+            Location: ./proxy/body-schema.json
+
+  # AttestationProxyApiRequestValidator:
+  #   Type: AWS::ApiGateway::RequestValidator
+  #   Properties:
+  #     RestApiId: !Ref AttestationProxyApi
+  #     ValidateRequestBody: true
+  #     ValidateRequestParameters: true
+  #     Name: AttestationProxyApiRequestValidator
 
   AttestationProxyApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
@@ -1366,7 +1391,8 @@ Resources:
       FunctionName: !Ref AuthProxyFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AttestationProxyApi}/*/*/*
+      # SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AttestationProxyApi}/*/*/*
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AttestationProxyApi}/${Environment}/POST/oauth2/token' 
 
   PostAuthLambdaInvokePermission:
     Type: AWS::Lambda::Permission
