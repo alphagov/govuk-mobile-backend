@@ -971,23 +971,11 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-      # DefinitionBody:
-      #   Fn::Transform:
-      #     Name: AWS::Include
-      #     Parameters:
-      #       Location: ./proxy/openapi.yaml
-
-  AttestationProxyApiHeaderModel:
-    Type: AWS::ApiGateway::Model
-    Properties:
-      RestApiId: !Ref AttestationProxyApi
-      ContentType: application/json
-      Name: AttestationProxyApiHeaderModel
-      Schema:
+      DefinitionBody:
         Fn::Transform:
-          Name: "AWS::Include"
+          Name: AWS::Include
           Parameters:
-            Location: ./proxy/header-schema.json
+            Location: ./proxy/openapi.yaml
 
   AttestationProxyApiBodyModel:
     Type: AWS::ApiGateway::Model
