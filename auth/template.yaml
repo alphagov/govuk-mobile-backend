@@ -1830,3 +1830,7 @@ Outputs:
 
   AuthProxyId:
     Value: !Ref AttestationProxyApi
+
+  CognitoWebApplicationFirewall:
+    Description: The name of the CloudWatch alarm for WAF rate limiting
+    Value: !Ref CognitoWebApplicationFirewall  
