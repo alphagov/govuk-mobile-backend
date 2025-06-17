@@ -13,4 +13,5 @@ export type AlarmTestCase = {
   threshold: number;
   comparisonOperator: string;
   dimensions: any[];
+  namespace?: string;
 };
