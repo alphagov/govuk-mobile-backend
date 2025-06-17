@@ -36,7 +36,7 @@ export class CookieJar {
     
     private cookies: Map<string, Cookie>;
 
-    constructor(url:string, cookieHeaders: string[]) {
+    constructor(url:string, cookieHeaders: string[] | string) {
 	this.cookies = new Map<string, Cookie>();
 	if(url && cookieHeaders) {
 	    this.addCookie(url, cookieHeaders);
@@ -231,8 +231,9 @@ export class CookieJar {
     /**
      * Add cookies from Set-Cookie headers for a given URL
      */
-    public addCookie(url: string, setCookieHeaders: string[]): void {
+    public addCookie(url: string, setCookieHeaders: string[] | string): void {
 	const urlDomain = this.getDomainFromUrl(url);
+	if (typeof setCookieHeaders === 'string') setCookieHeaders = [setCookieHeaders];
 	for (const header of setCookieHeaders) {
 	    const cookie: Cookie = CookieJar.tryParse(header);
 	    if (!cookie) continue;

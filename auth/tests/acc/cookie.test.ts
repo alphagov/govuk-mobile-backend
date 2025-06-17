@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 const test_cookie = "csrf-state=abc12345; Expires=Mon, 19-May-2025 14:02:49 GMT; Path=/; Secure; HttpOnly; SameSite=None";
 
 describe("Cookie helper tests", () => {
-    it.skip("should parse a cookie", () => {
+    it("should parse a cookie", () => {
 	const parsed_cookie: Cookie = CookieJar.tryParse(test_cookie);
 	expect(parsed_cookie.name).to.equal("csrf-state");
 	expect(parsed_cookie.value).to.equal("abc12345");
@@ -16,13 +16,13 @@ describe("Cookie helper tests", () => {
 	expect(parsed_cookie.sameSite).to.equal("None");
 	expect(Math.abs(parsed_cookie.createdAt.getTime() - new Date().getTime())).toBeLessThan(100);
     });
-    it.skip("should create an empty cookie jar", () => {
+    it("should create an empty cookie jar", () => {
 	const cj = new CookieJar();
 	expect(cj).toBeTruthy();
 	expect(cj.cookies.size).to.equal(0);
     });
-    it.skip("should create a cookie jar and add a cookie", () => {
-	const cj = new CookieJar("example.com", [test_cookie]);
+    it("should create a cookie jar and add a cookie", () => {
+	const cj = new CookieJar("http://example.com", [test_cookie]);
 	expect(cj).toBeTruthy();
 	expect(cj.cookies.size).to.equal(1);
 	expect(cj.cookies.get("csrf-state|example.com|/").name).toEqual("csrf-state");
@@ -33,10 +33,22 @@ describe("Cookie helper tests", () => {
 	expect(cj.cookies.get("csrf-state|example.com|/").httpOnly).toEqual(true);
 	expect(cj.cookies.get("csrf-state|example.com|/").sameSite).toEqual("None");
     });
-    it.skip("should add a cookie to an existing cookie jar", () => {
+    it("should create a cookie jar and add a single cookie as a string", () => {
+	const cj = new CookieJar("http://example.com", test_cookie);
+	expect(cj).toBeTruthy();
+	expect(cj.cookies.size).to.equal(1);
+	expect(cj.cookies.get("csrf-state|example.com|/").name).toEqual("csrf-state");
+	expect(cj.cookies.get("csrf-state|example.com|/").value).toEqual("abc12345");
+	expect(cj.cookies.get("csrf-state|example.com|/").expires).toEqual(new Date("2025-05-19T14:02:49.000Z"));
+	expect(cj.cookies.get("csrf-state|example.com|/").path).toEqual("/");
+	expect(cj.cookies.get("csrf-state|example.com|/").secure).toEqual(true);
+	expect(cj.cookies.get("csrf-state|example.com|/").httpOnly).toEqual(true);
+	expect(cj.cookies.get("csrf-state|example.com|/").sameSite).toEqual("None");
+    });
+    it("should add a cookie to an existing cookie jar", () => {
 	const cj = new CookieJar();
 	expect(cj.cookies.size).to.equal(0);
-	cj.addCookie("example.com", [test_cookie]);
+	cj.addCookie("http://example.com", [test_cookie]);
 	expect(cj.cookies.size).to.equal(1);
 	expect(cj.cookies.get("csrf-state|example.com|/").name).to.equal("csrf-state");
     });
