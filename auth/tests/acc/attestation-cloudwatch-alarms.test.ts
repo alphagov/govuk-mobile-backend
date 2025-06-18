@@ -29,6 +29,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 0.05,
     comparisonOperator: "GreaterThanThreshold",
+    namespace: "AWS/ApiGateway",
     dimensions: [
       { Name: "ApiName", Value: testConfig.authProxyId },
       { Name: "Resource", Value: "/oauth2/token" },
@@ -49,6 +50,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 3,
     threshold: 0.05,
     comparisonOperator: "GreaterThanThreshold",
+    namespace: "AWS/ApiGateway",
     dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
   },
   {
@@ -64,8 +66,26 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 2500,
     comparisonOperator: "GreaterThanOrEqualToThreshold",
+    namespace: "AWS/ApiGateway",
     dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
   },
+  {
+    name: "AuthWafThrottles",
+    alarmName: `${testConfig.stackName}-auth-proxy-waf-rate-limit`,
+    actionsEnabled: true,
+    metricName: "AuthWAFErrorRate",
+    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    extendedStatistic: undefined, // No extended statistic for WAF
+    period: 300,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 300,
+    comparisonOperator: "GreaterThanThreshold",
+    namespace: "AWS/WAFV2",
+    dimensions: [{ Name: "WebACL", Value: testConfig.authProxyWAF }],
+    statistic: "Sum", // WAF metrics typically use Sum
+  }
 ];
 
 describe.each(testCases)(
@@ -83,6 +103,7 @@ describe.each(testCases)(
     datapointsToAlarm,
     threshold,
     comparisonOperator,
+    namespace
   }) => {
     const alarmResponse = await cloudWatchClient.send(
       new DescribeAlarmsCommand({ AlarmNames: [alarmName] })
@@ -105,7 +126,7 @@ describe.each(testCases)(
     });
 
     it("should have Namespace as 'AWS/ApiGateway'", () => {
-      assert.equal(alarm.Namespace, "AWS/ApiGateway");
+      assert.equal(alarm.Namespace, namespace);
     });
 
     it(`should have Statistic as ${statistic}`, () => {

@@ -12,6 +12,7 @@ const alarmsToTest = [
   testConfig.cloudWatchAlarmAuthProxy4xxErrors,
   testConfig.cloudWatchAlarmAuthProxy5xxErrors,
   testConfig.cloudWatchAlarmAuthProxyLatencyErrors,
+  testConfig.authProxyWAFAlarm
 ];
 
 describe.each(alarmsToTest)("Auth Proxy Api CloudWatch Alarm: %s", (alarmName) => {

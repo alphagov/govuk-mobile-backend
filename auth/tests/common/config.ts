@@ -36,9 +36,10 @@ const getTestConfig = () => {
     "CFN_AttestationLowCompletionAlarmName",
     "CFN_AttestationLow200ResponseProportionAlarmName",
     "CFN_AttestationLambdaErrorRateAlarmName",
-    // WAF configurations
     "CFN_CloudWatchWafRateLimitingAlarmName",  //WAF Rate limit alarm name
-    "CFN_CognitoWebApplicationFirewall", //WAF
+    "CFN_CognitoWebApplicationFirewall", //Cognito WAF
+    "CFN_AuthProxyWaf", //WAF for Auth Proxy
+    "CFN_AuthProxyWafAlarm"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -100,6 +101,8 @@ const getTestConfig = () => {
     //WAF configurations
     cloudWatchWafRateLimitingAlarmName: process.env.CFN_CloudWatchWafRateLimitingAlarmName!,  
     cognitoWebApplicationFirewall: process.env.CFN_CognitoWebApplicationFirewall!,
+    authProxyWAF: process.env.CFN_AuthProxyWaf!,
+    authProxyWAFAlarm: process.env.CFN_AuthProxyWafAlarm!
   };
 };
 

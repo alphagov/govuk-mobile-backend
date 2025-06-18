@@ -13,6 +13,7 @@ const testCases: AlarmTestCase[] = [
     name: "4xx",
     alarmName: `auth-proxy-4xx-errors`,
     actionsEnabled: true,
+    namespace: "AWS/ApiGateway",
     alarmResource: "CloudwatchAlarmAuthProxy4xxErrors",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
@@ -40,6 +41,7 @@ const testCases: AlarmTestCase[] = [
     actionsEnabled: true,
     alarmResource: "CloudwatchAlarmAuthProxy5xxErrors",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
+    namespace: "AWS/ApiGateway",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
     topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
@@ -60,6 +62,7 @@ const testCases: AlarmTestCase[] = [
     actionsEnabled: true,
     alarmResource: "CloudwatchAlarmAuthProxyLatencyErrors",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
+    namespace: "AWS/ApiGateway",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
     topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
@@ -74,6 +77,28 @@ const testCases: AlarmTestCase[] = [
     comparisonOperator: "GreaterThanOrEqualToThreshold",
     dimensions: [{ Name: "ApiName", Value: { Ref: "AttestationProxyApi" } }],
   },
+  {
+    name: "AuthWafThrottles",
+    alarmName: 'auth-proxy-waf-rate-limit',
+    actionsEnabled: true,
+    alarmResource: "AuthProxyWafAlarm",
+    topicResource: "CloudWatchAlarmTopicPagerDuty",
+    namespace: "AWS/WAFV2",
+    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
+    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
+    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
+    metricName: "AuthWAFErrorRate",
+    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
+    topicDisplayName: "cloudwatch-alarm-topic",
+    statistic: "Sum",
+    extendedStatistic: undefined,
+    period: 300,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 300,
+    comparisonOperator: "GreaterThanThreshold",
+    dimensions: [{ Name: "WebACL", Value: { Ref: "AuthProxyWaf" } }],
+  }
 ];
 
 describe.each(testCases)(
@@ -87,6 +112,7 @@ describe.each(testCases)(
     topicPolicyResource,
     slackChannelConfigurationResource,
     metricName,
+    namespace,
     alarmDescription,
     topicDisplayName,
     dimensions,
@@ -220,9 +246,7 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(
-        "AWS/ApiGateway"
-      );
+      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(namespace);
 
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
       expect(cloudWatchAlarmUnderTest.Properties.ExtendedStatistic).toEqual(
