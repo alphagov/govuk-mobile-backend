@@ -26,7 +26,10 @@ export class Cookie implements IParsedCookie {
     samesite?: 'Strict' | 'Lax' | 'None';
     createdAt: Date;
     toString = () : string => {
-	return `${this.name}=${this.value}; ${this.domain ? `Domain=${this.domain}; `  : ""}${this.path ? `Path=${this.path}; ` : ""}${this.expires ? `Expires=${this.expires}; ` : ""}${this.maxage ? `MaxAge=${this.maxage}; ` : ""}${this.secure ? `Secure; ` : ""}${this.httponly ? `HttpOnly; ` : ""}${this.samesite ? `SameSite=${this.samesite};` : ""}CreatedAt=${this.createdAt}`.replace(/(?:\r\n|\r|\n)/g, "");
+	return `${this.name}=${this.value}; ${this.domain ? `Domain=${this.domain}; `  : ""}${this.path ? `Path=${this.path}; ` : ""}${this.expires ? `Expires=${this.expires}; ` : ""}${this.maxage ? `MaxAge=${this.maxage}; ` : ""}${this.secure ? `Secure; ` : ""}${this.httponly ? `HttpOnly; ` : ""}${this.samesite ? `SameSite=${this.samesite};` : ""}`.replace(/(?:\r\n|\r|\n)/g, "");
+    }
+    toClientString = () : string => {
+	return `${this.name}=${this.value}`;
     }
 }
 
