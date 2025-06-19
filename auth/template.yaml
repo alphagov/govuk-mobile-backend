@@ -81,6 +81,152 @@ Globals:
     Runtime: nodejs22.x
 
 Resources:
+  # Performance environment
+  PerformanceTestingInstances:
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: performance
+      Description: Performance testing IP addresses allowed to access the auth
+      Scope: REGIONAL # Or CLOUDFRONT for CloudFront distributions
+      IPAddressVersion: IPV4
+      Addresses:
+        - 3.9.227.33/32
+        - 18.132.149.145/32 
+
+  AttestationTokenGenerator:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "attestation-token-generator-${AWS::StackName}"
+      StageName: !Ref Environment
+
+  FirebaseServiceAccountSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: !Sub "/${AWS::StackName}/firebase/service-account"
+      Description: Firebase service account key for App Check attestation
+
+  AttestationTokenGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-attestation-token-generator"
+      CodeUri: attestation-token-generator/
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /token
+            Method: post
+            RestApiId:
+              Ref: AttestationTokenGenerator
+      Handler: app.lambdaHandler
+      Role: !GetAtt AttestationTokenGeneratorFunctionIAMRole.Arn
+      Environment:
+        Variables:
+          FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
+          FIREBASE_SECRET_NAME: !Sub "/${AWS::StackName}/firebase/service-account"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  AttestationTokenGeneratorFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-attestation-token-generator-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AttestationTokenGeneratorFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AWS::StackName}/firebase/service-account-*
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-attestation-token-generator:*"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  OneLoginMockApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Name: !Sub "mock-onelogin-${AWS::StackName}"
+
+  OneLoginMockIdp:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-mock-onelogin"
+      CodeUri: mock-onelogin/
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId:
+              Ref: OneLoginMockApi
+      Handler: app.lambdaHandler
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  OneLoginMockIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ProviderName: "mock-onelogin"
+      ProviderType: "OIDC"
+      ProviderDetails:
+        attributes_request_method: "GET"
+        attributes_url: !Sub "https://${OneLoginMockApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/userinfo"
+        attributes_url_add_attributes: false
+        authorize_scopes: "openid email"
+        authorize_url: !Sub "https://${OneLoginMockApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/authorize"
+        client_id: !Sub "{{resolve:ssm:/${ConfigStackName}/onelogin/client_id}}"
+        client_secret: !Sub "{{resolve:secretsmanager:/${ConfigStackName}/onelogin/client_secret:SecretString}}" # pragma: allowlist secret
+        jwks_uri: !Sub "https://${OneLoginMockApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/.well-known/jwks.json"
+        oidc_issuer: !Sub "https://${OneLoginMockApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+        token_url: !Sub "https://${OneLoginMockApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/token"
+      IdpIdentifiers:
+        - mock-onelogin
+      AttributeMapping:
+        email: email
+        email_verified: email_verified
+        username: sub
+# End performance environment
+
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -137,7 +283,8 @@ Resources:
                           - "/"
                           - Ref: AWS::StackId
       SupportedIdentityProviders:
-        - !Ref UserPoolIdentityProvider
+        - !Ref OneLoginMockIdentityProvider
+        # - !Ref UserPoolIdentityProvider
       AllowedOAuthFlows:
         - code
       AllowedOAuthScopes:
@@ -146,12 +293,16 @@ Resources:
       GenerateSecret: true # pragma: allowlist secret
       CallbackURLs:
         - "govuk://govuk/login-auth-callback"
+        - "http://localhost:3000"
+        - "https://d84l1y8p4kdic.cloudfront.net"
       LogoutURLs:
-        - !Join
-          - ""
-          - - "https://oidc."
-            - !FindInMap [OneLogin, Environment, !Ref Environment]
-            - ".account.gov.uk/logout"
+        - !Sub "https://${OneLoginMockApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/logout"
+      # LogoutURLs:
+      #   - !Join
+      #     - ""
+      #     - - "https://oidc."
+      #       - !FindInMap [OneLogin, Environment, !Ref Environment]
+      #       - ".account.gov.uk/logout"
       TokenValidityUnits:
         AccessToken: seconds
         IdToken: seconds
@@ -182,14 +333,14 @@ Resources:
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty  
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
         - Key: Environment
           Value: !Ref Environment
         - Key: System
-          Value: Authentication    
+          Value: Authentication
 
   CognitoWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
@@ -228,12 +379,23 @@ Resources:
                             - Ref: AWS::StackId
         SampledRequestsEnabled: true
       Rules:
+        - Name: AllowTrustedIPs
+          Priority: 1 # Set a low priority to ensure this rule is evaluated first
+          Action:
+            Allow: {} # Allow requests from the IPSet
+          Statement:
+            IPSetReferenceStatement:
+              Arn: !GetAtt PerformanceTestingInstances.Arn
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AllowTrustedIPsMetric
+            SampledRequestsEnabled: true
         - Name: RateLimitRule
           Action:
             Block:
               CustomResponse:
                 ResponseCode: 429
-          Priority: 1
+          Priority: 2
           Statement:
             RateBasedStatement:
               AggregateKeyType: IP
@@ -255,7 +417,7 @@ Resources:
                                 - Ref: AWS::StackId
             SampledRequestsEnabled: true
         - Name: AWSManagedRulesKnownBadInputsRuleSet
-          Priority: 2
+          Priority: 3
           Statement:
             ManagedRuleGroupStatement:
               VendorName: AWS
@@ -912,12 +1074,23 @@ Resources:
                             - Ref: AWS::StackId
         SampledRequestsEnabled: true
       Rules:
+        - Name: AllowTrustedIPs
+          Priority: 1 # Set a low priority to ensure this rule is evaluated first
+          Action:
+            Allow: {} # Allow requests from the IPSet
+          Statement:
+            IPSetReferenceStatement:
+              Arn: !GetAtt PerformanceTestingInstances.Arn
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AllowTrustedIPsMetric
+            SampledRequestsEnabled: true
         - Name: RateLimitRule
           Action:
             Block:
               CustomResponse:
                 ResponseCode: 429
-          Priority: 1
+          Priority: 2
           Statement:
             RateBasedStatement:
               AggregateKeyType: IP
@@ -939,7 +1112,7 @@ Resources:
                                 - Ref: AWS::StackId
             SampledRequestsEnabled: true
         - Name: AWSManagedRulesKnownBadInputsRuleSet
-          Priority: 2
+          Priority: 3
           Statement:
             ManagedRuleGroupStatement:
               VendorName: AWS
@@ -1784,7 +1957,7 @@ Outputs:
 
   CloudWatchWafRateLimitingAlarmName:
     Description: The name of the CloudWatch alarm for WAF throttles
-    Value: !Ref CognitoWebApplicationFirewallAlarm  
+    Value: !Ref CognitoWebApplicationFirewallAlarm
 
   CloudWatchAlarmTokenRefreshThrottlesName:
     Description: The name of the CloudWatch alarm for token refresh throttles
@@ -1833,4 +2006,4 @@ Outputs:
 
   CognitoWebApplicationFirewall:
     Description: The name of the CloudWatch alarm for WAF rate limiting
-    Value: !Ref CognitoWebApplicationFirewall  
+    Value: !Ref CognitoWebApplicationFirewall

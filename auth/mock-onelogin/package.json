@@ -1,0 +1,19 @@
+{
+  "name": "mock-idp",
+  "version": "1.0.0",
+  "description": "hello world sample for NodeJS",
+  "main": "app.js",
+  "repository": "https://github.com/awslabs/aws-sam-cli/tree/develop/samcli/local/init/templates/cookiecutter-aws-sam-hello-nodejs",
+  "author": "SAM CLI",
+  "license": "MIT",
+  "scripts": {
+    "compile": "tsc",
+    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.8.0",
+    "@types/uuid": "^10.0.0",
+    "esbuild": "^0.25.0",
+    "oauth2-mock-server": "^2.0.0"
+  }
+}
