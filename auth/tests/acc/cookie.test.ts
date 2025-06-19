@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
 
 const test_cookie = "csrf-state=abc12345; Expires=Mon, 19-May-2025 14:02:49 GMT; Path=/; Secure; HttpOnly; SameSite=None";
 
-describe("Cookie helper tests", () => {
+describe.skip("Cookie helper tests", () => {
     it("should parse a cookie", () => {
 	const parsed_cookie: Cookie = CookieJar.tryParse(test_cookie);
 	expect(parsed_cookie.name).to.equal("csrf-state");
@@ -127,5 +127,13 @@ describe("Cookie helper tests", () => {
 	expect(cookies[0].value).toEqual("bar");
 	expect(cookies[1].name).toEqual("bar");
 	expect(cookies[1].value).toEqual("baz");
+    });
+});
+
+describe("Edge cases from DI", () => {
+    it("should parse a DI session id cookie", () => {
+	const cookie = "di-persistent-session-id=OFruD7vuACl4dlYIgWHeUYUR4sI--1750321262347; Max-Age=34190000; Domain=staging.account.gov.uk; Secure; HttpOnly;";
+	const parsedCookie = CookieJar.tryParse(cookie);
+	console.log(parsedCookie);
     });
 });

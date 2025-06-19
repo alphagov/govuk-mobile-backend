@@ -29,7 +29,7 @@ export class Cookie implements IParsedCookie {
 	return `${this.name}=${this.value}; ${this.domain ? `Domain=${this.domain}; `  : ""}${this.path ? `Path=${this.path}; ` : ""}${this.expires ? `Expires=${this.expires}; ` : ""}${this.maxage ? `MaxAge=${this.maxage}; ` : ""}${this.secure ? `Secure; ` : ""}${this.httponly ? `HttpOnly; ` : ""}${this.samesite ? `SameSite=${this.samesite};` : ""}`.replace(/(?:\r\n|\r|\n)/g, "");
     }
     toClientString = () : string => {
-	return `${this.name}=${this.value}`;
+	return `${this.name}=${this.value};`;
     }
 }
 
@@ -189,7 +189,9 @@ export class CookieJar {
 	cookie.createdAt = new Date();
 	try {
 
-	    const pairs = cookieHeader.split(/;\s*/).map(part => part.trim());
+	    const pairs = cookieHeader.split(/;\s*/)
+		.map(part => part.trim())
+		.filter(p => p);
 	    
 	    for (const pair of pairs) {
 

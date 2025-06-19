@@ -126,14 +126,27 @@ idpidentifier=onelogin`;
 	]);
     }
 
+    async function getRedirect(options: RequstOptions, headers: IncomingHttpHeaders) {
+	if(!headers || !headers['location']) return;
+	try {
+	    new URL(headers['location']);
+	    return headers['location'];
+	} catch (e) {
+	    if(!options || !options.hostname) return; 
+	    return `https://${options.hostname}${headers['location']}`;
+	}
+    }
+
+    const cookieJar = new CookieJar();
+    
     async function requestAsyncHandleRedirects (options: RequestOptions): Promise<HTTP_RESPONSE> {
-	const cookieJar = new CookieJar();
-	console.log(JSON.stringify(options, null, 2));
+	
 	const response = await requestAsync(options);
-	console.log(response);
-	if(response.statusCode = 302) {
-	    const redirect = response.headers['location'];
-	    console.log(redirect);
+	
+	const redirect = await getRedirect(options, response.headers);
+
+	if(response.statusCode === 302) {
+	    
 	    if(!redirect) return response;
 
 	    await cookieJar.addCookie(redirect, response.headers['set-cookie']);
@@ -147,13 +160,19 @@ idpidentifier=onelogin`;
 		method: "GET",
 		headers: options.headers
 	    };
+
 	    const cookies = await cookieJar.getCookiesForUrl(url);
+
 	    if(cookies) {
-		redirectOptions.headers['cookies'] = cookies.map(c => c.toClientString()).join("; ");
+		redirectOptions.headers['cookie'] = cookies.map(c => c.toClientString()).join(" ");
 	    }
+	    
 	    return await requestAsyncHandleRedirects(redirectOptions);
 	}
-	return response;
+	return {
+	    response: response,
+	    request: options // Need to return this so we know where we end up after multiple recursions
+	}
     }
     
     it.skip("should do redirect to one login", async () => {
@@ -184,12 +203,41 @@ idpidentifier=onelogin`;
 	    method: requestMethod,
 	    headers: requestHeaders
 	};
-
-	console.log(options);
 	
 	try {
-	    const authResponse: HTTP_RESPONSE = await requestAsyncHandleRedirects(options);
-	    console.log(JSON.stringify(authResponse, null, 2));
+	    const redirect = await requestAsyncHandleRedirects(options);
+	    console.log("*************************************");
+	    const { response, request } = redirect; 
+	    console.log(response.headers['set-cookie']);
+	    //Sign in or create page
+	    const signinOrCreateUrl = `https://${request.hostname}${request.path}`;
+	    assert.equal(response.statusCode, 200);
+	    assert.equal(request.hostname, 'signin.staging.account.gov.uk');
+	    assert.equal(request.path, '/sign-in-or-create?');
+	    
+	    // Cache the cookies
+	    await cookieJar.addCookie(signinOrCreateUrl, response.headers['set-cookie']);
+
+	    // Click the sign in button
+	    const clickOptions =
+		{
+		    "method": "POST",
+		    "headers": {
+			"Content-Type": "application/x-www-form-urlencoded",
+			"Cookie": cookieJar.getCookiesForUrl(signinOrCreateUrl).map(c => c.toClientString()).join(" "),
+			"Accept": "text/html,application/xhtml+xml,application/xml;",
+			"Accept-Encoding": "gzip, deflate, br, zstd",
+			"Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+			"User-Agent": USER_AGENT_IPHONE_16E,
+			"Origin": `https://${request.hostname}`,
+			"Referrer": "https://signin.staging.account.gov.uk/sign-in-or-create"
+		    }
+		
+		};
+
+	    const signInResponse = await requestAsync(signinOrCreateUrl, clickOptions);
+	    console.log(signInResponse.statusCode);
+	    console.log(JSON.stringify(clickOptions, null, 2));
 	    
 	    
 	} catch (e) {
