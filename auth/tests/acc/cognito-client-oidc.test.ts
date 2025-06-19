@@ -45,7 +45,7 @@ describe("Check deployed Cognito User Pool Client", async () => {
   });
 
   it("has refresh token expiration set correctly", () => {
-    const expectedRefreshTokenValidity = 31536000;
+    const expectedRefreshTokenValidity = 2592000;
     assert.equal(
       userPoolClient.RefreshTokenValidity,
       expectedRefreshTokenValidity
