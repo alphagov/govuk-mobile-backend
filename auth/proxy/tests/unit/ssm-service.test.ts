@@ -21,6 +21,8 @@ describe('SSMService', () => {
         mockSSMClient = new SSMClient({});
         mockSend = mockSSMClient.send;
         ssmService = new SSMService(mockSSMClient);
+
+        vi.clearAllMocks();
     });
 
     it('should retrieve a parameter successfully', async () => {
@@ -42,7 +44,7 @@ describe('SSMService', () => {
         mockSend.mockResolvedValueOnce(mockResponse);
 
         await expect(ssmService.getParameterValue('mockParameterName')).rejects.toThrowError();
-       
+
     });
 
     it('should throw an error if parameter retrieval fails', async () => {
@@ -55,5 +57,29 @@ describe('SSMService', () => {
                 WithDecryption: true,
             })
         );
+    });
+
+    it('should cache the value of parameter', async () => {
+        const cachedValue = 'cached-value'
+        const newValue = 'new-value'
+        mockSend.mockResolvedValueOnce({
+            Parameter: {
+                Value: cachedValue
+            }
+        });
+
+        let response = await ssmService.getParameterValue('mockParameterName')
+
+        expect(response).toEqual(cachedValue)
+
+        mockSend.mockResolvedValueOnce({
+            Parameter: {
+                Value: newValue
+            }
+        });
+
+        response = await ssmService.getParameterValue('mockParameterName')
+        expect(response).toEqual(cachedValue)
+        expect(mockSend).toHaveBeenCalledOnce()
     });
 });
