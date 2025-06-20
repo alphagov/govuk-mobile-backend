@@ -78,6 +78,9 @@ global.fetch = vi.fn(() =>
     Promise.resolve({
         ok: true,
         status: 200,
+        headers: {
+            get: vi.fn().mockReturnValue('public, max-age=21600'), // 6 hour
+          },
         json: () => Promise.resolve({
             keys: [
                 {
