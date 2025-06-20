@@ -1,3 +1,4 @@
+/* eslint-disable importPlugin/group-exports */
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import { JwksFetchError } from "./errors";
 
@@ -17,8 +18,6 @@ interface JwksCache {
     jwks: Jwks;
     expiresAt: number
 }
-
-const cacheDuration = 5; // Caching for 5 minutes
 
 const isJwks = (responseJson: unknown): responseJson is Jwks => {
     return (
@@ -57,17 +56,26 @@ export const getJwks = async (): Promise<Jwks> => {
         throw new JwksFetchError('Jwks response is not valid Jwks');
     }
 
-    now = new Date().getTime();
-    const fiveMinutesFromNow = now + cacheDuration * 60 * 1000;
+    // Get max-age from cache-control header
+    const cacheControlHeader = response.headers.get('cache-control');
+    let maxAgeInSeconds = 6 * 60 * 60;  //defaulting to six hours in seconds
+    if (cacheControlHeader != undefined) {
+        const match = /max-age=(\d+)/.exec(cacheControlHeader);  //reading value e.g. public, max-age=21600
+        if (match?.[1] != null) {
+            maxAgeInSeconds = parseInt(match[1], 10);
+        }
+    }
+
+    now = Date.now();
+    const expiry = now + maxAgeInSeconds;
 
     cachedJwks = {
         jwks: jwksResponse,
-        expiresAt: fiveMinutesFromNow
+        expiresAt: expiry
     };
 
     console.log('Fetching fresh JWKS (cache expired or not present)...new cache generated');
 
-    
     return cachedJwks.jwks;
 };
 
@@ -75,6 +83,10 @@ export const getJwks = async (): Promise<Jwks> => {
 //Only for testing purposes due to singleton nature of the object
 export const _clearCachedJwks = (): void => { 
     cachedJwks = null;
+}
+
+export const _returnCachedJwks = (): JwksCache | null => {
+    return cachedJwks;
 }
 
 
