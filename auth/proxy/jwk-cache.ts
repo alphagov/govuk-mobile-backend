@@ -35,7 +35,7 @@ interface Jwks {
 
 // eslint-disable-next-line importPlugin/group-exports
 export const getJwks = async (): Promise<Jwks> => {
-    let now = Date.now();
+    const now = Date.now();
 
     // Check if cachedJwks exists and is still fresh based on its maxAge
     if (cachedJwks && (now < cachedJwks.expiresInMillis)) {
@@ -47,7 +47,7 @@ export const getJwks = async (): Promise<Jwks> => {
 
     if (!response.ok) {
         console.error(`Failed to fetch JWKS: ${String(response.status)} ${response.statusText}`);
-        throw new Error('Failed to fetch JWKS');
+        throw new JwksFetchError('Failed to fetch JWKS');
     }
 
     const jwksResponse = await response.json();
@@ -66,8 +66,7 @@ export const getJwks = async (): Promise<Jwks> => {
         }
     }
 
-    now = Date.now();
-    const expiry = now + maxAgeInSeconds * 1000; //in milliseconds
+    const expiry = Date.now() + maxAgeInSeconds * 1000; //in milliseconds
 
     cachedJwks = {
         jwks: jwksResponse,
