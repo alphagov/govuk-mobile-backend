@@ -52,31 +52,34 @@ describe("Set up the Cognito User Pool OIDC client", () => {
 
   it("has a logout url", () => {
     const userPoolClient = template.findResources("AWS::Cognito::UserPoolClient")["CognitoUserPoolClient"] as any;
-    expect(userPoolClient.Properties.LogoutURLs).toEqual([
-      {
-        "Fn::If": null,
-      },
-      "IsProduction",
-      "https://oidc.account.gov.uk/logout",
-      {
-        "Fn::Join": [
-          "",
-          [
-            "https://oidc.",
-            {
-              "Fn::FindInMap": [
-                "OneLogin",
-                "Environment",
-                {
-                  Ref: "Environment",
-                },
-              ],
-            },
-            ".account.gov.uk/logout",
-          ],
+    expect(userPoolClient.Properties.LogoutURLs).toEqual({
+      "Fn::If": [
+        "IsProduction",
+        [
+          "https://oidc.account.gov.uk/logout",
         ],
-      },
-    ])
+        [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "https://oidc.",
+                {
+                  "Fn::FindInMap": [
+                    "OneLogin",
+                    "Environment",
+                    {
+                      "Ref": "Environment",
+                    },
+                  ],
+                },
+                ".account.gov.uk/logout",
+              ],
+            ],
+          },
+        ],
+      ],
+    })
   });
 
   it("has correct tokens validity", () => {

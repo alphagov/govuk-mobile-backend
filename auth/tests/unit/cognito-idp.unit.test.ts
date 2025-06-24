@@ -30,143 +30,134 @@ describe("Set up the Cognito User Pool Identity Provider for GovUK app", () => {
 
     expect(identityProvider.Properties.ProviderDetails).toEqual({
       "attributes_request_method": "GET",
-      "attributes_url": [
-        {
-          "Fn::If": null,
-        },
-        "IsProduction",
-        "https://oidc.account.gov.uk/userinfo",
-        {
-          "Fn::Join": [
-            "",
-            [
-              "https://oidc.",
-              {
-                "Fn::FindInMap": [
-                  "OneLogin",
-                  "Environment",
-                  {
-                    "Ref": "Environment",
-                  },
-                ],
-              },
-              ".account.gov.uk/userinfo",
+      "attributes_url": {
+        "Fn::If": [
+          "IsProduction",
+          "https://oidc.account.gov.uk/userinfo",
+          {
+            "Fn::Join": [
+              "",
+              [
+                "https://oidc.",
+                {
+                  "Fn::FindInMap": [
+                    "OneLogin",
+                    "Environment",
+                    {
+                      "Ref": "Environment",
+                    },
+                  ],
+                },
+                ".account.gov.uk/userinfo",
+              ],
             ],
-          ],
-        },
-      ],
+          },
+        ],
+      },
       "attributes_url_add_attributes": false,
       "authorize_scopes": "openid email",
-      "authorize_url": [
-        {
-          "Fn::If": [
-            "IsProduction",
-            "https://oidc.account.gov.uk/authorize",
-            {
-              "Fn::Join": [
-                "",
-                [
-                  "https://oidc.",
-                  {
-                    "Fn::FindInMap": [
-                      "OneLogin",
-                      "Environment",
-                      {
-                        "Ref": "Environment",
-                      },
-                    ],
-                  },
-                  ".account.gov.uk/authorize",
-                ],
+      "authorize_url": {
+        "Fn::If": [
+          "IsProduction",
+          "https://oidc.account.gov.uk/authorize",
+          {
+            "Fn::Join": [
+              "",
+              [
+                "https://oidc.",
+                {
+                  "Fn::FindInMap": [
+                    "OneLogin",
+                    "Environment",
+                    {
+                      "Ref": "Environment",
+                    },
+                  ],
+                },
+                ".account.gov.uk/authorize",
               ],
-            },
-          ],
-        },
-      ],
+            ],
+          },
+        ],
+      },
       "client_id": {
         "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/onelogin/client_id}}",
       },
       "client_secret": {
         "Fn::Sub": "{{resolve:secretsmanager:/${ConfigStackName}/onelogin/client_secret:SecretString}}",
       },
-      "jwks_uri": [
-        {
-          "Fn::If": [
-            "IsProduction",
-            "https://oidc.account.gov.uk/.well-known/jwks.json",
-            {
-              "Fn::Join": [
-                "",
-                [
-                  "https://oidc.",
-                  {
-                    "Fn::FindInMap": [
-                      "OneLogin",
-                      "Environment",
-                      {
-                        "Ref": "Environment",
-                      },
-                    ],
-                  },
-                  ".account.gov.uk/.well-known/jwks.json",
-                ],
+      "jwks_uri": {
+        "Fn::If": [
+          "IsProduction",
+          "https://oidc.account.gov.uk/.well-known/jwks.json",
+          {
+            "Fn::Join": [
+              "",
+              [
+                "https://oidc.",
+                {
+                  "Fn::FindInMap": [
+                    "OneLogin",
+                    "Environment",
+                    {
+                      "Ref": "Environment",
+                    },
+                  ],
+                },
+                ".account.gov.uk/.well-known/jwks.json",
               ],
-            },
-          ],
-        },
-      ],
-      "oidc_issuer": [
-        {
-          "Fn::If": [
-            "IsProduction",
-            "https://oidc.account.gov.uk",
-            {
-              "Fn::Join": [
-                "",
-                [
-                  "https://oidc.",
-                  {
-                    "Fn::FindInMap": [
-                      "OneLogin",
-                      "Environment",
-                      {
-                        "Ref": "Environment",
-                      },
-                    ],
-                  },
-                  ".account.gov.uk",
-                ],
+            ],
+          },
+        ],
+      },
+      "oidc_issuer": {
+        "Fn::If": [
+          "IsProduction",
+          "https://oidc.account.gov.uk",
+          {
+            "Fn::Join": [
+              "",
+              [
+                "https://oidc.",
+                {
+                  "Fn::FindInMap": [
+                    "OneLogin",
+                    "Environment",
+                    {
+                      "Ref": "Environment",
+                    },
+                  ],
+                },
+                ".account.gov.uk",
               ],
-            },
-          ],
-        },
-      ],
-      "token_url": [
-        {
-          "Fn::If": [
-            "IsProduction",
-            "https://oidc.account.gov.uk/token",
-            {
-              "Fn::Join": [
-                "",
-                [
-                  "https://oidc.",
-                  {
-                    "Fn::FindInMap": [
-                      "OneLogin",
-                      "Environment",
-                      {
-                        "Ref": "Environment",
-                      },
-                    ],
-                  },
-                  ".account.gov.uk/token",
-                ],
+            ],
+          },
+        ],
+      },
+      "token_url": {
+        "Fn::If": [
+          "IsProduction",
+          "https://oidc.account.gov.uk/token",
+          {
+            "Fn::Join": [
+              "",
+              [
+                "https://oidc.",
+                {
+                  "Fn::FindInMap": [
+                    "OneLogin",
+                    "Environment",
+                    {
+                      "Ref": "Environment",
+                    },
+                  ],
+                },
+                ".account.gov.uk/token",
               ],
-            },
-          ],
-        },
-      ],
+            ],
+          },
+        ],
+      },
     })
   });
   it("has idp identifiers", () => {
