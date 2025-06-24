@@ -66,6 +66,11 @@ Conditions:
           - !Ref Environment
           - "production"
 
+  IsProduction:
+    Fn::Equals:
+      - !Ref Environment
+      - "production"
+
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -147,6 +152,9 @@ Resources:
       CallbackURLs:
         - "govuk://govuk/login-auth-callback"
       LogoutURLs:
+        - !If
+        - IsProduction
+        - "https://oidc.account.gov.uk/logout"
         - !Join
           - ""
           - - "https://oidc."
@@ -182,14 +190,14 @@ Resources:
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty  
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
         - Key: Environment
           Value: !Ref Environment
         - Key: System
-          Value: Authentication    
+          Value: Authentication
 
   CognitoWebApplicationFirewall:
     Type: AWS::WAFv2::WebACL
@@ -839,35 +847,55 @@ Resources:
       ProviderType: "OIDC"
       ProviderDetails:
         attributes_request_method: "GET"
-        attributes_url: !Join
-          - ""
-          - - "https://oidc."
-            - !FindInMap [OneLogin, Environment, !Ref Environment]
-            - ".account.gov.uk/userinfo"
+        attributes_url:
+          - !If
+          - IsProduction
+          - "https://oidc.account.gov.uk/userinfo"
+          - !Join
+            - ""
+            - - "https://oidc."
+              - !FindInMap [OneLogin, Environment, !Ref Environment]
+              - ".account.gov.uk/userinfo"
         attributes_url_add_attributes: false
         authorize_scopes: "openid email"
-        authorize_url: !Join
-          - ""
-          - - "https://oidc."
-            - !FindInMap [OneLogin, Environment, !Ref Environment]
-            - ".account.gov.uk/authorize"
+        authorize_url:
+          - !If
+            - IsProduction
+            - "https://oidc.account.gov.uk/authorize"
+            - !Join
+              - ""
+              - - "https://oidc."
+                - !FindInMap [OneLogin, Environment, !Ref Environment]
+                - ".account.gov.uk/authorize"
         client_id: !Sub "{{resolve:ssm:/${ConfigStackName}/onelogin/client_id}}"
         client_secret: !Sub "{{resolve:secretsmanager:/${ConfigStackName}/onelogin/client_secret:SecretString}}" # pragma: allowlist secret
-        jwks_uri: !Join
-          - ""
-          - - "https://oidc."
-            - !FindInMap [OneLogin, Environment, !Ref Environment]
-            - ".account.gov.uk/.well-known/jwks.json"
-        oidc_issuer: !Join
-          - ""
-          - - "https://oidc."
-            - !FindInMap [OneLogin, Environment, !Ref Environment]
-            - ".account.gov.uk"
-        token_url: !Join
-          - ""
-          - - "https://oidc."
-            - !FindInMap [OneLogin, Environment, !Ref Environment]
-            - ".account.gov.uk/token"
+        jwks_uri:
+          - !If
+            - IsProduction
+            - "https://oidc.account.gov.uk/.well-known/jwks.json"
+            - !Join
+              - ""
+              - - "https://oidc."
+                - !FindInMap [OneLogin, Environment, !Ref Environment]
+                - ".account.gov.uk/.well-known/jwks.json"
+        oidc_issuer:
+          - !If
+            - IsProduction
+            - "https://oidc.account.gov.uk"
+            - !Join
+              - ""
+              - - "https://oidc."
+                - !FindInMap [OneLogin, Environment, !Ref Environment]
+                - ".account.gov.uk"
+        token_url:
+          - !If
+            - IsProduction
+            - "https://oidc.account.gov.uk/token"
+            - !Join
+              - ""
+              - - "https://oidc."
+                - !FindInMap [OneLogin, Environment, !Ref Environment]
+                - ".account.gov.uk/token"
       IdpIdentifiers:
         - onelogin
       AttributeMapping:
@@ -970,7 +998,7 @@ Resources:
         - Key: System
           Value: Authentication
 
-  AuthProxyWafAlarm:  
+  AuthProxyWafAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-waf-rate-limit
@@ -998,7 +1026,7 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
-  
+
   AuthProxyWafAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
@@ -1813,7 +1841,7 @@ Outputs:
 
   CloudWatchWafRateLimitingAlarmName:
     Description: The name of the CloudWatch alarm for WAF throttles
-    Value: !Ref CognitoWebApplicationFirewallAlarm  
+    Value: !Ref CognitoWebApplicationFirewallAlarm
 
   CloudWatchAlarmTokenRefreshThrottlesName:
     Description: The name of the CloudWatch alarm for token refresh throttles
