@@ -4,5 +4,5 @@ services:
     build:
       context: .
     environment:
-      TEST_ENVIRONMENT: Staging
-      commitsha: 25398af47a0dfbd05dd624963e4084fd8ee93766
+      TEST_ENVIRONMENT: Local
+      commitsha: fccf6b53a09cc80e7960da097780569640d18538 # pragma: allowlist secret

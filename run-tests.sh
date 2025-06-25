@@ -12,13 +12,21 @@ cd /tests
 
 echo "Running tests in ${TEST_ENVIRONMENT}"
 
-# nx affected -t test:acc
+if [[ "${TEST_ENVIRONMENT,,}" == "local" ]]; then
+    git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
+    cd /tmp/repo
+    npm i
+    nx affected -t test:acc
+else
+    nx affected -t test:acc
+fi
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 
 # 1. Check if we're in the penultimate environment
-   # Note TEST_ENVIRONMENT is being forced to lowercase here by using ${VAR,,}
-if [[ "${TEST_ENVIRONMENT,,}" == "staging" ]]; then
+# Note TEST_ENVIRONMENT is being forced to lowercase here by using ${VAR,,}
+# Also not we run this on local for testing purposes
+if [[ "${TEST_ENVIRONMENT,,}" == @(staging|local) ]]; then
     
     echo -e "${YELLOW}Starting production deployment safety checks...${NC}"
 
@@ -39,9 +47,13 @@ if [[ "${TEST_ENVIRONMENT,,}" == "staging" ]]; then
 
     # Clone the repository to check git lineage
     # It would be good to avoid hard coding this but the repo is unlikely to change and there are other priorities
-    git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
-    cd /tmp/repo
-
+    # Can skip this step if running locally
+    if [[ "${TEST_ENVIRONMENT,,}" == "staging" ]];
+    then
+       git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
+       cd /tmp/repo
+    fi
+       
     # Check if the commit exists on your production branch
     if ! git merge-base --is-ancestor "$commitsha" origin/production 2>/dev/null; then
 	echo -e "${RED}ERROR: Commit $commitsha is not from production branch${NC}"
