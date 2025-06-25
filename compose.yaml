@@ -1,0 +1,8 @@
+services:
+  test:
+    container_name: GOVUKAPP_BACKEND_TEST
+    build:
+      context: .
+    environment:
+      TEST_ENVIRONMENT: Staging
+      commitsha: 25398af47a0dfbd05dd624963e4084fd8ee93766
