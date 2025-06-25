@@ -1,4 +1,4 @@
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
 
 import path from "path";
@@ -51,26 +51,35 @@ describe("Set up the Cognito User Pool OIDC client", () => {
   });
 
   it("has a logout url", () => {
-    template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
-      LogoutURLs: [
-        {
-          "Fn::Join": [
-            "",
-            [
-              "https://oidc.",
-              {
-                "Fn::FindInMap": [
-                  "OneLogin",
-                  "Environment",
-                  { Ref: "Environment" },
-                ],
-              },
-              ".account.gov.uk/logout",
+    const userPoolClient = template.findResources("AWS::Cognito::UserPoolClient")["CognitoUserPoolClient"] as any;
+    expect(userPoolClient.Properties.LogoutURLs).toEqual({
+      "Fn::If": [
+        "IsProduction",
+        [
+          "https://oidc.account.gov.uk/logout",
+        ],
+        [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "https://oidc.",
+                {
+                  "Fn::FindInMap": [
+                    "OneLogin",
+                    "Environment",
+                    {
+                      "Ref": "Environment",
+                    },
+                  ],
+                },
+                ".account.gov.uk/logout",
+              ],
             ],
-          ],
-        },
+          },
+        ],
       ],
-    });
+    })
   });
 
   it("has correct tokens validity", () => {
