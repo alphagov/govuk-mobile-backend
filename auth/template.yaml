@@ -180,7 +180,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-waf-error-rate
-      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
+      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4529389569/Runbook+WAF+-+High+number+WAF+throttling\n"
       ActionsEnabled: true
       MetricName: WAFErrorRate
       Namespace: AWS/WAFV2
@@ -392,7 +392,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-sign-up-throttles
-      AlarmDescription: "Alarm when the sign up rate exceeds 5 per minute"
+      AlarmDescription: "Alarm when the sign up rate exceeds 5 per minute. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4539416577/Runbook+Cognito+Alarms#Runbook-Step%3A-CognitoSignUpThrottle\n"
       MetricName: SignUpThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -423,7 +423,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-sign-in-throttles
-      AlarmDescription: "Alarm when the sign in rate exceeds 5 per minute"
+      AlarmDescription: "Alarm when the sign in rate exceeds 5 per minute. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4539416577/Runbook+Cognito+Alarms#Runbook-Step%3A-CognitoSignInThrottle\n"
       MetricName: SignInThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -454,7 +454,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-token-refresh-throttles
-      AlarmDescription: "Alarm when the token refresh rate exceeds 5 per minute"
+      AlarmDescription: "Alarm when the token refresh rate exceeds 5 per minute. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4539416577/Runbook+Cognito+Alarms#Runbook-Step%3A-CognitoTokenRefreshThrottle\n"
       MetricName: TokenRefreshThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -485,7 +485,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-federation-throttles
-      AlarmDescription: "Alarm when federated requests exceeds 5 per minute"
+      AlarmDescription: "Alarm when federated requests exceeds 5 per minute. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4539416577/Runbook+Cognito+Alarms#Runbook-Step%3A-CognitoFederationThrottle\n"
       MetricName: FederationThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -518,7 +518,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-4xx-errors
-      AlarmDescription: "Alarm detects a high rate of client-side errors."
+      AlarmDescription: "Alarm detects a high rate of client-side errors. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4544724994/Runbook+Attestation+API+Gateway+alarms#Runbook%3A-API-Gateway-4xx-Error-Alarm\n"
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -553,7 +553,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-5xx-errors
-      AlarmDescription: "Alarm detects a high rate of server-side errors."
+      AlarmDescription: "Alarm detects a high rate of server-side errors. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4544724994/Runbook+Attestation+API+Gateway+alarms#Runbook%3A-API-Gateway-5xx-Error-Alarm\n"
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -582,7 +582,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-latency-errors
-      AlarmDescription: "Alarm detects a high rate of latency errors."
+      AlarmDescription: "Alarm detects a high rate of latency errors. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4544724994/Runbook+Attestation+API+Gateway+alarms#Runbook%3A-API-Gateway-Latency-Alarm\n"
       Namespace: AWS/ApiGateway
       ExtendedStatistic: p90
       ActionsEnabled: true
@@ -1003,7 +1003,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-waf-rate-limit
-      AlarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes"
+      AlarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4531716123/Runbook+Attestation+WAF+throttling#Runbook-Step%3A-AuthWAFRateLimitingAlarm\n"
       Namespace: AWS/WAFV2
       ActionsEnabled: true
       MetricName: AuthWAFErrorRate
