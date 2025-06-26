@@ -1,0 +1,8 @@
+services:
+  test:
+    container_name: GOVUKAPP_BACKEND_TEST
+    build:
+      context: .
+    environment:
+      TEST_ENVIRONMENT: Local
+      commitsha: fccf6b53a09cc80e7960da097780569640d18538 # pragma: allowlist secret
