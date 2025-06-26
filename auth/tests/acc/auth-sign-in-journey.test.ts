@@ -11,6 +11,7 @@ import {
 } from "node:http";
 import https from "node:https";
 import url, { URLSearchParams } from "node:url";
+import querystring from "node:querystring";
 import { promisify } from "node:util";
 import type {
     ClientRequest,
@@ -21,6 +22,7 @@ import { createHmac } from "node:crypto";
 import fs from "fs";
 import { CookieJar } from "./cookie";
 import type { Cookie } from "./cookie";
+import extractCSRFTokenHelper from "./csrf";
 
 const request = promisify(https.request);
 
@@ -53,7 +55,7 @@ function generateRandomString(length: number): string {
     return text;
 }
 
-async function requestAsync (options: RequestOptions): Promise<HTTP_RESPONSE> {
+async function requestAsync (options: RequestOptions, formData: string): Promise<HTTP_RESPONSE> {
     return new Promise((resolve, reject) => {
 	try {
 	    const req = https.request(options, res => {
@@ -78,7 +80,10 @@ async function requestAsync (options: RequestOptions): Promise<HTTP_RESPONSE> {
 		    });
 		});
 	    });
-	
+	    if(formData) {
+		options.headers["Content-Length"] = Buffer.byteLength(formData);
+		req.write(formData);
+	    }
 	    req.end();
 	} catch (e) {
 	    reject({
@@ -211,6 +216,8 @@ idpidentifier=onelogin`;
 	    console.log(response.headers['set-cookie']);
 	    //Sign in or create page
 	    const signinOrCreateUrl = `https://${request.hostname}${request.path}`;
+	    const csrf = extractCSRFTokenHelper(response.body);
+	    console.log(csrf);
 	    assert.equal(response.statusCode, 200);
 	    assert.equal(request.hostname, 'signin.staging.account.gov.uk');
 	    assert.equal(request.path, '/sign-in-or-create?');
@@ -221,6 +228,9 @@ idpidentifier=onelogin`;
 	    // Click the sign in button
 	    const clickOptions =
 		{
+		    "hostname": request.hostname,
+		    "path": request.path,
+		    "port": 443,
 		    "method": "POST",
 		    "headers": {
 			"Content-Type": "application/x-www-form-urlencoded",
@@ -235,9 +245,13 @@ idpidentifier=onelogin`;
 		
 		};
 
-	    const signInResponse = await requestAsync(signinOrCreateUrl, clickOptions);
+	    const formData = {
+		"_csrf": csrf
+	    }
+
+	    const signInResponse = await requestAsync(clickOptions, querystring.stringify(formData));
 	    console.log(signInResponse.statusCode);
-	    console.log(JSON.stringify(clickOptions, null, 2));
+	    console.log(signInResponse.body);
 	    
 	    
 	} catch (e) {

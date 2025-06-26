@@ -105,6 +105,7 @@ export class CookieJar {
 	    return false;
 	}
     }
+
     /**
      * Extract domain from URL
      */
@@ -112,8 +113,7 @@ export class CookieJar {
 	try {
 	    const urlObj = new URL(url);
 	    return urlObj.hostname;
-	} catch (e) {
-	    console.log(e);
+	} catch {
 	    return url;
 	}
     }
@@ -125,8 +125,7 @@ export class CookieJar {
 	try {
 	    const urlObj = new URL(url);
 	    return urlObj.pathname;
-	} catch (e) {
-	    console.log(e);
+	} catch {
 	    return '/';
 	}
     }
@@ -135,6 +134,7 @@ export class CookieJar {
      * Check if a cookie domain matches the current URL domain
      */
     private domainMatches(cookieDomain: string | undefined, urlDomain: string): boolean {
+
 	if(!cookieDomain || !urlDomain) return true;
 
 	const cleanCookieDomain = cookieDomain.startsWith('.')
@@ -144,8 +144,10 @@ export class CookieJar {
 	if (cleanCookieDomain === urlDomain) return true;
 
 	if (cookieDomain.startsWith('.')) {
+
 	    return urlDomain.endsWith(cleanCookieDomain) &&
 		urlDomain !== cleanCookieDomain;
+
 	}
 	return false;
     }
@@ -197,7 +199,6 @@ export class CookieJar {
 
 		const [key, value] = pair.split('=').map(s => s.trim());
 		
-		
 		switch(key.toLowerCase()) {
 		    case 'domain':
 			cookie.domain = value?.startsWith('.') ? value : `.${value}`;
@@ -239,6 +240,7 @@ export class CookieJar {
     public addCookie(url: string, setCookieHeaders: string[] | string): void {
 	const urlDomain = this.getDomainFromUrl(url);
 	if (typeof setCookieHeaders === 'string') setCookieHeaders = [setCookieHeaders];
+
 	for (const header of setCookieHeaders) {
 	    const cookie: Cookie = CookieJar.tryParse(header);
 	    if (!cookie) continue;
