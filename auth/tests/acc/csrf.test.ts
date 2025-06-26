@@ -5,19 +5,19 @@ const mockHTML = `
     <form>
       <input type="hidden" name="_csrf" value="abc123def456" />
     </form>
-`;
+`; //pragma: allowlist secret
 
 const mockMissHTML = `
     <form>
       <input type="hidden" name="not_a_csrf" value="abc123def456" />
     </form>
-`;
+`; // pragma: allowlist secret
 
 const mockOtherNameHTML = `
     <form>
       <input type="hidden" name="csrfmiddlewaretoken" value="abc123def456" />
     </form>
-`;
+`; // pragma: allowlist secret
 
 describe("CSRF helper tests", () => {
     it("should retrieve a CSRF", () => {
