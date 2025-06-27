@@ -1074,12 +1074,12 @@ Resources:
         - Key: System
           Value: Authentication
 
-  # AuthProxyWAFLoggingConfiguration:
-  #   Type: AWS::WAFv2::LoggingConfiguration
-  #   Properties:
-  #     LogDestinationConfigs:
-  #       - !GetAtt AuthProxyWafLogGroup.Arn
-  #     ResourceArn: !GetAtt AuthProxyWaf.Arn
+  AuthProxyWAFLoggingConfiguration:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !GetAtt AuthProxyWafLogGroup.Arn
+      ResourceArn: !GetAtt AuthProxyWaf.Arn
 
   AuthProxyWAFLogGroupKMSKey:
     Type: AWS::KMS::Key
