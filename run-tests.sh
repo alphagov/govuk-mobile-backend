@@ -17,7 +17,6 @@ nx run-many -t test:int
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 
-
 git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
 cd /tmp/repo
 # npm i
