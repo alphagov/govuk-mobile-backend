@@ -39,7 +39,9 @@ const getTestConfig = () => {
     "CFN_CloudWatchWafRateLimitingAlarmName",  //WAF Rate limit alarm name
     "CFN_CognitoWebApplicationFirewall", //Cognito WAF
     "CFN_AuthProxyWaf", //WAF for Auth Proxy
-    "CFN_AuthProxyWafAlarm"
+    "CFN_AuthProxyWafAlarm",
+    "CFN_AuthProxyWafLogGroupName",
+    "CFN_CognitoUrl"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -55,6 +57,7 @@ const getTestConfig = () => {
     authProxyFunctionIAMRoleName: process.env.CFN_AuthProxyFunctionIAMRoleName!,
     authProxyFunctionIAMRolePolicyName:
       process.env.CFN_AuthProxyFunctionIAMRolePolicyName!,
+    authProxyWafLogGroupName: process.env.CFN_AuthProxyWafLogGroupName!,
     userPoolId: process.env.CFN_UserPoolId!,
     testEnvironment: process.env.TEST_ENVIRONMENT!,
     cognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName!,
@@ -102,7 +105,8 @@ const getTestConfig = () => {
     cloudWatchWafRateLimitingAlarmName: process.env.CFN_CloudWatchWafRateLimitingAlarmName!,  
     cognitoWebApplicationFirewall: process.env.CFN_CognitoWebApplicationFirewall!,
     authProxyWAF: process.env.CFN_AuthProxyWaf!,
-    authProxyWAFAlarm: process.env.CFN_AuthProxyWafAlarm!
+    authProxyWAFAlarm: process.env.CFN_AuthProxyWafAlarm!,
+    cognitoUrl: process.env.CFN_CognitoUrl!,
   };
 };
 
