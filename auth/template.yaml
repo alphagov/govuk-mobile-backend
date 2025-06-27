@@ -1063,7 +1063,8 @@ Resources:
           #     Deidentify:
           #       MaskConfig: {}
       LogGroupClass: STANDARD
-      LogGroupName: !Sub "auth-proxy-waf-logs-${AWS::StackName}"
+      # log stream must start with aws-waf-logs-
+      LogGroupName: !Sub "aws-waf-logs-attestation-${AWS::StackName}"
       KmsKeyId: !GetAtt AuthProxyWAFLogGroupKMSKey.Arn
       RetentionInDays: 30
       Tags:
@@ -1078,8 +1079,7 @@ Resources:
     Type: AWS::WAFv2::LoggingConfiguration
     Properties:
       LogDestinationConfigs:
-        # - !GetAtt AuthProxyWafLogGroup.Arn
-        - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:${AuthProxyWafLogGroup}"
+        - !GetAtt AuthProxyWafLogGroup.Arn
       ResourceArn: !GetAtt AuthProxyWaf.Arn
 
   AuthProxyWAFLogGroupKMSKey:
