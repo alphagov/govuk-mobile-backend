@@ -1037,31 +1037,20 @@ Resources:
   AuthProxyWafLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      # DataProtectionPolicy:
-      #   Name: CloudWatchLogs-PersonalInformation-Protection
-      #   Description: Protect basic types of sensitive data
-      #   Version: "2021-06-01"
-      #   Statement:
-      #     - Sid: audit-email-policy
-      #       DataIdentifier:
-      #         - arn:aws:dataprotection::aws:data-identifier/EmailAddress
-      #       Operation:
-      #         Audit:
-      #           FindingsDestination: {}
-      #     - Sid: redact-email-policy
-      #       DataIdentifier:
-      #         - arn:aws:dataprotection::aws:data-identifier/EmailAddress
-      #       Operation:
-      #         Deidentify:
-      #           MaskConfig: {}
-          # - Sid: redact-cognito-tokens
-          #   DataIdentifier:
-          #   - CustomDataIdentifier:
-          #       Name: TokenParameter
-          #       Regex: "(refresh_token|token|access_token|id_token|authorization|code|client_secret|session|jwt)=\\S+"
-          #   Operation:
-          #     Deidentify:
-          #       MaskConfig: {}
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Statement:
+          - Sid: redact-cognito-tokens
+            DataIdentifier:
+            - CustomDataIdentifier:
+                Name: TokenParameter
+                # Regex: "(refresh_token|token|access_token|id_token|authorization|code|client_secret|session|jwt)=\\S+"
+                Regex: "(X-Attestation-Token)=\\S+"
+            Operation:
+              Deidentify:
+                MaskConfig: {}
       LogGroupClass: STANDARD
       # log stream must start with aws-waf-logs-
       LogGroupName: !Sub "aws-waf-logs-attestation-${AWS::StackName}"
