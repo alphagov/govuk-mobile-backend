@@ -1078,7 +1078,8 @@ Resources:
     Type: AWS::WAFv2::LoggingConfiguration
     Properties:
       LogDestinationConfigs:
-        - !GetAtt AuthProxyWafLogGroup.Arn
+        # - !GetAtt AuthProxyWafLogGroup.Arn
+        - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:${AuthProxyWafLogGroup}"
       ResourceArn: !GetAtt AuthProxyWaf.Arn
 
   AuthProxyWAFLogGroupKMSKey:
