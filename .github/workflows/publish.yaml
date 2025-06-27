@@ -22,6 +22,6 @@ jobs:
   deploy-to-build:
     name: Build
     uses: ./.github/workflows/auth-post-merge.yaml
-    if: ${{ github.head_ref || github.ref_name == 'main' }}
+    if: ${{ github.head_ref || contains(fromJSON('["main", "production"]'), github.ref_name) }}
     with:
       environment: build
