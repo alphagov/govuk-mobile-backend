@@ -230,6 +230,92 @@ describe("waf", () => {
     });
   });
 
+  describe('log group', () => {
+    const logGroup = template.findResources("AWS::Logs::LogGroup")[
+      "AuthProxyWAFLogGroup"
+    ] as any;
+
+    it('has a data protection policy', () => {
+      expect(logGroup.Properties.DataProtectionPolicy).toBeDefined()
+    })
+
+    it('should redact email addresses', () => {
+      const emailAddressRedactPolicy = logGroup.Properties.DataProtectionPolicy.Statement.find((s) => s.Sid === "redact-email-policy")
+
+      expect(emailAddressRedactPolicy).toEqual({
+        Operation: {
+          Deidentify: {
+            MaskConfig: {},
+          },
+        },
+        Sid: "redact-email-policy",
+        DataIdentifier: [
+          "arn:aws:dataprotection::aws:data-identifier/EmailAddress"
+        ]
+      })
+    })
+
+    // describe('redacted cognito token logs', () => {
+    //   const cognitoTokenRedactPolicy = logGroup.Properties.DataProtectionPolicy.Statement.find((s) => s.Sid === "redact-cognito-tokens")
+    //   const tokenRegex = new RegExp(cognitoTokenRedactPolicy.DataIdentifier[0].CustomDataIdentifier.Regex);
+
+    //   it('should redact cognito tokens', () => {
+    //     expect(cognitoTokenRedactPolicy).toEqual({
+    //       Operation: {
+    //         Deidentify: {
+    //           MaskConfig: {},
+    //         },
+    //       },
+    //       Sid: "redact-cognito-tokens",
+    //       DataIdentifier: [
+    //         {
+    //           CustomDataIdentifier: {
+    //             Name: "TokenParameter",
+    //             Regex: "(refresh_token|token|access_token|id_token|authorization|code|client_secret|session|jwt)=\\S+",
+    //           },
+    //         }
+    //       ]
+    //     })
+    //   })
+    //   it('should match valid cognito tokens', () => {
+    //     const validTokens = [
+    //       "access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", // pragma: allowlist secret
+    //       "id_token=abc.def.ghi",
+    //       "refresh_token=xyz.123.456",
+    //       "token=foo.bar.baz"
+    //     ];
+
+    //     validTokens.forEach(token => {
+    //       expect(tokenRegex.test(token)).toBe(true);
+    //     });
+    //   });
+
+    //   it('should match any value after a token', () => {
+    //     const invalidTokens = [
+    //       "access_token=not.a.jwt",
+    //       "id_token=abc.def",
+    //       "token=gha",
+    //       "access_token=abc.def.ghi.extra"
+    //     ];
+
+    //     invalidTokens.forEach(token => {
+    //       expect(tokenRegex.test(token)).toBe(true);
+    //     });
+    //   });
+
+    //   it('should not redact unmatched fields', () => {
+    //     const unmatchedFields = [
+    //       "random=safglk",
+    //       "foo=bar",
+    //     ];
+
+    //     unmatchedFields.forEach(token => {
+    //       expect(tokenRegex.test(token)).toBe(false);
+    //     });
+    //   })
+    // })
+  })
+
   describe('alarms', () => {
     it('should send alerts to slack and pager duty', () => {
       const topic = template.findResources("AWS::SNS::Subscription")["CloudWatchAlarmTopicSubscriptionPagerDuty"]
