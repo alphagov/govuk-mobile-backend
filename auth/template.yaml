@@ -1034,26 +1034,26 @@ Resources:
       ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}"
       WebACLArn: !GetAtt AuthProxyWaf.Arn
 
-  AuthProxyWAFLogGroup:
+  AuthProxyWafLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      DataProtectionPolicy:
-        Name: CloudWatchLogs-PersonalInformation-Protection
-        Description: Protect basic types of sensitive data
-        Version: "2021-06-01"
-        Statement:
-          - Sid: audit-email-policy
-            DataIdentifier:
-              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
-            Operation:
-              Audit:
-                FindingsDestination: {}
-          - Sid: redact-email-policy
-            DataIdentifier:
-              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
-            Operation:
-              Deidentify:
-                MaskConfig: {}
+      # DataProtectionPolicy:
+      #   Name: CloudWatchLogs-PersonalInformation-Protection
+      #   Description: Protect basic types of sensitive data
+      #   Version: "2021-06-01"
+      #   Statement:
+      #     - Sid: audit-email-policy
+      #       DataIdentifier:
+      #         - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+      #       Operation:
+      #         Audit:
+      #           FindingsDestination: {}
+      #     - Sid: redact-email-policy
+      #       DataIdentifier:
+      #         - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+      #       Operation:
+      #         Deidentify:
+      #           MaskConfig: {}
           # - Sid: redact-cognito-tokens
           #   DataIdentifier:
           #   - CustomDataIdentifier:
@@ -1078,7 +1078,7 @@ Resources:
     Type: AWS::WAFv2::LoggingConfiguration
     Properties:
       LogDestinationConfigs:
-        - !GetAtt AuthProxyWAFLogGroup.Arn
+        - !GetAtt AuthProxyWafLogGroup.Arn
       ResourceArn: !GetAtt AuthProxyWaf.Arn
 
   AuthProxyWAFLogGroupKMSKey:
@@ -1843,7 +1843,10 @@ Outputs:
     Description: The name of the Cognito WAF log group
     Value: !Ref CognitoWAFLogGroup
 
-  # Testing Outputs
+  AuthProxyWafLogGroupName:
+    Description: The name of the Cognito WAF log group
+    Value: !Ref AuthProxyWafLogGroup
+
   AuthProxyFunctionName:
     Description: The name of the Auth Proxy Lambda function
     Value: !Ref AuthProxyFunction
