@@ -57,7 +57,7 @@ if [[ "${TEST_ENVIRONMENT,,}" == @(staging|local) ]]; then
     echo -e "${YELLOW}🍌 Checking git lineage for commit: $commitsha${NC}"
 
     # Check if the commit exists on your production branch
-    if [[ BASE_BRANCH!="origin/production" ]]; then
+    if [[ "$BASE_BRANCH" != "origin/production" ]]; then
 	echo -e "${RED}✘ ERROR: Commit $commitsha is not from production branch${NC}"
 	if ! git show "$commitsha" 2>/dev/null; then
 	    echo -e "${RED}✘ The sha $commitsha does not appear to be a valid commit${NC}"
