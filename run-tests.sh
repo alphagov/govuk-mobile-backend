@@ -12,14 +12,10 @@ cd /tests
 
 echo "Running tests in ${TEST_ENVIRONMENT}"
 
-if [[ "${TEST_ENVIRONMENT,,}" == "local" ]]; then
-    git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
-    cd /tmp/repo
-    npm i
-    nx affected -t test:acc
-else
-    nx affected -t test:acc
-fi
+git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
+cd /tmp/repo
+npm i
+nx affected -t test:acc
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 
@@ -45,15 +41,6 @@ if [[ "${TEST_ENVIRONMENT,,}" == @(staging|local) ]]; then
 
     echo -e "${YELLOW}🍌 Checking git lineage for commit: $commitsha${NC}"
 
-    # Clone the repository to check git lineage
-    # It would be good to avoid hard coding this but the repo is unlikely to change and there are other priorities
-    # Can skip this step if running locally
-    if [[ "${TEST_ENVIRONMENT,,}" == "staging" ]];
-    then
-       git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
-       cd /tmp/repo
-    fi
-       
     # Check if the commit exists on your production branch
     if ! git merge-base --is-ancestor "$commitsha" origin/production 2>/dev/null; then
 	echo -e "${RED}✘ ERROR: Commit $commitsha is not from production branch${NC}"
