@@ -112,7 +112,7 @@ const testCases: AlarmTestCase[] = [
     actionsEnabled: true,
     alarmResource: "CognitoWebApplicationFirewallAlarm",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
-    alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
+    alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
     metricName: "WAFErrorRate",
     topicDisplayName: "cloudwatch-alarm-topic",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
@@ -269,9 +269,8 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.ActionsEnabled).toEqual(
         actionsEnabled
       );
-      expect(cloudWatchAlarmUnderTest.Properties.AlarmDescription).toEqual(
-        alarmDescription
-      );
+      const actualDescription = cloudWatchAlarmUnderTest.Properties.AlarmDescription["Fn::Sub"];
+      expect(actualDescription.includes(alarmDescription)).toBeTruthy();
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );

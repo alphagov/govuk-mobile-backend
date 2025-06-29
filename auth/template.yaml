@@ -180,7 +180,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-waf-error-rate
-      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
+      AlarmDescription: !Sub "Alarm when the WAF error rate exceeds 5 incidents per minute. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4529389569/Runbook+WAF+-+High+number+WAF+throttling\n"
       ActionsEnabled: true
       MetricName: WAFErrorRate
       Namespace: AWS/WAFV2
@@ -392,7 +392,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-sign-up-throttles
-      AlarmDescription: "Alarm when the sign up rate exceeds 5 per minute"
+      AlarmDescription: !Sub "Alarm when the sign up rate exceeds 5 per minute. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4531716123/Runbook+Attestation+WAF+throttling\n"
       MetricName: SignUpThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -423,7 +423,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-sign-in-throttles
-      AlarmDescription: "Alarm when the sign in rate exceeds 5 per minute"
+      AlarmDescription: !Sub "Alarm when the sign in rate exceeds 5 per minute. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4539416577/Runbook+Cognito+Alarms\n"
       MetricName: SignInThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -454,7 +454,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-token-refresh-throttles
-      AlarmDescription: "Alarm when the token refresh rate exceeds 5 per minute"
+      AlarmDescription: !Sub "Alarm when the token refresh rate exceeds 5 per minute. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4539416577/Runbook+Cognito+Alarms\n"
       MetricName: TokenRefreshThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -485,7 +485,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-federation-throttles
-      AlarmDescription: "Alarm when federated requests exceeds 5 per minute"
+      AlarmDescription: !Sub "Alarm when federated requests exceeds 5 per minute. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4539416577/Runbook+Cognito+Alarms\n"
       MetricName: FederationThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -518,7 +518,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-4xx-errors
-      AlarmDescription: "Alarm detects a high rate of client-side errors."
+      AlarmDescription: !Sub "Alarm detects a high rate of client-side errors. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms\n"
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -553,7 +553,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-5xx-errors
-      AlarmDescription: "Alarm detects a high rate of server-side errors."
+      AlarmDescription: !Sub "Alarm detects a high rate of server-side errors. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms\n"
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -582,7 +582,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-latency-errors
-      AlarmDescription: "Alarm detects a high rate of latency errors."
+      AlarmDescription: !Sub "Alarm detects a high rate of latency errors. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms\n"
       Namespace: AWS/ApiGateway
       ExtendedStatistic: p90
       ActionsEnabled: true
@@ -1003,7 +1003,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-waf-rate-limit
-      AlarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes"
+      AlarmDescription: !Sub "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4531716123/Runbook+Attestation+WAF+throttling\n"
       Namespace: AWS/WAFV2
       ActionsEnabled: true
       MetricName: AuthWAFErrorRate
@@ -1124,7 +1124,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       ActionsEnabled: true
-      AlarmDescription: "Alarm for high number of attestation errors. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmDescription: !Sub "Alarm for high number of attestation errors. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
       AlarmName: !Sub ${AWS::StackName}-attestation-lambda-error-rate
       ComparisonOperator: GreaterThanOrEqualToThreshold
       DatapointsToAlarm: 1
@@ -1184,7 +1184,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       ActionsEnabled: true
-      AlarmDescription: "A large proportion of Attestation requests have not completed successfully.\nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmDescription: !Sub "A large proportion of Attestation requests have not completed successfully.\nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
       AlarmName: !Sub ${AWS::StackName}-attestation-low-completion
       ComparisonOperator: LessThanOrEqualToThreshold
       DatapointsToAlarm: 1
@@ -1246,7 +1246,7 @@ Resources:
       - Attestation200ResponseCountMetricFilter
     Properties:
       ActionsEnabled: false # disable until baseline is established
-      AlarmDescription: "A decrease has been detected in the proportion of 200 responses returned from the attestation endpoint, \nbased on the anomaly detection model.\nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmDescription: !Sub "A decrease has been detected in the proportion of 200 responses returned from the attestation endpoint, \nbased on the anomaly detection model.\nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
       AlarmName: !Sub ${AWS::StackName}-attestation-low-200-response-proportion
       ComparisonOperator: LessThanLowerThreshold
       DatapointsToAlarm: 5

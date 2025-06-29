@@ -114,7 +114,7 @@ describe.each(testCases)(
       throw new Error(`Alarm not found: ${alarmName}`);
     }
     it("should have the correct AlarmDescription", () => {
-      assert.equal(alarm.AlarmDescription, alarmDescription);
+      assert.include(alarm.AlarmDescription, alarmDescription);
     });
 
     it("should have ActionsEnabled set to true", () => {
