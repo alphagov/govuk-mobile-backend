@@ -1864,7 +1864,7 @@ Outputs:
     Value: !Ref CognitoWAFLogGroup
 
   AuthProxyWafLogGroupName:
-    Description: The name of the Cognito WAF log group
+    Description: The name of the Attestation API Gateway WAF log group
     Value: !Ref AuthProxyWafLogGroup
 
   AuthProxyFunctionName:
