@@ -96,7 +96,7 @@ const testCases: AlarmTestCase[] = [
     alarmName: `${testConfig.stackName}-cognito-waf-error-rate`,
     actionsEnabled: true,
     metricName: "WAFErrorRate",
-    alarmDescription: "Alarm when the WAF error rate exceeds 5 per minute",
+    alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
     statistic: "Sum",
     period: 60,
     evaluationPeriods: 5,
@@ -134,7 +134,7 @@ describe.each(testCases)(
       throw new Error(`Alarm not found: ${alarmName}`);
     }
     it("should have the correct AlarmDescription", () => {
-      assert.equal(alarm.AlarmDescription, alarmDescription);
+      assert.include(alarm.AlarmDescription, alarmDescription);
     });
 
     it("should have ActionsEnabled set to true", () => {

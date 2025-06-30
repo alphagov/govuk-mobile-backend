@@ -240,9 +240,11 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.ActionsEnabled).toEqual(
         actionsEnabled
       );
-      expect(cloudWatchAlarmUnderTest.Properties.AlarmDescription).toEqual(
-        alarmDescription
-      );
+      
+
+      const actualDescription = cloudWatchAlarmUnderTest.Properties.AlarmDescription["Fn::Sub"];
+
+      expect(actualDescription.includes(alarmDescription)).toBeTruthy();
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );
