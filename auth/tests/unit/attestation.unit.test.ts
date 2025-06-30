@@ -230,6 +230,34 @@ describe("waf", () => {
     });
   });
 
+  describe('log group', () => {
+    const logGroup = template.findResources("AWS::Logs::LogGroup")[
+      "AuthProxyWafLogGroup"
+    ] as any;
+
+    it('has a log group class', () => {
+      expect(logGroup.Properties.LogGroupClass).toEqual("STANDARD")
+    });
+
+    it("has a log group name with the required AWS prefix of aws-waf-logs", () => {
+      expect(logGroup.Properties.LogGroupName).toEqual({
+        "Fn::Sub": "aws-waf-logs-attestation-${AWS::StackName}",
+      })
+    });
+
+    it("has a retention policy of 30 days", () => {
+      expect(logGroup.Properties.RetentionInDays).toEqual(30)
+    });
+
+    it("has the required tags", () => {
+      expect(logGroup.Properties.Tags).toEqual([
+        { Key: "Product", Value: "GOV.UK" },
+        { Key: "Environment", Value: { Ref: "Environment" } },
+        { Key: "System", Value: "Authentication" },
+      ]);
+    })
+  })
+
   describe('alarms', () => {
     it('should send alerts to slack and pager duty', () => {
       const topic = template.findResources("AWS::SNS::Subscription")["CloudWatchAlarmTopicSubscriptionPagerDuty"]

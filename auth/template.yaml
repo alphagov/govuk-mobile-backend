@@ -86,6 +86,50 @@ Globals:
     Runtime: nodejs22.x
 
 Resources:
+  AccountLevelDataProtectionPolicy:
+    Type: AWS::Logs::AccountPolicy
+    Properties:
+      PolicyName: "TokenRedactionPolicy"
+      PolicyDocument: '{
+          "Description": "Protect against JWT tokens exposure",
+          "Configuration": {
+            "CustomDataIdentifier": [
+              {
+                "Regex": "eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_.+/=]*",
+                "Name": "JWTTokens"
+              }
+            ]
+          },
+          "Version": "2021-06-01",
+          "Statement": [
+            {
+              "DataIdentifier": [
+                "JWTTokens"
+              ],
+              "Operation": {
+                "Audit": {
+                  "FindingsDestination": {}
+                }
+              },
+              "Sid": "audit-policy"
+            },
+            {
+              "DataIdentifier": [
+                "JWTTokens"
+              ],
+              "Operation": {
+                "Deidentify": {
+                  "MaskConfig": {}
+                }
+              },
+              "Sid": "redact-policy"
+            }
+          ],
+          "Name": "CloudWatchLogs-JWTToken-Protection"
+        }'
+      PolicyType: "DATA_PROTECTION_POLICY"
+      Scope: "ALL"
+
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -1034,6 +1078,66 @@ Resources:
       ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}"
       WebACLArn: !GetAtt AuthProxyWaf.Arn
 
+  AuthProxyWafLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      # log stream must start with aws-waf-logs-
+      LogGroupName: !Sub "aws-waf-logs-attestation-${AWS::StackName}"
+      KmsKeyId: !GetAtt AuthProxyWAFLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AuthProxyWAFLoggingConfiguration:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !GetAtt AuthProxyWafLogGroup.Arn
+      ResourceArn: !GetAtt AuthProxyWaf.Arn
+
+  AuthProxyWAFLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the Auth Proxy WAF Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - "kms:*"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   AttestationProxyApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -1759,7 +1863,10 @@ Outputs:
     Description: The name of the Cognito WAF log group
     Value: !Ref CognitoWAFLogGroup
 
-  # Testing Outputs
+  AuthProxyWafLogGroupName:
+    Description: The name of the Attestation API Gateway WAF log group
+    Value: !Ref AuthProxyWafLogGroup
+
   AuthProxyFunctionName:
     Description: The name of the Auth Proxy Lambda function
     Value: !Ref AuthProxyFunction
