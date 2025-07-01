@@ -30,9 +30,6 @@ describe('Unit test for post-authentication handler', function () {
         const result: PostAuthenticationTriggerEvent = await lambdaHandler(event);
 
         expect(consoleMock).toHaveBeenCalledWith('Source = PostAuthentication_Authentication');
-        expect(consoleMock).toHaveBeenCalledWith('User Pool Id = 123');
-        expect(consoleMock).toHaveBeenCalledWith('Client Id = abc123');
-        expect(consoleMock).toHaveBeenCalledWith('Username = test-user');
         expect(result).toEqual(event);
     });
 });

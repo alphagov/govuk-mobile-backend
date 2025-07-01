@@ -12,8 +12,5 @@ import type { PostAuthenticationTriggerEvent } from 'aws-lambda';
 // eslint-disable-next-line @typescript-eslint/require-await
 export const lambdaHandler = async (event: PostAuthenticationTriggerEvent): Promise<PostAuthenticationTriggerEvent> => {
     console.log(`Source = ${event.triggerSource}`);
-    console.log(`User Pool Id = ${event.userPoolId}`);
-    console.log(`Client Id = ${event.callerContext.clientId}`);
-    console.log(`Username = ${event.userName}`);
     return event;
 };
