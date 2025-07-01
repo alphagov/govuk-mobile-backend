@@ -20,9 +20,10 @@ import type {
 } from "node:https";
 import { createHmac } from "node:crypto";
 import fs from "fs";
-import { CookieJar } from "./cookie";
-import type { Cookie } from "./cookie";
-import extractCSRFTokenHelper from "./csrf";
+import { CookieJar } from "./helpers";
+import type { Cookie } from "./helpers";
+import { extractCSRFTokenHelper } from "./helpers";
+import { requestAsync, requestAsyncHandleRedirects } from "./helpers";
 
 const request = promisify(https.request);
 
@@ -55,46 +56,6 @@ function generateRandomString(length: number): string {
     return text;
 }
 
-async function requestAsync (options: RequestOptions, formData: string): Promise<HTTP_RESPONSE> {
-    return new Promise((resolve, reject) => {
-	try {
-	    const req = https.request(options, res => {
-		const chunks = [];
-		res.on("data", chunk => chunks.push(chunk));
-		res.on("error", reject);
-		res.on("end", () => {
-		    const { statusCode, headers } = res;
-		    //const isResponseOK = statusCode >=200 && statusCode <=399 && res.complete;
-		    const isResponseOK = res.complete;
-		    if(isResponseOK) {
-			const body = chunks.join('');
-			resolve({
-			    statusCode: statusCode,
-			    body: body,
-			    headers: headers,
-			});
-		    }
-		    reject({
-			statusCode: statusCode,
-			headers: headers
-		    });
-		});
-	    });
-	    if(formData) {
-		options.headers["Content-Length"] = Buffer.byteLength(formData);
-		req.write(formData);
-	    }
-	    req.end();
-	} catch (e) {
-	    reject({
-		statusCode: e.statusCode,
-		headers: e.rawHeaders,
-		body: e.body,
-	    });
-	}
-    });
-}
-
 describe("auth sign in journey", () => {
 
     let code_verifier: string = "";
@@ -120,65 +81,8 @@ idpidentifier=onelogin`;
 	path = path.replace(/[\r\n]+/gm, "");
 	
     });
-    
-    function interceptAuthGrantRedirectURI(searchParams: URLSearchParams): URLSearchParams{
-	return new URLSearchParams([
-	    ["client_id", searchParams.get("client_id")],
-	    ["scope", searchParams.get("scope")],
-	    ["response_type", searchParams.get("response_type")],
-	    ["state", searchParams.get("state")],
-	    ["redirect_uri", "https://localhost/oauth2/idpresponse"],
-	]);
-    }
-
-    async function getRedirect(options: RequstOptions, headers: IncomingHttpHeaders) {
-	if(!headers || !headers['location']) return;
-	try {
-	    new URL(headers['location']);
-	    return headers['location'];
-	} catch (e) {
-	    if(!options || !options.hostname) return; 
-	    return `https://${options.hostname}${headers['location']}`;
-	}
-    }
 
     const cookieJar = new CookieJar();
-    
-    async function requestAsyncHandleRedirects (options: RequestOptions): Promise<HTTP_RESPONSE> {
-	
-	const response = await requestAsync(options);
-	
-	const redirect = await getRedirect(options, response.headers);
-
-	if(response.statusCode === 302) {
-	    
-	    if(!redirect) return response;
-
-	    await cookieJar.addCookie(redirect, response.headers['set-cookie']);
-
-	    const url: URL = new URL(redirect);
-	    const { searchParams } = url;
-		
-	    const redirectOptions: RequestOptions = {
-		hostname: url.hostname,
-		path: `${url.pathname}?${searchParams.toString()}`,
-		method: "GET",
-		headers: options.headers
-	    };
-
-	    const cookies = await cookieJar.getCookiesForUrl(url);
-
-	    if(cookies) {
-		redirectOptions.headers['cookie'] = cookies.map(c => c.toClientString()).join(" ");
-	    }
-	    
-	    return await requestAsyncHandleRedirects(redirectOptions);
-	}
-	return {
-	    response: response,
-	    request: options // Need to return this so we know where we end up after multiple recursions
-	}
-    }
     
     it.skip("should do redirect to one login", async () => {
 	const headers: OutgoingHttpHeaders = {
@@ -210,14 +114,13 @@ idpidentifier=onelogin`;
 	};
 	
 	try {
-	    const redirect = await requestAsyncHandleRedirects(options);
-	    console.log("*************************************");
+	    const redirect = await requestAsyncHandleRedirects(options, cookieJar);
 	    const { response, request } = redirect; 
-	    console.log(response.headers['set-cookie']);
+	    
 	    //Sign in or create page
 	    const signinOrCreateUrl = `https://${request.hostname}${request.path}`;
-	    const csrf = extractCSRFTokenHelper(response.body);
-	    console.log(csrf);
+	    let csrf = extractCSRFTokenHelper(response.body);
+	    
 	    assert.equal(response.statusCode, 200);
 	    assert.equal(request.hostname, 'signin.staging.account.gov.uk');
 	    assert.equal(request.path, '/sign-in-or-create?');
@@ -246,13 +149,17 @@ idpidentifier=onelogin`;
 		};
 
 	    const formData = {
-		"_csrf": csrf
+		"_csrf": csrf,
+		"supportInternationalNumbers": ""
 	    }
 
-	    const signInResponse = await requestAsync(clickOptions, querystring.stringify(formData));
-	    console.log(signInResponse.statusCode);
-	    console.log(signInResponse.body);
+	    const stringifiedFormData = querystring.stringify(formData);
 	    
+	    const signInResponse = await requestAsyncHandleRedirects(clickOptions, cookieJar, stringifiedFormData);
+	    console.log(signInResponse.response.body);
+	    csrf = "";
+	    csrf = extractCSRFTokenHelper(response.body);
+	    console.log(csrf);
 	    
 	} catch (e) {
 	    console.log("Failed");

@@ -43,7 +43,7 @@ const checkForCommonlyUsedCSRFTokenNames = (html) => {
     }
 }
 
-const  extractCSRFTokenHelper = (html, fieldName = '_csrf') => {
+const extractCSRFTokenHelper = (html, fieldName = '_csrf') => {
     let csrf_token = extractCSRFToken(html, fieldName);
     if (csrf_token) return csrf_token;
     const other_possibilities = checkForCommonlyUsedCSRFTokenNames(html);
@@ -54,4 +54,6 @@ Consider updating your code to use fieldName="${other_possibilities.name}"`);
     }
 }
 
-export default extractCSRFTokenHelper;
+export {
+    extractCSRFTokenHelper
+}
