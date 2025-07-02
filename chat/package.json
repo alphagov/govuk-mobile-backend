@@ -1,0 +1,18 @@
+{
+    "name": "chat",
+    "description": "GOVUK Chat integration",
+    "version": "0.0.1",
+    "private": true,
+    "devDependencies": {
+        "vitest": "^3.2.4"
+    },
+    "scripts": {
+        "test": "vitest run",
+        "test:acc": "vitest acc",
+        "test:int": "vitest int",
+        "test:unit": "vitest unit",
+        "test:coverage": "vitest run --coverage --project unit",
+        "test:validate": "sam validate",
+        "test:integration": "vitest run --project integration"
+    }
+}
