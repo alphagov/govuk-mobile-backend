@@ -52,21 +52,21 @@ describe("Form parsing helper tests", () => {
     });
     it("should parse inputs", () => {
 				const formContent = `
-<input type="hidden" name="_csrf" value="50b0ae"/>
+                            <input type="hidden" name="_csrf" value="50b0ae"/>
   
-  <div class="govuk-form-group">
-    <h1 class="govuk-label-wrapper">
-      <label class="govuk-label govuk-label--l" for="email">
-        Enter your email address to sign in to your GOV.UK One Login
-      </label>
-    </h1>
-    <input class="govuk-input" id="email" name="email" type="email" spellcheck="false" autocomplete="email">
-  </div>
+                            <div class="govuk-form-group">
+                              <h1 class="govuk-label-wrapper">
+                                <label class="govuk-label govuk-label--l" for="email">
+                                  Enter your email address to sign in to your GOV.UK One Login
+                                </label>
+                              </h1>
+                              <input class="govuk-input" id="email" name="email" type="email" spellcheck="false" autocomplete="email">
+                            </div>
   
-  <button type="Submit" data-prevent-double-click="true" class="govuk-button" data-module="govuk-button">
-    Continue
-  </button>
-`;
+                            <button type="Submit" data-prevent-double-click="true" class="govuk-button" data-module="govuk-button">
+                              Continue
+                            </button>
+        `;
 				const inputMatches = parseInputs(formContent);
 				expect(inputMatches).toEqual([
 						'<input type="hidden" name="_csrf" value="50b0ae"/>',
@@ -75,7 +75,27 @@ describe("Form parsing helper tests", () => {
 				
 		});
 		it("should parse checkboxes and radio buttons", () => {
-				//TODO
+				
+				const formContent = `<div class="form-group">
+                               <input type="checkbox" id="newsletter" name="newsletter" value="yes">
+                               <label for="newsletter">Subscribe to newsletter</label>
+                             </div>
+  
+                             <div class="form-group">
+                               <input type="radio" id="contact-email" name="contact_method" value="email" checked>
+                               <label for="contact-email">Contact by Email</label>
+
+                               <input type="radio" id="contact-phone" name="contact_method" value="phone">
+                               <label for="contact-phone">Contact by Phone</label>
+                             </div>`;
+
+				const checkboxMatches: Array<string> = parseInputs(formContent);
+				
+				expect(checkboxMatches).toEqual([
+						'<input type="checkbox" id="newsletter" name="newsletter" value="yes">',
+						'<input type="radio" id="contact-email" name="contact_method" value="email" checked>',
+						'<input type="radio" id="contact-phone" name="contact_method" value="phone">'
+				]);
 				
 		});
 		it("should process inputs", () => {
@@ -112,21 +132,61 @@ describe("Form parsing helper tests", () => {
 				]);
 		});
 		it("should process checkboxes and radio buttons", () => {
-				//TODO
-				
+				const formData: FormData = {
+						action: '/enter-email',
+						method: 'post',
+						csrf: null,
+						inputs: [] 
+				};
+
+				const checkboxMatches: Array<string> = [
+						'<input type="checkbox" id="newsletter" name="newsletter" value="yes">',
+						'<input type="radio" id="contact-email" name="contact_method" value="email" checked>',
+						'<input type="radio" id="contact-phone" name="contact_method" value="phone">'
+				];
+				processInputs(checkboxMatches, formData);
+				expect(formData.inputs).toEqual([
+						{
+								name: 'newsletter',
+								type: 'checkbox',
+								value: 'yes',
+								id: 'newsletter',
+								required: false,
+								className: '',
+								checked: false
+						},
+						{
+								name: 'contact_method',
+								type: 'radio',
+								value: 'email',
+								id: 'contact-email',
+								required: false,
+								className: '',
+								checked: true
+						},
+						{
+								name: 'contact_method',
+								type: 'radio',
+								value: 'phone',
+								id: 'contact-phone',
+								required: false,
+								className: '',
+								checked: false
+						}
+				]);
 		});
 		it("should parse text areas", () => {
 				const formContent = `
-<div class="form-group">
-  <label for="message">Message</label>
-  <textarea class="form-control" id="message" name="message" rows="5" required placeholder="Please enter your message here..."></textarea>
-</div>
+                            <div class="form-group">
+                              <label for="message">Message</label>
+                              <textarea class="form-control" id="message" name="message" rows="5" required placeholder="Please enter your message here..."></textarea>
+                            </div>
   
-<div class="form-group">
-  <label for="additional-info">Additional Information</label>
-  <textarea class="form-control" id="additional-info" name="additional_info" rows="3" placeholder="Any additional details..."></textarea>
-</div>
-`;
+                            <div class="form-group">
+                              <label for="additional-info">Additional Information</label>
+                              <textarea class="form-control" id="additional-info" name="additional_info" rows="3" placeholder="Any additional details..."></textarea>
+                            </div>
+        `;
 
 				const textAreaMatches: Array<string> = parseTextAreas(formContent);
 				expect(textAreaMatches).toEqual([

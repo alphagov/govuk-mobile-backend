@@ -1,3 +1,14 @@
+/**
+ * HTML Input Field
+ * @interface InputField
+ * @property {string}    name        - Comes from the name attribute of the html input tag
+ * @property {string}    type        - Comes from the type attribute of the html input tag
+ * @property {string}    value       - Comes from the value attribute of the html input tag
+ * @property {string}    id          - Comes from the id attribute of the html input tag
+ * @property {boolean}   required    - Comes from the required attribute of the html input tag
+ * @property {string}    placeholder - Comes from the placeholder property of the html input tag
+ * @property {string}    className   - Comes from the className property of the html input tag
+ */
 interface InputField {
 		name: string;
 		type: string;
@@ -8,28 +19,67 @@ interface InputField {
 		className: string;
 }
 
+/**
+ * HTML Checkbox or Radio field
+ * @interface CheckboxField
+ * @extends InputField
+ * @property {union}   type    - Type of field; either checkbox or radio
+ * @property {boolean} checked - Comes from the checked attribute of the html input tag when the type = 'check'
+ */
 interface CheckboxField extends Omit<InputField, 'placeholder'> {
 		type: 'checkbox' | 'radio';
 		checked: boolean;
 }
 
+/**
+ * HTML Select Option
+ * @interface SelectOption
+ * @property {string}  value    - Comes from the value attribute of the html option tag
+ * @property {string}  text     - Comes from the inner text of the html option tag
+ * @selected {boolean} selected - Comes from the selected attribute of the html option tag
+ */
 interface SelectOption {
 		value: string;
 		text: string;
 		selected: boolean;
 }
 
+/**
+ * HTML Select Field
+ * @interface SelectField
+ * @extends InputField
+ * @property {union} type - Constant set to 'select'
+ * @property {SelectOption} - Comes from the nested HTML Options tags within the Select Tag
+ */
 interface SelectField extends Omit<InputField, 'placeholder'> {
 		type: 'select';
 		options: SelectOption[];
 }
 
+/**
+ * HTML Textarea Field
+ * @interface TextareaField
+ * @extends InputField
+ * @property {union} type - Constant set to 'textarea'
+ */
 interface TextareaField extends InputField {
 		type: 'textarea';
 }
 
+/**
+ * FormField union Type - InputField | SelectField | TextareaField | CheckboxField
+ * @typedef {type} FormField
+ */
 type FormField = InputField | SelectField | TextareaField | CheckboxField;
 
+/**
+ * FormData - Structure for returning information about the parsed HTML Form
+ * @interface FormData
+ * @property {string}        action      - Comes from the action property of the HTML Form Tag
+ * @property {string}        method      - Comes form the method property of the HTML Form Tag
+ * @property {string | null} csrf        - Comes from any nested hidden HTML input field containing a CSRF token
+ * @property {FormField[]}   inputs      - Array of form fields parse from the HTML Form
+ */
 interface FormData {
 		action: string;
 		method: string;
@@ -37,6 +87,12 @@ interface FormData {
 		inputs: FormField[];
 }
 
+/**
+ * @function       parseFormTag
+ * @description    parses the first form tag from  an html document using regex
+ * @param          {string}   html       - The html document as a string
+ * @returns        {FormData} formData   - Object containing csrf token, form action, method, and input fields
+ */
 function parseFormTag(html: string): string {
 		// Find the first form tag and extract its attributes
 		const formMatch = html.match(/<form[^>]*>/i);
@@ -46,6 +102,12 @@ function parseFormTag(html: string): string {
 		return formMatch[0];
 }
 
+/**
+ * @function       parseFormAttributes
+ * @description    parses form attributes from an html form tag using regex
+ * @param          {string}   formTag    - The complete form tag as an html string
+ * @returns        {FormData} formData   - Object containing csrf token, form action, method, and input fields
+ */
 function parseFormAttributes(formTag: string): FormData {
 		// Extract form attributes
 		const actionMatch = formTag.match(/action\s*=\s*["']([^"']*)["']/i);
@@ -60,15 +122,42 @@ function parseFormAttributes(formTag: string): FormData {
 		return formData;
 }
 
-// Find the form content (everything between <form> and </form>)
+/**
+ * Find the form content (everything between <form> and </form>)
+ * @param {string} html - The HTML Form Tag
+ * @returns {string}    - The inner tags as a string 
+ */
 const parseFormContent = (html: string): string => html.match(/<form[^>]*>([\s\S]*?)<\/form>/i)[1];
 
-const parseInputs = (formContent: string): string => formContent.match(/<input[^>]*>/gi) || []; 
+/**
+ * Parses the input tags in the form content into an array of strings
+ * @param {string} formContent - The inner tags of the form tag as an HTML string
+ * @returns {string[]}         - Returns an array of HTML input tags as HTML strings
+ */
+const parseInputs = (formContent: string): string[] => formContent.match(/<input[^>]*>/gi) || []; 
 
-const parseTextAreas = (formContent: string): string => formContent.match(/<textarea[^>]*>[\s\S]*?<\/textarea>/gi) || [];
+/**
+ * Parses the textarea tags in the form content into an array of strings
+ * @param {string} formContent - The inner tags of the form tag as an HTML string
+ * @returns {string[]}         - Returns an array of HTML textarea tags as HTML strings
+ */
+const parseTextAreas = (formContent: string): string[] => formContent.match(/<textarea[^>]*>[\s\S]*?<\/textarea>/gi) || [];
 
-const parseSelects = (formContent: string): string => formContent.match(/<select[^>]*>[\s\S]*?<\/select>/gi) || []; 
+/**
+ * Parses the select tags in the form content into an array of strings
+ * @param {string} formContent - The inner tags of the form tag as an HTML string
+ * @returns {string[]}         - Returns an array of HTML select tags as HTML strings
+ */
+const parseSelects = (formContent: string): string[] => formContent.match(/<select[^>]*>[\s\S]*?<\/select>/gi) || []; 
 
+/**
+ * @function       processInputs
+ * @description    parses input tags from an array of HTML strings using regex
+ * @param          {string[]}   inputMatches    - The array of input tags as an array of HTML strings
+ * @param          {FormData} formData [IN/OUT] - Object containing csrf token, form action, method, and input fields
+ * @mutates        formData
+ * @returns        void
+ */
 const processInputs = (inputMatches: Array<string>, formData: FormData): void => {
 		inputMatches.forEach(inputTag => {
 
@@ -144,7 +233,15 @@ const processInputs = (inputMatches: Array<string>, formData: FormData): void =>
   });
 }
 
-const processTextAreas = (textareaMatches: string, formData: FormData): void => {
+/**
+ * @function       processTextAreas
+ * @description    parses textarea tags from an array of HTML strings using regex
+ * @param          {string[]}   textareaMatches - The textareas as an array of html strings
+ * @param          {FormData} formData [IN/OUT] - Object containing csrf token, form action, method, and input fields
+ * @mutates        formData
+ * @returns        void
+ */
+const processTextAreas = (textareaMatches: Array<string>, formData: FormData): void => {
 		textareaMatches.forEach(textareaTag => {
 				const inputData: TextareaField = {
 						name: '',
@@ -177,6 +274,14 @@ const processTextAreas = (textareaMatches: string, formData: FormData): void => 
 		});
 }
 
+/**
+ * @function       processSelects
+ * @description    parses select tags from an array of HTML strings using regex
+ * @param          {string[]} selectMatches     - The HTML Form contents as a string
+ * @param          {FormData} formData [IN/OUT] - Object containing csrf token, form action, method, and input fields
+ * @mutates        formData
+ * @returns        void
+ */
 const processSelects = (selectMatches: Array<string>, formData: FormData): void => {
 		selectMatches.forEach(selectTag => {
 				const inputData: SelectField = {
@@ -228,9 +333,10 @@ const processSelects = (selectMatches: Array<string>, formData: FormData): void 
 }
 
 /**
+ * @function parseFormFromHtml
  * Extracts form data from HTML document using regex
- * @param html - The HTML document as a string
- * @returns Object containing csrf token, form action, method, and input fields
+ * @param   {string}   html - The HTML document as a string
+ * @returns {FormData}      - Object containing csrf token, form action, method, and input fields
  */
 function parseFormFromHtml(html: string): FormData {
 		const formTag: string = parseFormTag(html);
