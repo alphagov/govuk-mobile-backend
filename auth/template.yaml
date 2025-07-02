@@ -38,6 +38,15 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
+  AccountLevel:
+    Type: String
+    Description: >
+      Whether this is an account level deployment or not. If true, the template will create resources at the account level.
+    Default: "True"
+    AllowedValues:
+      - "True"
+      - "False"
+
 Mappings:
   OneLogin:
     Environment:
@@ -71,6 +80,11 @@ Conditions:
       - !Ref Environment
       - "production"
 
+  IsAccountLevel:
+    Fn::Equals:
+      - !Ref AccountLevel
+      - "True"    
+
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -87,6 +101,7 @@ Globals:
 
 Resources:
   AccountLevelDataProtectionPolicy:
+    Condition: IsAccountLevel
     Type: AWS::Logs::AccountPolicy
     Properties:
       PolicyName: "TokenRedactionPolicy"

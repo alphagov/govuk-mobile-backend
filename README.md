@@ -140,3 +140,17 @@ This will generate a `.env` file in the current directory (`auth`) containing yo
 ```sh
 ./get-cloudformation-outputs.sh <your-stack-name> config/my_app_variables.env
 ```
+
+### SAM deploy to Dev Environment
+- Setup AWS CLI - https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html  
+Validate the SAM template `sam validate --lint`
+- Build SAM project `sam build`
+- Run guided deployment `sam deploy --guided` to create the *.toml file
+- Update the toml file as below and update local deployment variables
+```
+...
+stack_name = "<your-stack-name>"
+s3_prefix = "<your-stack-name>"
+parameter_overrides = "Environment=\"dev\" CodeSigningConfigArn=\"none\" PermissionsBoundary=\"none\" ConfigStackName=\"<your-ssm-config-name>\" AccountLevel=\"False\""
+```
+
