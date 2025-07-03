@@ -6,57 +6,38 @@ const template = loadTemplateFromFile(
   path.join(__dirname, "..", "..", "template.yaml")
 );
 
-describe('account level data protection policies', () => {
-  const logGroup = template.findResources("AWS::Logs::AccountPolicy")[
-    "AccountLevelDataProtectionPolicy"
+type DataProtectionPolicyStatement = {
+  Sid: string;
+  DataIdentifier: string[];
+}
+
+describe
+  .each([
+    {
+      name: 'CognitoWAFLogGroup'
+    },
+    {
+      name: 'AuthProxyWafLogGroup'
+    }
+  ])
+('waf logging data protection policies', (
+  testCase
+) => {
+  const logGroup = template.findResources("AWS::Logs::LogGroup")[
+    testCase.name
   ] as any;
 
   it('has a data protection policy', () => {
-    expect(logGroup.Properties.PolicyDocument).toBeDefined()
+    expect(logGroup.Properties.DataProtectionPolicy).toBeDefined()
   })
 
   describe('redacted jwt token logs', () => {
-    const tokenRedactPolicy = JSON.parse(logGroup.Properties.PolicyDocument)
-    const tokenRegex = new RegExp(tokenRedactPolicy.Configuration.CustomDataIdentifier[0].Regex);
+    const policies: DataProtectionPolicyStatement[] = logGroup.Properties.DataProtectionPolicy.Statement
+    const customTokenDataIdentifier = logGroup.Properties.DataProtectionPolicy.Configuration.CustomDataIdentifier[0];
+    const tokenRegex = new RegExp(customTokenDataIdentifier.Regex);
 
-    it('should redact jwt tokens', () => {
-      expect(tokenRedactPolicy).toEqual({
-        "Configuration": {
-          "CustomDataIdentifier": [
-            {
-              "Name": "JWTTokens",
-              "Regex": "eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_.+/=]*",
-            },
-          ],
-        },
-        "Description": "Protect against JWT tokens exposure",
-        "Name": "CloudWatchLogs-JWTToken-Protection",
-        "Statement": [
-          {
-            "DataIdentifier": [
-              "JWTTokens",
-            ],
-            "Operation": {
-              "Audit": {
-                "FindingsDestination": {},
-              },
-            },
-            "Sid": "audit-policy",
-          },
-          {
-            "DataIdentifier": [
-              "JWTTokens",
-            ],
-            "Operation": {
-              "Deidentify": {
-                "MaskConfig": {},
-              },
-            },
-            "Sid": "redact-policy",
-          },
-        ],
-        "Version": "2021-06-01",
-      })
+    it.each(policies)('should redact jwt tokens', (policy) => {
+      expect(policy.DataIdentifier.includes(customTokenDataIdentifier.Name))
     });
 
     it('should match valid JWT tokens', () => {

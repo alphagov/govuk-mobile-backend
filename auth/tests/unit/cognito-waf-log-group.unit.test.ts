@@ -19,12 +19,14 @@ describe("Set up the Cognito WAF Log Group for GovUK app", () => {
             Sid: "audit-policy",
             DataIdentifier: [
               "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+              "JWTTokens",
             ],
           },
           {
             Sid: "redact-policy",
             DataIdentifier: [
               "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+              "JWTTokens",
             ],
           },
         ],
