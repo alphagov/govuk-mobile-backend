@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { loadTemplateFromFile } from "../common/template";
-import { testConfig } from "../common/config";
 import path from "path";
 import { AlarmTestCase } from "./alarm-test-case";
 
@@ -10,73 +9,26 @@ const template = loadTemplateFromFile(
 
 const testCases: AlarmTestCase[] = [
   {
-    name: "4xx",
-    alarmName: `auth-proxy-4xx-errors`,
+    name: "AuthWafThrottles",
+    alarmName: 'auth-proxy-waf-rate-limit',
     actionsEnabled: true,
-    namespace: "AWS/ApiGateway",
-    alarmResource: "CloudwatchAlarmAuthProxy4xxErrors",
+    alarmResource: "AuthProxyWafAlarm",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
+    namespace: "AWS/WAFV2",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
     topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "4XXError",
-    alarmDescription: "Alarm detects a high rate of client-side errors.",
+    metricName: "BlockedRequests",
+    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
     topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Average",
-    period: 60,
+    statistic: "Sum",
+    extendedStatistic: undefined,
+    period: 300,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
-    threshold: 0.05,
+    threshold: 300,
     comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "ApiName", Value: { Ref: "AttestationProxyApi" } },
-      { Name: "Resource", Value: "/oauth2/token" },
-      { Name: "Stage", Value: { Ref: "Environment" } },
-      { Name: "Method", Value: "POST" },
-    ],
-  },
-  {
-    name: "5xx",
-    alarmName: `auth-proxy-5xx-errors`,
-    actionsEnabled: true,
-    alarmResource: "CloudwatchAlarmAuthProxy5xxErrors",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    namespace: "AWS/ApiGateway",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
-    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "5XXError",
-    alarmDescription: "Alarm detects a high rate of server-side errors.",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Average",
-    period: 60,
-    evaluationPeriods: 3,
-    datapointsToAlarm: 3,
-    threshold: 0.05,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [{ Name: "ApiName", Value: { Ref: "AttestationProxyApi" } }],
-  },
-  {
-    name: "Latency",
-    alarmName: `auth-proxy-latency-errors`,
-    actionsEnabled: true,
-    alarmResource: "CloudwatchAlarmAuthProxyLatencyErrors",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    namespace: "AWS/ApiGateway",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
-    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "Latency",
-    alarmDescription: "Alarm detects a high rate of latency errors.",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    extendedStatistic: "p90",
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 2500,
-    comparisonOperator: "GreaterThanOrEqualToThreshold",
-    dimensions: [{ Name: "ApiName", Value: { Ref: "AttestationProxyApi" } }],
-  },
+  }
 ];
 
 describe.each(testCases)(
@@ -243,9 +195,12 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
         comparisonOperator
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Dimensions).toEqual(
-        dimensions
-      );
+      const actualDimensions = cloudWatchAlarmUnderTest.Properties.Dimensions || [];
+      expect(actualDimensions.map(d => d.Name)).toEqual([
+        "WebACL",
+        "Rule",
+        "Region",
+      ]);
       expect(cloudWatchAlarmUnderTest.Properties.AlarmActions).toEqual([
         { Ref: topicResource },
       ]);

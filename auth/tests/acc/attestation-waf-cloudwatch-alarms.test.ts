@@ -7,9 +7,9 @@ import {
   DescribeSlackChannelConfigurationsCommand,
 } from "@aws-sdk/client-chatbot";
 import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
-import { assert, describe, it } from "vitest";
+import { assert, describe, it, expect } from "vitest";
 import { testConfig } from "../common/config";
-import { AlarmTestCase } from "../acc/alarm-test-case";
+import { AlarmTestCase } from "./alarm-test-case";
 
 const cloudWatchClient = new CloudWatchClient({ region: "eu-west-2" });
 const snsClient = new SNSClient({ region: "eu-west-2" });
@@ -17,58 +17,21 @@ const chatbotClient = new ChatbotClient({ region: "us-east-2" });
 
 const testCases: AlarmTestCase[] = [
   {
-    name: "4xx",
-    alarmName: `${testConfig.stackName}-auth-proxy-4xx-errors`,
+    name: "AuthWafThrottles",
+    alarmName: `${testConfig.stackName}-auth-proxy-waf-rate-limit`,
     actionsEnabled: true,
-    metricName: "4XXError",
-    alarmDescription: "Alarm detects a high rate of client-side errors.",
+    metricName: "BlockedRequests",
+    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
     topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Average",
-    period: 60,
+    extendedStatistic: undefined, // No extended statistic for WAF
+    period: 300,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
-    threshold: 0.05,
+    threshold: 300,
     comparisonOperator: "GreaterThanThreshold",
-    namespace: "AWS/ApiGateway",
-    dimensions: [
-      { Name: "ApiName", Value: testConfig.authProxyId },
-      { Name: "Resource", Value: "/oauth2/token" },
-      { Name: "Stage", Value: testConfig.testEnvironment },
-      { Name: "Method", Value: "POST" },
-    ],
-  },
-  {
-    name: "5xx",
-    alarmName: `${testConfig.stackName}-auth-proxy-5xx-errors`,
-    actionsEnabled: true,
-    metricName: "5XXError",
-    alarmDescription: "Alarm detects a high rate of server-side errors.",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Average",
-    period: 60,
-    evaluationPeriods: 3,
-    datapointsToAlarm: 3,
-    threshold: 0.05,
-    comparisonOperator: "GreaterThanThreshold",
-    namespace: "AWS/ApiGateway",
-    dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
-  },
-  {
-    name: "Latency",
-    alarmName: `${testConfig.stackName}-auth-proxy-latency-errors`,
-    actionsEnabled: true,
-    metricName: "Latency",
-    alarmDescription: "Alarm detects a high rate of latency errors.",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    extendedStatistic: "p90",
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 2500,
-    comparisonOperator: "GreaterThanOrEqualToThreshold",
-    namespace: "AWS/ApiGateway",
-    dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
-  },
+    namespace: "AWS/WAFV2",
+    statistic: "Sum", // WAF metrics typically use Sum
+  }
 ];
 
 describe.each(testCases)(
@@ -146,7 +109,13 @@ describe.each(testCases)(
     });
 
     it("should have Dimensions as an array", () => {
-      assert.deepEqual(alarm.Dimensions, dimensions);
+      const actualDimensions = alarm.Dimensions || [];
+      const WebACL = actualDimensions.find((d) => d.Name === "WebACL");
+      const region = actualDimensions.find((d) => d.Name === "Region");
+      const rule = actualDimensions.find((d) => d.Name === "Rule");
+      assert.equal(region?.Value, testConfig.region);
+      assert.equal(WebACL?.Value, testConfig.authProxyWAF);
+      assert.include(rule?.Value, "rate-limit-rule"); // WAF rules are dynamic, so we use a partial match
     });
 
     const alarmOKActions = alarm.OKActions;
