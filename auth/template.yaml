@@ -1065,7 +1065,7 @@ Resources:
       AlarmDescription: !Sub "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes. \nSee resolution steps in runbook: \n{{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4531716123/Runbook+Attestation+WAF+throttling\n"
       Namespace: AWS/WAFV2
       ActionsEnabled: true
-      MetricName: AuthWAFErrorRate
+      MetricName: BlockedRequests
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 5
@@ -1075,6 +1075,22 @@ Resources:
       Dimensions:
         - Name: WebACL
           Value: !Ref AuthProxyWaf
+        - Name: Rule
+          Value: !Join
+            - "-"
+            - - !Ref AWS::StackName
+              - "rate-limit-rule"
+              - Fn::Select:
+                  - 4
+                  - Fn::Split:
+                      - "-"
+                      - Fn::Select:
+                          - 2
+                          - Fn::Split:
+                              - "/"
+                              - Ref: AWS::StackId
+        - Name: Region
+          Value: !Ref AWS::Region                      
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
