@@ -5,7 +5,7 @@ import axios from "axios";
 import querystring from "querystring";
 import jsonwebtoken from "jsonwebtoken";
 
-describe('account-level data protection log policies', () => {
+describe('waf logging data protection policies', () => {
     const startTime = Date.now() - 1 * 60 * 1000;
     const loggingDriver = new LoggingDriver();
 
@@ -33,7 +33,6 @@ describe('account-level data protection log policies', () => {
         const unmaskedHeaders = {
             'X-Attestation-Token': fakeJwt,
             'Authorization': `Bearer ${fakeJwt}`,
-            'test': randomId
         }
 
         beforeAll(async () => {
@@ -44,15 +43,16 @@ describe('account-level data protection log policies', () => {
                     headers: {
                         ...unmaskedHeaders,
                         'Content-Type': 'application/x-www-form-urlencoded',
+                        'test': randomId
                     }
                 }
             ).catch(e => console.log("error expected"))
 
             const message = await loggingDriver.findLogMessageWithRetries({
                 logGroupName: testConfig.authProxyWafLogGroupName,
-                searchString: 'test',
+                searchString: randomId,
                 startTime,
-                delayMs: 1000
+                delayMs: 4000
             })
 
             logMessages = JSON.parse(message)
@@ -71,7 +71,7 @@ describe('account-level data protection log policies', () => {
                 Object.entries(unmaskedHeaders)
                     .forEach(([k, v]) => {
                         const header = logMessages.httpRequest.headers.find((h) => h.name === k)
-                        expect(v).not.equal(header.value)
+                        expect(v).not.toEqual(header.value)
                     })
             })
         })
@@ -102,7 +102,6 @@ describe('account-level data protection log policies', () => {
         const unmaskedHeaders = {
             // cognito waf logs are lowercased
             'authorization': `Bearer ${fakeJwt}`,
-            'test': randomId
         }
 
         beforeAll(async () => {
@@ -112,17 +111,16 @@ describe('account-level data protection log policies', () => {
                     headers: {
                         ...unmaskedHeaders,
                         'Content-Type': 'application/x-www-form-urlencoded',
+                        'test': randomId
                     }
                 }
-            ).catch(e => {
-                console.log("error expected")
-            })
+            ).catch(e => console.log("error expected"))
 
             const message = await loggingDriver.findLogMessageWithRetries({
                 logGroupName: testConfig.cognitoWafLogGroupName,
                 searchString: 'authorize',
                 startTime,
-                delayMs: 3000
+                delayMs: 4000
             })
 
             logMessages = JSON.parse(message)
