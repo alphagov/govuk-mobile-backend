@@ -30,7 +30,8 @@ else
     exit 1
 fi
 
-nx affected -t --base="$BASE_BRANCH" --head=HEAD
+nx affected -t test:acc --base="$BASE_BRANCH" --head=HEAD
+nx affected -t test:int --base="$BASE_BRANCH" --head=HEAD
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 

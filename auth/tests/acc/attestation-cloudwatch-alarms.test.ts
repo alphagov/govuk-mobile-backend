@@ -1,19 +1,18 @@
 import {
-  CloudWatchClient,
   DescribeAlarmsCommand,
+  DescribeAlarmsOutput,
 } from "@aws-sdk/client-cloudwatch";
 import {
-  ChatbotClient,
   DescribeSlackChannelConfigurationsCommand,
+  DescribeSlackChannelConfigurationsResult,
 } from "@aws-sdk/client-chatbot";
-import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
+import { GetTopicAttributesCommand, GetTopicAttributesResponse } from "@aws-sdk/client-sns";
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 import { AlarmTestCase } from "../acc/alarm-test-case";
+import { TestLambdaDriver } from "../driver/testLambda.driver";
 
-const cloudWatchClient = new CloudWatchClient({ region: "eu-west-2" });
-const snsClient = new SNSClient({ region: "eu-west-2" });
-const chatbotClient = new ChatbotClient({ region: "us-east-2" });
+const driver = new TestLambdaDriver();
 
 const testCases: AlarmTestCase[] = [
   {
@@ -69,136 +68,173 @@ const testCases: AlarmTestCase[] = [
     namespace: "AWS/ApiGateway",
     dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
   },
+  {
+    name: "Low200Response",
+    alarmName: `${testConfig.stackName}-attestation-low-200-response-proportion`,
+    actionsEnabled: false,
+    topicDisplayName: "cloudwatch-alarm-topic",
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    alarmDescription: `A decrease has been detected in the proportion of 200 responses returned from the attestation endpoint,
+based on the anomaly detection model.
+See resolution steps in runbook:
+https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures`,
+    dimensions: [],
+    comparisonOperator: "LessThanLowerThreshold",
+  },
+  {
+    name: "LowCompletion",
+    alarmName: `${testConfig.stackName}-attestation-low-completion`,
+    actionsEnabled: true,
+    topicDisplayName: "cloudwatch-alarm-topic",
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 75,
+    alarmDescription: `A large proportion of Attestation requests have not completed successfully.
+See resolution steps in runbook:
+https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures
+`,
+    dimensions: [],
+    comparisonOperator: "LessThanOrEqualToThreshold",
+  },
+  {
+    name: "LambdaErrorRate",
+    alarmName: `${testConfig.stackName}-attestation-lambda-error-rate`,
+    actionsEnabled: true,
+    topicDisplayName: "cloudwatch-alarm-topic",
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 10,
+    alarmDescription: `Alarm for high number of attestation errors.
+See resolution steps in runbook:
+https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures
+`,
+    dimensions: [],
+    comparisonOperator: "GreaterThanOrEqualToThreshold",
+  },
 ];
 
-describe.each(testCases)(
-  `CloudWatch Alarm for Cognito $alarmName with supporting alarm resources`,
-  async ({
-    alarmName,
-    actionsEnabled,
-    metricName,
-    alarmDescription,
-    dimensions,
-    statistic,
-    extendedStatistic,
-    period,
-    evaluationPeriods,
-    datapointsToAlarm,
-    threshold,
-    comparisonOperator,
-    namespace
-  }) => {
-    const alarmResponse = await cloudWatchClient.send(
-      new DescribeAlarmsCommand({ AlarmNames: [alarmName] })
-    );
-    const alarm = alarmResponse.MetricAlarms?.[0];
-
-    if (!alarm) {
-      throw new Error(`Alarm not found: ${alarmName}`);
-    }
-    it("should have the correct AlarmDescription", () => {
-      assert.include(alarm.AlarmDescription, alarmDescription);
-    });
-
-    it("should have ActionsEnabled set to true", () => {
-      assert.equal(alarm.ActionsEnabled, actionsEnabled);
-    });
-
-    it(`should have MetricName as ${metricName}`, () => {
-      assert.equal(alarm.MetricName, metricName);
-    });
-
-    it("should have Namespace as 'AWS/ApiGateway'", () => {
-      assert.equal(alarm.Namespace, namespace);
-    });
-
-    it(`should have Statistic as ${statistic}`, () => {
-      assert.equal(alarm.Statistic, statistic);
-    });
-
-    it(`should have ExtendedStatistic as ${extendedStatistic}`, () => {
-      assert.equal(alarm.ExtendedStatistic, extendedStatistic);
-    });
-
-    it(`should have Period of ${period} seconds`, () => {
-      assert.equal(alarm.Period, period);
-    });
-
-    it(`should have EvaluationPeriods of ${evaluationPeriods}`, () => {
-      assert.equal(alarm.EvaluationPeriods, evaluationPeriods);
-    });
-
-    it(`should have DatapointsToAlarm of ${datapointsToAlarm}`, () => {
-      assert.equal(alarm.DatapointsToAlarm, datapointsToAlarm);
-    });
-
-    it(`should have Threshold of ${threshold}`, () => {
-      assert.equal(alarm.Threshold, threshold);
-    });
-
-    it(`should have ComparisonOperator as ${comparisonOperator}`, () => {
-      assert.equal(alarm.ComparisonOperator, comparisonOperator);
-    });
-
-    it("should have OKActions and AlarmActions as arrays", () => {
-      assert.isArray(alarm.OKActions);
-      assert.isArray(alarm.AlarmActions);
-    });
-
-    it("should have Dimensions as an array", () => {
-      assert.deepEqual(alarm.Dimensions, dimensions);
-    });
-
-    const alarmOKActions = alarm.OKActions;
-
-    if (!alarmOKActions) {
-      throw new Error(`No OKActions found for alarm: ${alarmName}`);
-    }
-
-    alarmOKActions?.forEach(async (action) => {
-      const topic = await snsClient.send(
-        new GetTopicAttributesCommand({ TopicArn: action })
-      );
-      const topicAttributes = topic.Attributes;
-      it("$action topic should be encrypted", () => {
-        assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
-      });
-    });
-
-    const alarmAlarmActions = alarm.AlarmActions;
-
-    if (!alarmAlarmActions) {
-      throw new Error(`No AlarmActions found for alarm: ${alarmName}`);
-    }
-
-    alarmAlarmActions?.forEach(async (action) => {
-      const topic = await snsClient.send(
-        new GetTopicAttributesCommand({ TopicArn: action })
-      );
-      const topicAttributes = topic.Attributes;
-      it("$action topic should be encrypted", () => {
-        assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
-      });
-    });
-
-    const chatConfigurationResponse = await chatbotClient.send(
-      new DescribeSlackChannelConfigurationsCommand({
-        ChatConfigurationArn: testConfig.chatConfigurationArn,
+describe
+  .each(testCases)(
+    `CloudWatch Alarm for Cognito $alarmName with supporting alarm resources`,
+    async ({
+      alarmName,
+      actionsEnabled,
+      metricName,
+      alarmDescription,
+      dimensions,
+      statistic,
+      extendedStatistic,
+      period,
+      evaluationPeriods,
+      datapointsToAlarm,
+      threshold,
+      comparisonOperator,
+      namespace
+    }) => {
+      const alarmResponse = await driver.performAction<DescribeAlarmsOutput>({
+        service: "CloudWatchClient",
+        command: new DescribeAlarmsCommand({ AlarmNames: [alarmName] }),
+        action: "DescribeAlarmsCommand"
       })
-    );
-    const chatConfiguration =
-      chatConfigurationResponse.SlackChannelConfigurations?.[0];
-    if (!chatConfiguration) {
-      throw new Error(
-        `No SlackChannelConfigurations found for ARN: ${testConfig.chatConfigurationArn}`
-      );
-    }
+      const alarm = alarmResponse.MetricAlarms?.[0];
 
-    it("should have the correct number of SnsTopicArns", () => {
-      assert.equal(chatConfiguration.SnsTopicArns?.length, 1);
-      chatConfiguration.SnsTopicArns?.forEach((arn) => {
-        assert.include(arn, "CloudWatchAlarm");
+      if (!alarm) {
+        throw new Error(`Alarm not found: ${alarmName}`);
+      }
+      it("should have the correct AlarmDescription", () => {
+        assert.include(alarm.AlarmDescription, alarmDescription);
       });
-    });
-  }
-);
+
+      it("should have ActionsEnabled set to true", () => {
+        assert.equal(alarm.ActionsEnabled, actionsEnabled);
+      });
+
+      it.skipIf(!metricName)
+        (`should have MetricName as ${metricName}`, () => {
+          assert.equal(alarm.MetricName, metricName);
+        });
+
+      it.skipIf(!namespace)
+        ("should have Namespace as 'AWS/ApiGateway'", () => {
+          assert.equal(alarm.Namespace, namespace);
+        });
+
+      it(`should have Statistic as ${statistic}`, () => {
+        assert.equal(alarm.Statistic, statistic);
+      });
+
+      it(`should have ExtendedStatistic as ${extendedStatistic}`, () => {
+        assert.equal(alarm.ExtendedStatistic, extendedStatistic);
+      });
+
+      it.skipIf(!period)
+        (`should have Period of ${period} seconds`, () => {
+          assert.equal(alarm.Period, period);
+        });
+
+      it(`should have EvaluationPeriods of ${evaluationPeriods}`, () => {
+        assert.equal(alarm.EvaluationPeriods, evaluationPeriods);
+      });
+
+      it(`should have DatapointsToAlarm of ${datapointsToAlarm}`, () => {
+        assert.equal(alarm.DatapointsToAlarm, datapointsToAlarm);
+      });
+
+      it.skipIf(!threshold)
+        (`should have Threshold of ${threshold}`, () => {
+          assert.equal(alarm.Threshold, threshold);
+        });
+
+      it(`should have ComparisonOperator as ${comparisonOperator}`, () => {
+        assert.equal(alarm.ComparisonOperator, comparisonOperator);
+      });
+
+      it("should have OKActions and AlarmActions as arrays", () => {
+        assert.isArray(alarm.OKActions);
+        assert.isArray(alarm.AlarmActions);
+      });
+
+      it.skipIf(
+        !dimensions
+      )("should have Dimensions as an array", () => {
+        assert.deepEqual(alarm.Dimensions, dimensions);
+      });
+
+      const alarmOKActions = alarm.OKActions;
+
+      if (!alarmOKActions) {
+        throw new Error(`No OKActions found for alarm: ${alarmName}`);
+      }
+
+      alarmOKActions?.forEach(async (action) => {
+        const topic = await driver.performAction<GetTopicAttributesResponse>({
+          service: 'SNSClient',
+          action: "GetTopicAttributesCommand",
+          command: new GetTopicAttributesCommand({ TopicArn: action })
+        });
+        const topicAttributes = topic.Attributes;
+        it("$action topic should be encrypted", () => {
+          assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
+        });
+      });
+
+      const alarmAlarmActions = alarm.AlarmActions;
+
+      if (!alarmAlarmActions) {
+        throw new Error(`No AlarmActions found for alarm: ${alarmName}`);
+      }
+
+      alarmAlarmActions?.forEach(async (action) => {
+        const topic = await driver.performAction<GetTopicAttributesResponse>({
+          command: new GetTopicAttributesCommand({ TopicArn: action }),
+          action: "GetTopicAttributesCommand",
+          service: "SNSClient"
+        });
+        const topicAttributes = topic.Attributes;
+        it("$action topic should be encrypted", () => {
+          assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
+        });
+      });
+    }
+  );

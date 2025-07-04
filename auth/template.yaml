@@ -47,6 +47,11 @@ Parameters:
       - 'True'
       - 'False'
 
+  TestRoleArn:
+    Type: String
+    Description: The ARN of the role that will used for integration tests
+    Default: none
+    
 Mappings:
   OneLogin:
     Environment:
@@ -75,6 +80,15 @@ Conditions:
   IsProduction: !Equals
     - !Ref Environment
     - production
+
+  IsTestingEnvironment:
+    Fn::Or:
+      - Fn::Equals:
+          - !Ref Environment
+          - "dev"
+      - Fn::Equals:
+          - !Ref Environment
+          - "staging"
 
 Globals:
   Function:
@@ -1924,6 +1938,165 @@ Resources:
         - Key: System
           Value: Authentication
 
+  ############################
+  # Acceptance Testing Resources
+  ############################
+  AcceptanceTestingFunctionIAMRole:
+    Condition: IsTestingEnvironment
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-acceptance-testing-function-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AcceptanceTestingFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:DescribeUserPool
+                  - cognito-idp:DescribeUserPoolClient
+                Resource: !GetAtt CognitoUserPool.Arn
+              
+              - Effect: Allow
+                Action:
+                  - chatbot:DescribeSlackChannelConfigurations
+                Resource: 
+                  - !GetAtt SlackSupportChannelConfiguration.Arn
+
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:GetRolePolicy
+                Resource: 
+                  - !GetAtt AuthProxyFunctionIAMRole.Arn
+                  - !GetAtt PostAuthenticationFunctionIAMRole.Arn
+
+              - Effect: Allow
+                Action:
+                  - logs:DescribeLogGroups
+                Resource:
+                  - !GetAtt CognitoWAFLogGroup.Arn
+                  - !GetAtt AuthProxyWafLogGroup.Arn
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group::log-stream*
+
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                Resource:
+                  - !GetAtt AuthProxyFunction.Arn
+                  - !GetAtt PostAuthenticationFunction.Arn
+
+              - Effect: Allow
+                Action:
+                  - sns:GetTopicAttributes
+                Resource:
+                  - !GetAtt CloudWatchAlarmTopicPagerDuty.TopicArn
+
+              - Effect: Allow
+                Action:
+                  - logs:FilterLogEvents
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-cognito-${AWS::StackName}:log-stream*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-attestation-${AWS::StackName}:log-stream*
+
+              - Effect: Allow
+                Action:
+                  - cloudwatch:SetAlarmState
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:DescribeAlarmHistory
+                Resource:
+                  - !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
+                  - !GetAtt CognitoWebApplicationFirewallAlarm.Arn
+                  - !GetAtt CloudWatchAlarmSignUpThrottles.Arn
+                  - !GetAtt CloudWatchAlarmSignInThrottles.Arn
+                  - !GetAtt CloudWatchAlarmTokenRefreshThrottles.Arn
+                  - !GetAtt CloudWatchAlarmFederationThrottles.Arn
+                  - !GetAtt AttestationLow200ResponseProportionAlarm.Arn
+                  - !GetAtt AttestationLowCompletionAlarm.Arn
+                  - !GetAtt AttestationLambdaErrorRateAlarm.Arn
+                  - !GetAtt AuthProxyWafAlarm.Arn
+              
+              - Effect: Allow
+                Action:
+                  - apigateway:*
+                Resource:
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${SharedSignalsApi}/*
+              
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: 
+                  - !GetAtt AuthProxyFunctionKMSKey.Arn
+                  
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*
+
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-testing-function:*"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AcceptanceTestingFunction:
+    Condition: IsTestingEnvironment
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-testing-function"
+      Description: "Function required to perform testing actions"
+      CodeUri: tests/lambdas/acceptance
+      Handler: app.lambdaHandler
+      Role: !GetAtt AcceptanceTestingFunctionIAMRole.Arn
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  TestContainerInvokeLambdaPolicy:
+    Condition: IsTestingEnvironment
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AcceptanceTestingFunction
+      Principal: !Ref TestRoleArn
+
+  TestContainerInvokeAttestationLambdaPolicy:
+    Condition: IsTestingEnvironment
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthProxyFunction
+      Principal: !Ref TestRoleArn
+
 Outputs:
   AWSAccountId:
     Description: AWS Account ID
@@ -2105,3 +2278,8 @@ Outputs:
   AuthProxyWafAlarm:
     Description: The name of the CloudWatch alarm for Auth Proxy WAF rate limiting
     Value: !Ref AuthProxyWafAlarm
+
+  TestLambdaFunctionName:
+    Condition: IsTestingEnvironment
+    Description: The name of the Testing Lambda function
+    Value: !Ref AcceptanceTestingFunction
