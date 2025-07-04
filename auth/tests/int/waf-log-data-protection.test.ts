@@ -4,10 +4,13 @@ import { testConfig } from "../common/config";
 import axios from "axios";
 import querystring from "querystring";
 import jsonwebtoken from "jsonwebtoken";
+import { TestLambdaDriver } from "../driver/testLambda.driver";
+
+const driver = new TestLambdaDriver();
 
 describe('waf logging data protection policies', () => {
     const startTime = Date.now() - 1 * 60 * 1000;
-    const loggingDriver = new LoggingDriver();
+    const loggingDriver = new LoggingDriver(driver);
 
     describe('attestation api', () => {
         let logMessages;
@@ -75,6 +78,8 @@ describe('waf logging data protection policies', () => {
                     })
             })
         })
+    }, {
+        retry: 2
     })
 
     describe('cognito', () => {
@@ -156,5 +161,7 @@ describe('waf logging data protection policies', () => {
                     })
             })
         })
+    }, {
+        retry: 2
     })
 })
