@@ -1,8 +1,5 @@
 ## Description
 
-### Ticket number
-[PSREDEV-XXX]
-
 ## Checklist
 - [ ] Is my change backwards compatible? **_Please include evidence_**
 

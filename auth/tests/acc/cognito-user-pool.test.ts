@@ -1,17 +1,22 @@
 import {
-  CognitoIdentityProviderClient,
   DescribeUserPoolCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
+import { TestLambdaDriver } from "../driver/testLambda.driver";
 
-const client = new CognitoIdentityProviderClient({ region: testConfig.region });
 const command = new DescribeUserPoolCommand({
   UserPoolId: testConfig.userPoolId,
 });
 
 describe("Check deployed Cognito User Pool Client", async () => {
-  const response = await client.send(command);
+  const driver = new TestLambdaDriver();
+
+  const response = await driver.performAction({
+    service: "CognitoIdentityProviderClient",
+    action: "DescribeUserPoolCommand",
+    command
+  })
   const userPool = response.UserPool!;
 
   it("should have DeletionProtection set to ACTIVE", () => {

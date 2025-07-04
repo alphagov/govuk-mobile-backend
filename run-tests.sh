@@ -15,7 +15,7 @@ echo "Running tests in ${TEST_ENVIRONMENT}"
 git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
 cd /tmp/repo
 npm i
-nx affected -t test:acc
+npm run test:acc
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 

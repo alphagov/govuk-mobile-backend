@@ -47,6 +47,11 @@ Parameters:
       - 'True'
       - 'False'
 
+  TestRoleArn:
+    Type: String
+    Description: The ARN of the role that will used for integration tests
+    Default: none
+    
 Mappings:
   OneLogin:
     Environment:
@@ -75,6 +80,11 @@ Conditions:
   IsProduction: !Equals
     - !Ref Environment
     - production
+
+  IsTestingEnvironment:
+    Fn::Equals:
+      - !Ref Environment
+      - "dev" # TODO: staging
 
 Globals:
   Function:
@@ -1884,6 +1894,70 @@ Resources:
         - Key: System
           Value: Authentication
 
+  ############################
+  # Acceptance Testing Resources
+  ############################
+  # AcceptanceTestingFunctionIAMRole:
+  #   Condition: IsTestingEnvironment
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: !Sub "${AWS::StackName}-acceptance-testing-function-role"
+  #     AssumeRolePolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: lambda.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     Policies:
+  #       - PolicyName: AcceptanceTestingFunctionPolicy
+  #         PolicyDocument:
+  #           Version: "2012-10-17"
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - "logs:CreateLogGroup"
+  #                 - "logs:CreateLogStream"
+  #                 - "logs:PutLogEvents"
+  #               Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-testing-function:*"
+  #     Tags:
+  #       - Key: Product
+  #         Value: GOV.UK
+  #       - Key: Environment
+  #         Value: !Ref Environment
+  #       - Key: System
+  #         Value: Authentication
+
+  AcceptanceTestingFunction:
+    Condition: IsTestingEnvironment
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-testing-function"
+      Description: "Function required to perform testing actions"
+      CodeUri: tests/lambdas/acceptance
+      Handler: app.lambdaHandler
+      # Role: !GetAtt AcceptanceTestingFunctionIAMRole.Arn
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  # TestContainerInvokeLambdaPolicy:
+  #   Condition: IsTestingEnvironment
+  #   Type: AWS::Lambda::Permission
+  #   Properties:
+  #     Action: lambda:InvokeFunction
+  #     FunctionName: !Ref AcceptanceTestingFunction
+  #     Principal: !Ref TestRoleArn
+
 Outputs:
   AWSAccountId:
     Description: AWS Account ID
@@ -2061,3 +2135,8 @@ Outputs:
   AuthProxyWafAlarm:
     Description: The name of the CloudWatch alarm for Auth Proxy WAF rate limiting
     Value: !Ref AuthProxyWafAlarm
+
+  TestLambdaFunctionName:
+    Condition: IsTestingEnvironment
+    Description: The name of the Testing Lambda function
+    Value: !Ref AcceptanceTestingFunction

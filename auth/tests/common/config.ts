@@ -32,7 +32,6 @@ const getTestConfig = () => {
     "CFN_StackName",
     "CFN_ConfigStackName",
     "CFN_UserPoolProviderUrl",
-    "CFN_AWS_REGION",
     "CFN_AttestationLowCompletionAlarmName",
     "CFN_AttestationLow200ResponseProportionAlarmName",
     "CFN_AttestationLambdaErrorRateAlarmName",
@@ -41,7 +40,8 @@ const getTestConfig = () => {
     "CFN_AuthProxyWaf", //WAF for Auth Proxy
     "CFN_AuthProxyWafAlarm",
     "CFN_AuthProxyWafLogGroupName",
-    "CFN_CognitoUrl"
+    "CFN_CognitoUrl",
+    "CFN_TestLambdaFunctionName"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -60,6 +60,8 @@ const getTestConfig = () => {
     authProxyWafLogGroupName: process.env.CFN_AuthProxyWafLogGroupName!,
     userPoolId: process.env.CFN_UserPoolId!,
     testEnvironment: process.env.TEST_ENVIRONMENT!,
+    isLocalEnvironment: process.env.TEST_ENVIRONMENT === "local",
+    isSlowRunning: process.env.SLOW_RUNNING_TESTS === "true",
     cognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName!,
     sharedSignalsEndpoint: process.env.CFN_SharedSignalsEndpoint!,
     sharedSignalsReceiverLogGroupName:
@@ -95,7 +97,7 @@ const getTestConfig = () => {
     environment: process.env.TEST_ENVIRONMENT,
     postAuthenticationFunctionInvokePermission:
       process.env.CFN_PostAuthenticationFunctionInvokePermission!,
-    region: process.env.CFN_AWS_REGION,
+    region: process.env.CFN_AWS_REGION || "eu-west-2",
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName,
     configStackName: process.env.CFN_ConfigStackName,
@@ -107,6 +109,7 @@ const getTestConfig = () => {
     authProxyWAF: process.env.CFN_AuthProxyWaf!,
     authProxyWAFAlarm: process.env.CFN_AuthProxyWafAlarm!,
     cognitoUrl: process.env.CFN_CognitoUrl!,
+    testLambdaFunctionName: process.env.CFN_TestLambdaFunctionName!
   };
 };
 
