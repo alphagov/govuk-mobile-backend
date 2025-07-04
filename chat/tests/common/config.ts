@@ -5,6 +5,7 @@ const getTestConfig = () => {
     "CFN_ChatApiGatewayId",
     "CFN_ChatApiGatewayResourceId",
     "CFN_ChatApiGatewayMethodId",
+    "CFN_ChatApiGatewayDeploymentId",
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -18,6 +19,7 @@ const getTestConfig = () => {
     chatApiGatewayId: process.env.CFN_ChatApiGatewayId!,
     chatApiGatewayResourceId: process.env.CFN_ChatApiGatewayResourceId!,
     chatApiGatewayMethodId: process.env.CFN_ChatApiGatewayMethodId!,
+    chatApiGatewayDeploymentId: process.env.CFN_ChatApiGatewayDeploymentId!,
   };
 };
 
