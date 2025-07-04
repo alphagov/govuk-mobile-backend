@@ -1954,13 +1954,13 @@ Resources:
         EntryPoints:
           - app.ts
 
-  TestContainerInvokeLambdaPolicy:
-    Condition: IsTestingEnvironment
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref AcceptanceTestingFunction
-      Principal: !Ref TestRoleArn
+  # TestContainerInvokeLambdaPolicy:
+  #   Condition: IsTestingEnvironment
+  #   Type: AWS::Lambda::Permission
+  #   Properties:
+  #     Action: lambda:InvokeFunction
+  #     FunctionName: !Ref AcceptanceTestingFunction
+  #     Principal: !Ref TestRoleArn
 
 Outputs:
   AWSAccountId:
