@@ -113,3 +113,25 @@ describe("Chat API Gateway Method", () => {
     });
   });
 });
+
+describe("Chat API Gateway Deployment", () => {
+  let resourceUnderTest: {
+    Type: any;
+    Properties: any;
+  };
+
+  const resource = template.findResources("AWS::ApiGateway::Deployment");
+  resourceUnderTest = resource["ChatApiGatewayDeployment"] as any;
+
+  it("should have a REST API ID that matches the Chat API Gateway", () => {
+    expect(resourceUnderTest.Properties.RestApiId).toEqual({
+      Ref: "ChatApiGateway",
+    });
+  });
+
+  it("should have a stage name that matches the Environment", () => {
+    expect(resourceUnderTest.Properties.StageName).toEqual({
+      Ref: "Environment",
+    });
+  });
+});

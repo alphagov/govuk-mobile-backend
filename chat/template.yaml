@@ -93,6 +93,12 @@ Resources:
           integration.request.path.proxy: method.request.path.proxy
         PassthroughBehavior: WHEN_NO_MATCH
 
+  ChatApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ChatApiGateway
+      StageName: !Ref Environment
+
 Outputs:
   ChatApiGatewayId:
     Value: !Ref ChatApiGateway
@@ -100,3 +106,5 @@ Outputs:
     Value: !Ref ChatApiGatewayResource
   ChatApiGatewayMethodId:
     Value: !Ref ChatApiGatewayMethod
+  ChatApiGatewayDeploymentId:
+    Value: !Ref ChatApiGatewayDeployment
