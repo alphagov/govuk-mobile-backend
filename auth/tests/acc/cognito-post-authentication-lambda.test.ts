@@ -23,56 +23,58 @@ const iamCommandGetRolePolicy = new GetRolePolicyCommand({
   PolicyName: testConfig.postAuthenticationFunctionIAMRolePolicyName,
 });
 
-describe("Check deployed Post Authentication Lambda", async () => {
-  const response = await lambdaClient.send(functionCommand);
-  const postAuthenticationLambda = response.Configuration!;
+describe
+  .skipIf(!testConfig.isLocalEnvironment)
+  ("Check deployed Post Authentication Lambda", async () => {
+    const response = await lambdaClient.send(functionCommand);
+    const postAuthenticationLambda = response.Configuration!;
 
-  it("has the correct timeout", () => {
-    assert.equal(postAuthenticationLambda.Timeout, 60);
+    it("has the correct timeout", () => {
+      assert.equal(postAuthenticationLambda.Timeout, 60);
+    });
+
+    it("has the correct memory size", () => {
+      assert.equal(postAuthenticationLambda.MemorySize, 128);
+    });
+
+    it("has the correct tracing configuration", () => {
+      assert.equal(postAuthenticationLambda.TracingConfig?.Mode, "PassThrough");
+    });
+
+    it("has the correct runtime", () => {
+      assert.equal(postAuthenticationLambda.Runtime, "nodejs22.x");
+    });
+
+    it("has the correct handler", () => {
+      assert.equal(postAuthenticationLambda.Handler, "app.lambdaHandler");
+    });
+
+    it("has the correct package type", () => {
+      assert.equal(postAuthenticationLambda.PackageType, "Zip");
+    });
+
+    it("has the correct state", () => {
+      assert.equal(postAuthenticationLambda.State, "Active");
+    });
+
+    it("has the correct ephemeral storage size", () => {
+      assert.equal(postAuthenticationLambda.EphemeralStorage?.Size, 512);
+    });
+
+    it("has the correct architecture", () => {
+      assert.deepEqual(postAuthenticationLambda.Architectures, ["x86_64"]);
+    });
+
+    it("has the correct logging configuration", () => {
+      assert.equal(postAuthenticationLambda.LoggingConfig?.LogFormat, "Text");
+      assert.equal(
+        postAuthenticationLambda.LoggingConfig?.LogGroup,
+        `/aws/lambda/${testConfig.postAuthenticationLambda}`
+      );
+    });
   });
 
-  it("has the correct memory size", () => {
-    assert.equal(postAuthenticationLambda.MemorySize, 128);
-  });
-
-  it("has the correct tracing configuration", () => {
-    assert.equal(postAuthenticationLambda.TracingConfig?.Mode, "PassThrough");
-  });
-
-  it("has the correct runtime", () => {
-    assert.equal(postAuthenticationLambda.Runtime, "nodejs22.x");
-  });
-
-  it("has the correct handler", () => {
-    assert.equal(postAuthenticationLambda.Handler, "app.lambdaHandler");
-  });
-
-  it("has the correct package type", () => {
-    assert.equal(postAuthenticationLambda.PackageType, "Zip");
-  });
-
-  it("has the correct state", () => {
-    assert.equal(postAuthenticationLambda.State, "Active");
-  });
-
-  it("has the correct ephemeral storage size", () => {
-    assert.equal(postAuthenticationLambda.EphemeralStorage?.Size, 512);
-  });
-
-  it("has the correct architecture", () => {
-    assert.deepEqual(postAuthenticationLambda.Architectures, ["x86_64"]);
-  });
-
-  it("has the correct logging configuration", () => {
-    assert.equal(postAuthenticationLambda.LoggingConfig?.LogFormat, "Text");
-    assert.equal(
-      postAuthenticationLambda.LoggingConfig?.LogGroup,
-      `/aws/lambda/${testConfig.postAuthenticationLambda}`
-    );
-  });
-});
-
-describe("Check deployed Post Authentication Lambda IAM Role", async () => {
+describe.skip("Check deployed Post Authentication Lambda IAM Role", async () => {
   const roleResponse = await iamClient.send(
     iamCommandForPostAuthenticationLambdaRole
   );

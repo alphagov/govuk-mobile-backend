@@ -60,6 +60,8 @@ const getTestConfig = () => {
     authProxyWafLogGroupName: process.env.CFN_AuthProxyWafLogGroupName!,
     userPoolId: process.env.CFN_UserPoolId!,
     testEnvironment: process.env.TEST_ENVIRONMENT!,
+    isLocalEnvironment: process.env.TEST_ENVIRONMENT === "local",
+    isSlowRunning: process.env.SLOW_RUNNING_TESTS === "true",
     cognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName!,
     sharedSignalsEndpoint: process.env.CFN_SharedSignalsEndpoint!,
     sharedSignalsReceiverLogGroupName:
