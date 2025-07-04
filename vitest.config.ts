@@ -14,7 +14,7 @@ export default defineConfig({
       },
       {
         test: {
-          include: ["./auth/tests/acc/**/*.test.ts"],
+          include: ["**/tests/acc/**/*.test.ts"],
           name: "acc",
           environment: "node",
           // allow for long running tests
