@@ -32,7 +32,6 @@ const getTestConfig = () => {
     "CFN_StackName",
     "CFN_ConfigStackName",
     "CFN_UserPoolProviderUrl",
-    "CFN_AWS_REGION",
     "CFN_AttestationLowCompletionAlarmName",
     "CFN_AttestationLow200ResponseProportionAlarmName",
     "CFN_AttestationLambdaErrorRateAlarmName",
@@ -98,7 +97,7 @@ const getTestConfig = () => {
     environment: process.env.TEST_ENVIRONMENT,
     postAuthenticationFunctionInvokePermission:
       process.env.CFN_PostAuthenticationFunctionInvokePermission!,
-    region: process.env.CFN_AWS_REGION,
+    region: process.env.CFN_AWS_REGION || "eu-west-2",
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName,
     configStackName: process.env.CFN_ConfigStackName,

@@ -47,6 +47,11 @@ Parameters:
       - 'True'
       - 'False'
 
+  TestRoleArn:
+    Type: String
+    Description: The ARN of the role that will used for integration tests
+    Default: none
+    
 Mappings:
   OneLogin:
     Environment:
@@ -1948,6 +1953,14 @@ Resources:
         SourceMap: false
         EntryPoints:
           - app.ts
+
+  TestContainerInvokeLambdaPolicy:
+    Condition: IsTestingEnvironment
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AcceptanceTestingFunction
+      Principal: !Ref TestRoleArn
 
 Outputs:
   AWSAccountId:
