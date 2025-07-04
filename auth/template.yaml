@@ -1916,10 +1916,6 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - cognito-idp:DescribeUserPool
-                Resource: !GetAtt CognitoUserPool.Arn
-              - Effect: Allow
-                Action:
                   - "logs:CreateLogGroup"
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
