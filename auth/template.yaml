@@ -76,10 +76,6 @@ Conditions:
     - !Ref Environment
     - production
 
-  IsAccountLevel: !Equals
-    - !Ref AccountLevel
-    - 'True'
-
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -95,23 +91,6 @@ Globals:
     Runtime: nodejs22.x
 
 Resources:
-  AccountLevelDataProtectionPolicy:
-    Condition: IsAccountLevel
-    Type: AWS::Logs::AccountPolicy
-    Properties:
-      PolicyName: TokenRedactionPolicy
-      PolicyDocument: '{ "Description": "Protect against JWT tokens exposure",
-        "Configuration": { "CustomDataIdentifier": [ { "Regex":
-        "eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_.+/=]*", "Name":
-        "JWTTokens" } ] }, "Version": "2021-06-01", "Statement": [ {
-        "DataIdentifier": [ "JWTTokens" ], "Operation": { "Audit": {
-        "FindingsDestination": {} } }, "Sid": "audit-policy" }, {
-        "DataIdentifier": [ "JWTTokens" ], "Operation": { "Deidentify": {
-        "MaskConfig": {} } }, "Sid": "redact-policy" } ], "Name":
-        "CloudWatchLogs-JWTToken-Protection" }'
-      PolicyType: DATA_PROTECTION_POLICY
-      Scope: ALL
-
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -337,17 +316,23 @@ Resources:
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
-        Version: '2021-06-01'
+        Version: "2021-06-01"
+        Configuration:
+          CustomDataIdentifier:
+          - Name: JWTTokens
+            Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - JWTTokens
             Operation:
               Audit:
                 FindingsDestination: {}
           - Sid: redact-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - JWTTokens
             Operation:
               Deidentify:
                 MaskConfig: {}
@@ -1070,7 +1055,7 @@ Resources:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4531716123/Runbook+Attestation+WAF+throttling
       Namespace: AWS/WAFV2
       ActionsEnabled: true
-      MetricName: AuthWAFErrorRate
+      MetricName: BlockedRequests
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 5
@@ -1080,6 +1065,22 @@ Resources:
       Dimensions:
         - Name: WebACL
           Value: !Ref AuthProxyWaf
+        - Name: Rule
+          Value: !Join
+            - "-"
+            - - !Ref AWS::StackName
+              - "rate-limit-rule"
+              - Fn::Select:
+                  - 4
+                  - Fn::Split:
+                      - "-"
+                      - Fn::Select:
+                          - 2
+                          - Fn::Split:
+                              - "/"
+                              - Ref: AWS::StackId
+        - Name: Region
+          Value: !Ref AWS::Region                      
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -1106,6 +1107,27 @@ Resources:
       LogGroupName: !Sub aws-waf-logs-attestation-${AWS::StackName}
       KmsKeyId: !GetAtt AuthProxyWAFLogGroupKMSKey.Arn
       RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Configuration:
+          CustomDataIdentifier:
+          - Name: JWTTokens
+            Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
       Tags:
         - Key: Product
           Value: GOV.UK

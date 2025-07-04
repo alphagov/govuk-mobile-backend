@@ -21,8 +21,8 @@ describe("Check the deployed Attestation WAF log group", async () => {
   }
 
   it("has data protection", () => {
-    const expectedDataProtection = "ACCOUNT_DATA_PROTECTION";
-    assert.equal(logGroup.inheritedProperties?.includes(expectedDataProtection), true);
+    const expectedDataProtectionStatus = "ACTIVATED";
+    assert.equal(logGroup.dataProtectionStatus, expectedDataProtectionStatus );
   });
 
   it("has an associated KMS key", () => {
