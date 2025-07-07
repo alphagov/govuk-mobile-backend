@@ -6,5 +6,8 @@
     {
       "path": "./auth"
     },
+    {
+      "path": "./chat"
+    }
   ]
 }

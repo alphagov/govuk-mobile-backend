@@ -3,6 +3,7 @@ import {
   GetRestApiCommand,
   GetResourceCommand,
   GetMethodCommand,
+  GetDeploymentCommand,
 } from "@aws-sdk/client-api-gateway";
 import { describe, expect, it } from "vitest";
 import { testConfig } from "../common/config";
@@ -22,6 +23,11 @@ const methodCommand = new GetMethodCommand({
   restApiId: testConfig.chatApiGatewayId,
   resourceId: testConfig.chatApiGatewayResourceId,
   httpMethod: "ANY",
+});
+
+const deploymentCommand = new GetDeploymentCommand({
+  restApiId: testConfig.chatApiGatewayId,
+  deploymentId: testConfig.chatApiGatewayDeploymentId,
 });
 
 describe("Check deployed API Gateway", async () => {
@@ -86,5 +92,12 @@ describe("Check deployed API Gateway method", async () => {
   });
   it("should have uri containing {proxy}", () => {
     expect(response.methodIntegration!.uri).toContain("{proxy}");
+  });
+});
+
+describe("Check API Gateway deployment", async () => {
+  const response = await client.send(deploymentCommand);
+  it("should have a valid deployment ID", () => {
+    expect(response.id).toBe(testConfig.chatApiGatewayDeploymentId);
   });
 });
