@@ -1,8 +1,6 @@
 import { LambdaClient, InvokeCommand, InvocationType } from "@aws-sdk/client-lambda";
 import { testConfig } from "../common/config";
 
-
-
 interface TestLambdaPerformActionInput {
     service: string
     action: string
