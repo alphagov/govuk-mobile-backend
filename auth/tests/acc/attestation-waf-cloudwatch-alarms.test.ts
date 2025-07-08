@@ -113,8 +113,10 @@ describe.each(testCases)(
       const WebACL = actualDimensions.find((d) => d.Name === "WebACL");
       const region = actualDimensions.find((d) => d.Name === "Region");
       const rule = actualDimensions.find((d) => d.Name === "Rule");
+      // Extract the WAF ID from the authProxyWAF config (format: "<waf-id>|<uuid>|<scope>")
+      const [wafId] = testConfig.authProxyWAF.split("|");
       assert.equal(region?.Value, testConfig.region);
-      assert.equal(WebACL?.Value, testConfig.authProxyWAF);
+      assert.equal(WebACL?.Value, wafId);
       assert.include(rule?.Value, "rate-limit-rule"); // WAF rules are dynamic, so we use a partial match
     });
 

@@ -1064,7 +1064,19 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: WebACL
-          Value: !Ref AuthProxyWaf
+          Value: !Join
+            - '-'
+            - - !Ref AWS::StackName
+              - waf-auth-proxy
+              - !Select
+                - 4
+                - !Split
+                  - '-'
+                  - !Select
+                    - 2
+                    - !Split
+                      - /
+                      - !Ref AWS::StackId
         - Name: Rule
           Value: !Join
             - "-"
