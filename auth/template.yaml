@@ -196,7 +196,35 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: WebACL
-          Value: !Ref CognitoWebApplicationFirewall
+          Value: !Join
+            - "-"
+            - - !Ref AWS::StackName
+              - waf-cognito
+              - !Select
+                - 4
+                - !Split
+                  - "-"
+                  - !Select
+                    - 2
+                    - !Split
+                      - "/"
+                      - !Ref AWS::StackId  
+        - Name: Rule
+          Value: !Join
+            - "-"
+            - - !Ref AWS::StackName
+              - "cognito-waf-rate-limit-rule"
+              - !Select
+                - 4
+                - !Split
+                  - "-"
+                  - !Select
+                    - 2
+                    - !Split
+                      - "/"
+                      - !Ref AWS::StackId
+        - Name: Region
+          Value: !Ref AWS::Region
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -261,7 +289,7 @@ Resources:
             MetricName: !Join
               - '-'
               - - !Ref AWS::StackName
-                - rate-limit-rule
+                - cognito-waf-rate-limit-rule
                 - !Select
                   - 4
                   - !Split

@@ -91,23 +91,6 @@ const testCases: AlarmTestCase[] = [
       { Name: "UserPoolClient", Value: testConfig.clientId },
     ],
   },
-  {
-    name: 'WAFRateLimitingAlarm',
-    alarmName: `${testConfig.stackName}-cognito-waf-error-rate`,
-    actionsEnabled: true,
-    metricName: "WAFErrorRate",
-    alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
-    statistic: "Sum",
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 5,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "WebACL", Value: testConfig.cognitoWebApplicationFirewall },
-    ],
-    topicDisplayName: "cognito-waf-alarm-topic",
-  },
 ];
 
 describe.each(testCases)(

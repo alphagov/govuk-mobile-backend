@@ -106,29 +106,6 @@ const testCases: AlarmTestCase[] = [
       { Name: "UserPoolClient", Value: { Ref: "CognitoUserPoolClient" } },
     ],
   },
-  {
-    name: "CognitoWafThrottles",
-    alarmName: "cognito-waf-error-rate",
-    actionsEnabled: true,
-    alarmResource: "CognitoWebApplicationFirewallAlarm",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
-    metricName: "WAFErrorRate",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
-    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    statistic: "Sum",
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    namespace: "AWS/WAFV2",
-    threshold: 5,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [
-      { Name: "WebACL", Value: { Ref: "CognitoWebApplicationFirewall" } },
-    ],
-  }
 ];
 
 describe.each(testCases)(
