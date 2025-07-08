@@ -15,7 +15,22 @@ echo "Running tests in ${TEST_ENVIRONMENT}"
 git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
 cd /tmp/repo
 npm i
-nx affected -t test:acc
+
+# Find which branches contain this commit
+BRANCHES=$(git branch -r --contains "$commitsha" 2>/dev/null | grep -E "(origin/main|origin/production)")
+
+if echo "$BRANCHES" | grep -q "origin/production" && ! echo "$BRANCHES" | grep -q "origin/main"; then
+    BASE_BRANCH="origin/production"
+    echo "Using production as base"
+elif echo "$BRANCHES" | grep -q "origin/main"; then
+    BASE_BRANCH="origin/main"
+    echo "Using main as base"
+else
+    echo "Error: Commit not found in main or production"
+    exit 1
+fi
+
+nx affected -t --base="$BASE_BRANCH" --head=HEAD
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 
@@ -42,7 +57,7 @@ if [[ "${TEST_ENVIRONMENT,,}" == @(staging|local) ]]; then
     echo -e "${YELLOW}🍌 Checking git lineage for commit: $commitsha${NC}"
 
     # Check if the commit exists on your production branch
-    if ! git merge-base --is-ancestor "$commitsha" origin/production 2>/dev/null; then
+    if [[ "$BASE_BRANCH" != "origin/production" ]]; then
 	echo -e "${RED}✘ ERROR: Commit $commitsha is not from production branch${NC}"
 	if ! git show "$commitsha" 2>/dev/null; then
 	    echo -e "${RED}✘ The sha $commitsha does not appear to be a valid commit${NC}"
