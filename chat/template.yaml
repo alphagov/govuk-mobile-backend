@@ -70,7 +70,7 @@ Resources:
     Type: AWS::ApiGateway::Resource
     Properties:
       ParentId: !GetAtt ChatApiGateway.RootResourceId
-      PathPart: "{proxy}"
+      PathPart: "{proxy+}"
       RestApiId: !Ref ChatApiGateway
 
   ChatApiGatewayMethod:
@@ -95,6 +95,7 @@ Resources:
 
   ChatApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
+    DependsOn: ChatApiGatewayMethod
     Properties:
       RestApiId: !Ref ChatApiGateway
       StageName: !Ref Environment

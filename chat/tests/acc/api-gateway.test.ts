@@ -40,10 +40,10 @@ describe("Check deployed API Gateway", async () => {
 describe("Check deployed API Gateway resource", async () => {
   const response = await client.send(resourceCommand);
   it("should have the correct resource path", () => {
-    expect(response.path).toBe("/{proxy}");
+    expect(response.path).toBe("/{proxy+}");
   });
   it("should have the correct path part", () => {
-    expect(response.pathPart).toBe("{proxy}");
+    expect(response.pathPart).toBe("{proxy+}");
   });
   it("should have the correct resource methods", () => {
     expect(response.resourceMethods).toEqual({

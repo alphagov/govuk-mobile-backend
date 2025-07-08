@@ -54,7 +54,7 @@ describe("Chat API Gateway Resource", () => {
   });
 
   it("should have a path that includes the stack name", () => {
-    expect(resourceUnderTest.Properties.PathPart).toEqual("{proxy}");
+    expect(resourceUnderTest.Properties.PathPart).toEqual("{proxy+}");
   });
 });
 
