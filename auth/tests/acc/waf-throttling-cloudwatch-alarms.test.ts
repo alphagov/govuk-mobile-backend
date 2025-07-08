@@ -7,7 +7,7 @@ import {
   DescribeSlackChannelConfigurationsCommand,
 } from "@aws-sdk/client-chatbot";
 import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
-import { assert, describe, it, expect } from "vitest";
+import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 import { AlarmTestCase } from "./alarm-test-case";
 
@@ -31,7 +31,32 @@ const testCases: AlarmTestCase[] = [
     comparisonOperator: "GreaterThanThreshold",
     namespace: "AWS/WAFV2",
     statistic: "Sum", // WAF metrics typically use Sum
-  }
+    dimensions: [
+      { Name: "WebACL", Value: testConfig.authProxyWAF.split("|")[0] }, // Extract the WAF ID (format: "<waf-id>|<uuid>|<scope>")
+      { Name: "Region", Value: testConfig.region },
+      { Name: "Rule", Value: "rate-limit-rule" }, // Assuming a rule name for rate limiting
+    ],
+  },
+  {
+      name: 'WAFRateLimitingAlarm',
+      alarmName: `${testConfig.stackName}-cognito-waf-error-rate`,
+      actionsEnabled: true,
+      metricName: "BlockedRequests",
+      alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
+      statistic: "Sum",
+      period: 60,
+      evaluationPeriods: 5,
+      datapointsToAlarm: 5,
+      threshold: 5,
+      namespace: "AWS/WAFV2",
+      comparisonOperator: "GreaterThanThreshold",
+      dimensions: [
+        { Name: "WebACL", Value: testConfig.cognitoWebApplicationFirewall.split("|")[0] }, // Extract the WAF ID (format: "<waf-id>|<uuid>|<scope>")
+        { Name: "Region", Value: testConfig.region },
+        { Name: "Rule", Value: "cognito-waf-rate-limit-rule" }, // Assuming a rule name for rate limiting
+      ],
+      topicDisplayName: "cognito-waf-alarm-topic",
+    },
 ];
 
 describe.each(testCases)(
@@ -113,11 +138,10 @@ describe.each(testCases)(
       const WebACL = actualDimensions.find((d) => d.Name === "WebACL");
       const region = actualDimensions.find((d) => d.Name === "Region");
       const rule = actualDimensions.find((d) => d.Name === "Rule");
-      // Extract the WAF ID from the authProxyWAF config (format: "<waf-id>|<uuid>|<scope>")
-      const [wafId] = testConfig.authProxyWAF.split("|");
-      assert.equal(region?.Value, testConfig.region);
-      assert.equal(WebACL?.Value, wafId);
-      assert.include(rule?.Value, "rate-limit-rule"); // WAF rules are dynamic, so we use a partial match
+      
+      assert.equal(region?.Value, dimensions[1].Value);
+      assert.equal(WebACL?.Value, dimensions[0].Value); // WAF ID
+      assert.include(rule?.Value, dimensions[2].Value); // WAF rules are dynamic, so we use a partial match
     });
 
     const alarmOKActions = alarm.OKActions;

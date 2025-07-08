@@ -12,6 +12,6 @@ export type AlarmTestCase = {
   datapointsToAlarm: number;
   threshold: number;
   comparisonOperator: string;
-dimensions?: any[];
+  dimensions: any[];
   namespace?: string;
 };
