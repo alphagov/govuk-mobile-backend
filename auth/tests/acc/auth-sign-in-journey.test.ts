@@ -47,11 +47,14 @@ zwIFAs04zkWkggZevabkAXY_gC8w22VPxmGKgp-rkAliICdyzDypiA-wcOSPYKleYRuMofuaUlrWh9Yo
 ODPX7VNkNQ7AgAA.H4sIAAAAAAAAAAt7s0b129QvWy5GvXd7oSukfzKHcdEyyRizzXahAc_8QqoByFTZ5CAAAAA.3`;
 //const emailAddress = "suityou01@yahoo.co.uk";
 //const password = "XlmmE(i*j91/";
-//const secret = "G5HDIWBUKFGVOUCOKFLFMSKHJMZVKNRUJRMVCQ2NJFLTKM2MK43A====";
-const emailAddress = "suityou01@gmail.com";
-const password = ">-3x3&At;iXn";
-
-const secret = "JNHU4NCJKAZEMNKQINFEQM2PJJCDOUSYKZLUUT2HI5EVARRTJZLA====";
+//const secret = "7N4X4QMWPNQVVIGK3U64LYQCMIW53LW6";
+//const emailAddress = "suityou01@gmail.com";
+//const password = ">-3x3&At;iXn";
+//const secret = "JNHU4NCJKAZEMNKQINFEQM2PJJCDOUSYKZLUUT2HI5EVARRTJZLA====";
+const emailAddress = "onelogin@maildrop.cc";
+const password = "z2TAMmt8zK43WU@";
+const secret = "HCDHJ3TIPFYDLLXN2JE3S54OOPVPJ47L";
+//const secret = "JBBUISCKGNKESUCGLFCEYTCYJYZEURJTKM2TIT2PKBLFASRUG5GA====";
 const code_verifier = generateRandomString(128);
 const code_challenge = base64URL(
   createHmac("sha256", "").update(code_verifier).digest("hex"),
@@ -72,6 +75,15 @@ const journey = [
 ];
 
 const journeyLog = [];
+
+function addJourneyLogEntry(request: HTTP_REQUEST, response: HTTP_RESPONSE) {
+  journeyLog.push({
+    hostName: request.hostname,
+    path: request.path,
+    statusCode: response.statusCode,
+    step: journeyLog.length + 1,
+  });
+}
 
 function base64URL(input: string) {
   return Buffer.from(input)
@@ -119,19 +131,6 @@ function createHttpClientOptions(
   };
 }
 
-function addJourneyLogEntry(
-  request: HTTP_REQUEST,
-  response: HTTP_RESPONSE,
-  step: number,
-) {
-  journeyLog.push({
-    hostName: request.hostname,
-    path: request.path,
-    statusCode: response.statusCode,
-    step: step,
-  });
-}
-
 describe("auth sign in journey", () => {
   let code_verifier: string = "";
   let code_challenge: string = "";
@@ -159,7 +158,12 @@ describe("auth sign in journey", () => {
   it("should sign the app into cognito using one login as the idp", async () => {
     try {
       const options: RequestOptions = createHttpClientOptions(0, cookieJar);
-      const redirect = await requestAsyncHandleRedirects(options, cookieJar);
+      const redirect = await requestAsyncHandleRedirects(
+        options,
+        cookieJar,
+        null,
+        journeyLog,
+      );
       const { response, request } = redirect;
 
       assert.equal(response.statusCode, 200);
@@ -175,7 +179,7 @@ describe("auth sign in journey", () => {
         response.headers["set-cookie"],
       );
 
-      addJourneyLogEntry(request, response, 1);
+      addJourneyLogEntry(request, response);
 
       let csrf = extractCSRFTokenHelper(response.body);
 
@@ -216,9 +220,10 @@ describe("auth sign in journey", () => {
         clickOptions,
         cookieJar,
         formData.toString(),
+        journeyLog,
       );
 
-      addJourneyLogEntry(signInResponse.request, signInResponse.response, 2);
+      addJourneyLogEntry(signInResponse.request, signInResponse.response);
 
       const emailForm: FormData = parseFormFromHtml(
         signInResponse.response.body,
@@ -230,7 +235,7 @@ describe("auth sign in journey", () => {
 
       formData = new URLSearchParams({
         _csrf: emailForm.csrf,
-        email: "charles.stevenson@digital.cabinet-office.gov.uk",
+        email: emailAddress,
       });
 
       const enterEmailUrl = `https://${clickOptions.hostname}${emailForm.action}`;
@@ -260,14 +265,14 @@ describe("auth sign in journey", () => {
         emailOptions,
         cookieJar,
         formData.toString(),
+        journeyLog,
       );
 
-      addJourneyLogEntry(emailResponse.request, emailResponse.response, 3);
+      addJourneyLogEntry(emailResponse.request, emailResponse.response);
 
+      let passwordForm: FormData;
       try {
-        const passwordForm: FormData = parseFormFromHtml(
-          emailResponse.response.body,
-        );
+        passwordForm = parseFormFromHtml(emailResponse.response.body);
       } catch (e) {
         console.log(emailResponse.response.body);
         throw new Error(e);
@@ -295,6 +300,7 @@ describe("auth sign in journey", () => {
 
       formData = new URLSearchParams({
         _csrf: passwordForm.csrf,
+        isReauthJourney: false,
         password: password,
       });
 
@@ -306,17 +312,13 @@ describe("auth sign in journey", () => {
         formData.toString(),
       );
 
-      addJourneyLogEntry(
-        passwordResponse.request,
-        passwordResponse.response,
-        4,
-      );
+      addJourneyLogEntry(passwordResponse.request, passwordResponse.response);
 
       const totpForm: FormData = parseFormFromHtml(
         passwordResponse.response.body,
       );
 
-      // Submit the password
+      // Submit the MFA
       const mfaOptions = {
         hostname: clickOptions.hostname,
         path: totpForm.action,
@@ -333,13 +335,9 @@ describe("auth sign in journey", () => {
           "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
           "User-Agent": USER_AGENT_IPHONE_16E,
           Origin: `https://${clickOptions.hostname}`,
-          Referrer: "https://signin.staging.account.gov.uk/sign-in-or-create",
+          Referrer: "https://signin.staging.account.gov.uk",
         },
       };
-
-      console.log("Wait for 1s to simulate user delay");
-      await sleep(1000);
-      console.log("Resuming test");
 
       const generator = new TOTPGenerator(secret);
       const currentTime = Math.floor(Date.now() / 1000);
@@ -358,15 +356,18 @@ describe("auth sign in journey", () => {
         code: currentCode,
       });
 
-      const enterMFAUrl = `https://${mfaOptions.hostname}${totpForm.action}`;
-
       const totpResponse = await requestAsyncHandleRedirects(
         mfaOptions,
         cookieJar,
         formData.toString(),
       );
 
-      addJourneyLogEntry(totpResponse.request, totpResponse.response, 5);
+      addJourneyLogEntry(totpResponse.request, totpResponse.response);
+
+      const codeURL = new URL(
+        `https://${totpResponse.request.hostname}${totpResponse.request.path}`,
+      );
+      console.log(codeURL.searchParams.get("code"));
     } catch (e) {
       console.log("Failed");
       console.log(e);

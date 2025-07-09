@@ -156,7 +156,8 @@ class TOTPGenerator {
     try {
       // Convert secret from base32 to buffer
       const secretBuffer = this.base32Decode(this.secret);
-
+      console.log(`Base32 Encoded Secret: ${this.secret}`);
+      console.log(`Decoded Secret: ${secretBuffer.toString()}`);
       // Convert counter to 8-byte buffer (big-endian)
       const counterBuffer = Buffer.alloc(8);
       counterBuffer.writeBigUInt64BE(BigInt(counter));
@@ -167,7 +168,7 @@ class TOTPGenerator {
       const hash = hmac.digest();
 
       // Dynamic Truncation (RFC 6238 Section 5.3)
-      const offset = hash[hash.length - 1] & 0x0f;
+      const offset = hash[hash.length - 1] & 0xf;
       const truncatedHash = hash.subarray(offset, offset + 4);
 
       // Convert to integer and apply modulo

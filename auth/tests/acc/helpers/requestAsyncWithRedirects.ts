@@ -11,7 +11,7 @@ async function getRedirect(
     return headers["location"];
   } catch (e) {
     if (!options || !options.hostname) return;
-    return `https://${options.hostname}${headers["location"]}`;
+    return decodeURI(`https://${options.hostname}${headers["location"]}`);
   }
 }
 
@@ -19,15 +19,28 @@ async function requestAsyncHandleRedirects(
   options: RequestOptions,
   cookieJar,
   formData: any,
+  journeyLog: [] = [],
 ): Promise<HTTP_RESPONSE> {
   const response = await requestAsync(options, formData);
 
   const redirect = await getRedirect(options, response.headers);
 
+  journeyLog.push({
+    hostName: options.hostname,
+    path: options.path,
+    statusCode: response.statusCode,
+    step: journeyLog.length,
+  });
+
+  if (response.headers["set-cookie"]) {
+    await cookieJar.addCookie(
+      `https://${options.hostname}${options.path}`,
+      response.headers["set-cookie"],
+    );
+  }
+
   if (response.statusCode === 302) {
     if (!redirect) return response;
-
-    await cookieJar.addCookie(redirect, response.headers["set-cookie"]);
 
     const url: URL = new URL(redirect);
     const { searchParams } = url;
@@ -38,6 +51,9 @@ async function requestAsyncHandleRedirects(
       method: "GET",
       headers: options.headers,
     };
+
+    // Strip Content-Type header as this is a redirect
+    delete redirectOptions.headers["Content-Type"];
 
     const cookies = await cookieJar.getCookiesForUrl(url);
 
