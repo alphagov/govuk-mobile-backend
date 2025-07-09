@@ -1,0 +1,76 @@
+{
+    "name": "chat",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "targets": {
+        "install": {
+            "cache": true,
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm i",
+                "cwd": "chat"
+            }
+        },
+        "build": {},
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "outputs": [
+                "{options.outputFile}"
+            ],
+            "options": {
+                "lintFilePatterns": [
+                    "./**/*.{ts,tsx,js,jsx}"
+                ]
+            }
+        },
+        "checkov": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "checkov --framework cloudformation --quiet -d . -o cli -o junitxml --output-file-path console,checkov.xml"
+            }
+        },
+        "test:unit": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:unit",
+                "cwd": "chat"
+            }
+        },
+        "test:acc": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test --project acc",
+                "cwd": "chat"
+            },
+            "outputs": [
+                "{options.outputFile}"
+            ]
+        },
+        "test:functional": {
+            "dependsOn": [
+                "install"
+            ],
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test --project functional",
+                "cwd": "chat"
+            },
+            "outputs": [
+                "{options.outputFile}"
+            ]
+        },
+        "test:coverage": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npm run test:coverage",
+                "cwd": "chat"
+            }
+        }
+    }
+}

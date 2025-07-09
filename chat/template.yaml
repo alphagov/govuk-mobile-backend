@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: |
+  GOV.UK Mobile Backend Chat template.
+
+Parameters:
+  Environment:
+    Description: The name of the environment to deploy to
+    Type: String
+    AllowedValues:
+      - build
+      - staging
+      - production
+      - integration
+      - local
+      - dev
+
+  CodeSigningConfigArn:
+    Type: String
+    Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Default: none
+
+  PermissionsBoundary:
+    Type: String
+    Description: The ARN of the permissions boundary to apply to any role created by the template
+    Default: none
+
+  ConfigStackName:
+    Type: String
+    Description: Stack Name for Config Stack
+    Default: govuk-app-config
+
+Conditions:
+  UseCodeSigning: !Not
+    - !Equals
+      - !Ref CodeSigningConfigArn
+      - none
+
+  UsePermissionsBoundary: !Not
+    - !Equals
+      - !Ref PermissionsBoundary
+      - none
+
+Globals:
+  Function:
+    CodeSigningConfigArn: !If
+      - UseCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+
+Resources:
+  ChatApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub ${AWS::StackName}-chat-proxy
+      Description: API Gateway for the GOV.UK Mobile Backend Chat Proxy
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  ChatApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ChatApiGateway.RootResourceId
+      PathPart: "{proxy+}"
+      RestApiId: !Ref ChatApiGateway
+
+  ChatApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    # checkov:skip=CKV_AWS_59:Ensure there is no open access to back-end resources through API
+    Properties:
+      HttpMethod: ANY
+      ResourceId: !Ref ChatApiGatewayResource
+      RestApiId: !Ref ChatApiGateway
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.proxy: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub
+          - "{{resolve:ssm:/${ConfigStackName}/chat/api-url}}/${proxy}"
+          - { proxy: "{proxy}" }
+        RequestParameters:
+          integration.request.path.proxy: method.request.path.proxy
+        PassthroughBehavior: WHEN_NO_MATCH
+
+  ChatApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ChatApiGatewayMethod
+    Properties:
+      RestApiId: !Ref ChatApiGateway
+      StageName: !Ref Environment
+
+Outputs:
+  ChatApiGatewayId:
+    Value: !Ref ChatApiGateway
+  ChatApiGatewayResourceId:
+    Value: !Ref ChatApiGatewayResource
+  ChatApiGatewayMethodId:
+    Value: !Ref ChatApiGatewayMethod
+  ChatApiGatewayDeploymentId:
+    Value: !Ref ChatApiGatewayDeployment

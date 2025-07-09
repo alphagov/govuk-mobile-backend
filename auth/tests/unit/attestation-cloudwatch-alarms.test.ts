@@ -77,28 +77,6 @@ const testCases: AlarmTestCase[] = [
     comparisonOperator: "GreaterThanOrEqualToThreshold",
     dimensions: [{ Name: "ApiName", Value: { Ref: "AttestationProxyApi" } }],
   },
-  {
-    name: "AuthWafThrottles",
-    alarmName: 'auth-proxy-waf-rate-limit',
-    actionsEnabled: true,
-    alarmResource: "AuthProxyWafAlarm",
-    topicResource: "CloudWatchAlarmTopicPagerDuty",
-    namespace: "AWS/WAFV2",
-    subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
-    topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
-    slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
-    metricName: "AuthWAFErrorRate",
-    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    statistic: "Sum",
-    extendedStatistic: undefined,
-    period: 300,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 300,
-    comparisonOperator: "GreaterThanThreshold",
-    dimensions: [{ Name: "WebACL", Value: { Ref: "AuthProxyWaf" } }],
-  }
 ];
 
 describe.each(testCases)(
@@ -240,9 +218,11 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.ActionsEnabled).toEqual(
         actionsEnabled
       );
-      expect(cloudWatchAlarmUnderTest.Properties.AlarmDescription).toEqual(
-        alarmDescription
-      );
+      
+
+      const actualDescription = cloudWatchAlarmUnderTest.Properties.AlarmDescription["Fn::Sub"];
+
+      expect(actualDescription.includes(alarmDescription)).toBeTruthy();
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName
       );

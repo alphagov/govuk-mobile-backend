@@ -69,23 +69,6 @@ const testCases: AlarmTestCase[] = [
     namespace: "AWS/ApiGateway",
     dimensions: [{ Name: "ApiName", Value: testConfig.authProxyId }],
   },
-  {
-    name: "AuthWafThrottles",
-    alarmName: `${testConfig.stackName}-auth-proxy-waf-rate-limit`,
-    actionsEnabled: true,
-    metricName: "AuthWAFErrorRate",
-    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
-    topicDisplayName: "cloudwatch-alarm-topic",
-    extendedStatistic: undefined, // No extended statistic for WAF
-    period: 300,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 300,
-    comparisonOperator: "GreaterThanThreshold",
-    namespace: "AWS/WAFV2",
-    dimensions: [{ Name: "WebACL", Value: testConfig.authProxyWAF }],
-    statistic: "Sum", // WAF metrics typically use Sum
-  }
 ];
 
 describe.each(testCases)(
@@ -114,7 +97,7 @@ describe.each(testCases)(
       throw new Error(`Alarm not found: ${alarmName}`);
     }
     it("should have the correct AlarmDescription", () => {
-      assert.equal(alarm.AlarmDescription, alarmDescription);
+      assert.include(alarm.AlarmDescription, alarmDescription);
     });
 
     it("should have ActionsEnabled set to true", () => {

@@ -37,7 +37,8 @@
     "zod": "^3.25.49"
   },
   "workspaces": [
-    "auth/*"
+    "auth/*",
+    "chat/*"
   ],
   "engines": {
     "node": ">=22.0.0"

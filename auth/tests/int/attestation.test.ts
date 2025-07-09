@@ -15,7 +15,6 @@ describe("attestation lambda", () => {
 
     describe("when the lambda is invoked", () => {
         const startTime = Date.now() - 1000 * 60 * 2; // 5 minutes ago
-        const endTime = Date.now(); // current time
 
         beforeAll(async () => {
             const command = new InvokeCommand({
@@ -31,7 +30,6 @@ describe("attestation lambda", () => {
                 logGroupName: testConfig.authProxyLogGroup,
                 searchString: 'ATTESTATION_STARTED',
                 startTime,
-                endTime,
                 delayMs: 3000
             })
 
