@@ -8,13 +8,13 @@ import { CloudWatchClient, DescribeAlarmsCommand, SetAlarmStateCommand } from "@
 const event = require("../fixtures/authProxyEvent.json")
 
 describe("attestation lambda", () => {
+    const startTime = Date.now() - 1000 * 60 * 2; // 5 minutes ago
     const client = new LambdaClient({
         region: testConfig.region
     });
     const loggingDriver = new LoggingDriver();
 
     describe("when the lambda is invoked", () => {
-        const startTime = Date.now() - 1000 * 60 * 2; // 5 minutes ago
 
         beforeAll(async () => {
             const command = new InvokeCommand({
@@ -34,6 +34,33 @@ describe("attestation lambda", () => {
             })
 
             expect(response).toBeDefined()
+        })
+    })
+
+    describe('api gateway', () => {
+        it('should generate api gateway logs', async () => {
+            await fetch(`${testConfig.authProxyUrl}/oauth2/token`, {
+                method: "POST"
+            });
+
+            const response = await loggingDriver.findLogMessageWithRetries({
+                logGroupName: testConfig.attestationProxyApiLogGroupName,
+                searchString: '',
+                delayMs: 3000,
+                startTime,
+            });
+
+            expect(response).toBeDefined()
+
+            const parsedLogs = JSON.parse(response);
+
+            const expectedKeys = [
+                "integrationStatus",
+                "status",
+                "path",
+                "errorResponseType"
+            ];
+            expect(expectedKeys.every(key => Object.keys(parsedLogs).includes(key))).toBe(true)
         })
     })
 

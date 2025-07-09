@@ -41,7 +41,8 @@ const getTestConfig = () => {
     "CFN_AuthProxyWaf", //WAF for Auth Proxy
     "CFN_AuthProxyWafAlarm",
     "CFN_AuthProxyWafLogGroupName",
-    "CFN_CognitoUrl"
+    "CFN_CognitoUrl",
+    "CFN_AttestationApiLogGroupName"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -58,6 +59,7 @@ const getTestConfig = () => {
     authProxyFunctionIAMRolePolicyName:
       process.env.CFN_AuthProxyFunctionIAMRolePolicyName!,
     authProxyWafLogGroupName: process.env.CFN_AuthProxyWafLogGroupName!,
+    attestationProxyApiLogGroupName: process.env.CFN_AttestationApiLogGroupName!,
     userPoolId: process.env.CFN_UserPoolId!,
     testEnvironment: process.env.TEST_ENVIRONMENT!,
     cognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName!,
