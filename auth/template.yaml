@@ -1239,7 +1239,26 @@ Resources:
       StageName: !Ref Environment
       AccessLogSetting:
         DestinationArn: !GetAtt AttestationProxyApiAccessLogGroup.Arn
-        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
+        Format: |
+          {
+            "requestId": "$context.requestId",
+            "extendedRequestId": "$context.extendedRequestId",
+            "requestTime": "$context.requestTime",
+            "httpMethod": "$context.httpMethod",
+            "resourcePath": "$context.resourcePath",
+            "path": "$context.path",
+            "status": "$context.status",
+            "protocol": "$context.protocol",
+            "responseLength": "$context.responseLength",
+            "ip": "$context.identity.sourceIp",
+            "userAgent": "$context.identity.userAgent",
+            "integrationLatency": "$context.integrationLatency",
+            "integrationStatus": "$context.integrationStatus",
+            "integrationErrorMessage": "$context.integrationErrorMessage",
+            "wafResponseCode": "$context.wafResponseCode",
+            "errorMessage": "$context.error.message",
+            "errorType": "$context.error.type"
+          }
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
