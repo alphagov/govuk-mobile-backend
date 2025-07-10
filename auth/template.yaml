@@ -1239,7 +1239,7 @@ Resources:
       StageName: !Ref Environment
       AccessLogSetting:
         DestinationArn: !GetAtt AttestationProxyApiAccessLogGroup.Arn
-        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
+        Format: '{"extendedRequestId":"$context.extendedRequestId","path":"$context.path","responseLength":"$context.responseLength","userAgent":"$context.identity.userAgent","integrationLatency":"$context.integrationLatency","integrationStatus":"$context.integrationStatus","integrationErrorMessage":"$context.integrationErrorMessage","wafResponseCode":"$context.wafResponseCode","errorMessage":"$context.error.message","errorType":"$context.error.type","errorResponseType":"$context.error.responseType","validationErrorString":"$context.error.validationErrorString","requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1967,6 +1967,10 @@ Outputs:
   AuthProxyLogGroupName:
     Description: The name of the Auth Proxy Lambda function log group
     Value: !Sub /aws/lambda/${AuthProxyFunction}
+  
+  AttestationApiLogGroupName:
+    Description: The name of the Attestation API Gateway WAF log group
+    Value: !Ref AttestationProxyApiAccessLogGroup
 
   AuthProxyFunctionIAMRoleName:
     Description: The name of the Auth Proxy Lambda function IAM role
