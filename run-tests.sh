@@ -12,9 +12,15 @@ cd /tests
 
 echo "Running tests in ${TEST_ENVIRONMENT}"
 
+nx run-many -t test:acc 
+nx run-many -t test:int 
+
+echo "Finished running tests in ${TEST_ENVIRONMENT}"
+
+
 git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
 cd /tmp/repo
-npm i
+# npm i
 
 # Find which branches contain this commit
 BRANCHES=$(git branch -r --contains "$commitsha" 2>/dev/null | grep -E "(origin/main|origin/production)")
@@ -30,10 +36,7 @@ else
     exit 1
 fi
 
-nx affected -t test:acc --base="$BASE_BRANCH" --head=HEAD
-nx affected -t test:int --base="$BASE_BRANCH" --head=HEAD
-
-echo "Finished running tests in ${TEST_ENVIRONMENT}"
+echo "Performing branch checks"
 
 # 1. Check if we're in the penultimate environment
 # Note TEST_ENVIRONMENT is being forced to lowercase here by using ${VAR,,}
