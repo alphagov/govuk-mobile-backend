@@ -69,13 +69,13 @@ describe
         assert.equal(parseTokenValidityToSeconds(userPoolClient.IdTokenValidity, tokenUnits?.IdToken), expectedIdTokenValidity);
       });
 
-      it("has refresh token expiration set correctly", () => {
-        const expectedRefreshTokenValidity = 86400;
-        assert.equal(
-          parseTokenValidityToSeconds(userPoolClient.RefreshTokenValidity, tokenUnits?.RefreshToken),
-          expectedRefreshTokenValidity
-        );
-      });
+  it("has refresh token expiration set correctly", () => {
+    const expectedRefreshTokenValidity = 604800; // 7 days in seconds
+    assert.equal(
+      parseTokenValidityToSeconds(userPoolClient.RefreshTokenValidity, tokenUnits?.RefreshToken),
+      expectedRefreshTokenValidity
+    );
+  });
 
       it("has access token expiration set correctly", () => {
         const expectedAccessTokenValidity = 300;
