@@ -34,7 +34,7 @@ describe("Check deployed Cognito User Pool Client", async () => {
 
   it("should have UserPoolTags with correct values", () => {
     assert.containsSubset(userPool.UserPoolTags, {
-      Environment: "dev",
+      Environment: testConfig.environment,
       Product: "GOV.UK",
       System: "Authentication",
     });
