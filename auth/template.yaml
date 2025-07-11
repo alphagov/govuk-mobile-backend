@@ -1417,7 +1417,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/revoke-refresh-token-${AWS::StackName}
-      KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
+      KmsKeyId: !GetAtt RevokeRefreshTokenLogGroupKMSKey.Arn
       RetentionInDays: 30
       Tags:
         - Key: Product
