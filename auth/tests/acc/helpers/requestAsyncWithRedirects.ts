@@ -46,6 +46,7 @@ async function requestAsyncHandleRedirects(
     const { searchParams } = url;
 
     const redirectOptions: RequestOptions = {
+      protocol: url.protocol,
       hostname: url.hostname,
       path: `${url.pathname}?${searchParams.toString()}`,
       method: "GET",
