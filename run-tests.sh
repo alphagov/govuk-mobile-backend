@@ -17,9 +17,10 @@ nx run-many -t test:int
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 
+
 git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
 cd /tmp/repo
-npm i
+# npm i
 
 # Find which branches contain this commit
 BRANCHES=$(git branch -r --contains "$commitsha" 2>/dev/null | grep -E "(origin/main|origin/production)")
@@ -34,6 +35,8 @@ else
     echo "Error: Commit not found in main or production"
     exit 1
 fi
+
+echo "Performing branch checks"
 
 # 1. Check if we're in the penultimate environment
 # Note TEST_ENVIRONMENT is being forced to lowercase here by using ${VAR,,}
