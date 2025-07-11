@@ -100,7 +100,23 @@ describe('Check deployed Cognito User Pool Client', async () => {
     });
   });
 
-  it('has allowed OAuth flows user pool client enabled', () => {
+  it("has refresh token expiration set correctly", () => {
+    const expectedRefreshTokenValidity = 604800; // 7 days in seconds
+    assert.equal(
+      userPoolClient.RefreshTokenValidity,
+      expectedRefreshTokenValidity
+    );
+  });
+
+  it("has access token expiration set correctly", () => {
+    const expectedAccessTokenValidity = 300;
+    assert.equal(
+      userPoolClient.AccessTokenValidity,
+      expectedAccessTokenValidity
+    );
+  });
+
+  it("has allowed OAuth flows user pool client enabled", () => {
     assert.isTrue(userPoolClient.AllowedOAuthFlowsUserPoolClient);
   });
 
