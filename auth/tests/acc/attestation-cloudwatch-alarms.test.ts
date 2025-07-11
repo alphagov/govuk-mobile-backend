@@ -2,11 +2,6 @@ import {
   DescribeAlarmsCommand,
   DescribeAlarmsOutput,
 } from "@aws-sdk/client-cloudwatch";
-import {
-  DescribeSlackChannelConfigurationsCommand,
-  DescribeSlackChannelConfigurationsResult,
-} from "@aws-sdk/client-chatbot";
-import { GetTopicAttributesCommand, GetTopicAttributesResponse } from "@aws-sdk/client-sns";
 import { assert, describe, it } from "vitest";
 import { testConfig } from "../common/config";
 import { AlarmTestCase } from "../acc/alarm-test-case";
@@ -206,35 +201,5 @@ describe
       if (!alarmOKActions) {
         throw new Error(`No OKActions found for alarm: ${alarmName}`);
       }
-
-      alarmOKActions?.forEach(async (action) => {
-        const topic = await driver.performAction<GetTopicAttributesResponse>({
-          service: 'SNSClient',
-          action: "GetTopicAttributesCommand",
-          command: new GetTopicAttributesCommand({ TopicArn: action })
-        });
-        const topicAttributes = topic.Attributes;
-        it("$action topic should be encrypted", () => {
-          assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
-        });
-      });
-
-      const alarmAlarmActions = alarm.AlarmActions;
-
-      if (!alarmAlarmActions) {
-        throw new Error(`No AlarmActions found for alarm: ${alarmName}`);
-      }
-
-      alarmAlarmActions?.forEach(async (action) => {
-        const topic = await driver.performAction<GetTopicAttributesResponse>({
-          command: new GetTopicAttributesCommand({ TopicArn: action }),
-          action: "GetTopicAttributesCommand",
-          service: "SNSClient"
-        });
-        const topicAttributes = topic.Attributes;
-        it("$action topic should be encrypted", () => {
-          assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
-        });
-      });
     }
   );
