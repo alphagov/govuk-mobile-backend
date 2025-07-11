@@ -1,4 +1,5 @@
-import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
+import { FilterLogEventsCommand, FilterLogEventsResponse } from "@aws-sdk/client-cloudwatch-logs";
+import { TestLambdaDriver } from "./testLambda.driver";
 
 /**
  * Options for finding a log message in CloudWatch with retries.
@@ -21,12 +22,10 @@ interface FindLogMessageOptions {
 }
 
 export class LoggingDriver {
-  private readonly client: CloudWatchLogsClient;
+  private readonly client: TestLambdaDriver;
 
-  constructor() {
-    this.client = new CloudWatchLogsClient({
-      region: 'eu-west-2',
-    });
+  constructor(client: TestLambdaDriver) {
+    this.client = client;
   }
 
   async findLogMessageWithRetries({
@@ -67,7 +66,11 @@ export class LoggingDriver {
       endTime,
     });
 
-    const response = await this.client.send(command);
+    const response = await this.client.performAction<FilterLogEventsResponse>({
+      command,
+      service: "CloudWatchLogsClient",
+      action: "FilterLogEventsCommand"
+    });
 
     const event = response.events?.find(evt => evt.message?.includes(searchString));
 

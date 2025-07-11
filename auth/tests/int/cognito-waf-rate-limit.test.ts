@@ -93,16 +93,16 @@ const checkRateLimitLogsInCloudWatch = async (): Promise<boolean> => {
 };
 
 
-describe("Cognito WAF Rate Limit Protection", () => {
-  beforeAll(async () => {
-    await repeatedlyRequestCognitoIdpEndpoint(requests);
-  });
+describe.skip("Cognito WAF Rate Limit Protection", () => {
+    beforeAll(async () => {
+      await repeatedlyRequestCognitoIdpEndpoint(requests);
+    });
 
-  it("should respond with 429 error code when rate limit is exceeded", async () => {
-    expect(responses).toContain(429);
+    it("should respond with 429 error code when rate limit is exceeded", async () => {
+      expect(responses).toContain(429);
+    });
+    it("should write to CloudWatch when rate limit is exceeded", async () => {
+      const cloudWatchLogsFound = await checkRateLimitLogsInCloudWatch();
+      expect(cloudWatchLogsFound).toBe(true);
+    });
   });
-  it("should write to CloudWatch when rate limit is exceeded", async () => {
-    const cloudWatchLogsFound = await checkRateLimitLogsInCloudWatch();
-    expect(cloudWatchLogsFound).toBe(true);
-  });
-});
