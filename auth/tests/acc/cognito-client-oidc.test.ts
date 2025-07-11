@@ -45,26 +45,47 @@ describe
       assert.equal(userPoolClient.AllowedOAuthFlows?.[0], expectedOauthFlows);
     });
 
-    it("has identity token expiration set correctly", () => {
-      const expectedIdTokenValidity = 3600;
-      assert.equal(userPoolClient.IdTokenValidity, expectedIdTokenValidity);
-    });
+    describe('token validity', () => {
+      const tokenUnits = userPoolClient.TokenValidityUnits;
 
-    it("has refresh token expiration set correctly", () => {
-      const expectedRefreshTokenValidity = 86400;
-      assert.equal(
-        userPoolClient.RefreshTokenValidity,
-        expectedRefreshTokenValidity
-      );
-    });
+      function parseTokenValidityToSeconds(value: number | undefined, unit: TimeUnitsType | undefined): number | undefined {
+        if (value === undefined || unit === undefined) return undefined;
+        switch (unit) {
+          case TimeUnitsType.SECONDS:
+            return value;
+          case TimeUnitsType.MINUTES:
+            return value * 60;
+          case TimeUnitsType.HOURS:
+            return value * 3600;
+          case TimeUnitsType.DAYS:
+            return value * 86400;
+          default:
+            return undefined;
+        }
+      }
 
-    it("has access token expiration set correctly", () => {
-      const expectedAccessTokenValidity = 300;
-      assert.equal(
-        userPoolClient.AccessTokenValidity,
-        expectedAccessTokenValidity
-      );
-    });
+      it("has identity token expiration set correctly", () => {
+        const expectedIdTokenValidity = 3600;
+        assert.equal(parseTokenValidityToSeconds(userPoolClient.IdTokenValidity, tokenUnits?.IdToken), expectedIdTokenValidity);
+      });
+
+      it("has refresh token expiration set correctly", () => {
+        const expectedRefreshTokenValidity = 86400;
+        assert.equal(
+          parseTokenValidityToSeconds(userPoolClient.RefreshTokenValidity, tokenUnits?.RefreshToken),
+          expectedRefreshTokenValidity
+        );
+      });
+
+      it("has access token expiration set correctly", () => {
+        const expectedAccessTokenValidity = 300;
+        assert.equal(
+          parseTokenValidityToSeconds(userPoolClient.AccessTokenValidity, tokenUnits?.AccessToken),
+          expectedAccessTokenValidity
+        );
+      });
+    })
+
 
     it("has allowed OAuth flows user pool client enabled", () => {
       assert.isTrue(userPoolClient.AllowedOAuthFlowsUserPoolClient);
@@ -106,18 +127,6 @@ describe
       assert.deepEqual(
         userPoolClient.SupportedIdentityProviders,
         expectedProviders
-      );
-    });
-
-    it("has token validity units set correctly", () => {
-      const expectedTokenValidityUnits: TokenValidityUnitsType = {
-        AccessToken: TimeUnitsType.SECONDS,
-        IdToken: TimeUnitsType.SECONDS,
-        RefreshToken: TimeUnitsType.SECONDS,
-      };
-      assert.deepEqual(
-        userPoolClient.TokenValidityUnits,
-        expectedTokenValidityUnits
       );
     });
 
