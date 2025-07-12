@@ -1384,6 +1384,124 @@ Resources:
         - Key: System
           Value: Authentication
 
+  RevokeRefreshTokenApi:
+    Type: AWS::Serverless::Api
+    Metadata:
+      cfn-lint:
+        # Add this to your existing Metadata block
+        config:
+          ignore_checks:
+            - W1028
+    Properties:
+      Name: !Join
+        - '-'
+        - - !Ref AWS::StackName
+          - revoke-token-api
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
+      StageName: !Ref Environment
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+
+  RevokeRefreshTokenLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/api-gateway/revoke-refresh-token-${AWS::StackName}
+      KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+  
+  RevokeRefreshTokenLogGroupKMSKey:
+    Condition: IsNotProduction
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the revoke token API Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication        
+
+  RevokeRefreshTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.handler
+      CodeUri: revoke-token/
+      Description: Revokes a Cognito Refresh Token.
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:RevokeToken
+                # - cognito-idp:AdminUserGlobalSignOut # Or GlobalSignOut if user self-revokes
+              Resource: !GetAtt CognitoUserPool.Arn
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref CognitoUserPool
+          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+      Events:
+        RevokePost:
+          Type: Api
+          Properties:
+            Path: /revoke-refresh-token
+            Method: POST
+            RestApiId: !Ref RevokeRefreshTokenApi
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication      
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts                  
+
   AttestationLowCompletionAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
