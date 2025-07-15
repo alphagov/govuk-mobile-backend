@@ -1,0 +1,30 @@
+{
+  "name": "chat-authorizer",
+  "version": "1.0.0",
+  "description": "Chat Authorizer",
+  "main": "app.js",
+  "author": "govuk-app-backend",
+  "license": "MIT",
+  "scripts": {
+    "unit": "vitest run",
+    "lint": "eslint '*.ts' --quiet --fix",
+    "compile": "tsc",
+    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify",
+    "test": "npm run compile && npm run unit",
+    "clean": "rm -rf debug && rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.312.0",
+    "aws-jwt-verify": "^5.1.0",
+    "aws-lambda": "^1.0.0",
+    "esbuild": "^0.25.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.92",
+    "@types/node": "^20.5.7",
+    "prettier": "^2.8.8",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4",
+    "vitest": "^3.1.1"
+  }
+}
