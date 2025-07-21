@@ -64,7 +64,6 @@ const validateAndReturnSubject = async (token: string): Promise<string> => {
 export const lambdaHandler = async (
     event: APIGatewayTokenAuthorizerEvent
 ): Promise<APIGatewayAuthorizerResult> => {  //APIGatewayAuthorizerResult
-
     let token = event.authorizationToken; // The token is passed in the Authorization header
 
     if (!token) {
