@@ -1,13 +1,9 @@
+import type { APIGatewayProxyResult } from "aws-lambda";
+
 export const generateResponse = (
   status: number,
   message: string
-): {
-  statusCode: number;
-  headers: {
-    "Content-Type": string;
-  };
-  body: string;
-} => {
+): APIGatewayProxyResult => {
   return {
     statusCode: status,
     headers: { "Content-Type": "application/json" },
