@@ -59,8 +59,8 @@ describe("Check deployed API Gateway method", async () => {
       "method.request.path.proxy": true,
     });
   });
-  it("should have authorizationType set to NONE", () => {
-    expect(response.authorizationType).toBe("NONE");
+  it("should have authorizationType set to CUSTOM", () => {
+    expect(response.authorizationType).toBe("CUSTOM");
   });
   it("should have methodIntegration defined", () => {
     expect(response.methodIntegration).toBeDefined();
@@ -82,6 +82,10 @@ describe("Check deployed API Gateway method", async () => {
   it("should have correct requestParameters mapping", () => {
     expect(response.methodIntegration!.requestParameters).toEqual({
       "integration.request.path.proxy": "method.request.path.proxy",
+      "integration.request.header.Authorization":
+        "context.authorizer.bearerToken",
+      "integration.request.header.Govuk-Chat-End-User-Id":
+        "context.authorizer.Govuk-Chat-End-User-Id",
     });
   });
   it("should have timeoutInMillis set to 29000", () => {

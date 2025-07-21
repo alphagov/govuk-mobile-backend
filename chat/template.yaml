@@ -41,6 +41,19 @@ Conditions:
       - !Ref PermissionsBoundary
       - none
 
+  IsProduction: !Equals
+    - !Ref Environment
+    - production
+
+Mappings:
+  OneLogin:
+    Environment:
+      build: integration
+      dev: integration
+      staging: staging
+      integration: integration
+      production: production
+
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -51,6 +64,9 @@ Globals:
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
+    MemorySize: 128
+    Timeout: 60
+    Runtime: nodejs22.x
 
 Resources:
   ChatApiGateway:
@@ -75,12 +91,12 @@ Resources:
 
   ChatApiGatewayMethod:
     Type: AWS::ApiGateway::Method
-    # checkov:skip=CKV_AWS_59:Ensure there is no open access to back-end resources through API
     Properties:
       HttpMethod: ANY
       ResourceId: !Ref ChatApiGatewayResource
       RestApiId: !Ref ChatApiGateway
-      AuthorizationType: NONE
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref ChatApiGatewayAuthorizer
       RequestParameters:
         method.request.path.proxy: true
       Integration:
@@ -91,16 +107,207 @@ Resources:
           - { proxy: "{proxy}" }
         RequestParameters:
           integration.request.path.proxy: method.request.path.proxy
+          integration.request.header.Authorization: context.authorizer.bearerToken
+          integration.request.header.Govuk-Chat-End-User-Id: context.authorizer.Govuk-Chat-End-User-Id
         PassthroughBehavior: WHEN_NO_MATCH
+
+  ChatApiGatewayAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: !Sub ${AWS::StackName}-chat-proxy-authorizer
+      RestApiId: !Ref ChatApiGateway
+      Type: REQUEST
+      IdentitySource: method.request.header.X-Auth
+      AuthorizerUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatAuthorizerFunction.Arn}/invocations"
+      AuthorizerResultTtlInSeconds: 0
+
+  ChatApiGatewayAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs
+      KmsKeyId: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  ChatApiGatewayAccessLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the Chat API Gateway Access Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
 
   ChatApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn: ChatApiGatewayMethod
     Properties:
       RestApiId: !Ref ChatApiGateway
+
+  ChatApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
       StageName: !Ref Environment
+      RestApiId: !Ref ChatApiGateway
+      DeploymentId: !Ref ChatApiGatewayDeployment
+      AccessLogSetting:
+        DestinationArn: !GetAtt ChatApiGatewayAccessLogGroup.Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","authorizeError":"$context.authorize.error","authorizeLatency":"$context.authorize.latency","authorizeStatus":"$context.authorize.status","authorizerIntegrationLatency":"$context.authorizer.integrationLatency","authorizerIntegrationStatus":"$context.authorizer.integrationStatus","authorizerLatency":"$context.authorizer.latency","authorizerRequestId":"$context.authorizer.requestId","authorizerStatus":"$context.authorizer.status"}'
+
+  ChatAuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-chat-proxy-authorizer
+      CodeUri: authorizer/
+      Handler: app.lambdaHandler
+      Role: !GetAtt ChatAuthorizerFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt ChatAuthorizerFunctionKMSKey.Arn
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Chat
+      Environment:
+        Variables:
+          CHAT_SECRET_NAME: !Sub /${ConfigStackName}/chat/secrets
+          REGION: !Ref AWS::Region
+          OIDC_ISSUER: !If
+            - IsProduction
+            - https://oidc.account.gov.uk
+            - !Join
+              - ""
+              - - https://oidc.
+                - !FindInMap
+                  - OneLogin
+                  - Environment
+                  - !Ref Environment
+                - .account.gov.uk
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  ChatAuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ChatAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ChatApiGateway}/*
+
+  ChatAuthorizerFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-chat-proxy-authorizer-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ChatAuthorizerFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/chat/secrets-*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-chat-proxy-authorizer:*
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  ChatAuthorizerFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting Chat authorizer secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+            Resource:
+              - "*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
 
 Outputs:
+  AWSAccountId:
+    Value: !Ref AWS::AccountId
+  StackName:
+    Value: !Ref AWS::StackName
+  ConfigStackName:
+    Value: !Ref ConfigStackName
   ChatApiGatewayId:
     Value: !Ref ChatApiGateway
   ChatApiGatewayResourceId:
@@ -109,3 +316,21 @@ Outputs:
     Value: !Ref ChatApiGatewayMethod
   ChatApiGatewayDeploymentId:
     Value: !Ref ChatApiGatewayDeployment
+  ChatApiGatewayAuthorizerId:
+    Value: !Ref ChatApiGatewayAuthorizer
+  ChatApiGatewayAccessLogGroupArn:
+    Value: !GetAtt ChatApiGatewayAccessLogGroup.Arn
+  ChatApiGatewayAccessLogGroupKMSKeyArn:
+    Value: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
+  ChatApiGatewayStageName:
+    Value: !Ref ChatApiGatewayStage
+  ChatAuthorizerFunctionName:
+    Value: !Ref ChatAuthorizerFunction
+  ChatAuthorizerInvokePermissionId:
+    Value: !Ref ChatAuthorizerInvokePermission
+  ChatAuthorizerFunctionIAMRoleName:
+    Value: !Sub ${AWS::StackName}-chat-proxy-authorizer-role
+  ChatAuthorizerFunctionIAMRolePolicyName:
+    Value: ChatAuthorizerFunctionPolicy
+  ChatAuthorizerFunctionKMSKeyArn:
+    Value: !GetAtt ChatAuthorizerFunctionKMSKey.Arn
