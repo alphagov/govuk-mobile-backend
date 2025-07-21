@@ -6,33 +6,28 @@ import {
 } from "node:http";
 import https from "node:https";
 import { URLSearchParams } from "node:url";
-import querystring from "node:querystring";
-import type { ClientRequest, ClientResponse, RequestOptions } from "node:https";
+import type { RequestOptions } from "node:https";
 import { CookieJar } from "./helpers";
-import type { Cookie } from "./helpers";
 import { extractCSRFTokenHelper } from "./helpers";
 import {
   requestAsync,
   requestAsyncHandleRedirects,
   parseFormFromHtml,
   TOTPGenerator,
-  sleep,
 } from "./helpers";
-import type { FormData, FormField, InputField } from "./helpers";
-import { deepDiff, deepEqual, DiffResult, DiffEntry } from "./helpers/diff";
+import type { FormData } from "./helpers";
 import { generatePKCEPair } from "./helpers";
 import type { PKCE_PAIR } from "./helpers";
 import { addJourneyLogEntry, getJourneyLogEntries } from "./helpers";
 import dotenv from "dotenv";
 // Systems Manager Client
-import { SSMClient, GetParametersCommand } from "@aws-sdk/client-ssm";
+import { GetParametersCommand } from "@aws-sdk/client-ssm";
 // Secrets Manager Client
 import {
   GetSecretValueCommand,
   SecretsManagerClient,
 } from "@aws-sdk/client-secrets-manager";
-
-dotenv.config();
+import { testConfig } from "../common/config";
 
 type METHOD_TYPE = "GET" | "POST";
 type HTTP_RESPONSE = Partial<IncomingMessage> & {
@@ -44,22 +39,6 @@ type HTTP_RESPONSE = Partial<IncomingMessage> & {
  * Parameterisation
  */
 const region = process.env["REGION"] ?? "eu-west-2";
-
-// Get Password
-const smClient = new SecretsManagerClient({ region: region });
-const passwordResponse = await smClient.send(
-  new GetSecretValueCommand({
-    SecretId: "PASSWORD",
-  }),
-);
-const password = passwordResponse.secretString;
-
-const secretResponse = await smClient.send(
-  new GetSecretValueCommand({
-    SecretId: "SECRET",
-  }),
-);
-const secret = secretResponse.secretString;
 
 // Get parameters from Systems Manager
 const input = {
@@ -76,32 +55,19 @@ const input = {
   WithDecryption: true || false,
 };
 
-const command = new GetParametersCommand(input);
-const smResponse = await client.send(command);
+// const command = new GetParametersCommand(input);
+// const smResponse = await client.send(command);
 
-const PROXY_DOMAIN = smResponse.filter((p) => p.name === "PROXY_DOMAIN")[0]
-  .value;
-const COGNITO_DOMAIN = smResponse.filter((p) => p.name === "COGNITO_DOMAIN")[0]
-  .value;
-const ONELOGIN_OIDC_STAGING_DOMAIN =
-  smResponse.filter((p) => p.name === "ONELOGIN_OIDC_STAGING_DOMAIN")[0]
-    .value || "oidc.staging.account.gov.uk";
-const ONELOGIN_STAGING_DOMAIN =
-  smResponse.filter((p) => p.name === "ONELOGIN_STAGING_DOMAIN")[0].value ||
-  "staging.account.gov.uk";
-const COGNITO_APP_CLIENT_ID = smResponse.filter(
-  (p) => p.name === "COGNITO_APP_CLIENT_ID",
-)[0].value;
-const COGNITO_APP_CLIENT_REDIRECT_URL = smResponse.filter(
-  (p) => p.name === "COGNITO_APP_CLIENT_REDIRECT_URL",
-)[0].value;
-const REDIRECT_URI =
-  smResponse.filter((p) => p.name === "REDIRECT_URI")[0].value ||
-  "govuk://govuk/login-auth-callback";
-const SCOPE =
-  smResponse.filter((p) => p.name === "SCOPE")[0].value || "openid+email";
-const emailAddress = smResponse.filter((p) => p.name === "EMAIL_ADDRESS")[0]
-  .value;
+const PROXY_DOMAIN = testConfig.authProxyUrl;
+const COGNITO_DOMAIN = testConfig.cognitoUrl;
+const ONELOGIN_OIDC_STAGING_DOMAIN = "oidc.staging.account.gov.uk";
+const ONELOGIN_STAGING_DOMAIN = "staging.account.gov.uk";
+const COGNITO_APP_CLIENT_ID = testConfig.clientId;
+const COGNITO_APP_CLIENT_REDIRECT_URL = "govuk://govuk/login-auth-callback";
+const REDIRECT_URI = "govuk://govuk/login-auth-callback";
+const SCOPE = "openid+email";
+// const emailAddress = smResponse.filter((p) => p.name === "EMAIL_ADDRESS")[0]
+//   .value;
 
 const redirectURL = `https://${ONELOGIN_STAGING_DOMAIN}/authorize?client_id=${COGNITO_APP_CLIENT_ID}&redirect_uri=https%3A%2F%2F${COGNITO_DOMAIN}%2Foauth2%2Fidpresponse&scope=${SCOPE}&response_type=code&state=H4sIAAAAAAAAAE2RzZKbMBCE30VnwxoEGHzLLhhDgrGzrFlIpVwySPxJiBgwhlTePfIllVvP9NczUzW_AQJbgEdpwv0gqRfi-cZO1dMSrMBVOLzFlBdVK8pMlIqqEF2plV5rWGNVljmy9VVnXfnkcwGUw9D125eX3NSoMpud1uRVJmeUjzm58XaQW
 zwIFAs04zkWkggZevabkAXY_gC8w22VPxmGKgp-rkAliICdyzDypiA-wcOSPYKleYRuMofuaUlrWh9YoCRxApP6QA92WQa280iYt07qAgZRyoQ3HZaShXYzhVEyp65IFGJLLYa_q7ohZPO8pLtvir17vjumYfl-Ve-U-wI36fD1VxR3xwv2hpBZia7eR0RnstPamufIxE5c4ta_KfHF_
@@ -171,7 +137,7 @@ function createHttpClientOptions(
       Accept: "text/html,application/xhtml+xml,application/xml;",
       "Accept-Encoding": "gzip, deflate, br, zstd",
       "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
-      "User-Agent": USER_AGENT_IPHONE_16E,
+      // "User-Agent": USER_AGENT_IPHONE_16E,
       Origin: `https://${hostName}`,
       Referrer: referrer,
     },
@@ -190,7 +156,7 @@ describe("auth sign in journey", () => {
           ? options
           : `${options.protocol || "https:"}//${options.hostname || options.host}${options.path || ""}`;
 
-      if (url.startsWith(REDIRECT_URL)) {
+          if (url.startsWith(REDIRECT_URI)) {
         // Create a mock response
 
         const mockResponse = {
@@ -246,7 +212,6 @@ describe("auth sign in journey", () => {
     "should sign the app into cognito using one login as the idp",
     { retry: 3, timeout: 10_000 },
     async () => {
-      try {
         const options: RequestOptions = createHttpClientOptions(0, cookieJar);
 
         const redirect = await requestAsyncHandleRedirects(
@@ -354,7 +319,7 @@ describe("auth sign in journey", () => {
           password: password,
         });
 
-        const enterPasswordUrl = `https://${clickOptions.hostname}${passwordForm.action}`;
+        const enterPasswordUrl = `https://${clickOptions.hostname}${passwordForm.action}`; // pragma: allowlist-secret
 
         const passwordResponse = await requestAsyncHandleRedirects(
           passwordOptions,
@@ -453,16 +418,7 @@ describe("auth sign in journey", () => {
           tokens["refresh_token"].substring(0, 100) + "*******redacted*******";
 
         console.log(tokens);
-      } catch (e) {
-        console.log("Failed");
-        console.log(e);
-      } finally {
-        console.log("**********************************************");
-        console.log("* Journey Log");
-        console.log("**********************************************");
-        console.log(getJourneyLogEntries());
-        console.log("**********************************************");
-      }
+     
     },
   );
 });

@@ -1,8 +1,9 @@
 import { requestAsync } from "./requestAsync";
-import extractCSRFTokenHelper from "./csrf";
-import { addJourneyLogEntry } from "./helpers";
+import { addJourneyLogEntry } from "./httpJourneyLog";
+import { IncomingHttpHeaders, RequestOptions } from "http";
+
 async function getRedirect(
-  options: RequstOptions,
+  options: RequestOptions,
   headers: IncomingHttpHeaders,
 ) {
   if (!headers || !headers["location"]) return;
@@ -19,7 +20,7 @@ async function requestAsyncHandleRedirects(
   options: RequestOptions,
   cookieJar,
   formData: any,
-): Promise<HTTP_RESPONSE> {
+): Promise<any> {
   const response = await requestAsync(options, formData);
 
   const redirect = await getRedirect(options, response.headers);
