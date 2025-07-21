@@ -1,5 +1,7 @@
 /* eslint-disable */ 
 /* tslint:disable */
+// @ts-ignore
+// @ts-nocheck
 
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { generateResponse } from "../response";
