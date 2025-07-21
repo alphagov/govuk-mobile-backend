@@ -1,4 +1,4 @@
-import https from "node:https";
+import https, { RequestOptions } from "node:https";
 
 /**@function requestAsync
  * Async wrapper for https requests
@@ -10,7 +10,7 @@ import https from "node:https";
 async function requestAsync(
   options: RequestOptions,
   formData: string,
-): Promise<HTTP_RESPONSE> {
+): Promise<any> {
   //Clone options for local work
   const localOptions = JSON.parse(JSON.stringify(options));
 
