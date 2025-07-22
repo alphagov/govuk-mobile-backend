@@ -45,12 +45,12 @@ type HTTP_RESPONSE = Partial<IncomingMessage> & {
  */
 const region = process.env["REGION"] ?? "eu-west-2";
 
-const PROXY_DOMAIN = "..."
+const PROXY_DOMAIN = "m0q9zbtrs2.execute-api.eu-west-2.amazonaws.com"
 const ONELOGIN_OIDC_STAGING_DOMAIN = "oidc.staging.account.gov.uk";
 const ONELOGIN_STAGING_DOMAIN = "staging.account.gov.uk";
-const COGNITO_DOMAIN = process.env.CFN_COGNITO_DOMAIN || "...";
-const COGNITO_APP_CLIENT_ID = process.env.CFN_COGNITO_APP_CLIENT_ID || "...";
-const COGNITO_APP_CLIENT_REDIRECT_URL = "https%3A%2F%2Fd84l1y8p4kdic.cloudfront.net"; 
+const COGNITO_DOMAIN = "govukapp-staging.auth.eu-west-2.amazoncognito.com";
+const COGNITO_APP_CLIENT_ID = "7qal023jms3dumkqd6173etleh";
+const COGNITO_APP_CLIENT_REDIRECT_URL = "govuk://govuk/login-auth-callback"; 
 const USER_AGENT_IPHONE_16E = `Mozilla/5.0 (iPhone17,5; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 FireKeepers/1.7.0`;
 
 const pkcePair: PKCE_PAIR = generatePKCEPair();
