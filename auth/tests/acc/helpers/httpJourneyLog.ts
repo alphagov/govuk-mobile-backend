@@ -1,11 +1,24 @@
-const journeyLog = [];
+import { RequestOptions } from "node:https";
+import { HTTP_RESPONSE } from "./requestAsync";
+
+interface JourneyLogEntry {
+  hostName: string | null | undefined;
+  path: string | null | undefined;
+  statusCode: number;
+  step: number;
+}
+
+const journeyLog: JourneyLogEntry[] = [];
 
 /** @function redactSensitiveInfo
  * Redacts sensitive information in path string
  * @param {string} path - The path string containing sensitive information
  * @returns {string} Returns redacted path string
  */
-const redactSensitiveInfo = (path: string): string => {
+const redactSensitiveInfo = (path: string | null | undefined): string => {
+  if (!path) {
+    throw new Error("Path is null or undefined");
+  }
   // Common sensitive parameters in OIDC/OAuth flows
   const sensitiveParams = [
     "access_token",
@@ -72,12 +85,12 @@ const redactSensitiveInfo = (path: string): string => {
 
 /** @function addJourneyLogEntry
  * Adds a redacted log entry to the journey log
- * @param {HTTP_REQUEST} request - HTTP Request part of the journey
+ * @param {RequestOptions} request - HTTP Request part of the journey
  * @param {HTTP_RESPONSE} response - HTTP Response part of the journey
  * @returns {void}
  */
 const addJourneyLogEntry = (
-  request: HTTP_REQUEST,
+  request: RequestOptions,
   response: HTTP_RESPONSE,
 ): void => {
   journeyLog.push({

@@ -31,6 +31,9 @@ export const requestHandler = async (
   }
 
   const parsed = parseRequest(jsonBody);
+  
+  console.log("CorrelationId: ", parsed.jti);  // Log the correlation ID for tracing
+  
   for (const { schema, handle } of handlers) {
     if (schema.safeParse(parsed).success) {
       return handle(parsed);
