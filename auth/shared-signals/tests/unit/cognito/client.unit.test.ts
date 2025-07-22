@@ -31,7 +31,7 @@ describe("cognitoClient", () => {
     process.env.REGION = "eu-west-2";
 
     const module = await import("../../../cognito/client");
-    const client = module.default;
+    const client = module.cognitoClient;
 
     expect(client).toMatchObject({
       config: { region: "eu-west-2" },
