@@ -46,18 +46,27 @@ describe("Set up the Cognito User Pool OIDC client", () => {
 
   it("has a callback url", () => {
     template.hasResourceProperties("AWS::Cognito::UserPoolClient", {
-      CallbackURLs: ["govuk://govuk/login-auth-callback"],
+      CallbackURLs: {
+        "Fn::If": [
+          "IsTestingEnvironment",
+          [
+            "govuk://govuk/login-auth-callback",
+            "https://d84l1y8p4kdic.cloudfront.net",
+          ],
+          ["govuk://govuk/login-auth-callback"],
+        ],
+      },
     });
   });
 
   it("has a logout url", () => {
-    const userPoolClient = template.findResources("AWS::Cognito::UserPoolClient")["CognitoUserPoolClient"] as any;
+    const userPoolClient = template.findResources(
+      "AWS::Cognito::UserPoolClient"
+    )["CognitoUserPoolClient"] as any;
     expect(userPoolClient.Properties.LogoutURLs).toEqual({
       "Fn::If": [
         "IsProduction",
-        [
-          "https://oidc.account.gov.uk/logout",
-        ],
+        ["https://oidc.account.gov.uk/logout"],
         [
           {
             "Fn::Join": [
@@ -69,7 +78,7 @@ describe("Set up the Cognito User Pool OIDC client", () => {
                     "OneLogin",
                     "Environment",
                     {
-                      "Ref": "Environment",
+                      Ref: "Environment",
                     },
                   ],
                 },
@@ -79,7 +88,7 @@ describe("Set up the Cognito User Pool OIDC client", () => {
           },
         ],
       ],
-    })
+    });
   });
 
   it("has correct tokens validity", () => {

@@ -42,7 +42,8 @@ const getTestConfig = () => {
     "CFN_AuthProxyWafLogGroupName",
     "CFN_CognitoUrl",
     "CFN_AttestationApiLogGroupName",
-    "CFN_TestLambdaFunctionName"
+    "CFN_TestLambdaFunctionName",
+    "CFN_OneLoginEnvironment"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -101,8 +102,8 @@ const getTestConfig = () => {
       process.env.CFN_PostAuthenticationFunctionInvokePermission!,
     region: process.env.CFN_AWS_REGION || "eu-west-2",
     awsAccountId: process.env.CFN_AWSAccountId!,
-    stackName: process.env.CFN_StackName,
-    configStackName: process.env.CFN_ConfigStackName,
+    stackName: process.env.CFN_StackName!,
+    configStackName: process.env.CFN_ConfigStackName!,
     sharedSignalsClientId: process.env.CFN_SharedSignalClientId!,
     userPoolProviderId: process.env.CFN_UserPoolProviderUrl!,
     //WAF configurations
@@ -111,7 +112,8 @@ const getTestConfig = () => {
     authProxyWAF: process.env.CFN_AuthProxyWaf!,
     authProxyWAFAlarm: process.env.CFN_AuthProxyWafAlarm!,
     cognitoUrl: process.env.CFN_CognitoUrl!,
-    testLambdaFunctionName: process.env.CFN_TestLambdaFunctionName!
+    testLambdaFunctionName: process.env.CFN_TestLambdaFunctionName!,
+    oneLoginEnvironment: process.env.CFN_OneLoginEnvironment!
   };
 };
 

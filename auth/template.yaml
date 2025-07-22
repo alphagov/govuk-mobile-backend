@@ -168,8 +168,13 @@ Resources:
         - email
         - openid
       GenerateSecret: true # pragma: allowlist secret
-      CallbackURLs:
-        - govuk://govuk/login-auth-callback
+      CallbackURLs: !If
+        - IsTestingEnvironment 
+        - 
+          - govuk://govuk/login-auth-callback
+          - https://d84l1y8p4kdic.cloudfront.net 
+        - 
+          - govuk://govuk/login-auth-callback
       LogoutURLs: !If
         - IsProduction
         - - https://oidc.account.gov.uk/logout
@@ -2326,3 +2331,7 @@ Outputs:
     Condition: IsTestingEnvironment
     Description: The name of the Testing Lambda function
     Value: !Ref AcceptanceTestingFunction
+
+  OneLoginEnvironment:
+    Description: The OneLogin domain name for the Shared Signals API
+    Value: !FindInMap [OneLogin, Environment, !Ref Environment]
