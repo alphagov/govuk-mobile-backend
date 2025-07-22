@@ -1,6 +1,6 @@
 import { requestAsync } from "./requestAsync";
 import extractCSRFTokenHelper from "./csrf";
-import { addJourneyLogEntry } from "./helpers";
+import { addJourneyLogEntry } from "./httpJourneyLog";
 async function getRedirect(
   options: RequstOptions,
   headers: IncomingHttpHeaders,
