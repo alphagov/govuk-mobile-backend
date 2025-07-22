@@ -1,8 +1,10 @@
-import { requestAsync } from "./requestAsync";
-import extractCSRFTokenHelper from "./csrf";
+import { HTTP_RESPONSE, requestAsync } from "./requestAsync";
 import { addJourneyLogEntry } from "./httpJourneyLog";
+import { RequestOptions } from "https";
+import { IncomingHttpHeaders } from "http";
+
 async function getRedirect(
-  options: RequstOptions,
+  options: RequestOptions,
   headers: IncomingHttpHeaders,
 ) {
   if (!headers || !headers["location"]) return;
@@ -19,7 +21,10 @@ async function requestAsyncHandleRedirects(
   options: RequestOptions,
   cookieJar,
   formData: any,
-): Promise<HTTP_RESPONSE> {
+): Promise<{
+  response: HTTP_RESPONSE;
+  request: RequestOptions;
+}> {
   const response = await requestAsync(options, formData);
 
   const redirect = await getRedirect(options, response.headers);
@@ -33,7 +38,10 @@ async function requestAsyncHandleRedirects(
   }
 
   if (response.statusCode === 302) {
-    if (!redirect) return response;
+    if (!redirect) return {
+      response,
+      request: options, // Need to return this so we know where we end up after multiple recursions
+    };
 
     const url: URL = new URL(redirect);
     const { searchParams } = url;
@@ -46,8 +54,13 @@ async function requestAsyncHandleRedirects(
       headers: options.headers,
     };
 
-    // Strip Content-Type header as this is a redirect
-    delete redirectOptions.headers["Content-Type"];
+    if (
+      redirectOptions &&
+      redirectOptions.headers &&
+      redirectOptions.headers["Content-Type"]
+    ) {
+      delete redirectOptions.headers["Content-Type"];
+    }
 
     const cookies = await cookieJar.getCookiesForUrl(url);
 
@@ -57,7 +70,7 @@ async function requestAsyncHandleRedirects(
         .join(" ");
     }
 
-    return await requestAsyncHandleRedirects(redirectOptions, cookieJar);
+    return await requestAsyncHandleRedirects(redirectOptions, cookieJar, formData);
   }
 
   return {
