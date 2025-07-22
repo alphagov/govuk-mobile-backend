@@ -2,7 +2,7 @@ import { generateResponse } from "../response";
 import type { credentialChangeSchema } from "../schema/credential-change";
 import type { z } from "zod";
 import { StatusCodes, ReasonPhrases } from "http-status-codes";
-import { adminGlobalSignOut } from "../cognito/client";
+import { adminGlobalSignOut } from "../cognito/sign-out-user";
 import type { APIGatewayProxyResult } from "aws-lambda";
 
 export type CredentialChangeRequest = z.infer<typeof credentialChangeSchema>;

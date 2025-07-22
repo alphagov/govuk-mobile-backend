@@ -6,28 +6,31 @@ import { CognitoUserDriver } from "../driver/cognito-user.driver";
 import { v4 as uuidv4 } from "uuid";
 
 describe("shared-signals", () => {
+  const cognitoUserDriver = new CognitoUserDriver(testConfig.userPoolId);
+  const clientCredentialsDriver = new ClientCredentialsDriver(
+    `/${testConfig.configStackName}/shared-signal/secrets-config`,
+    testConfig.cognitoUrl
+  );
   const passwordUpdateUserId = uuidv4();
   const passwordUpdateUserName = `${passwordUpdateUserId}@test.com`;
+  const accountPurgeUserId = uuidv4();
+  const accountPurgedUserName = `${accountPurgeUserId}@test.com`;
 
   beforeAll(() => {});
 
   afterAll(async () => {
-    await new CognitoUserDriver(testConfig.userPoolId).deleteUserFromCognito(
-      passwordUpdateUserName
-    );
+    await cognitoUserDriver.deleteUserFromCognito(passwordUpdateUserName);
   });
 
   it("sends a password update signal with a valid user and receives a 202 response", async () => {
     // Generate an access token
-    const accessToken = await new ClientCredentialsDriver(
-      `/${testConfig.configStackName}/shared-signal/secrets-config`,
-      testConfig.cognitoUrl
-    ).getAccessToken();
+    const accessToken = await clientCredentialsDriver.getAccessToken();
 
     // Create a test user to send a signal for
-    const cognitoUserId = await new CognitoUserDriver(
-      testConfig.userPoolId
-    ).createCognitoUserAndReturnUserName(passwordUpdateUserName);
+    const cognitoUserId =
+      await cognitoUserDriver.createCognitoUserAndReturnUserName(
+        passwordUpdateUserName
+      );
 
     // Send a password update signal
     const response = await fetch(
@@ -68,10 +71,7 @@ describe("shared-signals", () => {
 
   it("sends a password update signal with an invalid user and receives a 500 response", async () => {
     // Generate an access token
-    const accessToken = await new ClientCredentialsDriver(
-      `/${testConfig.configStackName}/shared-signal/secrets-config`,
-      testConfig.cognitoUrl
-    ).getAccessToken();
+    const accessToken = await clientCredentialsDriver.getAccessToken();
 
     // Send a password update signal
     const response = await fetch(
@@ -107,5 +107,44 @@ describe("shared-signals", () => {
     );
     expect(response.ok).toBe(false);
     expect(response.status).toBe(500);
+  });
+
+  it("sends an account purge signal with a valid user and receives a 202 response", async () => {
+    const accessToken = await clientCredentialsDriver.getAccessToken();
+
+    const cognitoUserId =
+      await cognitoUserDriver.createCognitoUserAndReturnUserName(
+        accountPurgedUserName
+      );
+
+    // Send a password update signal
+    const response = await fetch(
+      `${testConfig.sharedSignalsEndpoint}/receiver`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          aud: "example-audience",
+          iat: 1718000000,
+          iss: "https://issuer.example.com",
+          jti: "unique-jti-12345",
+          events: {
+            "https://schemas.openid.net/secevent/risc/event-type/account-purged":
+              {
+                subject: {
+                  format: "urn:example:format",
+                  uri: cognitoUserId,
+                },
+              },
+          },
+        }),
+      }
+    );
+
+    expect(response.ok).toBe(true);
+    expect(response.status).toBe(202);
   });
 });
