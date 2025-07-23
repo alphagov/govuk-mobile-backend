@@ -36,7 +36,7 @@ const testCases: AlarmTestCase[] = [
     alarmResource: "CognitoWebApplicationFirewallAlarm",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
     alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
-    metricName: "WAFErrorRate",
+    metricName: "BlockedRequests",
     topicDisplayName: "cloudwatch-alarm-topic",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
     topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",

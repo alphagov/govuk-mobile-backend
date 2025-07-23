@@ -1,7 +1,7 @@
 import { ChatbotClient, DescribeSlackChannelConfigurationsCommand } from "@aws-sdk/client-chatbot";
 import { CloudWatchClient, DescribeAlarmHistoryCommand, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
 import { CloudWatchLogsClient, DescribeLogGroupsCommand, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
-import { CognitoIdentityProviderClient, DescribeUserPoolClientCommand, DescribeUserPoolCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { AdminCreateUserCommand, AdminDeleteUserCommand, AdminGetUserCommand, CognitoIdentityProviderClient, DescribeUserPoolClientCommand, DescribeUserPoolCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { GetTopicAttributesCommand, SNSClient } from "@aws-sdk/client-sns";
 import {
     SecretsManagerClient,
@@ -35,8 +35,11 @@ export const SUPPORTED_AWS_SDK_CLIENTS: { [key: string]: any } = {
 // The keys here should match the 'service' and 'action' values in your incoming event.
 export const SUPPORTED_AWS_SDK_COMMANDS: { [clientName: string]: { [commandName: string]: any } } = {
     CognitoIdentityProviderClient: {
-        "DescribeUserPoolCommand": DescribeUserPoolCommand,
-        "DescribeUserPoolClientCommand": DescribeUserPoolClientCommand
+        // "DescribeUserPoolCommand": DescribeUserPoolCommand, not supported
+        "DescribeUserPoolClientCommand": DescribeUserPoolClientCommand,
+        "AdminCreateUserCommand": AdminCreateUserCommand,
+        "AdminDeleteUserCommand": AdminDeleteUserCommand,
+        "AdminGetUserCommand": AdminGetUserCommand
     },
     CloudWatchLogsClient: {
         "DescribeLogGroupsCommand": DescribeLogGroupsCommand,

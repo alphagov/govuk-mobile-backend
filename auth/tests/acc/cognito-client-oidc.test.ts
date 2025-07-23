@@ -105,7 +105,7 @@ describe
     });
 
     it("has logout URL set correctly", () => {
-      const currentEnvironment = testConfig.testEnvironment;
+      const currentEnvironment = testConfig.deployedEnvironment;
       const matchedEnvironment = environmentMapping.find(
         (env) => env.environment === currentEnvironment
       );

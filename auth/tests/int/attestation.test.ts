@@ -58,8 +58,8 @@ describe
             });
         });
 
-        describe.skipIf(!testConfig.isLocalEnvironment)
-            ('cloudwatch', () => {
+        // not supported by permissions boundary
+        describe.skip('cloudwatch', () => {
                 const alarmOKState = "OK";
                 const inAlarmState = "ALARM";
                 describe.each([
