@@ -24,7 +24,16 @@ export class ClientCredentialsDriver {
     return response.data.access_token;
   }
 
-  private async constructAxiosRequestConfig(
+  public async getAccessTokenWithCustomCredentials(
+    secretsConfig: SecretsConfig
+  ): Promise<string> {
+    const config: AxiosRequestConfig = await this.constructAxiosRequestConfig(secretsConfig);
+
+    const response: AxiosResponse = await axios(config);
+    return response.data.access_token;
+  }
+
+  async constructAxiosRequestConfig(
     secretsConfig: SecretsConfig
   ): Promise<AxiosRequestConfig> {
     const headers = {

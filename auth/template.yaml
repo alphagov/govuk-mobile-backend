@@ -205,7 +205,7 @@ Resources:
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4529389569/Runbook+WAF+-+High+number+WAF+throttling
       ActionsEnabled: true
-      MetricName: WAFErrorRate
+      MetricName: BlockedRequests
       Namespace: AWS/WAFV2
       Statistic: Sum
       Period: 60
@@ -2032,8 +2032,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - cognito-idp:DescribeUserPool
                   - cognito-idp:DescribeUserPoolClient
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
                 Resource: !GetAtt CognitoUserPool.Arn
 
               - Effect: Allow
@@ -2365,3 +2366,7 @@ Outputs:
   OneLoginEnvironment:
     Description: The OneLogin domain name for the Shared Signals API
     Value: !FindInMap [OneLogin, Environment, !Ref Environment]
+
+  DeployedEnvironment:
+    Description: SAM deployed environment
+    Value: !Ref Environment
