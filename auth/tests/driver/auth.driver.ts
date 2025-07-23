@@ -11,5 +11,5 @@ export interface AuthDriver {
   exchangeCodeForTokens(
     input: ExchangeTokenInput
   ): Promise<TokenExchangeResponse>;
-  refreshAccessToken(refreshToken: string): Promise<RefreshTokenResponse>;
+  refreshAccessToken(refreshToken: string, attestationToken: string): Promise<RefreshTokenResponse>;
 }

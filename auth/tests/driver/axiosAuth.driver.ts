@@ -167,12 +167,18 @@ export class AxiosAuthDriver implements AuthDriver {
   }
 
   async refreshAccessToken(
-    refreshToken: string
+    refreshToken: string,
+    attestationHeader: string
   ): Promise<RefreshTokenResponse> {
     return fetch(`${this.proxyUrl}oauth2/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        ...(attestationHeader
+          ? {
+              "X-Attestation-Token": attestationHeader,
+            }
+          : {}),
       },
       body: querystring.stringify({
         grant_type: "refresh_token",
