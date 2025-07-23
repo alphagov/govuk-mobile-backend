@@ -43,7 +43,10 @@ const getTestConfig = () => {
     "CFN_CognitoUrl",
     "CFN_AttestationApiLogGroupName",
     "CFN_TestLambdaFunctionName",
-    "CFN_OneLoginEnvironment"
+    "CFN_OneLoginEnvironment",
+    "CFN_FirebaseIosAppId",
+    "CFN_FirebaseAndroidAppId",
+    "CFN_UnknownAndroidAppId"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -113,7 +116,10 @@ const getTestConfig = () => {
     authProxyWAFAlarm: process.env.CFN_AuthProxyWafAlarm!,
     cognitoUrl: process.env.CFN_CognitoUrl!,
     testLambdaFunctionName: process.env.CFN_TestLambdaFunctionName!,
-    oneLoginEnvironment: process.env.CFN_OneLoginEnvironment!
+    oneLoginEnvironment: process.env.CFN_OneLoginEnvironment!,
+    firebaseIosAppId: process.env.CFN_FirebaseIosAppId!,
+    firebaseAndroidAppId: process.env.CFN_FirebaseAndroidAppId!,
+    unknownAndroidAppId: process.env.CFN_UnknownAndroidAppId!,
   };
 };
 
