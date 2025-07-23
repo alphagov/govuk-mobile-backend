@@ -1,144 +1,41 @@
-// __tests__/adminGlobalSignOut.test.ts
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
-import {
-  CognitoIdentityProviderClient,
-  AdminUserGlobalSignOutCommand,
-  InternalErrorException,
-  InvalidParameterException,
-  NotAuthorizedException,
-  ResourceNotFoundException,
-  TooManyRequestsException,
-  UserNotFoundException,
-  CognitoIdentityProviderServiceException,
-} from "@aws-sdk/client-cognito-identity-provider";
+// cognitoClient.test.ts
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-process.env.USER_POOL_ID = "123";
-process.env.REGION = "eu-west-2";
-
-import { adminGlobalSignOut } from "../../../cognito/client"; // adjust path as needed
-import { CognitoError } from "../../../errors";
-
-// Mock the AWS SDK Client
-vi.mock("@aws-sdk/client-cognito-identity-provider", async () => {
-  const actual = await vi.importActual<any>(
-    "@aws-sdk/client-cognito-identity-provider"
-  );
+vi.mock("@aws-sdk/client-cognito-identity-provider", () => {
   return {
-    ...actual,
-    CognitoIdentityProviderClient: vi.fn(),
-    AdminUserGlobalSignOutCommand: vi.fn(),
+    CognitoIdentityProviderClient: vi.fn().mockImplementation((config) => ({
+      config,
+      __mock: true,
+    })),
   };
 });
 
-const sendMock = vi.fn();
+describe("cognitoClient", () => {
+  const ORIGINAL_ENV = process.env;
 
-describe("adminGlobalSignOut", () => {
-  const userName = "test-user";
-  const region = "eu-west-2";
-
-  beforeAll(() => {
-    process.env = {
-      ...process.env,
-      USER_POOL_ID: "123",
-      REGION: region,
-    };
-    (
-      CognitoIdentityProviderClient as unknown as ReturnType<typeof vi.fn>
-    ).mockImplementation(() => ({
-      send: sendMock,
-    }));
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...ORIGINAL_ENV };
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
+  it("throws an error if REGION is not set", async () => {
+    delete process.env.REGION;
 
-  it("returns true when sign-out is successful (HTTP 200)", async () => {
-    sendMock.mockResolvedValue({ $metadata: { httpStatusCode: 200 } });
-
-    const result = await adminGlobalSignOut(userName);
-    expect(result).toBe(true);
-    expect(sendMock).toHaveBeenCalledOnce();
-    expect(AdminUserGlobalSignOutCommand).toHaveBeenCalledWith({
-      UserPoolId: process.env["USER_POOL_ID"],
-      Username: userName,
-    });
-  });
-
-  it("returns false when sign-out response is not 200", async () => {
-    sendMock.mockResolvedValue({ $metadata: { httpStatusCode: 400 } });
-
-    const result = await adminGlobalSignOut(userName);
-    expect(result).toBe(false);
-  });
-
-  const errorCases = [
-    {
-      error: new InternalErrorException({
-        message: "Internal error",
-        $metadata: {},
-      }),
-      name: "InternalErrorException",
-    },
-    {
-      error: new InvalidParameterException({
-        message: "Invalid parameter",
-        $metadata: {},
-      }),
-      name: "InvalidParameterException",
-    },
-    {
-      error: new NotAuthorizedException({
-        message: "Not authorized",
-        $metadata: {},
-      }),
-      name: "NotAuthorizedException",
-    },
-    {
-      error: new ResourceNotFoundException({
-        message: "Resource not found",
-        $metadata: {},
-      }),
-      name: "ResourceNotFoundException",
-    },
-    {
-      error: new TooManyRequestsException({
-        message: "Too many requests",
-        $metadata: {},
-      }),
-      name: "TooManyRequestsException",
-    },
-    {
-      error: new UserNotFoundException({
-        message: "User not found",
-        $metadata: {},
-      }),
-      name: "UserNotFoundException",
-    },
-    {
-      error: new CognitoIdentityProviderServiceException({
-        name: "CognitoIdentityProviderServiceException",
-        message: "Generic service error",
-        $fault: "client",
-        $metadata: {},
-      }),
-      name: "CognitoIdentityProviderServiceException",
-    },
-  ];
-
-  errorCases.forEach(({ error, name }) => {
-    it(`throws CognitoError on ${name}`, async () => {
-      sendMock.mockRejectedValue(error);
-      await expect(() => adminGlobalSignOut(userName)).rejects.toThrowError(
-        CognitoError
-      );
-    });
-  });
-
-  it("throws generic Error on unknown error type", async () => {
-    sendMock.mockRejectedValue(new Error("Unhandled cognito exception"));
-    await expect(() => adminGlobalSignOut(userName)).rejects.toThrow(
-      "Unhandled cognito exception"
+    // Because the module throws at import time, we test via dynamic import
+    await expect(import("../../../cognito/client")).rejects.toThrow(
+      "REGION environment variable is not set"
     );
+  });
+
+  it("initializes CognitoIdentityProviderClient with correct region", async () => {
+    process.env.REGION = "eu-west-2";
+
+    const module = await import("../../../cognito/client");
+    const client = module.cognitoClient;
+
+    expect(client).toMatchObject({
+      config: { region: "eu-west-2" },
+      __mock: true,
+    });
   });
 });

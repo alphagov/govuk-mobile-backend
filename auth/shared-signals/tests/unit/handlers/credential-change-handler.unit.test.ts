@@ -6,12 +6,11 @@ import {
 } from "../../../handlers/credential-change-handler";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 
-// Mock adminGlobalSignOut
-vi.mock("../../../cognito/client", () => ({
+vi.mock("../../../cognito/sign-out-user", () => ({
   adminGlobalSignOut: vi.fn(),
 }));
 
-import { adminGlobalSignOut } from "../../../cognito/client";
+import { adminGlobalSignOut } from "../../../cognito/sign-out-user";
 
 describe("handleCredentialChangeRequest", () => {
   const region = "eu-west-2";
