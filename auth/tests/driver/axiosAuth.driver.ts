@@ -80,7 +80,10 @@ export class AxiosAuthDriver implements AuthDriver {
     const authResponse = await this.client.get(`https://${authorizeEndpoint}`, {
       body: null,
       method: "GET",
-    });
+    }).catch((error) => {
+      console.log("Error during loginAndGetCode:", error);
+      throw error;
+    })
 
     const csrfToken = this.extractCSRFToken(authResponse.data);
 
