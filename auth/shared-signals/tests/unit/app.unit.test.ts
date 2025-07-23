@@ -7,6 +7,18 @@ import * as responseModule from "../../response";
 import { CognitoError } from "../../errors";
 import type { APIGatewayProxyEvent } from "aws-lambda";
 
+// Mock the AWS SDK Client
+vi.mock("@aws-sdk/client-cognito-identity-provider", async () => {
+  process.env.REGION = "eu-west-2";
+  const actual = await vi.importActual<any>(
+    "@aws-sdk/client-cognito-identity-provider"
+  );
+  return {
+    ...actual,
+    CognitoIdentityProviderClient: vi.fn(),
+  };
+});
+
 // Create a dummy event
 const createEvent = (): APIGatewayProxyEvent =>
   ({
