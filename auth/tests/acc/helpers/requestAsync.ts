@@ -1,4 +1,11 @@
-import https from "node:https";
+import { IncomingHttpHeaders } from "node:http";
+import https, { RequestOptions } from "node:https";
+
+export interface HTTP_RESPONSE {
+  statusCode: number;
+  body?: string;
+  headers: IncomingHttpHeaders;
+}
 
 /**@function requestAsync
  * Async wrapper for https requests
@@ -15,7 +22,7 @@ async function requestAsync(
   const localOptions = JSON.parse(JSON.stringify(options));
 
   //Get body if specified
-  let body = undefined;
+  let body: string;
   if (localOptions.body) {
     body = localOptions.body;
     // Delete body from options object as https request options does not include this
@@ -34,7 +41,7 @@ async function requestAsync(
   return new Promise((resolve, reject) => {
     try {
       const req = https.request(options, (res) => {
-        const chunks = [];
+        const chunks: Buffer[] = [];
         res.on("data", (chunk) => chunks.push(chunk));
         res.on("error", reject);
         res.on("end", () => {
@@ -43,7 +50,7 @@ async function requestAsync(
           if (isResponseOK) {
             const body = chunks.join("");
             resolve({
-              statusCode: statusCode,
+              statusCode: statusCode as number,
               body: body,
               headers: headers,
             });

@@ -1,4 +1,4 @@
-import extractCSRFTokenHelper from "./csrf";
+import { extractCSRFTokenHelper } from "./csrf";
 import { describe, it, expect } from "vitest";
 
 const mockHTML = `
