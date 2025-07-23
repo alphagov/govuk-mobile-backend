@@ -10,7 +10,12 @@ vi.mock("../../../cognito/delete-user", () => ({
   adminDeleteUser: vi.fn(),
 }));
 
+vi.mock("../../../cognito/sign-out-user", () => ({
+  adminGlobalSignOut: vi.fn(),
+}));
+
 import { adminDeleteUser } from "../../../cognito/delete-user";
+import { adminGlobalSignOut } from "../../../cognito/sign-out-user";
 
 describe("handleAccountPurgedRequest", () => {
   const region = "eu-west-2";
@@ -34,7 +39,9 @@ describe("handleAccountPurgedRequest", () => {
   });
 
   it("returns ACCEPTED for account purged events", async () => {
+    (adminGlobalSignOut as Mock).mockResolvedValue(true);
     (adminDeleteUser as Mock).mockResolvedValue(true);
+
     const input = {
       aud: "example-audience",
       iat: 1718000000,
