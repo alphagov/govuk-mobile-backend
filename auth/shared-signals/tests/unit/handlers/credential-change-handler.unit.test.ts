@@ -10,7 +10,12 @@ vi.mock("../../../cognito/sign-out-user", () => ({
   adminGlobalSignOut: vi.fn(),
 }));
 
+vi.mock("../../../cognito/update-email-address", () => ({
+  adminUpdateEmailAddress: vi.fn(),
+}));
+
 import { adminGlobalSignOut } from "../../../cognito/sign-out-user";
+import { adminUpdateEmailAddress } from "../../../cognito/update-email-address";
 
 describe("handleCredentialChangeRequest", () => {
   const region = "eu-west-2";
@@ -69,7 +74,9 @@ describe("handleCredentialChangeRequest", () => {
     });
   });
 
-  it("returns NOT_IMPLEMENTED for non-password credential changes", async () => {
+  it("returns ACCEPTED for email change events", async () => {
+    (adminGlobalSignOut as Mock).mockResolvedValue(true);
+    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
     const input = {
       iss: "https://identity.example.com",
       jti: "123e4567-e89b-12d3-a456-426614174000",
@@ -95,12 +102,47 @@ describe("handleCredentialChangeRequest", () => {
     const response = await handleCredentialChangeRequest(input);
     expect(response).toEqual({
       body: JSON.stringify({
-        message: ReasonPhrases.NOT_IMPLEMENTED,
+        message: ReasonPhrases.ACCEPTED,
       }),
       headers: {
         "Content-Type": "application/json",
       },
-      statusCode: StatusCodes.NOT_IMPLEMENTED,
+      statusCode: StatusCodes.ACCEPTED,
+    });
+  });
+
+  it("returns INTERNAL_SERVER_ERROR for unknown change events", async () => {
+    const input = {
+      iss: "https://identity.example.com",
+      jti: "123e4567-e89b-12d3-a456-426614174000",
+      iat: 1721126400,
+      aud: "https://service.example.gov.uk",
+      events: {
+        "https://schemas.openid.net/secevent/caep/event-type/credential-change":
+          {
+            change_type: "delete",
+            credential_type: "email",
+            subject: {
+              uri: "urn:example:account:1234567890",
+              format: "urn:example:format:account-id",
+            },
+          },
+        "https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation":
+          {
+            email: "user@example.com",
+          },
+      },
+    } as CredentialChangeRequest;
+
+    const response = await handleCredentialChangeRequest(input);
+    expect(response).toEqual({
+      body: JSON.stringify({
+        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
     });
   });
 });

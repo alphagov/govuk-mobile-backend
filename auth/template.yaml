@@ -1968,6 +1968,7 @@ Resources:
                 Action:
                   - cognito-idp:AdminUserGlobalSignOut
                   - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminUpdateUserAttributes
                 Resource: !GetAtt CognitoUserPool.Arn
       PermissionsBoundary: !If
         - UsePermissionsBoundary
