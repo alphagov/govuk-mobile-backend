@@ -136,6 +136,7 @@ describe("shared signals", () => {
           Action: expect.arrayContaining([
             "cognito-idp:AdminUserGlobalSignOut",
             "cognito-idp:AdminDeleteUser",
+            "cognito-idp:AdminUpdateUserAttributes",
           ]),
           Resource: { "Fn::GetAtt": ["CognitoUserPool", "Arn"] },
         }),

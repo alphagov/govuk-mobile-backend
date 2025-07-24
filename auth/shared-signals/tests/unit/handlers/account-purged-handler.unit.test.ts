@@ -20,7 +20,11 @@ import { adminGlobalSignOut } from "../../../cognito/sign-out-user";
 describe("handleAccountPurgedRequest", () => {
   const region = "eu-west-2";
 
-  const consoleMock = vi
+  const consoleInfoMock = vi
+    .spyOn(console, "info")
+    .mockImplementation(() => undefined);
+
+  const consoleErrorMock = vi
     .spyOn(console, "error")
     .mockImplementation(() => undefined);
 
@@ -31,14 +35,16 @@ describe("handleAccountPurgedRequest", () => {
       REGION: region,
     };
     vi.clearAllMocks();
-    consoleMock.mockReset();
+    consoleInfoMock.mockReset();
+    consoleErrorMock.mockReset();
   });
 
   afterAll(() => {
-    consoleMock.mockRestore();
+    consoleInfoMock.mockRestore();
+    consoleErrorMock.mockRestore();
   });
 
-  it("returns ACCEPTED for account purged events", async () => {
+  it("returns ACCEPTED for account purged events and logs success info message", async () => {
     (adminGlobalSignOut as Mock).mockResolvedValue(true);
     (adminDeleteUser as Mock).mockResolvedValue(true);
 
@@ -58,6 +64,14 @@ describe("handleAccountPurgedRequest", () => {
     } as AccountPurgedRequest;
 
     const response = await handleAccountPurgedRequest(input);
+    expect(adminGlobalSignOut).toHaveBeenCalledWith("urn:example:uri:12345");
+    expect(adminDeleteUser).toHaveBeenCalledWith("urn:example:uri:12345");
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      "SIGNAL_SUCCESS_ACCOUNT_PURGE",
+      {
+        userId: "urn:example:uri:12345",
+      }
+    );
     expect(response).toEqual({
       body: JSON.stringify({
         message: ReasonPhrases.ACCEPTED,
@@ -66,6 +80,45 @@ describe("handleAccountPurgedRequest", () => {
         "Content-Type": "application/json",
       },
       statusCode: StatusCodes.ACCEPTED,
+    });
+  });
+
+  it("returns INTERNAL_SERVER_ERROR for account purged events and logs error message", async () => {
+    (adminGlobalSignOut as Mock).mockResolvedValue(false);
+    (adminDeleteUser as Mock).mockResolvedValue(false);
+
+    const input = {
+      aud: "example-audience",
+      iat: 1718000000,
+      iss: "https://issuer.example.com",
+      jti: "unique-jti-12345",
+      events: {
+        "https://schemas.openid.net/secevent/risc/event-type/account-purged": {
+          subject: {
+            format: "urn:example:format",
+            uri: "urn:example:uri:12345",
+          },
+        },
+      },
+    } as AccountPurgedRequest;
+
+    const response = await handleAccountPurgedRequest(input);
+    expect(adminGlobalSignOut).toHaveBeenCalledWith("urn:example:uri:12345");
+    expect(adminDeleteUser).toHaveBeenCalledWith("urn:example:uri:12345");
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      "SIGNAL_ERROR_ACCOUNT_PURGE",
+      {
+        userId: "urn:example:uri:12345",
+      }
+    );
+    expect(response).toEqual({
+      body: JSON.stringify({
+        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
     });
   });
 });
