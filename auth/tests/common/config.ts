@@ -48,7 +48,7 @@ const getTestConfig = () => {
     "CFN_FirebaseIosAppId",
     "CFN_FirebaseAndroidAppId",
     "CFN_UnknownAndroidAppId",
-    "CFN_SharedSignalsAccessLogGroupName",
+    "CFN_SharedSignalsAccessLogGroupName"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
