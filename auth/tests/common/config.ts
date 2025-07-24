@@ -43,10 +43,12 @@ const getTestConfig = () => {
     "CFN_CognitoUrl",
     "CFN_AttestationApiLogGroupName",
     "CFN_TestLambdaFunctionName",
+    "CFN_SharedSignalsAccessLogGroupName",,
     "CFN_OneLoginEnvironment",
     "CFN_FirebaseIosAppId",
     "CFN_FirebaseAndroidAppId",
-    "CFN_UnknownAndroidAppId"
+    "CFN_UnknownAndroidAppId",
+    "CFN_SharedSignalsAccessLogGroupName"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -108,6 +110,7 @@ const getTestConfig = () => {
     stackName: process.env.CFN_StackName!,
     configStackName: process.env.CFN_ConfigStackName!,
     sharedSignalsClientId: process.env.CFN_SharedSignalClientId!,
+    sharedSignalsAccessLogGroupName: process.env.CFN_SharedSignalsAccessLogGroupName!,
     userPoolProviderId: process.env.CFN_UserPoolProviderUrl!,
     //WAF configurations
     cloudWatchWafRateLimitingAlarmName: process.env.CFN_CloudWatchWafRateLimitingAlarmName!,  

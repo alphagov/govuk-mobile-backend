@@ -1738,6 +1738,29 @@ Resources:
       LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
       KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Configuration:
+          CustomDataIdentifier:
+            - Name: IPAddresses
+              Regex: \b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - IPAddresses
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - IPAddresses
+            Operation:
+              Deidentify:
+                MaskConfig: {}  # marks sensitive data with asterisks
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2327,6 +2350,11 @@ Outputs:
   AuthProxyWafAlarm:
     Description: The name of the CloudWatch alarm for Auth Proxy WAF rate limiting
     Value: !Ref AuthProxyWafAlarm
+
+  SharedSignalsAccessLogGroupName:
+    Condition: IsNotProduction
+    Description: The Shared Signals Access Log Group Name
+    Value: !Ref SharedSignalsAccessLogGroup  
 
   TestLambdaFunctionName:
     Condition: IsTestingEnvironment
