@@ -20,8 +20,12 @@ import { adminUpdateEmailAddress } from "../../../cognito/update-email-address";
 describe("handleCredentialChangeRequest", () => {
   const region = "eu-west-2";
 
-  const consoleMock = vi
+  const consoleErrorMock = vi
     .spyOn(console, "error")
+    .mockImplementation(() => undefined);
+
+  const consoleInfoMock = vi
+    .spyOn(console, "info")
     .mockImplementation(() => undefined);
 
   beforeAll(() => {
@@ -31,15 +35,18 @@ describe("handleCredentialChangeRequest", () => {
       REGION: region,
     };
     vi.clearAllMocks();
-    consoleMock.mockReset();
+    consoleInfoMock.mockReset();
+    consoleErrorMock.mockReset();
   });
 
   afterAll(() => {
-    consoleMock.mockRestore();
+    consoleInfoMock.mockRestore();
+    consoleErrorMock.mockRestore();
   });
 
-  it("returns ACCEPTED for password change events", async () => {
+  it("returns ACCEPTED for password change events and logs success info message", async () => {
     (adminGlobalSignOut as Mock).mockResolvedValue(true);
+    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
     const input = {
       iss: "https://identity.example.com",
       jti: "123e4567-e89b-12d3-a456-426614174000",
@@ -63,6 +70,16 @@ describe("handleCredentialChangeRequest", () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(adminGlobalSignOut).toHaveBeenCalledWith(
+      "urn:example:account:1234567890"
+    );
+    expect(adminUpdateEmailAddress).not.toHaveBeenCalled();
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      "SIGNAL_SUCCESS_PASSWORD_UPDATE",
+      {
+        userId: "urn:example:account:1234567890",
+      }
+    );
     expect(response).toEqual({
       body: JSON.stringify({
         message: ReasonPhrases.ACCEPTED,
@@ -74,7 +91,7 @@ describe("handleCredentialChangeRequest", () => {
     });
   });
 
-  it("returns ACCEPTED for email change events", async () => {
+  it("returns ACCEPTED for email change events and logs success info message", async () => {
     (adminGlobalSignOut as Mock).mockResolvedValue(true);
     (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
     const input = {
@@ -100,6 +117,19 @@ describe("handleCredentialChangeRequest", () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(adminGlobalSignOut).toHaveBeenCalledWith(
+      "urn:example:account:1234567890"
+    );
+    expect(adminUpdateEmailAddress).toHaveBeenCalledWith(
+      "urn:example:account:1234567890",
+      "user@example.com"
+    );
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      "SIGNAL_SUCCESS_EMAIL_UPDATE",
+      {
+        userId: "urn:example:account:1234567890",
+      }
+    );
     expect(response).toEqual({
       body: JSON.stringify({
         message: ReasonPhrases.ACCEPTED,
@@ -111,7 +141,9 @@ describe("handleCredentialChangeRequest", () => {
     });
   });
 
-  it("returns INTERNAL_SERVER_ERROR for unknown change events", async () => {
+  it("returns INTERNAL_SERVER_ERROR for unknown change events and logs error message", async () => {
+    (adminGlobalSignOut as Mock).mockResolvedValue(true);
+    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
     const input = {
       iss: "https://identity.example.com",
       jti: "123e4567-e89b-12d3-a456-426614174000",
@@ -135,6 +167,9 @@ describe("handleCredentialChangeRequest", () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      "Unhandled credential change type"
+    );
     expect(response).toEqual({
       body: JSON.stringify({
         message: ReasonPhrases.INTERNAL_SERVER_ERROR,
