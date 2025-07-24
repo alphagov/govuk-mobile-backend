@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { requestHandler } from "../../../handlers/request-handler";
 import { parseRequest } from "../../../parser";
 import { handleCredentialChangeRequest } from "../../../handlers/credential-change-handler";
@@ -18,6 +18,8 @@ vi.mock("../../../handlers/account-purged-handler", () => ({
 
 describe("requestHandler", () => {
   const region = "eu-west-2";
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     process.env = {
       ...process.env,
@@ -25,7 +27,14 @@ describe("requestHandler", () => {
       REGION: region,
     };
     vi.clearAllMocks();
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    consoleLogSpy.mockRestore();
+  });   
+
   it("dispatches credentialChangeSchema to handleCredentialChangeRequest", async () => {
     const input = {
       iss: "https://identity.example.com",
@@ -56,6 +65,7 @@ describe("requestHandler", () => {
     const result = await requestHandler(JSON.stringify(input));
     expect(handleCredentialChangeRequest).toHaveBeenCalledWith(input);
     expect(result.statusCode).toBe(StatusCodes.ACCEPTED);
+    expect(consoleLogSpy).toHaveBeenCalledWith("CorrelationId: ", input.jti);
   });
 
   it("dispatches accountPurgedSchema to handleAccountPurgedRequest", async () => {
@@ -80,6 +90,7 @@ describe("requestHandler", () => {
     });
     const result = await requestHandler(JSON.stringify(input));
     expect(handleAccountPurgedRequest).toHaveBeenCalledWith(input);
+    expect(consoleLogSpy).toHaveBeenCalledWith("CorrelationId: ", input.jti);
     expect(result.statusCode).toBe(StatusCodes.NOT_IMPLEMENTED);
   });
 
@@ -92,5 +103,6 @@ describe("requestHandler", () => {
     await expect(() => requestHandler(JSON.stringify(input))).rejects.toThrow(
       "No handler found for parsed input"
     );
+    expect(consoleLogSpy).toHaveBeenCalledWith("CorrelationId: ", undefined);
   });
 });
