@@ -141,6 +141,92 @@ describe("handleCredentialChangeRequest", () => {
     });
   });
 
+  it("returns INTERNAL_SERVER_ERROR when adminGlobalSignOut & adminUpdateEmailAddress fails for an email update and logs error message", async () => {
+    (adminGlobalSignOut as Mock).mockResolvedValue(false);
+    (adminUpdateEmailAddress as Mock).mockResolvedValue(false);
+    const input = {
+      iss: "https://identity.example.com",
+      jti: "123e4567-e89b-12d3-a456-426614174000",
+      iat: 1721126400,
+      aud: "https://service.example.gov.uk",
+      events: {
+        "https://schemas.openid.net/secevent/caep/event-type/credential-change":
+          {
+            change_type: "update",
+            credential_type: "email",
+            subject: {
+              uri: "urn:example:account:1234567890",
+              format: "urn:example:format:account-id",
+            },
+          },
+        "https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation":
+          {
+            email: "user@example.com",
+          },
+      },
+    } as CredentialChangeRequest;
+
+    const response = await handleCredentialChangeRequest(input);
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      "SIGNAL_ERROR_EMAIL_UPDATE",
+      {
+        userId: "urn:example:account:1234567890",
+      }
+    );
+    expect(response).toEqual({
+      body: JSON.stringify({
+        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+    });
+  });
+
+  it("returns INTERNAL_SERVER_ERROR when adminGlobalSignOut fails for a password update and logs error message", async () => {
+    (adminGlobalSignOut as Mock).mockResolvedValue(false);
+    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
+    const input = {
+      iss: "https://identity.example.com",
+      jti: "123e4567-e89b-12d3-a456-426614174000",
+      iat: 1721126400,
+      aud: "https://service.example.gov.uk",
+      events: {
+        "https://schemas.openid.net/secevent/caep/event-type/credential-change":
+          {
+            change_type: "update",
+            credential_type: "password",
+            subject: {
+              uri: "urn:example:account:1234567890",
+              format: "urn:example:format:account-id",
+            },
+          },
+        "https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation":
+          {
+            email: "user@example.com",
+          },
+      },
+    } as CredentialChangeRequest;
+
+    const response = await handleCredentialChangeRequest(input);
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      "SIGNAL_ERROR_PASSWORD_UPDATE",
+      {
+        userId: "urn:example:account:1234567890",
+      }
+    );
+    expect(response).toEqual({
+      body: JSON.stringify({
+        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+    });
+  });
+
   it("returns INTERNAL_SERVER_ERROR for unknown change events and logs error message", async () => {
     (adminGlobalSignOut as Mock).mockResolvedValue(true);
     (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
