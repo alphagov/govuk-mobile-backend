@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import {
   CognitoIdentityProviderClient,
   AdminUpdateUserAttributesCommand,
-  AdminUserGlobalSignOutCommand,
   InternalErrorException,
   InvalidParameterException,
   NotAuthorizedException,
