@@ -48,7 +48,8 @@ const getTestConfig = () => {
     "CFN_FirebaseIosAppId",
     "CFN_FirebaseAndroidAppId",
     "CFN_UnknownAndroidAppId",
-    "CFN_SharedSignalsAccessLogGroupName"
+    "CFN_SharedSignalsAccessLogGroupName",
+    "CFN_DeployedEnvironment"
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -68,6 +69,7 @@ const getTestConfig = () => {
     attestationProxyApiLogGroupName: process.env.CFN_AttestationApiLogGroupName!,
     userPoolId: process.env.CFN_UserPoolId!,
     testEnvironment: process.env.TEST_ENVIRONMENT!,
+    deployedEnvironment: process.env.CFN_DeployedEnvironment!,
     isLocalEnvironment: process.env.TEST_ENVIRONMENT === "local",
     isSlowRunning: process.env.SLOW_RUNNING_TESTS === "true",
     cognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName!,
@@ -123,6 +125,7 @@ const getTestConfig = () => {
     firebaseIosAppId: process.env.CFN_FirebaseIosAppId!,
     firebaseAndroidAppId: process.env.CFN_FirebaseAndroidAppId!,
     unknownAndroidAppId: process.env.CFN_UnknownAndroidAppId!,
+    redirectUri: "https://d84l1y8p4kdic.cloudfront.net"
   };
 };
 
