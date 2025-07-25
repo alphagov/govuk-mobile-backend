@@ -1,0 +1,21 @@
+{
+  "name": "mock-git-server",
+  "version": "1.0.0",
+  "description": "A minimalistic git server implementation for local gha testing",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "mocks",
+    "github",
+    "server"
+  ],
+  "author": "Charlie Benger-Stevenson",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "http-proxy-middleware": "^3.0.5"
+  }
+}
