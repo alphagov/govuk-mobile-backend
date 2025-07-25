@@ -1,0 +1,66 @@
+services:
+  mock-github-api:
+    build:
+      context: ./__mocks__/github
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Expose for debugging
+    environment:
+      - TEST_SCENARIO=${TEST_SCENARIO:-security-critical}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+    networks:
+      - github_network
+
+  # Nginx proxy that selectively routes requests
+  github-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./certs:/etc/nginx/certs # Persistent storage for certificates
+      - ./logs:/var/log/nginx # Persistent storage for logs
+    networks:
+      github_network:
+        aliases:
+          - github.com # Only nginx gets the github.com alias
+    depends_on:
+      - mock-github-api
+
+  act-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - github-proxy
+    environment:
+      - GODEBUG=x509ignoreCN=0
+      - GOINSECURE=github.com
+      - SSL_VERIFY=false
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+    volumes:
+      - ../../../.github/workflows/:/home/node/testrunner/.github/workflows/
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./__mocks__/:/home/node/testrunner/__mocks__/
+      - ./logs:/var/log/nginx:ro # Access to nginx logs for debugging
+    networks:
+      - github_network
+    working_dir: /home/node/testrunner
+    command: >
+      sh -c "
+      echo 'Waiting for github-proxy to be ready...' &&
+      until curl -k -s https://github.com:443 >/dev/null 2>&1; do
+        echo 'Waiting for github.com:443...'
+        sleep 2
+      done &&
+      echo 'GitHub proxy is ready! Downloading certificate...' &&
+      echo -n | openssl s_client -connect github.com:443 -servername github.com 2>/dev/null | openssl x509 > /usr/local/share/ca-certificates/mock-github.crt &&
+      update-ca-certificates &&
+      echo 'Certificate installed, running act...' &&
+      act pull_request -P node:22.17.1-slim -W ./.github/workflows/3-tier-peer-review.yaml -e ./__mocks__/mock-pr-event.json -v --defaultbranch main --no-recurse"
+
+networks:
+  github_network:
+    driver: bridge

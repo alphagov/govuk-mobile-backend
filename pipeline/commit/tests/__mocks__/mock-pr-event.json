@@ -1,0 +1,37 @@
+{
+	"action": "opened",
+	"number": 123,
+	"pull_request": {
+		"id": 123456789,
+		"number": 123,
+		"state": "open",
+		"title": "Test PR for local testing",
+		"body": "This is a test pull request for local act testing",
+		"user": {
+			"login": "testuser",
+			"id": 12345
+		},
+		"labels": [],
+		"head": {
+			"ref": "feature/test-branch",
+			"sha": "abc123def456"
+		},
+		"base": {
+			"ref": "main",
+			"sha": "def456abc123"
+		}
+	},
+	"repository": {
+		"id": 987654321,
+		"name": "test-repo",
+		"full_name": "testorg/test-repo",
+		"owner": {
+			"login": "testorg",
+			"id": 54321
+		}
+	},
+	"sender": {
+		"login": "testuser",
+		"id": 12345
+	}
+}

@@ -1,0 +1,154 @@
+name: Smart Peer Review Enforcement
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issues:
+    types: [closed, reopened]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  analyze-pr-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      review-type: ${{ steps.categorize.outputs.review-type }}
+      requires-review: ${{ steps.categorize.outputs.requires-review }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Categorize PR changes
+        id: categorize
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { context } = github;
+
+            if (context.eventName !== 'pull_request') {
+              return;
+            }
+
+            const prNumber = context.payload.pull_request.number;
+
+            // Get list of changed files
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const changedFiles = files.data.map(file => file.filename);
+            const totalChanges = files.data.reduce((sum, file) => sum + file.changes, 0);
+
+            console.log(`Files changed: ${changedFiles.join(', ')}`);
+            console.log(`Total changes: ${totalChanges}`);
+
+            // Define file patterns for different categories
+            const securityCriticalPatterns = [
+              /template\.ya?ml$/i,           // SAM templates
+              /\.tf$/i,                      // Terraform
+              /src\/.*\.(ts|js)$/i,          // Source code
+              /package\.json$/i,             // Dependencies
+              /package-lock\.json$/i,        // Lock file
+              /yarn\.lock$/i,                // Yarn lock
+              /Dockerfile$/i,                // Docker
+              /docker-compose/i,             // Docker compose
+              /config\/.*\.(json|ya?ml)$/i,  // Config files
+              /\.github\/workflows/i         // GitHub Actions
+            ];
+
+            const minorChangePatterns = [
+              /README/i,
+              /\.md$/i,                      // Markdown files
+              /docs?\//i,                    // Documentation folders
+              /\.txt$/i,                     // Text files
+              /\.gitignore$/i,               // Git ignore
+              /\.editorconfig$/i,            // Editor config
+              /\.vscode/i,                   // VS Code settings
+              /\.idea/i,                     // IntelliJ settings
+              /CHANGELOG/i,                  // Changelog
+              /LICENSE/i,                    // License files
+              /\.png$/i,                     // Images
+              /\.jpg$/i,
+              /\.jpeg$/i,
+              /\.gif$/i,
+              /\.svg$/i
+            ];
+
+            // Categorize changes
+            const hasSecurityCritical = changedFiles.some(file => 
+              securityCriticalPatterns.some(pattern => pattern.test(file))
+            );
+
+            const hasOnlyMinorChanges = changedFiles.every(file => 
+              minorChangePatterns.some(pattern => pattern.test(file))
+            );
+
+            // Determine review type
+            let reviewType, requiresReview;
+
+            if (hasOnlyMinorChanges && totalChanges < 50) {
+              reviewType = 'minor';
+              requiresReview = 'false';
+            } else if (hasSecurityCritical || totalChanges > 200) {
+              reviewType = 'security-critical';
+              requiresReview = 'true';
+            } else {
+              reviewType = 'standard';
+              requiresReview = 'true';
+            }
+
+            // Check for override labels
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            if (labels.includes('force-full-review')) {
+              reviewType = 'security-critical';
+              requiresReview = 'true';
+            } else if (labels.includes('skip-review')) {
+              reviewType = 'minor';
+              requiresReview = 'false';
+            }
+
+            console.log(`Review type: ${reviewType}`);
+            console.log(`Requires review: ${requiresReview}`);
+
+            core.setOutput('review-type', reviewType);
+            core.setOutput('requires-review', requiresReview);
+
+            // Add PR comment explaining the classification
+            let emoji, description;
+            switch(reviewType) {
+              case 'minor':
+                emoji = '📝';
+                description = 'Minor changes detected (documentation, README, etc.)';
+                break;
+              case 'standard':
+                emoji = '🔍';
+                description = 'Standard review required';
+                break;
+              case 'security-critical':
+                emoji = '🔒';
+                description = 'Security-critical changes detected (SAM templates, source code, etc.)';
+                break;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `${emoji} **Automated Review Classification**
+
+              **Review Type:** ${reviewType.toUpperCase()}  
+              **Reason:** ${description}  
+              **Review Required:** ${requiresReview === 'true' ? 'Yes' : 'No'}
+
+              ${requiresReview === 'true' 
+            ? `A peer review issue will be created shortly. This PR cannot be merged until the review is completed.`
+            : `This PR contains only minor changes and can be merged without a formal peer review.`}
+
+            **Override Options:**
+            - Add label \`force-full-review\` to require security-critical review
+            - Add label \`skip-review\` to bypass review (use with caution)`
+            });
