@@ -1,0 +1,59 @@
+services:
+  mock-github-api:
+    build:
+      context: ./__mocks__/github
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Expose for debugging
+    environment:
+      - TEST_SCENARIO=${TEST_SCENARIO:-security-critical}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+    networks:
+      - default
+
+  # Nginx proxy that selectively routes requests
+  github-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./certs:/etc/nginx/certs # Persistent storage for certificates
+      - ./logs:/var/log/nginx # Persistent storage for logs
+    networks:
+      default:
+        aliases:
+          - github.com # Only nginx gets the github.com alias
+          - api.github.com
+    depends_on:
+      - mock-github-api
+
+  act-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - github-proxy
+    environment:
+      - GODEBUG=x509ignoreCN=0
+      - GOINSECURE=github.com,api.github.com # Add api.github.com here too
+      - SSL_VERIFY=false
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - GITHUB_TOKEN=mock_token_12345
+    volumes:
+      - ../../../.github/workflows/:/home/node/testrunner/.github/workflows/
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./__mocks__/:/home/node/testrunner/__mocks__/
+      - ./logs:/var/log/nginx:ro # Access to nginx logs for debugging
+      - ./run-act.sh:/home/node/testrunner/run-act.sh:rw
+    networks:
+      - default
+    working_dir: /home/node/testrunner
+    command:
+      [
+        "sh",
+        "-c",
+        "chmod +x /home/node/testrunner/run-act.sh && /home/node/testrunner/run-act.sh",
+      ]

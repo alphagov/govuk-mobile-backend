@@ -1,0 +1,401 @@
+name: Smart Peer Review Enforcement
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issues:
+    types: [closed, reopened]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  analyze-pr-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      review-type: ${{ steps.categorize.outputs.review-type }}
+      requires-review: ${{ steps.categorize.outputs.requires-review }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Categorize PR changes
+        id: categorize
+        uses: actions/github-script@v7
+        with:
+          script: |
+
+            if (context.eventName !== 'pull_request') {
+              return;
+            }
+
+            const prNumber = context.payload.pull_request.number;
+
+            // Get list of changed files
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const changedFiles = files.data.map(file => file.filename);
+            const totalChanges = files.data.reduce((sum, file) => sum + file.changes, 0);
+
+            console.log(`Files changed: ${changedFiles.join(', ')}`);
+            console.log(`Total changes: ${totalChanges}`);
+
+            // Define file patterns for different categories
+            const securityCriticalPatterns = [
+              /template\.ya?ml$/i,           // SAM templates
+              /\.tf$/i,                      // Terraform
+              /src\/.*\.(ts|js)$/i,          // Source code
+              /package\.json$/i,             // Dependencies
+              /package-lock\.json$/i,        // Lock file
+              /yarn\.lock$/i,                // Yarn lock
+              /Dockerfile$/i,                // Docker
+              /docker-compose/i,             // Docker compose
+              /config\/.*\.(json|ya?ml)$/i,  // Config files
+              /\.github\/workflows/i         // GitHub Actions
+            ];
+
+            const minorChangePatterns = [
+              /README/i,
+              /\.md$/i,                      // Markdown files
+              /docs?\//i,                    // Documentation folders
+              /\.txt$/i,                     // Text files
+              /\.gitignore$/i,               // Git ignore
+              /\.editorconfig$/i,            // Editor config
+              /\.vscode/i,                   // VS Code settings
+              /\.idea/i,                     // IntelliJ settings
+              /CHANGELOG/i,                  // Changelog
+              /LICENSE/i,                    // License files
+              /\.png$/i,                     // Images
+              /\.jpg$/i,
+              /\.jpeg$/i,
+              /\.gif$/i,
+              /\.svg$/i
+            ];
+
+            // Categorize changes
+            const hasSecurityCritical = changedFiles.some(file => 
+              securityCriticalPatterns.some(pattern => pattern.test(file))
+            );
+
+            const hasOnlyMinorChanges = changedFiles.every(file => 
+              minorChangePatterns.some(pattern => pattern.test(file))
+            );
+
+            // Determine review type
+            let reviewType, requiresReview;
+
+            if (hasOnlyMinorChanges && totalChanges < 50) {
+              reviewType = 'minor';
+              requiresReview = 'false';
+            } else if (hasSecurityCritical || totalChanges > 200) {
+              reviewType = 'security-critical';
+              requiresReview = 'true';
+            } else {
+              reviewType = 'standard';
+              requiresReview = 'true';
+            }
+
+            // Check for override labels
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            if (labels.includes('force-full-review')) {
+              reviewType = 'security-critical';
+              requiresReview = 'true';
+            } else if (labels.includes('skip-review')) {
+              reviewType = 'minor';
+              requiresReview = 'false';
+            }
+
+            console.log(`Review type: ${reviewType}`);
+            console.log(`Requires review: ${requiresReview}`);
+
+            core.setOutput('review-type', reviewType);
+            core.setOutput('requires-review', requiresReview);
+
+            // Add PR comment explaining the classification
+            let emoji, description;
+            switch(reviewType) {
+              case 'minor':
+                emoji = '📝';
+                description = 'Minor changes detected (documentation, README, etc.)';
+                break;
+              case 'standard':
+                emoji = '🔍';
+                description = 'Standard review required';
+                break;
+              case 'security-critical':
+                emoji = '🔒';
+                description = 'Security-critical changes detected (SAM templates, source code, etc.)';
+                break;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `${emoji} **Automated Review Classification**
+
+              **Review Type:** ${reviewType.toUpperCase()}  
+              **Reason:** ${description}  
+              **Review Required:** ${requiresReview === 'true' ? 'Yes' : 'No'}
+
+              ${requiresReview === 'true' 
+            ? `A peer review issue will be created shortly. This PR cannot be merged until the review is completed.`
+            : `This PR contains only minor changes and can be merged without a formal peer review.`}
+
+            **Override Options:**
+            - Add label \`force-full-review\` to require security-critical review
+            - Add label \`skip-review\` to bypass review (use with caution)`
+            });
+
+  create-review-issue:
+    runs-on: ubuntu-latest
+    needs: analyze-pr-changes
+    if: needs.analyze-pr-changes.outputs.requires-review == 'true' && github.event_name == 'pull_request' && github.event.action == 'opened'
+    steps:
+      - name: Create appropriate review issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+
+            const prNumber = context.payload.pull_request.number;
+            const prTitle = context.payload.pull_request.title;
+            const prAuthor = context.payload.pull_request.user.login;
+            const reviewType = '${{ needs.analyze-pr-changes.outputs.review-type }}';
+
+            let issueTemplate, labels;
+
+            if (reviewType === 'security-critical') {
+              labels = ['peer-review', 'security-critical', 'required'];
+              issueTemplate = `# 🔒 Security-Critical Peer Review Checklist
+              **PR Link:** #${prNumber}  
+              **Author:** @${prAuthor}  
+              **Review Type:** SECURITY-CRITICAL  
+              **Date:** ${new Date().toISOString().split('T')[0]}
+
+              ⚠️ **This PR contains security-critical changes and requires thorough review.**
+              ---
+
+              ## ⚠️ CRITICAL SECURITY CHECKS (MANDATORY)
+
+              ### Authentication & Authorization
+              - [ ] **IAM Policies**: Least privilege principle applied - no wildcard permissions (\`*\`)
+              - [ ] **Resource-based policies**: Properly scoped, no public access unless explicitly required
+              - [ ] **API Gateway authentication**: JWT validation, API keys, or IAM auth configured
+              - [ ] **Cross-service access**: Service-to-service authentication properly implemented
+              - [ ] **Secrets management**: No hardcoded secrets, using AWS Secrets Manager/Parameter Store
+
+              ### Data Protection
+              - [ ] **Encryption in transit**: HTTPS/TLS enforced for all external communications
+              - [ ] **Encryption at rest**: Sensitive data encrypted (DynamoDB, S3, etc.)
+              - [ ] **PII/sensitive data**: Proper handling, no logging of sensitive information
+              - [ ] **Data validation**: All inputs sanitized and validated
+              - [ ] **GDPR compliance**: Data handling meets UK GDPR requirements where applicable
+
+              ## 🏗️ SAM TEMPLATE REVIEW (if applicable)
+
+              ### Resource Configuration
+              - [ ] **Resource naming**: Consistent, environment-aware naming convention
+              - [ ] **Parameter validation**: AllowedValues, constraints, and descriptions provided
+              - [ ] **Environment variables**: No sensitive data, proper parameter references
+              - [ ] **Resource dependencies**: Explicit DependsOn where required
+
+              ### Lambda Configuration
+              - [ ] **Memory allocation**: Appropriate for function requirements
+              - [ ] **Timeout settings**: Realistic timeouts set
+              - [ ] **Reserved concurrency**: Set where appropriate
+              - [ ] **Dead letter queues**: Configured for critical functions
+              - [ ] **VPC configuration**: Only when necessary, proper setup
+
+              ## 💻 CODE REVIEW (if applicable)
+
+              ### Security & Quality
+              - [ ] **Linting overrides**: Any \`// eslint-disable\` or \`@ts-ignore\` justified
+              - [ ] **Error handling**: Proper error handling for all external calls
+              - [ ] **Input validation**: All inputs properly validated
+              - [ ] **AWS SDK usage**: Proper SDK v3 usage, IAM roles, region config
+
+              ## 🔒 COMPLIANCE & FINAL CHECKS
+
+              - [ ] **Security clearance**: Reviewed by appropriately cleared personnel
+              - [ ] **Breaking changes**: Impact assessed and documented
+              - [ ] **Documentation**: Updated appropriately
+              - [ ] **Deployment plan**: Safe deployment strategy confirmed
+
+              **Review Status:**
+              - [ ] ✅ **APPROVED** - All security checks passed
+              - [ ] ❌ **REJECTED** - Security issues found, requires rework
+
+              **Critical Issues:**
+              \`\`\`
+              [List any security concerns]
+              \`\`\`
+
+              **Reviewer Certification:**
+              - [ ] I certify this change meets security standards for critical infrastructure
+
+              **Reviewer:** _______________  
+              **Date:** _______________`;
+            } else {
+              // Standard review
+              labels = ['peer-review', 'standard', 'required'];
+              issueTemplate = `# 🔍 Standard Peer Review Checklist
+              **PR Link:** #${prNumber}  
+              **Author:** @${prAuthor}  
+              **Review Type:** STANDARD  
+              **Date:** ${new Date().toISOString().split('T')[0]}
+              ---
+
+              ## 📋 CORE REVIEW ITEMS
+
+              ### Code Quality
+              - [ ] **Linting overrides**: Any \`eslint-disable\` or \`@ts-ignore\` justified
+              - [ ] **Error handling**: Appropriate error handling implemented
+              - [ ] **Logic review**: Business logic is sound and handles edge cases
+              - [ ] **Performance**: No obvious performance issues
+
+              ### Testing & Documentation
+              - [ ] **Test quality**: Tests are meaningful and cover key scenarios
+              - [ ] **Documentation**: Code is appropriately documented
+              - [ ] **Breaking changes**: Any breaking changes documented
+
+              ### AWS Best Practices (if applicable)
+              - [ ] **Resource configuration**: Appropriate timeouts, memory, etc.
+              - [ ] **Security basics**: No obvious security issues
+              - [ ] **Monitoring**: Appropriate logging and monitoring
+
+              ## ✅ FINAL REVIEW
+
+              **Status:**
+              - [ ] ✅ **APPROVED** - Ready for merge
+              - [ ] ⚠️ **APPROVED WITH COMMENTS** - Minor issues noted
+              - [ ] ❌ **REJECTED** - Requires rework
+
+              **Comments:**
+              \`\`\`
+              [Any comments or suggestions]
+              \`\`\`
+
+              **Reviewer:** _______________`;
+            }
+
+            // Create the issue
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `${reviewType === 'security-critical' ? '🔒' : '🔍'} Peer Review: ${prTitle}`,
+              body: issueTemplate,
+              labels: labels
+            });
+
+            console.log(`Created ${reviewType} peer review issue #${issue.data.number}`);
+
+  check-peer-review:
+    runs-on: ubuntu-latest
+    needs: [analyze-pr-changes, create-review-issue]
+    if: always() && needs.analyze-pr-changes.result == 'success'
+    steps:
+      - name: Check review requirements
+        uses: actions/github-script@v7
+        with:
+          script: |
+
+            const requiresReview = '${{ needs.analyze-pr-changes.outputs.requires-review }}';
+
+            // Get PR number from different event types
+            let prNumber, sha;
+            if (context.eventName === 'pull_request') {
+              prNumber = context.payload.pull_request.number;
+              sha = context.payload.pull_request.head.sha;
+            } else if (context.eventName === 'issues') {
+              const issueBody = context.payload.issue.body;
+              const prMatch = issueBody.match(/#(\d+)/);
+              if (!prMatch) return;
+              prNumber = parseInt(prMatch[1]);
+              
+              // Get PR to get the SHA
+              const pr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              sha = pr.data.head.sha;
+            } else {
+              return;
+            }
+
+            if (requiresReview === 'false') {
+              /* Minor changes - no review required
+               * Be aware that the branch protection rule should not require any reviewers
+               * Rather this is enforced by the require status checks to pass before merging
+               * So this commit status, being state === success will not require a peer review and can just be merged
+               */
+               await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: sha,
+                state: 'success',
+                description: 'Minor changes - no peer review required',
+                context: 'peer-review/required'
+              });
+              return;
+            }
+
+            // From this point foreward requiresReview === 'true'
+
+            // Find peer review issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'peer-review',
+              state: 'all'
+            });
+
+            // Find the relevant issue
+            const peerReviewIssue = issues.data.find(issue => 
+              issue.body && issue.body.includes(`#${prNumber}`)
+            );
+
+            // Arguably should never hit here, unless someone deletes the issue
+            if (!peerReviewIssue) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: sha,
+                state: 'failure',
+                description: 'Peer review issue required',
+                context: 'peer-review/required'
+              });
+              return;
+            }
+
+            // Hurray the issue has been closed so we can set the commit status to success, and then it can be merged
+            if (peerReviewIssue.state === 'closed') {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: sha,
+                state: 'success',
+                description: 'Peer review completed',
+                context: 'peer-review/required'
+              });
+            } else {
+              const reviewType = peerReviewIssue.labels.find(l => 
+                ['security-critical', 'standard'].includes(l.name)
+              )?.name || 'standard';
+              
+              // Alas we are waiting on someone to complete the checklist and close the issue
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: sha,
+                state: 'pending',
+                target_url: peerReviewIssue.html_url,
+                description: `${reviewType} peer review in progress`,
+                context: 'peer-review/required'
+              });
+            }
