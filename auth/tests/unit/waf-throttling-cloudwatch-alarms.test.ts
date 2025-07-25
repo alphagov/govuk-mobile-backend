@@ -10,7 +10,7 @@ const template = loadTemplateFromFile(
 const testCases: AlarmTestCase[] = [
   {
     name: "AuthWafThrottles",
-    alarmName: 'auth-proxy-waf-rate-limit',
+    alarmName: "auth-proxy-waf-rate-limit",
     actionsEnabled: true,
     alarmResource: "AuthProxyWafAlarm",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
@@ -19,7 +19,8 @@ const testCases: AlarmTestCase[] = [
     topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
     slackChannelConfigurationResource: "SlackSupportChannelConfiguration",
     metricName: "BlockedRequests",
-    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
+    alarmDescription:
+      "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
     topicDisplayName: "cloudwatch-alarm-topic",
     statistic: "Sum",
     extendedStatistic: undefined,
@@ -36,7 +37,7 @@ const testCases: AlarmTestCase[] = [
     alarmResource: "CognitoWebApplicationFirewallAlarm",
     topicResource: "CloudWatchAlarmTopicPagerDuty",
     alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
-    metricName: "BlockedRequests",
+    metricName: "WAFErrorRate",
     topicDisplayName: "cloudwatch-alarm-topic",
     subscriptionResource: "CloudWatchAlarmTopicSubscriptionPagerDuty",
     topicPolicyResource: "CloudWatchAlarmPublishToTopicPolicy",
@@ -190,9 +191,9 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.ActionsEnabled).toEqual(
         actionsEnabled
       );
-      
 
-      const actualDescription = cloudWatchAlarmUnderTest.Properties.AlarmDescription["Fn::Sub"];
+      const actualDescription =
+        cloudWatchAlarmUnderTest.Properties.AlarmDescription["Fn::Sub"];
 
       expect(actualDescription.includes(alarmDescription)).toBeTruthy();
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
@@ -215,8 +216,9 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
         comparisonOperator
       );
-      const actualDimensions = cloudWatchAlarmUnderTest.Properties.Dimensions || [];
-      expect(actualDimensions.map(d => d.Name)).toEqual([
+      const actualDimensions =
+        cloudWatchAlarmUnderTest.Properties.Dimensions || [];
+      expect(actualDimensions.map((d) => d.Name)).toEqual([
         "WebACL",
         "Rule",
         "Region",
