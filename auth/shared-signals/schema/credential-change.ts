@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const credentialTypeEnumSchema = z.union([
-  z.literal("email"),
-  z.literal("password"),
+  z.literal('email'),
+  z.literal('password'),
 ]);
 
 export const accountIdentifierSubjectClassSchema = z.object({
@@ -21,16 +21,18 @@ export const credentialChangeClassSchema = z.object({
 });
 
 export const credentialChangeEventsClassSchema = z.object({
-  "https://schemas.openid.net/secevent/caep/event-type/credential-change":
+  'https://schemas.openid.net/secevent/caep/event-type/credential-change':
     credentialChangeClassSchema,
-  "https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation":
+  'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
     credentialChangeInformationClassSchema.optional().nullable(),
 });
 
-export const credentialChangeSchema = z.object({
-  aud: z.string(),
-  events: credentialChangeEventsClassSchema,
-  iat: z.number(),
-  iss: z.string(),
-  jti: z.string(),
-}).strict();
+export const credentialChangeSchema = z
+  .object({
+    aud: z.string(),
+    events: credentialChangeEventsClassSchema,
+    iat: z.number(),
+    iss: z.string(),
+    jti: z.string(),
+  })
+  .strict();

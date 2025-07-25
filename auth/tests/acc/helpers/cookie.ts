@@ -20,7 +20,7 @@ interface ICookie {
   maxAge?: number;
   secure?: boolean;
   httpOnly?: boolean;
-  sameSite?: "Strict" | "Lax" | "None";
+  sameSite?: 'Strict' | 'Lax' | 'None';
 }
 
 /**
@@ -42,13 +42,18 @@ export class Cookie implements IParsedCookie {
   maxage?: number;
   secure?: boolean;
   httponly?: boolean;
-  samesite?: "Strict" | "Lax" | "None";
+  samesite?: 'Strict' | 'Lax' | 'None';
   createdAt: Date;
   toString = (): string => {
-    return `${this.name}=${this.value}; ${this.domain ? `Domain=${this.domain}; ` : ""}${this.path ? `Path=${this.path}; ` : ""}${this.expires ? `Expires=${this.expires}; ` : ""}${this.maxage ? `MaxAge=${this.maxage}; ` : ""}${this.secure ? `Secure; ` : ""}${this.httponly ? `HttpOnly; ` : ""}${this.samesite ? `SameSite=${this.samesite};` : ""}`.replace(
-      /(?:\r\n|\r|\n)/g,
-      "",
-    );
+    return `${this.name}=${this.value}; ${
+      this.domain ? `Domain=${this.domain}; ` : ''
+    }${this.path ? `Path=${this.path}; ` : ''}${
+      this.expires ? `Expires=${this.expires}; ` : ''
+    }${this.maxage ? `MaxAge=${this.maxage}; ` : ''}${
+      this.secure ? `Secure; ` : ''
+    }${this.httponly ? `HttpOnly; ` : ''}${
+      this.samesite ? `SameSite=${this.samesite};` : ''
+    }`.replace(/(?:\r\n|\r|\n)/g, '');
   };
   toClientString = (): string => {
     return `${this.name}=${this.value};`;
@@ -56,13 +61,13 @@ export class Cookie implements IParsedCookie {
 }
 
 const cookie_attributes = [
-  "domain",
-  "path",
-  "expires",
-  "maxage",
-  "secure",
-  "httponly",
-  "samesite",
+  'domain',
+  'path',
+  'expires',
+  'maxage',
+  'secure',
+  'httponly',
+  'samesite',
 ];
 
 /**
@@ -134,7 +139,7 @@ export class CookieJar {
     if (!url) return;
     try {
       const urlObj = new URL(url);
-      return urlObj.protocol === "https:";
+      return urlObj.protocol === 'https:';
     } catch (e) {
       console.log(e);
       return false;
@@ -161,7 +166,7 @@ export class CookieJar {
       const urlObj = new URL(url);
       return urlObj.pathname;
     } catch {
-      return "/";
+      return '/';
     }
   }
 
@@ -174,13 +179,13 @@ export class CookieJar {
   ): boolean {
     if (!cookieDomain || !urlDomain) return true;
 
-    const cleanCookieDomain = cookieDomain.startsWith(".")
+    const cleanCookieDomain = cookieDomain.startsWith('.')
       ? cookieDomain.substring(1)
       : cookieDomain;
 
     if (cleanCookieDomain === urlDomain) return true;
 
-    if (cookieDomain.startsWith(".")) {
+    if (cookieDomain.startsWith('.')) {
       return (
         urlDomain.endsWith(cleanCookieDomain) && urlDomain !== cleanCookieDomain
       );
@@ -222,7 +227,7 @@ export class CookieJar {
     domain: string | undefined,
     path: string | undefined,
   ): string {
-    return `${name}|${domain || ""}|${path || "/"}`;
+    return `${name}|${domain || ''}|${path || '/'}`;
   }
 
   /**
@@ -240,29 +245,29 @@ export class CookieJar {
         .filter((p) => p);
 
       for (const pair of pairs) {
-        const [key, value] = pair.split("=").map((s) => s.trim());
+        const [key, value] = pair.split('=').map((s) => s.trim());
 
         switch (key.toLowerCase()) {
-          case "domain":
-            cookie.domain = value?.startsWith(".") ? value : `.${value}`;
+          case 'domain':
+            cookie.domain = value?.startsWith('.') ? value : `.${value}`;
             break;
-          case "path":
-            cookie.path = value || "/";
+          case 'path':
+            cookie.path = value || '/';
             break;
-          case "expires":
+          case 'expires':
             cookie.expires = new Date(value);
             break;
-          case "max-age":
+          case 'max-age':
             cookie.maxAge = parseInt(value, 10);
             break;
-          case "secure":
+          case 'secure':
             cookie.secure = true;
             break;
-          case "httponly":
+          case 'httponly':
             cookie.httpOnly = true;
             break;
-          case "samesite":
-            cookie.sameSite = value as "Strict" | "Lax" | "None";
+          case 'samesite':
+            cookie.sameSite = value as 'Strict' | 'Lax' | 'None';
             break;
           default:
             cookie.name = key;
@@ -282,7 +287,7 @@ export class CookieJar {
   public addCookie(url: string, setCookieHeaders: string[] | string): void {
     if (!url && !setCookieHeaders) return;
     const urlDomain = this.getDomainFromUrl(url);
-    if (typeof setCookieHeaders === "string")
+    if (typeof setCookieHeaders === 'string')
       setCookieHeaders = [setCookieHeaders];
 
     for (const header of setCookieHeaders) {
@@ -292,7 +297,7 @@ export class CookieJar {
         cookie.domain = urlDomain;
       }
       if (!cookie.path) {
-        cookie.path = "/";
+        cookie.path = '/';
       }
       const key = this.generateCookieKey(
         cookie.name,

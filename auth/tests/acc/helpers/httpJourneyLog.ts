@@ -1,5 +1,5 @@
-import { RequestOptions } from "node:https";
-import { HTTP_RESPONSE } from "./requestAsync";
+import { RequestOptions } from 'node:https';
+import { HTTP_RESPONSE } from './requestAsync';
 
 interface JourneyLogEntry {
   hostName: string | null | undefined;
@@ -17,35 +17,35 @@ const journeyLog: JourneyLogEntry[] = [];
  */
 const redactSensitiveInfo = (path: string | null | undefined): string => {
   if (!path) {
-    throw new Error("Path is null or undefined");
+    throw new Error('Path is null or undefined');
   }
   // Common sensitive parameters in OIDC/OAuth flows
   const sensitiveParams = [
-    "access_token",
-    "assertion",
-    "authorization",
-    "bearer",
-    "client_assertion",
-    "client_id",
-    "client_secret",
-    "code",
-    "code_challenge",
-    "id_token",
-    "jwt",
-    "nonce",
-    "refresh_token",
-    "request",
-    "session_id",
-    "session_token",
-    "state",
-    "password",
-    "username",
+    'access_token',
+    'assertion',
+    'authorization',
+    'bearer',
+    'client_assertion',
+    'client_id',
+    'client_secret',
+    'code',
+    'code_challenge',
+    'id_token',
+    'jwt',
+    'nonce',
+    'refresh_token',
+    'request',
+    'session_id',
+    'session_token',
+    'state',
+    'password',
+    'username',
   ];
 
   let redactedPath = path;
 
   // Redact query parameters
-  const [basePath, queryString] = path.split("?");
+  const [basePath, queryString] = path.split('?');
   if (queryString) {
     const params = new URLSearchParams(queryString);
 
@@ -55,7 +55,7 @@ const redactSensitiveInfo = (path: string | null | undefined): string => {
           key.toLowerCase().includes(sensitive.toLowerCase()),
         )
       ) {
-        params.set(key, "[REDACTED]");
+        params.set(key, '[REDACTED]');
       }
     }
 
@@ -65,19 +65,19 @@ const redactSensitiveInfo = (path: string | null | undefined): string => {
   // Redact JWT tokens in path segments (common pattern: /token/eyJ...)
   redactedPath = redactedPath.replace(
     /\/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
-    "/[JWT_TOKEN_REDACTED]",
+    '/[JWT_TOKEN_REDACTED]',
   );
 
   // Redact UUIDs and long alphanumeric strings that might be tokens
   redactedPath = redactedPath.replace(
     /\/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}/g,
-    "/[UUID_REDACTED]",
+    '/[UUID_REDACTED]',
   );
 
   // Redact long alphanumeric strings (potential tokens)
   redactedPath = redactedPath.replace(
     /\/[A-Za-z0-9]{32,}/g,
-    "/[TOKEN_REDACTED]",
+    '/[TOKEN_REDACTED]',
   );
 
   return redactedPath;

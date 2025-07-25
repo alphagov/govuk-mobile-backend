@@ -9,11 +9,11 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
  * @returns object - API Gateway Lambda Proxy Output Format
  */
 export const lambdaHandler = (): APIGatewayProxyResult => {
-    console.log("Application called")
-    return {
-        statusCode: 200,
-        body: JSON.stringify({
-            message: 'You have successfully logged in',
-        }),
-    };
+  console.log('Application called');
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: 'You have successfully logged in',
+    }),
+  };
 };

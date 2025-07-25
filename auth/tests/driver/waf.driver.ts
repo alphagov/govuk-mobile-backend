@@ -1,10 +1,10 @@
 export const repeatedlyRequestEndpoint = async (
   numRequests: number,
   requestFn: () => Promise<{
-    status: number
+    status: number;
   }>,
   responseCodes: number[],
-  delayMs = 1
+  delayMs = 1,
 ): Promise<void> => {
   for (let i = 0; i < numRequests; i++) {
     try {

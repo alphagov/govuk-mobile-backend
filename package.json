@@ -10,7 +10,9 @@
     "test:int": "nx run-many --target=test:int",
     "lint": "nx run-many --target lint",
     "build": "nx run-many --target build",
-    "commit": "cz commit"
+    "commit": "cz commit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "private": true,
   "devDependencies": {

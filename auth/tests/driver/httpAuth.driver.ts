@@ -1,17 +1,23 @@
-import querystring from "querystring";
-import pkceChallenge from "pkce-challenge";
+import querystring from 'querystring';
+import pkceChallenge from 'pkce-challenge';
 import {
   addJourneyLogEntry,
   CookieJar,
   extractCSRFTokenHelper,
   parseFormFromHtml,
   requestAsyncHandleRedirects,
-} from "../acc/helpers";
-import { RequestOptions } from "http";
-import { expect } from "vitest";
-import { AuthDriver } from "./auth.driver";
-import { ExchangeTokenInput, LoginUserInput, LoginUserResponse, RefreshTokenResponse, TokenExchangeResponse } from "../types/user";
-import { TOTP } from "totp-generator"
+} from '../acc/helpers';
+import { RequestOptions } from 'http';
+import { expect } from 'vitest';
+import { AuthDriver } from './auth.driver';
+import {
+  ExchangeTokenInput,
+  LoginUserInput,
+  LoginUserResponse,
+  RefreshTokenResponse,
+  TokenExchangeResponse,
+} from '../types/user';
+import { TOTP } from 'totp-generator';
 
 export class HttpAuthDriver implements AuthDriver {
   private clientId: string;
@@ -27,7 +33,7 @@ export class HttpAuthDriver implements AuthDriver {
     authUrl: string,
     redirectUri: string,
     proxyUrl: string,
-    oneLoginEnvironment: string
+    oneLoginEnvironment: string,
   ) {
     this.clientId = clientId;
     this.authUrl = authUrl;
@@ -44,11 +50,10 @@ export class HttpAuthDriver implements AuthDriver {
     journeyStep: number,
     cookieJar: CookieJar,
     journey,
-    contentType: string = "application/x-www-form-urlencoded",
-    referrer: string = "https://signin.staging.account.gov.uk/sign-in-or-create"
+    contentType: string = 'application/x-www-form-urlencoded',
+    referrer: string = 'https://signin.staging.account.gov.uk/sign-in-or-create',
   ): RequestOptions {
-    const { hostName, path, method } =
-      journey[journeyStep];
+    const { hostName, path, method } = journey[journeyStep];
 
     return {
       hostname: hostName,
@@ -56,15 +61,16 @@ export class HttpAuthDriver implements AuthDriver {
       port: 443,
       method: method,
       headers: {
-        "Content-Type": contentType,
+        'Content-Type': contentType,
         Cookie: cookieJar
           .getCookiesForUrl(`https://${hostName}${path}`)
           .map((c) => c.toClientString())
-          .join(" "),
-        Accept: "text/html,application/xhtml+xml,application/xml;",
-        "Accept-Encoding": "gzip, deflate, br, zstd",
-        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
-        "User-Agent": "Mozilla/5.0 (iPhone17,5; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 FireKeepers/1.7.0",
+          .join(' '),
+        Accept: 'text/html,application/xhtml+xml,application/xml;',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (iPhone17,5; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 FireKeepers/1.7.0',
         Origin: `https://${hostName}`,
         Referrer: referrer,
       },
@@ -78,38 +84,38 @@ export class HttpAuthDriver implements AuthDriver {
       {
         hostName: this.authUrl,
         path: `/oauth2/authorize?response_type=code&client_id=${this.clientId}&redirect_uri=${this.redirectUri}&code_challenge=${code_challenge}&code_challenge_method=S256&scope=openid+email&idpidentifier=onelogin`,
-        method: "GET",
-        describeAs: "Begin auth flow",
+        method: 'GET',
+        describeAs: 'Begin auth flow',
       },
       {
         hostName: this.oneLoginDomain,
-        path: "/sign-in-or-create?",
-        method: "POST",
-        describeAs: "Click Sign In",
+        path: '/sign-in-or-create?',
+        method: 'POST',
+        describeAs: 'Click Sign In',
       },
       {
-        hostName: "",
-        path: "",
-        method: "",
-        describeAs: "Enter Email Address",
+        hostName: '',
+        path: '',
+        method: '',
+        describeAs: 'Enter Email Address',
       },
       {
-        hostName: "",
-        path: "",
-        method: "",
-        describeAs: "Enter password",
+        hostName: '',
+        path: '',
+        method: '',
+        describeAs: 'Enter password',
       },
       {
-        hostName: "",
-        path: "",
-        method: "",
-        describeAs: "Enter MFA",
+        hostName: '',
+        path: '',
+        method: '',
+        describeAs: 'Enter MFA',
       },
       {
         hostName: this.proxyDomain,
         path: `${this.proxyPath}/oauth2/token`,
-        method: "POST",
-        describeAs: "Token exchange",
+        method: 'POST',
+        describeAs: 'Token exchange',
       },
     ];
     const cookieJar = new CookieJar();
@@ -117,20 +123,20 @@ export class HttpAuthDriver implements AuthDriver {
     const options: RequestOptions = this.createHttpClientOptions(
       0,
       cookieJar,
-      journey
+      journey,
     );
 
     const redirect = await requestAsyncHandleRedirects(
       options,
       cookieJar,
-      null
+      null,
     );
 
     const { response, request } = redirect;
 
     expect(response.statusCode).toEqual(200);
     expect(request.hostname).toEqual(this.oneLoginDomain);
-    expect(request.path).toEqual("/sign-in-or-create?");
+    expect(request.path).toEqual('/sign-in-or-create?');
 
     //Sign in or create page
     const signinOrCreateUrl = `https://${request.hostname}${request.path}`;
@@ -138,7 +144,7 @@ export class HttpAuthDriver implements AuthDriver {
     // Cache the cookies
     await cookieJar.addCookie(
       signinOrCreateUrl,
-      response.headers["set-cookie"]
+      response.headers['set-cookie'],
     );
 
     // The redirect to /sign-in-or-create
@@ -147,26 +153,30 @@ export class HttpAuthDriver implements AuthDriver {
     let csrf = extractCSRFTokenHelper(response.body);
 
     // Click the sign in button
-    const clickOptions: RequestOptions = this.createHttpClientOptions(1, cookieJar, journey);
+    const clickOptions: RequestOptions = this.createHttpClientOptions(
+      1,
+      cookieJar,
+      journey,
+    );
 
     let formData = new URLSearchParams({
       _csrf: csrf,
-      supportInternationalNumbers: "",
+      supportInternationalNumbers: '',
     });
 
     const signInResponse = await requestAsyncHandleRedirects(
       clickOptions,
       cookieJar,
-      formData.toString()
+      formData.toString(),
     );
 
     addJourneyLogEntry(signInResponse.request, signInResponse.response);
 
     const emailForm: FormData = parseFormFromHtml(signInResponse.response.body);
 
-    expect(emailForm.action).toEqual("/enter-email");
-    expect(emailForm.method).toEqual("post");
-    expect(emailForm.inputs[1].name).toEqual("email");
+    expect(emailForm.action).toEqual('/enter-email');
+    expect(emailForm.method).toEqual('post');
+    expect(emailForm.inputs[1].name).toEqual('email');
 
     formData = new URLSearchParams({
       _csrf: emailForm.csrf,
@@ -176,15 +186,19 @@ export class HttpAuthDriver implements AuthDriver {
     // Very hacky but more readable than what we had.
     journey[2].hostName = journey[1].hostName;
     journey[2].path = emailForm.action;
-    journey[2].method = "POST";
+    journey[2].method = 'POST';
 
     // Submit the email address
-    const emailOptions: RequestOptions = this.createHttpClientOptions(2, cookieJar, journey);
+    const emailOptions: RequestOptions = this.createHttpClientOptions(
+      2,
+      cookieJar,
+      journey,
+    );
 
     const emailResponse = await requestAsyncHandleRedirects(
       emailOptions,
       cookieJar,
-      formData.toString()
+      formData.toString(),
     );
 
     addJourneyLogEntry(emailResponse.request, emailResponse.response);
@@ -207,7 +221,7 @@ export class HttpAuthDriver implements AuthDriver {
     const passwordOptions: RequestOptions = this.createHttpClientOptions(
       3,
       cookieJar,
-      journey
+      journey,
     );
 
     formData = new URLSearchParams({
@@ -219,13 +233,13 @@ export class HttpAuthDriver implements AuthDriver {
     const passwordResponse = await requestAsyncHandleRedirects(
       passwordOptions,
       cookieJar,
-      formData.toString()
+      formData.toString(),
     );
 
     addJourneyLogEntry(passwordResponse.request, passwordResponse.response);
 
     const totpForm: FormData = parseFormFromHtml(
-      passwordResponse.response.body
+      passwordResponse.response.body,
     );
 
     // Submit the MFA
@@ -236,7 +250,11 @@ export class HttpAuthDriver implements AuthDriver {
 
     // Submit the password
     // Submit the email address
-    const mfaOptions: RequestOptions = this.createHttpClientOptions(4, cookieJar, journey);
+    const mfaOptions: RequestOptions = this.createHttpClientOptions(
+      4,
+      cookieJar,
+      journey,
+    );
 
     // const generator = new TOTPGenerator(input.totpSecret);
     const { otp } = TOTP.generate(input.totpSecret);
@@ -250,17 +268,17 @@ export class HttpAuthDriver implements AuthDriver {
     const totpResponse = await requestAsyncHandleRedirects(
       mfaOptions,
       cookieJar,
-      formData.toString()
+      formData.toString(),
     );
 
     addJourneyLogEntry(totpResponse.request, totpResponse.response);
     expect(totpResponse.response.statusCode).toEqual(200);
 
     const codeURL = new URL(
-      `https://${totpResponse.request.hostname}${totpResponse.request.path}`
+      `https://${totpResponse.request.hostname}${totpResponse.request.path}`,
     );
 
-    const code = codeURL.searchParams.get("code");
+    const code = codeURL.searchParams.get('code');
 
     expect(code).toBeTruthy();
 
@@ -276,22 +294,22 @@ export class HttpAuthDriver implements AuthDriver {
     code_verifier,
   }: ExchangeTokenInput): Promise<TokenExchangeResponse> {
     const response = await fetch(`${this.proxyUrl}oauth2/token`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
         ...(attestationHeader
           ? {
-              "X-Attestation-Token": attestationHeader,
+              'X-Attestation-Token': attestationHeader,
             }
           : {}),
       },
       body: querystring.stringify({
-        grant_type: "authorization_code",
+        grant_type: 'authorization_code',
         client_id: this.clientId,
         code,
         redirect_uri: this.redirectUri,
         code_verifier,
-        scope: "email openid",
+        scope: 'email openid',
       }),
     });
 
@@ -310,21 +328,25 @@ export class HttpAuthDriver implements AuthDriver {
     };
   }
 
-  async refreshAccessToken(refreshToken: string): Promise<RefreshTokenResponse> {
+  async refreshAccessToken(
+    refreshToken: string,
+  ): Promise<RefreshTokenResponse> {
     return fetch(`${this.proxyUrl}oauth2/token`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: querystring.stringify({
-        grant_type: "refresh_token",
+        grant_type: 'refresh_token',
         client_id: this.clientId,
         refresh_token: refreshToken,
       }),
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`Failed to refresh access token: ${response.statusText}`);
+          throw new Error(
+            `Failed to refresh access token: ${response.statusText}`,
+          );
         }
         return response.json();
       })

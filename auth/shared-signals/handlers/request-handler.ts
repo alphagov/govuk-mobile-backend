@@ -1,12 +1,12 @@
-import type z from "zod";
-import { parseRequest } from "../parser";
-import { accountPurgedSchema } from "../schema/account-purged";
-import { credentialChangeSchema } from "../schema/credential-change";
-import { handleCredentialChangeRequest } from "./credential-change-handler";
-import { handleAccountPurgedRequest } from "./account-purged-handler";
-import type { APIGatewayProxyResult } from "aws-lambda";
-import { generateResponse } from "../response";
-import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import type z from 'zod';
+import { parseRequest } from '../parser';
+import { accountPurgedSchema } from '../schema/account-purged';
+import { credentialChangeSchema } from '../schema/credential-change';
+import { handleCredentialChangeRequest } from './credential-change-handler';
+import { handleAccountPurgedRequest } from './account-purged-handler';
+import type { APIGatewayProxyResult } from 'aws-lambda';
+import { generateResponse } from '../response';
+import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 const handlers: {
   schema: z.ZodTypeAny;
@@ -21,7 +21,7 @@ const handlers: {
 ];
 
 export const requestHandler = async (
-  body: string
+  body: string,
 ): Promise<APIGatewayProxyResult> => {
   let jsonBody: unknown = undefined;
   try {
@@ -31,14 +31,14 @@ export const requestHandler = async (
   }
 
   const parsed = parseRequest(jsonBody);
-  
-  console.log("CorrelationId: ", parsed.jti);  // Log the correlation ID for tracing
-  
+
+  console.log('CorrelationId: ', parsed.jti); // Log the correlation ID for tracing
+
   for (const { schema, handle } of handlers) {
     if (schema.safeParse(parsed).success) {
       return handle(parsed);
     }
   }
 
-  throw new Error("No handler found for parsed input");
+  throw new Error('No handler found for parsed input');
 };

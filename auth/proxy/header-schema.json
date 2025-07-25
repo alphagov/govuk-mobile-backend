@@ -1,43 +1,37 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "type": "object",
-    "properties": {
-        "content-type": {
-            "type": "string",
-            "enum": [
-                "application/x-www-form-urlencoded",
-                "application/x-www-form-urlencoded; charset=UTF-8",
-                "application/json",
-                "application/json; charset=UTF-8"
-            ]
-        },
-        "accept": {
-            "description": "Client's preferred response format from Cognito.",
-            "type": "string",
-            "maxLength": 1024,
-            "pattern": "^[\\x00-\\x7F]*$"
-        },
-        "user-agent": {
-            "description": "Identifies the client or proxy software making the request.",
-            "type": "string",
-            "maxLength": 1024,
-            "pattern": "^[\\x00-\\x7F]*$"
-        },
-        "connection": {
-            "type": "string",
-            "enum": [
-                "keep-alive",
-                "close"
-            ]
-        },
-        "x-attestation-token": {
-            "type": "string",
-            "pattern": "^[\\x00-\\x7F]*$"
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "content-type": {
+      "type": "string",
+      "enum": [
+        "application/x-www-form-urlencoded",
+        "application/x-www-form-urlencoded; charset=UTF-8",
+        "application/json",
+        "application/json; charset=UTF-8"
+      ]
     },
-    "required": [
-        "content-type",
-        "x-attestation-token"
-    ],
-    "additionalProperties": false
+    "accept": {
+      "description": "Client's preferred response format from Cognito.",
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^[\\x00-\\x7F]*$"
+    },
+    "user-agent": {
+      "description": "Identifies the client or proxy software making the request.",
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^[\\x00-\\x7F]*$"
+    },
+    "connection": {
+      "type": "string",
+      "enum": ["keep-alive", "close"]
+    },
+    "x-attestation-token": {
+      "type": "string",
+      "pattern": "^[\\x00-\\x7F]*$"
+    }
+  },
+  "required": ["content-type", "x-attestation-token"],
+  "additionalProperties": false
 }

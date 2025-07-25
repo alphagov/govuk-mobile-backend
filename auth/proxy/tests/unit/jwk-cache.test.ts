@@ -14,7 +14,7 @@ const mockJwks = {
 };
 
 describe('getJwks', () => {
-  let fetchSpy: ReturnType<typeof vi.fn>
+  let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -37,15 +37,15 @@ describe('getJwks', () => {
         get: vi.fn().mockReturnValue(null), // No cache-control header
       },
     });
-  
+
     const now = Date.now();
     vi.setSystemTime(now);
 
-    const expected = now + 6 * 60 * 60 * 1000 // default 6 hours to current time
-  
-    await getJwks(); 
-    expect(fetchSpy).toHaveBeenCalledOnce()
-    expect(_returnCachedJwks()?.expiresInMillis).toBe(expected)
+    const expected = now + 6 * 60 * 60 * 1000; // default 6 hours to current time
+
+    await getJwks();
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(_returnCachedJwks()?.expiresInMillis).toBe(expected);
   });
 
   it('returns cached JWKS on second call', async () => {
@@ -57,7 +57,6 @@ describe('getJwks', () => {
       },
     });
 
-    
     await getJwks(); // first call
 
     const now = Date.now();
@@ -67,9 +66,8 @@ describe('getJwks', () => {
 
     const result = await getJwks(); // should use cache for second call
     expect(result).toEqual(mockJwks);
-    expect(fetch).toHaveBeenCalledOnce();  //fetch is called once only
-    expect(_returnCachedJwks()?.expiresInMillis).toBe(expectedExpiryAtInMs); 
-    
+    expect(fetch).toHaveBeenCalledOnce(); //fetch is called once only
+    expect(_returnCachedJwks()?.expiresInMillis).toBe(expectedExpiryAtInMs);
   });
 
   it('re-fetches JWKS after cache expires', async () => {
@@ -78,15 +76,15 @@ describe('getJwks', () => {
         ok: true,
         json: async () => mockJwks,
         headers: {
-          get: vi.fn().mockReturnValue('public, max-age=3600') // 1 hr expiry
-        }   
+          get: vi.fn().mockReturnValue('public, max-age=3600'), // 1 hr expiry
+        },
       })
-      .mockResolvedValueOnce({ 
-        ok: true, 
+      .mockResolvedValueOnce({
+        ok: true,
         json: async () => mockJwks,
         headers: {
-          get: vi.fn().mockReturnValue('public, max-age=3600') // 1 hr expiry on the new call
-        } 
+          get: vi.fn().mockReturnValue('public, max-age=3600'), // 1 hr expiry on the new call
+        },
       });
 
     await getJwks(); // first fetch
@@ -106,10 +104,10 @@ describe('getJwks', () => {
         get: vi.fn().mockReturnValue('public, max-age=3600'), // 1 hour
       },
     });
-  
+
     const now = Date.now();
     vi.setSystemTime(now);
-  
+
     await getJwks(); // fetch and cache
     expect(fetchSpy).toHaveBeenCalledOnce();
   });
@@ -128,14 +126,8 @@ describe('getJwks', () => {
     (fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ not: 'valid' }),
-
     });
 
     await expect(getJwks()).rejects.toThrow('Jwks response is not valid Jwks');
   });
 });
-
-
-
-
-

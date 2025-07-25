@@ -7,8 +7,8 @@ import {
   AdminDeleteUserCommandInput,
   AdminCreateUserResponse,
   AdminGetUserResponse,
-} from "@aws-sdk/client-cognito-identity-provider";
-import { TestLambdaDriver } from "./testLambda.driver";
+} from '@aws-sdk/client-cognito-identity-provider';
+import { TestLambdaDriver } from './testLambda.driver';
 
 export class CognitoUserDriver {
   private readonly userPoolId: string;
@@ -16,33 +16,34 @@ export class CognitoUserDriver {
 
   constructor(userPoolId: string, lambdaDriver: TestLambdaDriver) {
     this.userPoolId = userPoolId;
-    this.lambdaDriver = lambdaDriver
+    this.lambdaDriver = lambdaDriver;
   }
 
   public async createCognitoUserAndReturnUserName(
-    username: string
+    username: string,
   ): Promise<string> {
     const input = {
       UserPoolId: this.userPoolId,
       Username: username,
       UserAttributes: [
         {
-          Name: "email",
+          Name: 'email',
           Value: username,
         },
         {
-          Name: "email_verified",
-          Value: "true",
+          Name: 'email_verified',
+          Value: 'true',
         },
       ],
     } as AdminCreateUserRequest;
 
     const command = new AdminCreateUserCommand(input);
-    const response = await this.lambdaDriver.performAction<AdminCreateUserResponse>({
-      command,
-      action: 'AdminCreateUserCommand',
-      service: 'CognitoIdentityProviderClient',
-    });
+    const response =
+      await this.lambdaDriver.performAction<AdminCreateUserResponse>({
+        command,
+        action: 'AdminCreateUserCommand',
+        service: 'CognitoIdentityProviderClient',
+      });
 
     return response.User?.Username!;
   }
@@ -53,7 +54,7 @@ export class CognitoUserDriver {
       Username: username,
     } as AdminDeleteUserCommandInput;
     const command = new AdminDeleteUserCommand(input);
-    console.log("Deleting user from Cognito:", username);
+    console.log('Deleting user from Cognito:', username);
     await this.lambdaDriver.performAction({
       command,
       action: 'AdminDeleteUserCommand',
@@ -68,11 +69,12 @@ export class CognitoUserDriver {
     } as AdminGetUserCommandInput;
 
     const command = new AdminGetUserCommand(input);
-    const response = await this.lambdaDriver.performAction<AdminGetUserResponse>({
-      command,
-      action: 'AdminGetUserCommand',
-      service: 'CognitoIdentityProviderClient',
-    });
+    const response =
+      await this.lambdaDriver.performAction<AdminGetUserResponse>({
+        command,
+        action: 'AdminGetUserCommand',
+        service: 'CognitoIdentityProviderClient',
+      });
     return response.UserAttributes;
   }
 }

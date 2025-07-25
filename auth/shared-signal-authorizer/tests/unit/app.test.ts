@@ -8,8 +8,12 @@ vi.mock('../../../m2m-authorizer/service/secrets-service');
 vi.mock('aws-jwt-verify');
 
 describe('Unit test for shared signal authorizer lambdaHandler', () => {
-  const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-  const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const consoleMock = vi
+    .spyOn(console, 'log')
+    .mockImplementation(() => undefined);
+  const consoleErrorMock = vi
+    .spyOn(console, 'error')
+    .mockImplementation(() => undefined);
 
   beforeEach(() => {
     consoleMock.mockReset();
@@ -25,7 +29,9 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
 
   it('Should return Allow policy for valid token', async () => {
     const secretsServiceSpy = vi.spyOn(SecretsService.prototype, 'getSecret');
-    const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<typeof CognitoJwtVerifier>;
+    const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<
+      typeof CognitoJwtVerifier
+    >;
 
     secretsServiceSpy.mockResolvedValue({
       clientSecret: 'mockClientSecret', // pragma: allowlist-secret
@@ -40,7 +46,8 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
     const event: APIGatewayTokenAuthorizerEvent = {
       type: 'TOKEN',
       authorizationToken: 'Bearer mockToken',
-      methodArn: 'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
+      methodArn:
+        'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
     const result = await lambdaHandler(event);
@@ -64,29 +71,39 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
     const event: APIGatewayTokenAuthorizerEvent = {
       type: 'TOKEN',
       authorizationToken: '',
-      methodArn: 'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
+      methodArn:
+        'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
-    await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized - Token not supplied');
+    await expect(lambdaHandler(event)).rejects.toThrow(
+      'Unauthorized - Token not supplied',
+    );
 
-    expect(consoleErrorMock).toHaveBeenCalledWith('Authorization header missing');
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      'Authorization header missing',
+    );
   });
 
   it('Should throw Unauthorized error for invalid token format', async () => {
     const event: APIGatewayTokenAuthorizerEvent = {
       type: 'TOKEN',
       authorizationToken: 'InvalidTokenFormat',
-      methodArn: 'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
+      methodArn:
+        'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
     await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
 
-    expect(consoleErrorMock).toHaveBeenCalledWith('Token format invalid: Not a Bearer token');
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      'Token format invalid: Not a Bearer token',
+    );
   });
 
   it('Should throw Unauthorized error for token validation failure', async () => {
     const mockSecretsService = vi.spyOn(SecretsService.prototype, 'getSecret');
-    const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<typeof CognitoJwtVerifier>;
+    const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<
+      typeof CognitoJwtVerifier
+    >;
 
     mockSecretsService.mockResolvedValue({
       clientSecret: 'mockClientSecret',
@@ -101,25 +118,29 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
     const event: APIGatewayTokenAuthorizerEvent = {
       type: 'TOKEN',
       authorizationToken: 'Bearer mockToken',
-      methodArn: 'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
+      methodArn:
+        'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
     await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
-
   });
 
   it('Should throw error if secret retrieval fails', async () => {
-    const mockSecretsService = SecretsService as vi.MockedClass<typeof SecretsService>;
+    const mockSecretsService = SecretsService as vi.MockedClass<
+      typeof SecretsService
+    >;
 
-    mockSecretsService.prototype.getSecret.mockRejectedValue(new Error('Secrets Manager error'));
+    mockSecretsService.prototype.getSecret.mockRejectedValue(
+      new Error('Secrets Manager error'),
+    );
 
     const event: APIGatewayTokenAuthorizerEvent = {
       type: 'TOKEN',
       authorizationToken: 'Bearer mockToken',
-      methodArn: 'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
+      methodArn:
+        'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
     await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
-
   });
 });

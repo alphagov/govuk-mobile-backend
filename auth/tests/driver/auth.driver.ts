@@ -4,12 +4,15 @@ import {
   LoginUserResponse,
   RefreshTokenResponse,
   TokenExchangeResponse,
-} from "../types/user";
+} from '../types/user';
 
 export interface AuthDriver {
   loginAndGetCode(input: LoginUserInput): Promise<LoginUserResponse>;
   exchangeCodeForTokens(
-    input: ExchangeTokenInput
+    input: ExchangeTokenInput,
   ): Promise<TokenExchangeResponse>;
-  refreshAccessToken(refreshToken: string, attestationToken: string): Promise<RefreshTokenResponse>;
+  refreshAccessToken(
+    refreshToken: string,
+    attestationToken: string,
+  ): Promise<RefreshTokenResponse>;
 }
