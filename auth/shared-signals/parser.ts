@@ -1,6 +1,6 @@
-import { credentialChangeSchema } from "./schema/credential-change";
-import { accountPurgedSchema } from "./schema/account-purged";
-import { ZodError, z } from "zod";
+import { credentialChangeSchema } from './schema/credential-change';
+import { accountPurgedSchema } from './schema/account-purged';
+import { ZodError, z } from 'zod';
 
 const unionSchema = z.union([credentialChangeSchema, accountPurgedSchema]);
 
@@ -11,9 +11,9 @@ export const parseRequest = (body: unknown): RequestBody => {
     return unionSchema.parse(body);
   } catch (e) {
     if (e instanceof ZodError) {
-      console.error("Validation failed", e.errors);
+      console.error('Validation failed', e.errors);
       throw e;
     }
-    throw new Error("Unexpected error during validation of request body");
+    throw new Error('Unexpected error during validation of request body');
   }
 };

@@ -1,6 +1,6 @@
 export type AlarmTestCase = {
   name: string;
-  alarmName:string;
+  alarmName: string;
   actionsEnabled: boolean;
   metricName?: string;
   alarmDescription: string;
