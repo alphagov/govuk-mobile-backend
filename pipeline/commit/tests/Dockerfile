@@ -1,6 +1,6 @@
 FROM node:lts-alpine3.22 AS build
 	RUN apk update && \
-	apk add --no-cache docker curl iputils-ping openssl
+	apk add --no-cache docker curl iputils-ping openssl git
 
 RUN mkdir -p /home/node/testrunner
 RUN cd /home/node/testrunner
