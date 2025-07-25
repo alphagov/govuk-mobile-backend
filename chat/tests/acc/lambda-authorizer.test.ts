@@ -84,9 +84,7 @@ describe("Check deployed Chat Authorizer Lambda IAM Role", async () => {
   it("has the correct assume role policy document", () => {
     assert.deepEqual(
       JSON.parse(
-        decodeURIComponent(
-          chatAuthorizerLambdaRole.AssumeRolePolicyDocument!
-        )
+        decodeURIComponent(chatAuthorizerLambdaRole.AssumeRolePolicyDocument!)
       ),
       {
         Version: "2012-10-17",
@@ -112,8 +110,7 @@ describe("Check deployed Chat Authorizer Lambda IAM Role", async () => {
           {
             Action: ["secretsmanager:GetSecretValue"],
             Effect: "Allow",
-            Resource:
-              `arn:aws:secretsmanager:eu-west-2:886436928181:secret:/${testConfig.configStackName}/chat/secrets-*`,
+            Resource: `arn:aws:secretsmanager:eu-west-2:886436928181:secret:/${testConfig.configStackName}/chat/secrets-*`,
           },
           {
             Action: [

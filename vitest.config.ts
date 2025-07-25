@@ -1,4 +1,4 @@
-import { coverageConfigDefaults, defineConfig } from 'vitest/config';
+import { coverageConfigDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -38,12 +38,12 @@ export default defineConfig({
           environment: "node",
           // allow for long running tests
           testTimeout: 120000,
-        }
-      }
+        },
+      },
     ],
     // Common test configurations
     globals: true,
-    environment: 'node',
+    environment: "node",
     watch: false,
     coverage: {
       exclude: [
@@ -56,9 +56,9 @@ export default defineConfig({
       ],
       reporter: ["text", "lcov"],
       reportOnFailure: true,
-      reportsDirectory: './coverage',
+      reportsDirectory: "./coverage",
       thresholds: {
-        functions: 80
+        functions: 80,
       },
     },
   },

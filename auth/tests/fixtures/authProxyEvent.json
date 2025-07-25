@@ -24,63 +24,25 @@
     "X-Forwarded-Proto": "https"
   },
   "multiValueHeaders": {
-    "Accept": [
-      "application/json, text/plain, */*"
-    ],
-    "Accept-Encoding": [
-      "gzip, compress, deflate, br"
-    ],
-    "CloudFront-Forwarded-Proto": [
-      "https"
-    ],
-    "CloudFront-Is-Desktop-Viewer": [
-      "true"
-    ],
-    "CloudFront-Is-Mobile-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-SmartTV-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-Tablet-Viewer": [
-      "false"
-    ],
-    "CloudFront-Viewer-ASN": [
-      "16509"
-    ],
-    "CloudFront-Viewer-Country": [
-      "GB"
-    ],
-    "Content-Type": [
-      "application/x-www-form-urlencoded"
-    ],
-    "Host": [
-      "le5s0p6bcl.execute-api.eu-west-2.amazonaws.com"
-    ],
-    "User-Agent": [
-      "axios/1.9.0"
-    ],
-    "Via": [
-      "1.1 x"
-    ],
-    "X-Amz-Cf-Id": [
-      "xx=="
-    ],
-    "X-Amzn-Trace-Id": [
-      "Root=1-x-x"
-    ],
-    "X-Attestation-Token": [
-      "x.xx"
-    ],
-    "X-Forwarded-For": [
-      "51.149.8.28, 3.172.36.115"
-    ],
-    "X-Forwarded-Port": [
-      "443"
-    ],
-    "X-Forwarded-Proto": [
-      "https"
-    ]
+    "Accept": ["application/json, text/plain, */*"],
+    "Accept-Encoding": ["gzip, compress, deflate, br"],
+    "CloudFront-Forwarded-Proto": ["https"],
+    "CloudFront-Is-Desktop-Viewer": ["true"],
+    "CloudFront-Is-Mobile-Viewer": ["false"],
+    "CloudFront-Is-SmartTV-Viewer": ["false"],
+    "CloudFront-Is-Tablet-Viewer": ["false"],
+    "CloudFront-Viewer-ASN": ["16509"],
+    "CloudFront-Viewer-Country": ["GB"],
+    "Content-Type": ["application/x-www-form-urlencoded"],
+    "Host": ["le5s0p6bcl.execute-api.eu-west-2.amazonaws.com"],
+    "User-Agent": ["axios/1.9.0"],
+    "Via": ["1.1 x"],
+    "X-Amz-Cf-Id": ["xx=="],
+    "X-Amzn-Trace-Id": ["Root=1-x-x"],
+    "X-Attestation-Token": ["x.xx"],
+    "X-Forwarded-For": ["51.149.8.28, 3.172.36.115"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"]
   },
   "queryStringParameters": null,
   "multiValueQueryStringParameters": null,

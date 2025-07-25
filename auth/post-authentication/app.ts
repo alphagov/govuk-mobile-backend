@@ -9,8 +9,10 @@ import type { PostAuthenticationTriggerEvent } from 'aws-lambda';
  * @returns {object} object - Post Authentication Trigger Event
  */
 
+export const lambdaHandler = async (
+  event: PostAuthenticationTriggerEvent,
 // eslint-disable-next-line @typescript-eslint/require-await
-export const lambdaHandler = async (event: PostAuthenticationTriggerEvent): Promise<PostAuthenticationTriggerEvent> => {
-    console.log(`Source = ${event.triggerSource}`);
-    return event;
+): Promise<PostAuthenticationTriggerEvent> => {
+  console.log(`Source = ${event.triggerSource}`);
+  return event;
 };

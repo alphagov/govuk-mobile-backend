@@ -1,4 +1,7 @@
-import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
+import {
+  CloudWatchLogsClient,
+  FilterLogEventsCommand,
+} from '@aws-sdk/client-cloudwatch-logs';
 
 /**
  * Options for finding a log message in CloudWatch with retries.
@@ -40,20 +43,29 @@ export class LoggingDriver {
     endTime,
   }: FindLogMessageOptions): Promise<string> {
     for (let attempt = 1; attempt <= retries; attempt++) {
-      const message = await this._findLogMessage({ logGroupName, searchString, filterPattern, startTime, endTime });
+      const message = await this._findLogMessage({
+        logGroupName,
+        searchString,
+        filterPattern,
+        startTime,
+        endTime,
+      });
 
       if (message) {
         console.log(`Log message found on attempt ${attempt}`);
         return message;
       }
 
-      console.log(`Attempt ${attempt} - Log message not found, retrying after ${delayMs}ms...`);
+      console.log(
+        `Attempt ${attempt} - Log message not found, retrying after ${delayMs}ms...`,
+      );
       await this._sleep(delayMs);
     }
 
-    throw new Error(`Log message "${searchString}" not found after ${retries} attempts.`);
+    throw new Error(
+      `Log message "${searchString}" not found after ${retries} attempts.`,
+    );
   }
-
 
   private async _findLogMessage({
     logGroupName,
@@ -61,7 +73,9 @@ export class LoggingDriver {
     filterPattern = '',
     startTime,
     endTime,
-  }: Omit<FindLogMessageOptions, 'retries' | 'delayMs'>): Promise<string | null> {
+  }: Omit<FindLogMessageOptions, 'retries' | 'delayMs'>): Promise<
+    string | null
+  > {
     const command = new FilterLogEventsCommand({
       logGroupName,
       filterPattern,
@@ -70,12 +84,14 @@ export class LoggingDriver {
     });
     const response = await this.client.send(command);
 
-    const event = response.events?.find(evt => evt.message?.includes(searchString));
+    const event = response.events?.find((evt) =>
+      evt.message?.includes(searchString),
+    );
 
     return event?.message ?? null;
   }
 
   private _sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

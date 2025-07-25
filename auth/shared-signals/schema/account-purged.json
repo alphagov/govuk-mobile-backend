@@ -12,10 +12,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "uri",
-        "format"
-      ],
+      "required": ["uri", "format"],
       "title": "AccountIdentifierSubjectClass",
       "type": "object"
     },
@@ -28,9 +25,7 @@
           "description": "The subject for the shared signal"
         }
       },
-      "required": [
-        "subject"
-      ],
+      "required": ["subject"],
       "title": "AccountPurgedClass",
       "type": "object"
     },
@@ -74,13 +69,7 @@
       "type": "string"
     }
   },
-  "required": [
-    "events",
-    "iss",
-    "jti",
-    "iat",
-    "aud"
-  ],
+  "required": ["events", "iss", "jti", "iat", "aud"],
   "title": "account-purged-schema",
   "type": "object"
 }

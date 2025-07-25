@@ -1,0 +1,17 @@
+# Ignore artifacts:
+.DS_Store
+.env
+.env.static
+samconfig.toml
+template.yaml
+tsconfig.tsbuildinfo
+/node_modules
+/coverage
+/.aws-sam
+/feature-tests/functional/driver/
+/feature-tests/functional/fixtures/
+/feature-tests/functional/helper/
+/tests/fixtures/
+package-lock.json
+dist
+build

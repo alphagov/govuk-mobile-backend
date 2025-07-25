@@ -26,8 +26,8 @@ interface InputField {
  * @property {union}   type    - Type of field; either checkbox or radio
  * @property {boolean} checked - Comes from the checked attribute of the html input tag when the type = 'check'
  */
-interface CheckboxField extends Omit<InputField, "placeholder"> {
-  type: "checkbox" | "radio";
+interface CheckboxField extends Omit<InputField, 'placeholder'> {
+  type: 'checkbox' | 'radio';
   checked: boolean;
 }
 
@@ -51,8 +51,8 @@ interface SelectOption {
  * @property {union} type - Constant set to 'select'
  * @property {SelectOption} - Comes from the nested HTML Options tags within the Select Tag
  */
-interface SelectField extends Omit<InputField, "placeholder"> {
-  type: "select";
+interface SelectField extends Omit<InputField, 'placeholder'> {
+  type: 'select';
   options: SelectOption[];
 }
 
@@ -63,7 +63,7 @@ interface SelectField extends Omit<InputField, "placeholder"> {
  * @property {union} type - Constant set to 'textarea'
  */
 interface TextareaField extends InputField {
-  type: "textarea";
+  type: 'textarea';
 }
 
 /**
@@ -97,7 +97,7 @@ function parseFormTag(html: string): string {
   // Find the first form tag and extract its attributes
   const formMatch = html.match(/<form[^>]*>/i);
   if (!formMatch) {
-    throw new Error("No form found in the HTML document");
+    throw new Error('No form found in the HTML document');
   }
   return formMatch[0];
 }
@@ -114,8 +114,8 @@ function parseFormAttributes(formTag: string): FormData {
   const methodMatch = formTag.match(/method\s*=\s*["']([^"']*)["']/i);
 
   const formData: FormData = {
-    action: actionMatch ? actionMatch[1] : "",
-    method: methodMatch ? methodMatch[1].toLowerCase() : "get",
+    action: actionMatch ? actionMatch[1] : '',
+    method: methodMatch ? methodMatch[1].toLowerCase() : 'get',
     csrf: null,
     inputs: [],
   };
@@ -169,16 +169,16 @@ const processInputs = (
   inputMatches.forEach((inputTag) => {
     // Check if this is a checkbox or radio button first
     const typeMatch = inputTag.match(/type\s*=\s*["']([^"']*)["']/i);
-    const inputType = typeMatch ? typeMatch[1].toLowerCase() : "text";
+    const inputType = typeMatch ? typeMatch[1].toLowerCase() : 'text';
 
-    if (inputType === "checkbox" || inputType === "radio") {
+    if (inputType === 'checkbox' || inputType === 'radio') {
       const checkboxData: CheckboxField = {
-        name: "",
+        name: '',
         type: inputType,
-        value: "",
-        id: "",
+        value: '',
+        id: '',
         required: false,
-        className: "",
+        className: '',
         checked: false,
       };
 
@@ -201,13 +201,13 @@ const processInputs = (
     } else {
       // Handle regular input fields
       const inputData: InputField = {
-        name: "",
-        type: "text",
-        value: "",
-        id: "",
+        name: '',
+        type: 'text',
+        value: '',
+        id: '',
         required: false,
-        placeholder: "",
-        className: "",
+        placeholder: '',
+        className: '',
       };
 
       // Extract input attributes
@@ -230,10 +230,10 @@ const processInputs = (
 
       // Check if this is a CSRF token field
       if (
-        inputData.name === "_csrf" ||
-        inputData.name === "csrf_token" ||
-        inputData.name === "authenticity_token" ||
-        inputData.name.toLowerCase().includes("csrf")
+        inputData.name === '_csrf' ||
+        inputData.name === 'csrf_token' ||
+        inputData.name === 'authenticity_token' ||
+        inputData.name.toLowerCase().includes('csrf')
       ) {
         formData.csrf = inputData.value;
       }
@@ -257,13 +257,13 @@ const processTextAreas = (
 ): void => {
   textareaMatches.forEach((textareaTag) => {
     const inputData: TextareaField = {
-      name: "",
-      type: "textarea",
-      value: "",
-      id: "",
+      name: '',
+      type: 'textarea',
+      value: '',
+      id: '',
       required: false,
-      placeholder: "",
-      className: "",
+      placeholder: '',
+      className: '',
     };
 
     // Extract textarea attributes
@@ -305,12 +305,12 @@ const processSelects = (
 ): void => {
   selectMatches.forEach((selectTag) => {
     const inputData: SelectField = {
-      name: "",
-      type: "select",
-      value: "",
-      id: "",
+      name: '',
+      type: 'select',
+      value: '',
+      id: '',
       required: false,
-      className: "",
+      className: '',
       options: [],
     };
 
@@ -338,9 +338,9 @@ const processSelects = (
         value: valueMatch
           ? valueMatch[1]
           : textMatch
-            ? textMatch[1].trim()
-            : "",
-        text: textMatch ? textMatch[1].trim() : "",
+          ? textMatch[1].trim()
+          : '',
+        text: textMatch ? textMatch[1].trim() : '',
         selected: !!selectedMatch,
       };
 
