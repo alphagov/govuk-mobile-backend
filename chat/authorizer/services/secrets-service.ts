@@ -1,8 +1,8 @@
-import type { GetSecretValueCommandOutput } from "@aws-sdk/client-secrets-manager";
+import type { GetSecretValueCommandOutput } from '@aws-sdk/client-secrets-manager';
 import {
   SecretsManagerClient,
   GetSecretValueCommand,
-} from "@aws-sdk/client-secrets-manager";
+} from '@aws-sdk/client-secrets-manager';
 
 /**
  * @param config as string
@@ -22,7 +22,7 @@ export class SecretsService {
   }
 
   public async getSecret(
-    secretName: string
+    secretName: string,
   ): Promise<SecretsConfig | string | undefined> {
     try {
       console.log(`Retrieving secret: ${secretName}`);
@@ -43,13 +43,13 @@ export class SecretsService {
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
-        if (error.name === "ResourceNotFoundException") {
+        if (error.name === 'ResourceNotFoundException') {
           console.error(`Secret ${secretName} was not found.`);
-        } else if (error.name === "InvalidRequestException") {
+        } else if (error.name === 'InvalidRequestException') {
           console.error(`Invalid request to Secrets Manager: ${error.message}`);
-        } else if (error.name === "InvalidParameterException") {
+        } else if (error.name === 'InvalidParameterException') {
           console.error(
-            `Invalid parameter for secret ${secretName}: ${error.message}`
+            `Invalid parameter for secret ${secretName}: ${error.message}`,
           );
         } else {
           console.error(`Error retrieving secret ${secretName}:`, error);

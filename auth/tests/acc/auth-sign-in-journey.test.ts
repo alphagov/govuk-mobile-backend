@@ -1,17 +1,20 @@
-import { describe, it, expect, afterEach, beforeAll } from "vitest";
-import { testConfig } from "../common/config";
-import { TestDataLoader } from "../driver/testDataLoader.driver";
-import { AxiosAuthDriver } from "../driver/axiosAuth.driver";
-import { AttestationDriver } from "../driver/attestation.driver";
+import { describe, it, expect, afterEach, beforeAll } from 'vitest';
+import { testConfig } from '../common/config';
+import { TestDataLoader } from '../driver/testDataLoader.driver';
+import { AxiosAuthDriver } from '../driver/axiosAuth.driver';
+import { AttestationDriver } from '../driver/attestation.driver';
 
-describe("auth sign in journey", () => {
-  const testDataLoader = new TestDataLoader(testConfig.region, testConfig.configStackName);
+describe('auth sign in journey', () => {
+  const testDataLoader = new TestDataLoader(
+    testConfig.region,
+    testConfig.configStackName,
+  );
   const authDriver = new AxiosAuthDriver(
     testConfig.clientId,
     testConfig.cognitoUrl,
     testConfig.redirectUri,
     testConfig.authProxyUrl,
-    testConfig.oneLoginEnvironment
+    testConfig.oneLoginEnvironment,
   );
   const attestationDriver = new AttestationDriver();
 
@@ -23,10 +26,12 @@ describe("auth sign in journey", () => {
     authDriver.clearCookies();
   });
 
-  it("should sign the app into cognito using one login as the idp", async () => {
+  it('should sign the app into cognito using one login as the idp', async () => {
     const user = await testDataLoader.getSuccessfulSignInUser();
     const { code, code_verifier } = await authDriver.loginAndGetCode(user);
-    const { token: attestationToken } = await attestationDriver.getToken(testConfig.firebaseIosAppId)
+    const { token: attestationToken } = await attestationDriver.getToken(
+      testConfig.firebaseIosAppId,
+    );
     const {
       status,
       access_token,
@@ -45,22 +50,22 @@ describe("auth sign in journey", () => {
     expect(access_token).toBeTruthy();
     expect(refresh_token).toBeTruthy();
     expect(expires_in).toEqual(300);
-    expect(token_type).toEqual("Bearer");
+    expect(token_type).toEqual('Bearer');
   });
 
   it('should allow the app to refresh the access token', async () => {
     const user = await testDataLoader.getSuccessfulSignInUser();
     const { code, code_verifier } = await authDriver.loginAndGetCode(user);
-    const { token: attestationToken } = await attestationDriver.getToken(testConfig.firebaseIosAppId)
+    const { token: attestationToken } = await attestationDriver.getToken(
+      testConfig.firebaseIosAppId,
+    );
 
-    const {
-      access_token: initialAccessToken,
-      refresh_token,
-    } = await authDriver.exchangeCodeForTokens({
-      attestationHeader: attestationToken,
-      code,
-      code_verifier,
-    });
+    const { access_token: initialAccessToken, refresh_token } =
+      await authDriver.exchangeCodeForTokens({
+        attestationHeader: attestationToken,
+        code,
+        code_verifier,
+      });
 
     expect(refresh_token).toBeTruthy();
 

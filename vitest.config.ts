@@ -8,24 +8,24 @@ export default defineConfig({
         // will inherit options from this config like plugins and pool
         extends: true,
         test: {
-          name: "unit",
-          include: ["**/*.unit.test.ts", "**/**/unit/*.test.ts"],
+          name: 'unit',
+          include: ['**/*.unit.test.ts', '**/**/unit/*.test.ts'],
         },
       },
       {
         test: {
-          include: ["**/tests/acc/**/*.test.ts"],
-          name: "acc",
-          environment: "node",
+          include: ['**/tests/acc/**/*.test.ts'],
+          name: 'acc',
+          environment: 'node',
           // allow for long running tests
           testTimeout: 120000,
         },
       },
       {
         test: {
-          include: ["**/tests/int/**/*.test.ts"],
-          name: "int",
-          environment: "node",
+          include: ['**/tests/int/**/*.test.ts'],
+          name: 'int',
+          environment: 'node',
           // allow for long running tests
           testTimeout: 120000,
           hookTimeout: 120000,
@@ -33,13 +33,13 @@ export default defineConfig({
       },
       {
         test: {
-          include: ["**/feature-tests/functional/**/*.steps.ts"],
-          name: "functional",
-          environment: "node",
+          include: ['**/feature-tests/functional/**/*.steps.ts'],
+          name: 'functional',
+          environment: 'node',
           // allow for long running tests
           testTimeout: 120000,
-        }
-      }
+        },
+      },
     ],
     // Common test configurations
     globals: true,
@@ -48,17 +48,17 @@ export default defineConfig({
     coverage: {
       exclude: [
         ...coverageConfigDefaults.exclude,
-        "**/feature-tests/**",
-        "**/tests/**/*",
-        "**/*.test.ts",
-        "vitest*.config.ts",
-        "__mocks__",
+        '**/feature-tests/**',
+        '**/tests/**/*',
+        '**/*.test.ts',
+        'vitest*.config.ts',
+        '__mocks__',
       ],
-      reporter: ["text", "lcov"],
+      reporter: ['text', 'lcov'],
       reportOnFailure: true,
       reportsDirectory: './coverage',
       thresholds: {
-        functions: 80
+        functions: 80,
       },
     },
   },

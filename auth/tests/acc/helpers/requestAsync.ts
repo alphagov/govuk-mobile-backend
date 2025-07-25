@@ -1,5 +1,5 @@
-import { IncomingHttpHeaders } from "node:http";
-import https, { RequestOptions } from "node:https";
+import { IncomingHttpHeaders } from 'node:http';
+import https, { RequestOptions } from 'node:https';
 
 export interface HTTP_RESPONSE {
   statusCode: number;
@@ -28,27 +28,27 @@ async function requestAsync(
     // Delete body from options object as https request options does not include this
     delete localOptions.body;
     // Convert to JSON if the called forgot to
-    if (typeof body === "object") {
+    if (typeof body === 'object') {
       body = JSON.stringify(body);
     }
     // Calculate Content-Length header
-    localOptions.headers["Content-Length"] = body.length;
+    localOptions.headers['Content-Length'] = body.length;
   }
-  if (formData && localOptions.method != "GET") {
-    localOptions.headers["Content-Length"] = Buffer.byteLength(formData);
+  if (formData && localOptions.method != 'GET') {
+    localOptions.headers['Content-Length'] = Buffer.byteLength(formData);
   }
 
   return new Promise((resolve, reject) => {
     try {
       const req = https.request(options, (res) => {
         const chunks: Buffer[] = [];
-        res.on("data", (chunk) => chunks.push(chunk));
-        res.on("error", reject);
-        res.on("end", () => {
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('error', reject);
+        res.on('end', () => {
           const { statusCode, headers } = res;
           const isResponseOK = res.complete;
           if (isResponseOK) {
-            const body = chunks.join("");
+            const body = chunks.join('');
             resolve({
               statusCode: statusCode as number,
               body: body,
@@ -64,16 +64,16 @@ async function requestAsync(
         });
       });
       // Post form data if specified
-      if (formData && localOptions.method != "GET") {
+      if (formData && localOptions.method != 'GET') {
         req.write(formData);
       }
       // Send body if specified
       if (
         body &&
-        ["PUT", "POST", "PATCH"].includes(localOptions.method.toUpperCase())
+        ['PUT', 'POST', 'PATCH'].includes(localOptions.method.toUpperCase())
       ) {
         if (!req.write(body)) {
-          console.log("Error sending body");
+          console.log('Error sending body');
         }
       }
       req.end();

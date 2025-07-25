@@ -1,7 +1,7 @@
 /**
  * The type of credential the event message is about
  */
-export type CredentialTypeEnum = "email" | "password";
+export type CredentialTypeEnum = 'email' | 'password';
 
 /**
  * A credential has been created, changed, revoked or deleted.
@@ -26,8 +26,8 @@ export interface CredentialChangeSchema {
   jti: string;
 }
 export interface CredentialChangeEventsClass {
-  "https://schemas.openid.net/secevent/caep/event-type/credential-change": CredentialChangeClass;
-  "https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation"?: CredentialChangeInformationClass | null;
+  'https://schemas.openid.net/secevent/caep/event-type/credential-change': CredentialChangeClass;
+  'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation'?: CredentialChangeInformationClass | null;
 }
 /**
  * The credential change CAEP object

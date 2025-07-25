@@ -1,19 +1,19 @@
-import querystring from "querystring";
-import pkceChallenge from "pkce-challenge";
-import { expect } from "vitest";
-import { AuthDriver } from "./auth.driver";
+import querystring from 'querystring';
+import pkceChallenge from 'pkce-challenge';
+import { expect } from 'vitest';
+import { AuthDriver } from './auth.driver';
 import {
   ExchangeTokenInput,
   LoginUserInput,
   LoginUserResponse,
   RefreshTokenResponse,
   TokenExchangeResponse,
-} from "../types/user";
-import { TOTP } from "totp-generator";
-import axios from "axios";
-import { wrapper } from "axios-cookiejar-support";
-import { CookieJar } from "tough-cookie";
-import { load } from "cheerio";
+} from '../types/user';
+import { TOTP } from 'totp-generator';
+import axios from 'axios';
+import { wrapper } from 'axios-cookiejar-support';
+import { CookieJar } from 'tough-cookie';
+import { load } from 'cheerio';
 
 export class AxiosAuthDriver implements AuthDriver {
   private clientId: string;
@@ -30,7 +30,7 @@ export class AxiosAuthDriver implements AuthDriver {
     authUrl: string,
     redirectUri: string,
     proxyUrl: string,
-    oneLoginEnvironment: string
+    oneLoginEnvironment: string,
   ) {
     this.clientId = clientId;
     this.authUrl = authUrl;
@@ -46,9 +46,9 @@ export class AxiosAuthDriver implements AuthDriver {
       axios.create({
         jar,
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-      })
+      }),
     );
   }
 
@@ -68,19 +68,19 @@ export class AxiosAuthDriver implements AuthDriver {
       `${this.authUrl}/oauth2/authorize?` +
       querystring.stringify({
         client_id: this.clientId,
-        response_type: "code",
+        response_type: 'code',
         redirect_uri: this.redirectUri,
-        scope: "openid email",
+        scope: 'openid email',
         code_challenge,
-        code_challenge_method: "S256",
-        state: "debug123",
-        idpidentifier: "onelogin",
+        code_challenge_method: 'S256',
+        state: 'debug123',
+        idpidentifier: 'onelogin',
       });
 
     const authResponse = await this.client.get(`https://${authorizeEndpoint}`, {
       body: null,
-      method: "GET",
-    })
+      method: 'GET',
+    });
 
     const csrfToken = this.extractCSRFToken(authResponse.data);
 
@@ -88,7 +88,7 @@ export class AxiosAuthDriver implements AuthDriver {
       `https://${this.oneLoginDomain}/sign-in-or-create?`,
       querystring.stringify({
         _csrf: csrfToken,
-      })
+      }),
     );
 
     await this.client.post(
@@ -96,7 +96,7 @@ export class AxiosAuthDriver implements AuthDriver {
       querystring.stringify({
         _csrf: csrfToken,
         email: input.email,
-      })
+      }),
     );
 
     await this.client.post(
@@ -104,7 +104,7 @@ export class AxiosAuthDriver implements AuthDriver {
       querystring.stringify({
         _csrf: csrfToken,
         password: input.password,
-      })
+      }),
     );
 
     const { otp } = TOTP.generate(input.totpSecret);
@@ -114,11 +114,11 @@ export class AxiosAuthDriver implements AuthDriver {
       querystring.stringify({
         _csrf: csrfToken,
         code: otp,
-      })
+      }),
     );
 
     const redirectedUrl = new URL(totpFormResponse.request.res.responseUrl);
-    const code = redirectedUrl.searchParams.get("code");
+    const code = redirectedUrl.searchParams.get('code');
 
     return {
       code: code!,
@@ -132,22 +132,22 @@ export class AxiosAuthDriver implements AuthDriver {
     code_verifier,
   }: ExchangeTokenInput): Promise<TokenExchangeResponse> {
     const response = await fetch(`${this.proxyUrl}oauth2/token`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
         ...(attestationHeader
           ? {
-              "X-Attestation-Token": attestationHeader,
+              'X-Attestation-Token': attestationHeader,
             }
           : {}),
       },
       body: querystring.stringify({
-        grant_type: "authorization_code",
+        grant_type: 'authorization_code',
         client_id: this.clientId,
         code,
         redirect_uri: this.redirectUri,
         code_verifier,
-        scope: "email openid",
+        scope: 'email openid',
       }),
     });
 
@@ -168,20 +168,20 @@ export class AxiosAuthDriver implements AuthDriver {
 
   async refreshAccessToken(
     refreshToken: string,
-    attestationHeader: string
+    attestationHeader: string,
   ): Promise<RefreshTokenResponse> {
     return fetch(`${this.proxyUrl}oauth2/token`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
         ...(attestationHeader
           ? {
-              "X-Attestation-Token": attestationHeader,
+              'X-Attestation-Token': attestationHeader,
             }
           : {}),
       },
       body: querystring.stringify({
-        grant_type: "refresh_token",
+        grant_type: 'refresh_token',
         client_id: this.clientId,
         refresh_token: refreshToken,
       }),
@@ -189,7 +189,7 @@ export class AxiosAuthDriver implements AuthDriver {
       .then((response) => {
         if (!response.ok) {
           throw new Error(
-            `Failed to refresh access token: ${response.statusText}`
+            `Failed to refresh access token: ${response.statusText}`,
           );
         }
         return response.json();

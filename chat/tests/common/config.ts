@@ -1,25 +1,25 @@
-import "dotenv/config";
+import 'dotenv/config';
 
 const getTestConfig = () => {
   const requiredVars = [
-    "CFN_AWSAccountId",
-    "CFN_StackName",
-    "CFN_ConfigStackName",
-    "CFN_ChatApiGatewayId",
-    "CFN_ChatApiGatewayResourceId",
-    "CFN_ChatApiGatewayMethodId",
-    "CFN_ChatApiGatewayDeploymentId",
-    "CFN_ChatAuthorizerFunctionName",
-    "CFN_ChatAuthorizerInvokePermissionId",
-    "CFN_ChatAuthorizerFunctionIAMRoleName",
-    "CFN_ChatAuthorizerFunctionIAMRolePolicyName",
-    "CFN_ChatAuthorizerFunctionKMSKeyArn",
+    'CFN_AWSAccountId',
+    'CFN_StackName',
+    'CFN_ConfigStackName',
+    'CFN_ChatApiGatewayId',
+    'CFN_ChatApiGatewayResourceId',
+    'CFN_ChatApiGatewayMethodId',
+    'CFN_ChatApiGatewayDeploymentId',
+    'CFN_ChatAuthorizerFunctionName',
+    'CFN_ChatAuthorizerInvokePermissionId',
+    'CFN_ChatAuthorizerFunctionIAMRoleName',
+    'CFN_ChatAuthorizerFunctionIAMRolePolicyName',
+    'CFN_ChatAuthorizerFunctionKMSKeyArn',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
   if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missing.join(", ")}`
+      `Missing required environment variables: ${missing.join(', ')}`,
     );
   }
 

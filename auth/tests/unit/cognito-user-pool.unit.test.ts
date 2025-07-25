@@ -1,44 +1,44 @@
-import { describe, expect, it } from "vitest";
-import { loadTemplateFromFile } from "../common/template";
-import path from "path";
+import { describe, expect, it } from 'vitest';
+import { loadTemplateFromFile } from '../common/template';
+import path from 'path';
 
 const template = loadTemplateFromFile(
-  path.join(__dirname, "..", "..", "template.yaml")
+  path.join(__dirname, '..', '..', 'template.yaml'),
 );
 
-describe("Set up the Cognito User Pool for GovUK app", () => {
+describe('Set up the Cognito User Pool for GovUK app', () => {
   let resourceUnderTest: {
     Type: any;
     Properties: any;
     Metadata: any;
   };
 
-  const resource = template.findResources("AWS::Cognito::UserPool");
-  resourceUnderTest = resource["CognitoUserPool"] as any;
+  const resource = template.findResources('AWS::Cognito::UserPool');
+  resourceUnderTest = resource['CognitoUserPool'] as any;
 
-  it("should have the correct UserPoolName", () => {
+  it('should have the correct UserPoolName', () => {
     expect(resourceUnderTest.Properties.UserPoolName).toEqual({
-      "Fn::Join": [
-        "-",
+      'Fn::Join': [
+        '-',
         [
           {
-            Ref: "AWS::StackName",
+            Ref: 'AWS::StackName',
           },
-          "user-pool",
+          'user-pool',
           {
-            "Fn::Select": [
+            'Fn::Select': [
               4,
               {
-                "Fn::Split": [
-                  "-",
+                'Fn::Split': [
+                  '-',
                   {
-                    "Fn::Select": [
+                    'Fn::Select': [
                       2,
                       {
-                        "Fn::Split": [
-                          "/",
+                        'Fn::Split': [
+                          '/',
                           {
-                            Ref: "AWS::StackId",
+                            Ref: 'AWS::StackId',
                           },
                         ],
                       },
@@ -53,58 +53,58 @@ describe("Set up the Cognito User Pool for GovUK app", () => {
     });
   });
 
-  it("should have the correct Schema", () => {
+  it('should have the correct Schema', () => {
     expect(resourceUnderTest.Properties.Schema).toEqual([
       {
-        Name: "email",
+        Name: 'email',
         Required: true,
-        AttributeDataType: "String",
+        AttributeDataType: 'String',
       },
     ]);
   });
 
-  it("should have deletion protection enabled", () => {
-    expect(resourceUnderTest.Properties.DeletionProtection).toEqual("ACTIVE");
+  it('should have deletion protection enabled', () => {
+    expect(resourceUnderTest.Properties.DeletionProtection).toEqual('ACTIVE');
   });
 
-  it("should have email as username attribute", () => {
-    expect(resourceUnderTest.Properties.UsernameAttributes).toEqual(["email"]);
+  it('should have email as username attribute', () => {
+    expect(resourceUnderTest.Properties.UsernameAttributes).toEqual(['email']);
   });
 
-  it("should have user pool addons for production", () => {
+  it('should have user pool addons for production', () => {
     expect(resourceUnderTest.Properties.UserPoolAddOns).toEqual({
-      "Fn::If": [
-        "IsNotProduction",
+      'Fn::If': [
+        'IsNotProduction',
         {
-          Ref: "AWS::NoValue",
+          Ref: 'AWS::NoValue',
         },
         {
-          AdvancedSecurityMode: "AUDIT",
+          AdvancedSecurityMode: 'AUDIT',
         },
       ],
     });
   });
 
-  it("should have plus user pool tier for production", () => {
+  it('should have plus user pool tier for production', () => {
     expect(resourceUnderTest.Properties.UserPoolTier).toEqual({
-      "Fn::If": ["IsNotProduction", "ESSENTIALS", "PLUS"],
+      'Fn::If': ['IsNotProduction', 'ESSENTIALS', 'PLUS'],
     });
   });
 
-  it("should have the correct tags", () => {
+  it('should have the correct tags', () => {
     expect(resourceUnderTest.Properties?.UserPoolTags).toEqual({
       Environment: {
-        Ref: "Environment",
+        Ref: 'Environment',
       },
-      Product: "GOV.UK",
-      System: "Authentication",
+      Product: 'GOV.UK',
+      System: 'Authentication',
     });
   });
 
-  it("should have the correct LambdaConfig", () => {
+  it('should have the correct LambdaConfig', () => {
     expect(resourceUnderTest.Properties.LambdaConfig).toEqual({
       PostAuthentication: {
-        "Fn::GetAtt": ["PostAuthenticationFunction", "Arn"],
+        'Fn::GetAtt': ['PostAuthenticationFunction', 'Arn'],
       },
     });
   });
