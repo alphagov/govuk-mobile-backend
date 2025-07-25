@@ -205,7 +205,7 @@ Resources:
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4529389569/Runbook+WAF+-+High+number+WAF+throttling
       ActionsEnabled: true
-      MetricName: BlockedRequests
+      MetricName: WAFErrorRate
       Namespace: AWS/WAFV2
       Statistic: Sum
       Period: 60
