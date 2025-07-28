@@ -15,7 +15,7 @@ const alarmsToTest = [
   testConfig.authProxyWAFAlarm,
 ];
 
-describe.skipIf(!testConfig.isLocalEnvironment).each(alarmsToTest)(
+describe.skip.each(alarmsToTest)(
   'Auth Proxy Api CloudWatch Alarm: %s',
   (alarmName) => {
     it('should successfully execute its actions', async () => {

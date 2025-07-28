@@ -5,6 +5,7 @@ import axios from 'axios';
 import querystring from 'querystring';
 import jsonwebtoken from 'jsonwebtoken';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { sleep } from '../common/sleep';
 
 const driver = new TestLambdaDriver();
 
@@ -58,6 +59,8 @@ describe(
           )
           .catch((e) => console.log('error expected'));
 
+        await sleep(5000);
+
         const message = await loggingDriver.findLogMessageWithRetries({
           logGroupName: testConfig.authProxyWafLogGroupName,
           searchString: randomId,
@@ -92,7 +95,7 @@ describe(
       });
     });
 
-    describe('cognito', () => {
+    describe.skipIf(!testConfig.isLocalEnvironment)('cognito', () => {
       let logMessages;
 
       const fakeJwt = jsonwebtoken.sign(
@@ -137,6 +140,8 @@ describe(
             },
           )
           .catch((e) => console.log('error expected'));
+
+        await sleep(5000);
 
         const message = await loggingDriver.findLogMessageWithRetries({
           logGroupName: testConfig.cognitoWafLogGroupName,

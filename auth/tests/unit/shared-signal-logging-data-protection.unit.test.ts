@@ -48,32 +48,15 @@ describe('Shared signal Data Protection Policies', () => {
     ).toBe(true);
   });
 
-  describe('Should contain IP addresses masking policies', () => {
+  it('has IP address masking policy in place', () => {
+    const expectedIpAddressIdentifier =
+      'arn:aws:dataprotection::aws:data-identifier/IpAddress';
     const policies: DataProtectionPolicyStatement[] =
       logGroup.Properties.DataProtectionPolicy.Statement;
-    const customTokenDataIdentifier =
-      logGroup.Properties.DataProtectionPolicy.Configuration
-        .CustomDataIdentifier[0];
-    const tokenRegex = new RegExp(customTokenDataIdentifier.Regex);
-
-    it.each(policies)('should redact ip addresses', (policy) => {
-      expect(policy.DataIdentifier.includes(customTokenDataIdentifier.Name));
-    });
-
-    it('should match valid IP addresses', () => {
-      const validTokens = ['ip=192.168.1.1', 'ip_address=10.0.0.1'];
-
-      validTokens.forEach((token) => {
-        expect(tokenRegex.test(token)).toBe(true);
-      });
-    });
-
-    it('should not match non IP addresses', () => {
-      const unmatchedFields = ['ip=not.an.ip', 'foo=bar'];
-
-      unmatchedFields.forEach((token) => {
-        expect(tokenRegex.test(token)).toBe(false);
-      });
-    });
+    expect(
+      policies.some((policy) =>
+        policy.DataIdentifier.includes(expectedIpAddressIdentifier),
+      ),
+    ).toBe(true);
   });
 });

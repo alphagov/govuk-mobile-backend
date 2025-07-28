@@ -4,7 +4,7 @@ import {
 } from '@aws-sdk/client-cloudwatch';
 import { assert, describe, it } from 'vitest';
 import { testConfig } from '../common/config';
-import { AlarmTestCase } from './alarm-test-case';
+import { AlarmTestCase } from '../types/alarm-test-case';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
 
 const driver = new TestLambdaDriver();
@@ -36,7 +36,7 @@ const testCases: AlarmTestCase[] = [
     name: 'WAFRateLimitingAlarm',
     alarmName: `${testConfig.stackName}-cognito-waf-error-rate`,
     actionsEnabled: true,
-    metricName: 'BlockedRequests',
+    metricName: 'WAFErrorRate',
     alarmDescription:
       'Alarm when the WAF error rate exceeds 5 incidents per minute',
     statistic: 'Sum',

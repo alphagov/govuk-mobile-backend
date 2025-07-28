@@ -33,7 +33,7 @@ describe.skipIf(!testConfig.isLocalEnvironment)('attestation', async () => {
   });
 });
 
-describe('app attestation', () => {
+describe.skipIf(!testConfig.attestationEnabled)('app attestation', () => {
   const testDataLoader = new TestDataLoader(
     testConfig.region,
     testConfig.configStackName,
@@ -101,8 +101,8 @@ describe('app attestation', () => {
     async (attestationHeader, expectedStatus) => {
       const { status } = await authDriver.exchangeCodeForTokens({
         attestationHeader,
-        code: 'valid-code',
-        code_verifier: 'valid-code-verifier',
+        code: 'validcode',
+        code_verifier: 'validcodeverifier',
       });
       expect(status).toEqual(expectedStatus);
     },

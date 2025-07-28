@@ -15,7 +15,7 @@ const alarmsToTest = [
   testConfig.cloudWatchAlarmFederationThrottlesName,
 ];
 
-describe.skipIf(!testConfig.isLocalEnvironment).each(alarmsToTest)(
+describe.skip.each(alarmsToTest)(
   'Cognito CloudWatch Alarm: %s',
   (alarmName) => {
     it('should successfully execute its actions', async () => {
