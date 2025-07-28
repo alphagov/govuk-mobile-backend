@@ -2370,3 +2370,7 @@ Outputs:
   DeployedEnvironment:
     Description: SAM deployed environment
     Value: !Ref Environment
+
+  AttestationEnabled:
+    Description: Attestation feature flag
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
