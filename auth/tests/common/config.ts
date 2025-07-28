@@ -51,6 +51,7 @@ const getTestConfig = () => {
     'CFN_UnknownAndroidAppId',
     'CFN_SharedSignalsAccessLogGroupName',
     'CFN_DeployedEnvironment',
+    'CFN_SharedSignalWAFLogGroupName',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -135,6 +136,7 @@ const getTestConfig = () => {
     unknownAndroidAppId: process.env.CFN_UnknownAndroidAppId!,
     redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
     attestationEnabled: process.env.CFN_AttestationEnabled == 'true',
+    sharedSignalWAFLogGroupName: process.env.CFN_SharedSignalWAFLogGroupName!,
   };
 };
 

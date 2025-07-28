@@ -172,7 +172,7 @@ describe('shared signals', () => {
 
     expect(resourceUnderTest.Type).toBe('AWS::KMS::Key');
     expect(resourceUnderTest.Properties.Description).toBe(
-      'KMS key for encrypting signals function secrets',
+      'KMS key for encrypting shared signals receiver function secrets',
     );
     expect(resourceUnderTest.Properties.EnableKeyRotation).toBe(true);
 

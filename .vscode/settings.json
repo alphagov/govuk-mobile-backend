@@ -1,4 +1,8 @@
 {
+  "sonarlint.connectedMode.project": {
+    "connectionId": "alphagov",
+    "projectKey": "alphagov_govuk-mobile-backend"
+  },
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.fixAll.eslint": "explicit"
