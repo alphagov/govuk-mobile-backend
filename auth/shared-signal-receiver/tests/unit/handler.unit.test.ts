@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { lambdaHandler } from '../../app';
+import { createHandler } from '../../handler';
 import { ZodError } from 'zod';
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
-import * as handlerModule from '../../handlers/request-handler';
 import * as responseModule from '../../response';
-import { CognitoError } from '../../errors';
+import { CognitoError, SignatureVerificationError } from '../../errors';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
+import { Dependencies } from '../../app';
 
 // Mock the AWS SDK Client
 vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
@@ -20,10 +20,10 @@ vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
 });
 
 // Create a dummy event
-const createEvent = (): APIGatewayProxyEvent =>
+const createEvent = (overrides?: any): APIGatewayProxyEvent =>
   ({
     httpMethod: 'post',
-    body: {
+    body: JSON.stringify({
       iss: 'https://identity.example.com',
       jti: '123e4567-e89b-12d3-a456-426614174000',
       iat: 1721126400,
@@ -43,7 +43,7 @@ const createEvent = (): APIGatewayProxyEvent =>
             email: 'user@example.com',
           },
       },
-    },
+    }),
     headers: {},
     isBase64Encoded: false,
     multiValueHeaders: {},
@@ -89,11 +89,21 @@ const createEvent = (): APIGatewayProxyEvent =>
     },
     resource: '',
     stageVariables: {},
+    ...overrides,
   } as unknown as APIGatewayProxyEvent);
 
 describe('lambdaHandler', () => {
-  const mockRequestHandler = vi.spyOn(handlerModule, 'requestHandler');
+  const mockRequestHandler = vi.fn();
   const mockGenerateResponse = vi.spyOn(responseModule, 'generateResponse');
+
+  const getDependencies = (overrides?: any): Dependencies => ({
+    getConfig: vi.fn(),
+    verifySETJwt: vi.fn(),
+    requestHandler: mockRequestHandler,
+    ...overrides,
+  });
+
+  const lambdaHandler = createHandler(getDependencies());
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -117,14 +127,6 @@ describe('lambdaHandler', () => {
     const zodError = new ZodError([]);
     mockRequestHandler.mockRejectedValue(zodError);
 
-    mockGenerateResponse.mockReturnValue({
-      statusCode: StatusCodes.BAD_REQUEST,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: ReasonPhrases.BAD_REQUEST,
-      }),
-    });
-
     const result = await lambdaHandler(createEvent());
 
     expect(mockGenerateResponse).toHaveBeenCalledWith(
@@ -137,14 +139,6 @@ describe('lambdaHandler', () => {
   it('should return INTERNAL_SERVER_ERROR when CognitoError is thrown', async () => {
     const cognitoError = new CognitoError('Cognito failed');
     mockRequestHandler.mockRejectedValue(cognitoError);
-
-    mockGenerateResponse.mockReturnValue({
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
-      }),
-    });
 
     const result = await lambdaHandler(createEvent());
 
@@ -159,14 +153,6 @@ describe('lambdaHandler', () => {
     const unknownError = new Error('Something went wrong');
     mockRequestHandler.mockRejectedValue(unknownError);
 
-    mockGenerateResponse.mockReturnValue({
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
-      }),
-    });
-
     const result = await lambdaHandler(createEvent());
 
     expect(mockGenerateResponse).toHaveBeenCalledWith(
@@ -174,5 +160,37 @@ describe('lambdaHandler', () => {
       ReasonPhrases.INTERNAL_SERVER_ERROR,
     );
     expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+  });
+
+  it('should handled invalid json', async () => {
+    const result = await lambdaHandler(
+      createEvent({
+        body: '%767',
+      }),
+    );
+
+    expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
+    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
+
+    expect(mockRequestHandler).not.toHaveBeenCalled();
+  });
+
+  it('should return a bad request if the SET is not signed by the transmitter', async () => {
+    const invalidSignatureHandler = createHandler(
+      getDependencies({
+        verifySETJwt: vi
+          .fn()
+          .mockRejectedValueOnce(
+            new SignatureVerificationError('Invalid token'),
+          ),
+      }),
+    );
+
+    const result = await invalidSignatureHandler(createEvent());
+
+    expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
+    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
+
+    expect(mockRequestHandler).not.toHaveBeenCalled();
   });
 });
