@@ -95,7 +95,7 @@ describe(
       });
     });
 
-    describe('cognito', () => {
+    describe.skipIf(!testConfig.isLocalEnvironment)('cognito', () => {
       let logMessages;
 
       const fakeJwt = jsonwebtoken.sign(
