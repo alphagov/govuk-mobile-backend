@@ -4,7 +4,7 @@ import {
 } from '@aws-sdk/client-cloudwatch';
 import { assert, describe, it } from 'vitest';
 import { testConfig } from '../common/config';
-import { AlarmTestCase } from '../acc/alarm-test-case';
+import { AlarmTestCase } from '../types/alarm-test-case';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
 
 const driver = new TestLambdaDriver();

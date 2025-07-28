@@ -44,7 +44,7 @@ const getTestConfig = () => {
     'CFN_AttestationApiLogGroupName',
     'CFN_TestLambdaFunctionName',
     'CFN_SharedSignalsAccessLogGroupName',
-    ,
+    'CFN_AttestationEnabled',
     'CFN_OneLoginEnvironment',
     'CFN_FirebaseIosAppId',
     'CFN_FirebaseAndroidAppId',
@@ -134,6 +134,7 @@ const getTestConfig = () => {
     firebaseAndroidAppId: process.env.CFN_FirebaseAndroidAppId!,
     unknownAndroidAppId: process.env.CFN_UnknownAndroidAppId!,
     redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
+    attestationEnabled: process.env.CFN_AttestationEnabled == 'true',
   };
 };
 
