@@ -1735,6 +1735,7 @@ Resources:
     Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
+      LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
       KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
@@ -1746,21 +1747,25 @@ Resources:
           CustomDataIdentifier:
             - Name: IPAddresses
               Regex: \b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?  
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - IPAddresses
+              - JWTTokens
             Operation:
               Audit:
                 FindingsDestination: {}
-          - Sid: redact-policy
+          - Sid: masking-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - IPAddresses
+              - JWTTokens
             Operation:
               Deidentify:
-                MaskConfig: {}  # marks sensitive data with asterisks
+                MaskConfig: {} # Mask IP addresses and email addresses with asterisks
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2009,6 +2014,192 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
+
+  SharedSignalWafAssociation:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalsApi}/stages/${SharedSignalsApi.Stage}
+      WebACLArn: !GetAtt SharedSignalWAF.Arn
+
+  IPAddressSet:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: !Sub ${AWS::StackName}-shared-signals-ipset
+      Scope: REGIONAL
+      Description: IP address list for Shared Signals API WAF
+      IPAddressVersion: IPV4
+      Addresses:
+        - !Sub "{{resolve:ssm:/${ConfigStackName}/shared-signal/allowed-ipv4-ip-address-list}}"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+  
+  SharedSignalWAF:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub ${AWS::StackName}-shared-signals-waf
+      Scope: REGIONAL
+      Description: WAF for Shared Signals API
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Join
+          - "-"
+          - - SharedSignalWAFMetric
+            - !Sub ${AWS::StackName}
+      Rules:
+        - Name: SharedSignalThrottlingRule
+          Priority: 1
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          Statement:
+            RateBasedStatement:
+              Limit: 100 # Evaluating 100 requests AgregateKeyType: IP
+              EvaluationWindowSec: 60 # 1 minute window
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join
+              - "-"
+              - - SharedSignalWAFMetricRule
+                - !Sub ${AWS::StackName}
+        - Name: SharedSignalWAFIPAddressesRule
+          Priority: 2
+          Statement:
+            IPSetReferenceStatement:
+              Arn: !GetAtt IPAddressSet.Arn
+          Action:
+            Allow: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join
+              - "-"
+              - - SharedSignalWAFIPSetRule
+                - !Sub ${AWS::StackName}
+        - Name: SharedSignalAWSManagedBadInputsRuleSet
+          Priority: 3
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join
+              - "-"
+              - - SharedSignalWAFBadInputsRule
+                - !Sub ${AWS::StackName}        
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication   
+
+  SharedSignalWafLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      # must starts with aws-waf-logs-
+      LogGroupName: !Sub aws-waf-logs-shared-signal-${AWS::StackName}
+      KmsKeyId: !GetAtt SharedSignalWafLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Configuration:
+          CustomDataIdentifier:
+            - Name: IPAddresses
+              Regex: \b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?  
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - IPAddresses
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - IPAddresses
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}  # marks sensitive data with asterisks
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalWafLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for Shared Signal WAF log group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication 
+
+  SharedSignalWAFLoggingConfiguration:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !GetAtt SharedSignalWafLogGroup.Arn
+      ResourceArn: !GetAtt SharedSignalWAF.Arn
 
   ############################
   # Acceptance Testing Resources
@@ -2370,3 +2561,8 @@ Outputs:
   DeployedEnvironment:
     Description: SAM deployed environment
     Value: !Ref Environment
+
+  SharedSignalWAFLogGroupName:
+    Condition: IsNotProduction
+    Description: The Shared Signals WAF Access Log Group Name
+    Value: !Ref SharedSignalWafLogGroup

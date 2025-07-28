@@ -44,13 +44,13 @@ const getTestConfig = () => {
     'CFN_AttestationApiLogGroupName',
     'CFN_TestLambdaFunctionName',
     'CFN_SharedSignalsAccessLogGroupName',
-    ,
     'CFN_OneLoginEnvironment',
     'CFN_FirebaseIosAppId',
     'CFN_FirebaseAndroidAppId',
     'CFN_UnknownAndroidAppId',
     'CFN_SharedSignalsAccessLogGroupName',
     'CFN_DeployedEnvironment',
+    'CFN_SharedSignalWAFLogGroupName',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -134,6 +134,7 @@ const getTestConfig = () => {
     firebaseAndroidAppId: process.env.CFN_FirebaseAndroidAppId!,
     unknownAndroidAppId: process.env.CFN_UnknownAndroidAppId!,
     redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
+    sharedSignalWAFLogGroupName: process.env.CFN_SharedSignalWAFLogGroupName!,
   };
 };
 
