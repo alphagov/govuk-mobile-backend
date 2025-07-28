@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
 import {
   CognitoIdentityProviderClient,
   AdminUserGlobalSignOutCommand,
@@ -9,15 +9,15 @@ import {
   TooManyRequestsException,
   UserNotFoundException,
   CognitoIdentityProviderServiceException,
-} from "@aws-sdk/client-cognito-identity-provider";
+} from '@aws-sdk/client-cognito-identity-provider';
 
-import { adminGlobalSignOut } from "../../../cognito/sign-out-user";
-import { CognitoError } from "../../../errors";
+import { adminGlobalSignOut } from '../../../cognito/sign-out-user';
+import { CognitoError } from '../../../errors';
 
-vi.mock("@aws-sdk/client-cognito-identity-provider", async () => {
-  process.env.REGION = "eu-west-2";
+vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
+  process.env.REGION = 'eu-west-2';
   const actual = await vi.importActual<any>(
-    "@aws-sdk/client-cognito-identity-provider"
+    '@aws-sdk/client-cognito-identity-provider',
   );
   return {
     ...actual,
@@ -28,14 +28,14 @@ vi.mock("@aws-sdk/client-cognito-identity-provider", async () => {
 
 const sendMock = vi.fn();
 
-describe("adminGlobalSignOut", () => {
-  const userName = "test-user";
-  const region = "eu-west-2";
+describe('adminGlobalSignOut', () => {
+  const userName = 'test-user';
+  const region = 'eu-west-2';
 
   beforeAll(() => {
     process.env = {
       ...process.env,
-      USER_POOL_ID: "123",
+      USER_POOL_ID: '123',
       REGION: region,
     };
     (
@@ -47,19 +47,19 @@ describe("adminGlobalSignOut", () => {
     vi.clearAllMocks();
   });
 
-  it("returns true when sign-out is successful (HTTP 200)", async () => {
+  it('returns true when sign-out is successful (HTTP 200)', async () => {
     sendMock.mockResolvedValue({ $metadata: { httpStatusCode: 200 } });
 
     const result = await adminGlobalSignOut(userName);
     expect(result).toBe(true);
     expect(sendMock).toHaveBeenCalledOnce();
     expect(AdminUserGlobalSignOutCommand).toHaveBeenCalledWith({
-      UserPoolId: process.env["USER_POOL_ID"],
+      UserPoolId: process.env['USER_POOL_ID'],
       Username: userName,
     });
   });
 
-  it("returns false when sign-out response is not 200", async () => {
+  it('returns false when sign-out response is not 200', async () => {
     sendMock.mockResolvedValue({ $metadata: { httpStatusCode: 400 } });
 
     const result = await adminGlobalSignOut(userName);
@@ -69,54 +69,54 @@ describe("adminGlobalSignOut", () => {
   const errorCases = [
     {
       error: new InternalErrorException({
-        message: "Internal error",
+        message: 'Internal error',
         $metadata: {},
       }),
-      name: "InternalErrorException",
+      name: 'InternalErrorException',
     },
     {
       error: new InvalidParameterException({
-        message: "Invalid parameter",
+        message: 'Invalid parameter',
         $metadata: {},
       }),
-      name: "InvalidParameterException",
+      name: 'InvalidParameterException',
     },
     {
       error: new NotAuthorizedException({
-        message: "Not authorized",
+        message: 'Not authorized',
         $metadata: {},
       }),
-      name: "NotAuthorizedException",
+      name: 'NotAuthorizedException',
     },
     {
       error: new ResourceNotFoundException({
-        message: "Resource not found",
+        message: 'Resource not found',
         $metadata: {},
       }),
-      name: "ResourceNotFoundException",
+      name: 'ResourceNotFoundException',
     },
     {
       error: new TooManyRequestsException({
-        message: "Too many requests",
+        message: 'Too many requests',
         $metadata: {},
       }),
-      name: "TooManyRequestsException",
+      name: 'TooManyRequestsException',
     },
     {
       error: new UserNotFoundException({
-        message: "User not found",
+        message: 'User not found',
         $metadata: {},
       }),
-      name: "UserNotFoundException",
+      name: 'UserNotFoundException',
     },
     {
       error: new CognitoIdentityProviderServiceException({
-        name: "CognitoIdentityProviderServiceException",
-        message: "Generic service error",
-        $fault: "client",
+        name: 'CognitoIdentityProviderServiceException',
+        message: 'Generic service error',
+        $fault: 'client',
         $metadata: {},
       }),
-      name: "CognitoIdentityProviderServiceException",
+      name: 'CognitoIdentityProviderServiceException',
     },
   ];
 
@@ -124,15 +124,15 @@ describe("adminGlobalSignOut", () => {
     it(`throws CognitoError on ${name}`, async () => {
       sendMock.mockRejectedValue(error);
       await expect(() => adminGlobalSignOut(userName)).rejects.toThrowError(
-        CognitoError
+        CognitoError,
       );
     });
   });
 
-  it("throws generic Error on unknown error type", async () => {
-    sendMock.mockRejectedValue(new Error("Unhandled cognito exception"));
+  it('throws generic Error on unknown error type', async () => {
+    sendMock.mockRejectedValue(new Error('Unhandled cognito exception'));
     await expect(() => adminGlobalSignOut(userName)).rejects.toThrow(
-      "Unhandled cognito exception"
+      'Unhandled cognito exception',
     );
   });
 });
