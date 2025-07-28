@@ -36,7 +36,7 @@ const testCases: AlarmTestCase[] = [
     name: 'WAFRateLimitingAlarm',
     alarmName: `${testConfig.stackName}-cognito-waf-error-rate`,
     actionsEnabled: true,
-    metricName: 'BlockedRequests',
+    metricName: 'WAFErrorRate',
     alarmDescription:
       'Alarm when the WAF error rate exceeds 5 incidents per minute',
     statistic: 'Sum',
