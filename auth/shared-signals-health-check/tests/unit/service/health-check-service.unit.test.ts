@@ -69,7 +69,7 @@ describe('SharedSignalsHealthCheckService', () => {
       });
 
       await expect(service.authorise()).rejects.toThrow(
-        'No access token found in the response',
+        'Failed to authorise: Access token not found in response',
       );
     });
 
