@@ -53,8 +53,8 @@ export const createHandler =
       );
 
       if (featureFlags.ATTESTATION) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         await attestationUseCase.validateAttestationHeaderOrThrow(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
           sanitizedHeaders as SanitizedRequestHeadersWithAttestation,
           config,
         );

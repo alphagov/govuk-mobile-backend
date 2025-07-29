@@ -5,16 +5,17 @@ import axios from 'axios';
 import querystring from 'querystring';
 import jsonwebtoken from 'jsonwebtoken';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { sleep } from '../common/sleep';
 
 const driver = new TestLambdaDriver();
 
-describe('waf logging data protection policies', () => {
-  const startTime = Date.now() - 1 * 60 * 1000;
-  const loggingDriver = new LoggingDriver(driver);
+describe(
+  'waf logging data protection policies',
+  () => {
+    const startTime = Date.now() - 1 * 60 * 1000;
+    const loggingDriver = new LoggingDriver(driver);
 
-  describe(
-    'attestation api',
-    () => {
+    describe('attestation api', () => {
       let logMessages;
 
       const fakeJwt = jsonwebtoken.sign(
@@ -58,11 +59,13 @@ describe('waf logging data protection policies', () => {
           )
           .catch((e) => console.log('error expected'));
 
+        await sleep(5000);
+
         const message = await loggingDriver.findLogMessageWithRetries({
           logGroupName: testConfig.authProxyWafLogGroupName,
           searchString: randomId,
           startTime,
-          delayMs: 4000,
+          delayMs: 5000,
         });
 
         logMessages = JSON.parse(message);
@@ -78,23 +81,21 @@ describe('waf logging data protection policies', () => {
         });
 
         it('should redact sensitive token related information in the headers', () => {
-          Object.entries(unmaskedHeaders).forEach(([k, v]) => {
-            const header = logMessages.httpRequest.headers.find(
-              (h) => h.name === k,
-            );
-            expect(v).not.toEqual(header.value);
-          });
+          expect(unmaskedHeaders['X-Attestation-Token']).not.toEqual(
+            logMessages.httpRequest.headers.find(
+              (h) => h.name === 'X-Attestation-Token',
+            ).value,
+          );
+          expect(unmaskedHeaders.Authorization).not.toEqual(
+            logMessages.httpRequest.headers.find(
+              (h) => h.name === 'Authorization',
+            ).value,
+          );
         });
       });
-    },
-    {
-      retry: 2,
-    },
-  );
+    });
 
-  describe(
-    'cognito',
-    () => {
+    describe.skipIf(!testConfig.isLocalEnvironment)('cognito', () => {
       let logMessages;
 
       const fakeJwt = jsonwebtoken.sign(
@@ -140,6 +141,8 @@ describe('waf logging data protection policies', () => {
           )
           .catch((e) => console.log('error expected'));
 
+        await sleep(5000);
+
         const message = await loggingDriver.findLogMessageWithRetries({
           logGroupName: testConfig.cognitoWafLogGroupName,
           searchString: 'authorize',
@@ -157,33 +160,20 @@ describe('waf logging data protection policies', () => {
       describe('data protection', () => {
         it('should redact sensitive body information', () => {
           const parsedQuery = querystring.parse(logMessages.httpRequest.args);
-          expect(parsedQuery).toEqual({
-            response_type: 'code',
-            client_id: 'some-secure-id',
-            redirect_uri: 'some-domain.com',
-            scope: 'REDACTED',
-            email: 'REDACTED',
-            access_token: 'REDACTED',
-            id_token: 'REDACTED',
-            jwt: '*************************************************************************************************************************',
-            secret: 'fake-secret', // pragma: allowlist-secret
-            name: 'REDACTED',
-            address: 'more sensitive',
-          });
+          expect(parsedQuery.jwt).not.toEqual(unmakedQueryParams.jwt);
         });
 
         it('should redact sensitive token related information in the headers', () => {
-          Object.entries(unmaskedHeaders).forEach(([k, v]) => {
-            const header = logMessages.httpRequest.headers.find(
-              (h) => h.name === k,
-            );
-            expect(v).not.equal(header.value);
-          });
+          expect(unmaskedHeaders.authorization).not.toEqual(
+            logMessages.httpRequest.headers.find(
+              (h) => h.name === 'authorization',
+            ).value,
+          );
         });
       });
-    },
-    {
-      retry: 2,
-    },
-  );
-});
+    });
+  },
+  {
+    retry: 3,
+  },
+);

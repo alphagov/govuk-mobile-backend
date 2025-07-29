@@ -13,7 +13,7 @@ describe('parseSecret', () => {
 
   it.each([
     [
-      '{"client_secret": "user1", "password":}',
+      '{"client_secret": "user1", "password":}', // pragma: allowlist-secret
       `SyntaxError: Unexpected token '}', ..."password":}" is not valid JSON`,
     ], // pragma: allowlist-secret
     ['', `FailedToFetchSecretError: Secret does not contain client_secret`],

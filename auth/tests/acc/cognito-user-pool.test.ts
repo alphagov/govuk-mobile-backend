@@ -10,7 +10,8 @@ const command = new DescribeUserPoolCommand({
   UserPoolId: testConfig.userPoolId,
 });
 
-describe('Check deployed Cognito User Pool Client', async () => {
+// not supported by permissions boundaries
+describe.skip('Check deployed Cognito User Pool Client', async () => {
   const driver = new TestLambdaDriver();
 
   const response = await driver.performAction<DescribeUserPoolResponse>({

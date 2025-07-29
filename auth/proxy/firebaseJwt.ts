@@ -118,8 +118,8 @@ export const validateFirebaseJWT = async (
         signingKey,
         {
           algorithms: [alg],
-          // eslint-disable-next-line promise/prefer-await-to-callbacks
         },
+        // eslint-disable-next-line promise/prefer-await-to-callbacks
         (err, payload) => {
           if (err) reject(err);
           else resolve(payload);

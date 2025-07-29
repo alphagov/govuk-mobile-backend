@@ -2137,8 +2137,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - cognito-idp:DescribeUserPool
                   - cognito-idp:DescribeUserPoolClient
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
                 Resource: !GetAtt CognitoUserPool.Arn
 
               - Effect: Allow
@@ -2470,3 +2471,11 @@ Outputs:
   OneLoginEnvironment:
     Description: The OneLogin domain name for the Shared Signals API
     Value: !FindInMap [OneLogin, Environment, !Ref Environment]
+
+  DeployedEnvironment:
+    Description: SAM deployed environment
+    Value: !Ref Environment
+
+  AttestationEnabled:
+    Description: Attestation feature flag
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"

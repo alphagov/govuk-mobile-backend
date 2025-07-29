@@ -13,6 +13,9 @@ import {
   FilterLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
 import {
+  AdminCreateUserCommand,
+  AdminDeleteUserCommand,
+  AdminGetUserCommand,
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
   DescribeUserPoolCommand,
@@ -52,8 +55,11 @@ export const SUPPORTED_AWS_SDK_COMMANDS: {
   [clientName: string]: { [commandName: string]: any };
 } = {
   CognitoIdentityProviderClient: {
-    DescribeUserPoolCommand: DescribeUserPoolCommand,
+    // "DescribeUserPoolCommand": DescribeUserPoolCommand, not supported
     DescribeUserPoolClientCommand: DescribeUserPoolClientCommand,
+    AdminCreateUserCommand: AdminCreateUserCommand,
+    AdminDeleteUserCommand: AdminDeleteUserCommand,
+    AdminGetUserCommand: AdminGetUserCommand,
   },
   CloudWatchLogsClient: {
     DescribeLogGroupsCommand: DescribeLogGroupsCommand,

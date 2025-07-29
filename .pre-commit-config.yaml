@@ -18,6 +18,12 @@ repos:
         entry: pre-commit.sh
         pass_filenames: false
         stages: [pre-commit]
+      - id: format
+        name: format
+        entry: npm run format:check
+        pass_filenames: false
+        stages: [pre-commit]
+        language: system
       - id: linting
         name: linting
         language: system

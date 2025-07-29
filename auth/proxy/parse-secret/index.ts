@@ -8,8 +8,8 @@ import { FailedToFetchSecretError } from '../errors';
  */
 export function parseSecret(secretString: string | undefined): string {
   try {
-    if (typeof secretString !== 'string') {
-      // pragma: allowlist-secret
+    // prettier-ignore
+    if (typeof secretString !== 'string') { // pragma: allowlist-secret
       throw new FailedToFetchSecretError('Secret is not correct type.');
     }
     if (!secretString.includes('client_secret')) {
@@ -19,15 +19,16 @@ export function parseSecret(secretString: string | undefined): string {
     }
     const secretStringParsed = JSON.parse(secretString) as unknown;
 
-    if (typeof secretStringParsed !== 'object' || secretStringParsed === null) {
-      // pragma: allowlist-secret
+    // prettier-ignore
+    if (typeof secretStringParsed !== 'object' || secretStringParsed === null) { // pragma: allowlist-secret
       throw new FailedToFetchSecretError('Secret format is incorrect');
     }
 
     const clientSecret = (secretStringParsed as { client_secret?: unknown })
       .client_secret;
-    if (typeof clientSecret !== 'string') {
-      // pragma: allowlist-secret
+
+    // prettier-ignore
+    if (typeof clientSecret !== 'string') { // pragma: allowlist-secret
       throw new FailedToFetchSecretError('client_secret is not a string');
     }
 

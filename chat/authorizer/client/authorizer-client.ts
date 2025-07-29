@@ -20,7 +20,7 @@ export class AuthorizerClient {
 
   /**
    * Authorizes the request by verifying the JWT token and returning an authorizer result.
-   * @returns {Promise<APIGatewayAuthorizerResult>} The authorizer result.
+   * @returns The authorizer result.
    */
   public async authorizerResult(): Promise<APIGatewayAuthorizerResult> {
     const secrets = await this.getChatSecrets();
@@ -52,9 +52,10 @@ export class AuthorizerClient {
   /**
    * Constructs the authorizer result based on the Cognito token payload and effect.
    * @param cognitoTokenPayload The Cognito token payload.
+   * @param userId
    * @param effect The effect of the authorization (Allow or Deny).
    * @param bearerToken The bearer token to include in the context.
-   * @returns {APIGatewayAuthorizerResult} The authorizer result.
+   * @returns The authorizer result.
    */
   public static getAuthorizerResult(
     userId: string,
@@ -85,7 +86,7 @@ export class AuthorizerClient {
    * @param authHeader The authorization header containing the JWT.
    * @param userPoolId The Cognito User Pool ID.
    * @param clientId The Cognito Client ID.
-   * @returns {Promise<CognitoAccessTokenPayload | undefined>} The Cognito token payload.
+   * @returns The Cognito token payload.
    */
   public static async getCognitoTokenPayloadFromJwt(
     authHeader: string,
@@ -111,7 +112,7 @@ export class AuthorizerClient {
 
   /**
    * Retrieves chat secrets from AWS Secrets Manager.
-   * @returns {Promise<SecretsConfig | string | undefined>} The secrets configuration object.
+   * @returns The secrets configuration object.
    */
   public async getChatSecrets(): Promise<SecretsConfig> {
     const secretsName = process.env['CHAT_SECRET_NAME'];
@@ -125,10 +126,10 @@ export class AuthorizerClient {
       throw new Error('Failed to retrieve chat secret from Secrets Manager');
     }
 
-    if (typeof secretsObject === 'string') {
-      //pragma: allowlist secret
+    // prettier-ignore
+    if (typeof secretsObject === 'string') { // pragma: allowlist secret
       throw new Error(
-        'Retrieved secret is a string, expected an object with bearerToken, clientId, and userPoolId', //pragma: allowlist secret
+        'Retrieved secret is a string, expected an object with bearerToken, clientId, and userPoolId', // pragma: allowlist secret
       );
     }
     return secretsObject;

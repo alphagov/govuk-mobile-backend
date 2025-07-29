@@ -4,8 +4,6 @@ import { TestDataLoader } from '../driver/testDataLoader.driver';
 import { AxiosAuthDriver } from '../driver/axiosAuth.driver';
 import { AttestationDriver } from '../driver/attestation.driver';
 
-const COGNITO_APP_CLIENT_REDIRECT_URL = 'https://d84l1y8p4kdic.cloudfront.net';
-
 describe('auth sign in journey', () => {
   const testDataLoader = new TestDataLoader(
     testConfig.region,
@@ -14,7 +12,7 @@ describe('auth sign in journey', () => {
   const authDriver = new AxiosAuthDriver(
     testConfig.clientId,
     testConfig.cognitoUrl,
-    COGNITO_APP_CLIENT_REDIRECT_URL,
+    testConfig.redirectUri,
     testConfig.authProxyUrl,
     testConfig.oneLoginEnvironment,
   );

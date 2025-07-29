@@ -3,7 +3,7 @@ import {
   GetSecretValueCommand,
   GetSecretValueCommandOutput,
 } from '@aws-sdk/client-secrets-manager';
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export class ClientCredentialsDriver {
   private readonly sharedSignalsSecretName: string;
@@ -25,7 +25,18 @@ export class ClientCredentialsDriver {
     return response.data.access_token;
   }
 
-  private async constructAxiosRequestConfig(
+  public async getAccessTokenWithCustomCredentials(
+    secretsConfig: SecretsConfig,
+  ): Promise<string> {
+    const config: AxiosRequestConfig = await this.constructAxiosRequestConfig(
+      secretsConfig,
+    );
+
+    const response: AxiosResponse = await axios(config);
+    return response.data.access_token;
+  }
+
+  async constructAxiosRequestConfig(
     secretsConfig: SecretsConfig,
   ): Promise<AxiosRequestConfig> {
     const headers = {

@@ -4,7 +4,7 @@ import {
 } from '@aws-sdk/client-cloudwatch';
 import { assert, describe, it } from 'vitest';
 import { testConfig } from '../common/config';
-import { AlarmTestCase } from '../acc/alarm-test-case';
+import { AlarmTestCase } from '../types/alarm-test-case';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
 
 const driver = new TestLambdaDriver();
@@ -27,7 +27,7 @@ const testCases: AlarmTestCase[] = [
     dimensions: [
       { Name: 'ApiName', Value: testConfig.authProxyId },
       { Name: 'Resource', Value: '/oauth2/token' },
-      { Name: 'Stage', Value: testConfig.testEnvironment },
+      { Name: 'Stage', Value: testConfig.deployedEnvironment },
       { Name: 'Method', Value: 'POST' },
     ],
   },

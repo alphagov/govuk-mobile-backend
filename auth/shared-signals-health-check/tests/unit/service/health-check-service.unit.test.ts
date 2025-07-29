@@ -11,11 +11,13 @@ vi.mock('../../../service/secrets-service');
 const region = 'eu-west-2';
 const healthCheckTokenUrl = 'https://token-url.example.com';
 const healthCheckVerifyUrl = 'https://verify-url.example.com';
-const healthCheckSecretName = 'my-secret-name';
+// prettier-ignore
+const healthCheckSecretName = 'my-secret-name'; // pragma: allowlist-secret
 
 const secretsConfig = {
   clientId: 'test-client-id',
-  clientSecret: 'test-client-secret',
+  // prettier-ignore
+  clientSecret: 'test-client-secret', // pragma: allowlist-secret
 };
 
 describe('SharedSignalsHealthCheckService', () => {
@@ -66,11 +68,15 @@ describe('SharedSignalsHealthCheckService', () => {
         data: {},
       });
 
-      await expect(service.authorise()).rejects.toThrow('No access token found in the response');
+      await expect(service.authorise()).rejects.toThrow(
+        'No access token found in the response',
+      );
     });
 
     it('should throw AuthError on exception', async () => {
-      (secretsServiceMock.getSecret as any).mockRejectedValue(new Error('Secret error'));
+      (secretsServiceMock.getSecret as any).mockRejectedValue(
+        new Error('Secret error'),
+      );
 
       await expect(service.authorise()).rejects.toThrow(AuthError);
     });
@@ -105,7 +111,9 @@ describe('SharedSignalsHealthCheckService', () => {
 
   describe('constructAuthoriseAxiosRequestConfig', () => {
     it('should construct correct axios config', () => {
-      const config = (service as any).constructAuthoriseAxiosRequestConfig(secretsConfig);
+      const config = (service as any).constructAuthoriseAxiosRequestConfig(
+        secretsConfig,
+      );
       expect(config.method).toBe('POST');
       expect(config.url).toBe(healthCheckTokenUrl);
       expect(config.headers.Authorization).toMatch(/^Basic /);
@@ -115,7 +123,9 @@ describe('SharedSignalsHealthCheckService', () => {
 
   describe('constructVerifyAxiosRequestConfig', () => {
     it('should construct correct axios config', () => {
-      const config = (service as any).constructVerifyAxiosRequestConfig('bearer-token');
+      const config = (service as any).constructVerifyAxiosRequestConfig(
+        'bearer-token',
+      );
       expect(config.method).toBe('POST');
       expect(config.url).toBe(healthCheckVerifyUrl);
       expect(config.headers.Authorization).toBe('Bearer bearer-token');

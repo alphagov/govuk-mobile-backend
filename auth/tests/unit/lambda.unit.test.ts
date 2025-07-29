@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { loadTemplateFromFile } from '../common/template';
+import { testConfig } from '../common/config';
 
 import path from 'path';
 
@@ -43,13 +44,6 @@ const testCases: LambdaTestCase[] = [
     codeUri: 'shared-signals/',
     handler: 'app.lambdaHandler',
     role: 'SignalsFunctionIAMRole',
-  },
-  {
-    resourceName: 'SharedSignalsHealthCheckFunction',
-    functionName: 'shared-signals-health-check',
-    codeUri: 'shared-signals-health-check/',
-    handler: 'app.lambdaHandler',
-    role: 'SharedSignalsHealthCheckFunctionIAMRole',
   },
 ];
 

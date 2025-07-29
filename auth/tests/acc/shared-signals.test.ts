@@ -14,7 +14,8 @@ const command = new GetResourcesCommand({
   restApiId: testConfig.sharedSignalsApiId,
 });
 
-describe.skipIf(!testConfig.isLocalEnvironment)('shared signals', async () => {
+// not supported by permissions boundary
+describe.skip('shared signals', async () => {
   describe('API Gateway', () => {
     it('should have a POST method associated with a Lambda function', async () => {
       let lambdaAttached = false;

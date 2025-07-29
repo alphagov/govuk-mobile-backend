@@ -3,9 +3,9 @@ import { z } from 'zod/v4';
 
 const maxHeaderValueLength = 1024; // adjust as appropriate
 
-// eslint-disable-next-line no-control-regex, sonarjs/no-control-regex
 const asciiString = z
   .string()
+  // eslint-disable-next-line no-control-regex, sonarjs/no-control-regex
   .regex(/^[\x00-\x7F]*$/, { message: 'Non-ASCII character found' });
 
 const baseHeaderSchema = z.object({

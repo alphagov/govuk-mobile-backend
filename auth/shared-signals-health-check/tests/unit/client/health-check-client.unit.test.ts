@@ -36,7 +36,9 @@ describe('HealthCheckClient', () => {
     const error = new Error('Auth error');
     (healthCheckServiceMock.authorise as any).mockRejectedValue(error);
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     const result = await client.performHealthCheck();
     expect(result).toBe(false);
     expect(consoleErrorSpy).toHaveBeenCalledWith('Health check failed:', error);
@@ -48,7 +50,9 @@ describe('HealthCheckClient', () => {
     const error = new Error('Verify error');
     (healthCheckServiceMock.verify as any).mockRejectedValue(error);
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     const result = await client.performHealthCheck();
     expect(result).toBe(false);
     expect(consoleErrorSpy).toHaveBeenCalledWith('Health check failed:', error);

@@ -50,8 +50,8 @@ const validateAndReturnSubject = async (token: string): Promise<string> => {
       throw new Error('Failed to retrieve JWT secret from Secrets Manager');
     }
 
-    if (typeof secretsObject === 'string') {
-      //pragma: allowlist secret
+    // prettier-ignore
+    if (typeof secretsObject === 'string') { // pragma: allowlist secret
       throw new Error(
         'Retrieved secret is a string, expected an object with clientId, clientSecret, and userPoolId',
       );

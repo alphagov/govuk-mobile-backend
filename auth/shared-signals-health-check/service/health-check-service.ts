@@ -42,22 +42,26 @@ export class SharedSignalsHealthCheckService
         // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         this.constructAuthoriseAxiosRequestConfig(secret as SecretsConfig);
 
-      const response = await axios(axiosConfig);
+      const response = await axios<{ access_token: string }>(axiosConfig);
 
-      if (response.status != StatusCodes.OK as number) {
+      if (response.status !== StatusCodes.OK.valueOf()) {
         throw new AuthError(
-          `Failed to authorise: ${response.status} ${response.statusText}`,
+          `Failed to authorise: ${response.status.toString()} ${
+            response.statusText
+          }`,
         );
       }
 
-      if (response.data === undefined || !response.data.access_token) {
-        throw new AuthError('No access token found in the response');
+      if (typeof response.data.access_token !== 'string') {
+        throw new AuthError('Access token not found in response');
       }
 
       return response.data.access_token;
     } catch (error) {
       throw new AuthError(
-        `Failed to authorise: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to authorise: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       );
     }
   }
@@ -68,18 +72,22 @@ export class SharedSignalsHealthCheckService
       const axiosConfig: AxiosRequestConfig =
         this.constructVerifyAxiosRequestConfig(token);
       const response = await axios(axiosConfig);
-      isVerified = response.status == StatusCodes.NO_CONTENT;
+      isVerified = response.status === StatusCodes.NO_CONTENT.valueOf();
       if (isVerified) {
         console.info('Token verification successful');
       } else {
         throw new VerifyError(
-          `Failed to verify: ${response.status} ${response.statusText}`,
+          `Failed to verify: ${response.status.toString()} ${
+            response.statusText
+          }`,
         );
       }
       return isVerified;
     } catch (error) {
       throw new VerifyError(
-        `Failed to verify: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to verify: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       );
     }
   }
