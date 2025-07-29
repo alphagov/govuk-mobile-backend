@@ -169,12 +169,10 @@ Resources:
         - openid
       GenerateSecret: true # pragma: allowlist secret
       CallbackURLs: !If
-        - IsTestingEnvironment 
-        - 
-          - govuk://govuk/login-auth-callback
-          - https://d84l1y8p4kdic.cloudfront.net 
-        - 
-          - govuk://govuk/login-auth-callback
+        - IsTestingEnvironment
+        - - govuk://govuk/login-auth-callback
+          - https://d84l1y8p4kdic.cloudfront.net
+        - - govuk://govuk/login-auth-callback
       LogoutURLs: !If
         - IsProduction
         - - https://oidc.account.gov.uk/logout
@@ -1760,7 +1758,7 @@ Resources:
               - IPAddresses
             Operation:
               Deidentify:
-                MaskConfig: {}  # marks sensitive data with asterisks
+                MaskConfig: {} # marks sensitive data with asterisks
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1941,7 +1939,7 @@ Resources:
   SignalsFunctionKMSKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting signals function secrets
+      Description: KMS key for encrypting shared signals receiver function secrets
       EnableKeyRotation: true
       KeyPolicy:
         Version: "2012-10-17"
@@ -1998,6 +1996,113 @@ Resources:
                   - cognito-idp:AdminDeleteUser
                   - cognito-idp:AdminUpdateUserAttributes
                 Resource: !GetAtt CognitoUserPool.Arn
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalsHealthCheckFunction:
+    Condition: IsNotProduction
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-shared-signals-health-check
+      Description: Shared Signals health check function
+      CodeUri: shared-signals-health-check/
+      Handler: app.lambdaHandler
+      Role: !GetAtt SharedSignalsHealthCheckFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt SharedSignalsHealthCheckFunctionKMSKey.Arn
+      Events:
+        EventBridgeEvent:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(10 minutes)
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+              MaximumEventAgeInSeconds: 60
+      Environment:
+        Variables:
+          REGION: !Ref AWS::Region
+          HEALTH_CHECK_TOKEN_URL: !Sub "{{resolve:ssm:/${ConfigStackName}/shared-signal/health-check-token-url}}"
+          HEALTH_CHECK_VERIFY_URL: !Sub "{{resolve:ssm:/${ConfigStackName}/shared-signal/health-check-verify-url}}"
+          HEALTH_CHECK_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/health-check-secrets
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  SharedSignalsHealthCheckFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting shared signals health check function secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+            Resource:
+              - "*"
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalsHealthCheckFunctionIAMRole:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-shared-signals-health-check-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SharedSignalsHealthCheckFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/shared-signal/health-check-secrets-*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-health-check:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2355,7 +2460,7 @@ Outputs:
   SharedSignalsAccessLogGroupName:
     Condition: IsNotProduction
     Description: The Shared Signals Access Log Group Name
-    Value: !Ref SharedSignalsAccessLogGroup  
+    Value: !Ref SharedSignalsAccessLogGroup
 
   TestLambdaFunctionName:
     Condition: IsTestingEnvironment

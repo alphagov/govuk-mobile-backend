@@ -1,136 +1,136 @@
-import { describe, it, expect } from "vitest";
-import { loadTemplateFromFile } from "../common/template";
+import { describe, it, expect } from 'vitest';
+import { loadTemplateFromFile } from '../common/template';
 
-import path from "path";
+import path from 'path';
 
 const template = loadTemplateFromFile(
-  path.join(__dirname, "..", "..", "template.yaml")
+  path.join(__dirname, '..', '..', 'template.yaml'),
 );
 
-describe("Lambda Authorizer IAM Role", () => {
+describe('Lambda Authorizer IAM Role', () => {
   let resourceUnderTest: {
     Type: any;
     Properties: any;
   };
 
-  const resource = template.findResources("AWS::IAM::Role");
-  resourceUnderTest = resource["ChatAuthorizerFunctionIAMRole"] as any;
+  const resource = template.findResources('AWS::IAM::Role');
+  resourceUnderTest = resource['ChatAuthorizerFunctionIAMRole'] as any;
 
-  it("should have a role name that includes the stack name", () => {
+  it('should have a role name that includes the stack name', () => {
     expect(resourceUnderTest.Properties.RoleName).toEqual({
-      "Fn::Sub": "${AWS::StackName}-chat-proxy-authorizer-role",
+      'Fn::Sub': '${AWS::StackName}-chat-proxy-authorizer-role',
     });
   });
-  it("should have a trust policy for the lambda service", () => {
+  it('should have a trust policy for the lambda service', () => {
     expect(resourceUnderTest.Properties.AssumeRolePolicyDocument).toEqual({
-      Version: "2012-10-17",
+      Version: '2012-10-17',
       Statement: [
         {
-          Effect: "Allow",
+          Effect: 'Allow',
           Principal: {
-            Service: "lambda.amazonaws.com",
+            Service: 'lambda.amazonaws.com',
           },
-          Action: "sts:AssumeRole",
+          Action: 'sts:AssumeRole',
         },
       ],
     });
   });
-  it("should have a policy that allows the lambda function to write logs and read the /chat/secrets secret", () => {
+  it('should have a policy that allows the lambda function to write logs and read the /chat/secrets secret', () => {
     expect(resourceUnderTest.Properties.Policies).toEqual([
       {
-        PolicyName: "ChatAuthorizerFunctionPolicy",
+        PolicyName: 'ChatAuthorizerFunctionPolicy',
         PolicyDocument: {
           Statement: [
             {
-              Action: ["secretsmanager:GetSecretValue"],
-              Effect: "Allow",
+              Action: ['secretsmanager:GetSecretValue'],
+              Effect: 'Allow',
               Resource: {
-                "Fn::Sub":
-                  "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/chat/secrets-*",
+                'Fn::Sub':
+                  'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/chat/secrets-*',
               },
             },
             {
               Action: [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents",
+                'logs:CreateLogGroup',
+                'logs:CreateLogStream',
+                'logs:PutLogEvents',
               ],
-              Effect: "Allow",
+              Effect: 'Allow',
               Resource: {
-                "Fn::Sub":
-                  "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-chat-proxy-authorizer:*",
+                'Fn::Sub':
+                  'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-chat-proxy-authorizer:*',
               },
             },
           ],
-          Version: "2012-10-17",
+          Version: '2012-10-17',
         },
       },
     ]);
   });
-  it("should have a permissions boundary", () => {
+  it('should have a permissions boundary', () => {
     expect(resourceUnderTest.Properties.PermissionsBoundary).toEqual({
-      "Fn::If": [
-        "UsePermissionsBoundary",
+      'Fn::If': [
+        'UsePermissionsBoundary',
         {
-          Ref: "PermissionsBoundary",
+          Ref: 'PermissionsBoundary',
         },
         {
-          Ref: "AWS::NoValue",
+          Ref: 'AWS::NoValue',
         },
       ],
     });
   });
-  it("has the required tags", () => {
+  it('has the required tags', () => {
     expect(resourceUnderTest.Properties.Tags).toEqual([
       {
-        Key: "Product",
-        Value: "GOV.UK",
+        Key: 'Product',
+        Value: 'GOV.UK',
       },
       {
-        Key: "Environment",
+        Key: 'Environment',
         Value: {
-          Ref: "Environment",
+          Ref: 'Environment',
         },
       },
       {
-        Key: "System",
-        Value: "Chat",
+        Key: 'System',
+        Value: 'Chat',
       },
     ]);
   });
 });
 
-describe("Lambda Authorizer Invoke Permissions", () => {
+describe('Lambda Authorizer Invoke Permissions', () => {
   let resourceUnderTest: {
     Type: any;
     Properties: any;
   };
 
-  const resource = template.findResources("AWS::Lambda::Permission");
-  resourceUnderTest = resource["ChatAuthorizerInvokePermission"] as any;
+  const resource = template.findResources('AWS::Lambda::Permission');
+  resourceUnderTest = resource['ChatAuthorizerInvokePermission'] as any;
 
-  it("should refer to the chat authorizer function", () => {
+  it('should refer to the chat authorizer function', () => {
     expect(resourceUnderTest.Properties.FunctionName).toEqual({
-      Ref: "ChatAuthorizerFunction",
+      Ref: 'ChatAuthorizerFunction',
     });
   });
 
-  it("should have a lambda invoke action", () => {
+  it('should have a lambda invoke action', () => {
     expect(resourceUnderTest.Properties.Action).toEqual(
-      "lambda:InvokeFunction"
+      'lambda:InvokeFunction',
     );
   });
 
-  it("should have a principal for the api gateway", () => {
+  it('should have a principal for the api gateway', () => {
     expect(resourceUnderTest.Properties.Principal).toEqual(
-      "apigateway.amazonaws.com"
+      'apigateway.amazonaws.com',
     );
   });
 
-  it("should have a source arn relating to the api gateway", () => {
+  it('should have a source arn relating to the api gateway', () => {
     expect(resourceUnderTest.Properties.SourceArn).toEqual({
-      "Fn::Sub":
-        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ChatApiGateway}/*",
+      'Fn::Sub':
+        'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ChatApiGateway}/*',
     });
   });
 });

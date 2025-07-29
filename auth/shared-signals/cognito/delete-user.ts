@@ -7,17 +7,17 @@ import {
   TooManyRequestsException,
   UserNotFoundException,
   CognitoIdentityProviderServiceException,
-} from "@aws-sdk/client-cognito-identity-provider";
-import type { AdminDeleteUserCommandOutput } from "@aws-sdk/client-cognito-identity-provider";
-import { StatusCodes } from "http-status-codes";
-import { cognitoClient } from "./client";
-import { CognitoError } from "../errors";
+} from '@aws-sdk/client-cognito-identity-provider';
+import type { AdminDeleteUserCommandOutput } from '@aws-sdk/client-cognito-identity-provider';
+import { StatusCodes } from 'http-status-codes';
+import { cognitoClient } from './client';
+import { CognitoError } from '../errors';
 
 export const adminDeleteUser = async (userName: string): Promise<boolean> => {
-  const userPoolId = process.env["USER_POOL_ID"];
+  const userPoolId = process.env['USER_POOL_ID'];
   try {
     if (userPoolId == undefined) {
-      throw new Error("USER_POOL_ID environment variable is not set");
+      throw new Error('USER_POOL_ID environment variable is not set');
     }
 
     const input = {
@@ -25,8 +25,9 @@ export const adminDeleteUser = async (userName: string): Promise<boolean> => {
       Username: userName,
     };
     const command = new AdminDeleteUserCommand(input);
-    const response: AdminDeleteUserCommandOutput =
-      await cognitoClient.send(command);
+    const response: AdminDeleteUserCommandOutput = await cognitoClient.send(
+      command,
+    );
 
     return response.$metadata.httpStatusCode == StatusCodes.OK;
   } catch (error) {
@@ -43,7 +44,7 @@ export const adminDeleteUser = async (userName: string): Promise<boolean> => {
       default:
         throw error instanceof Error
           ? error
-          : new Error("Unhandled cognito exception");
+          : new Error('Unhandled cognito exception');
     }
   }
 };

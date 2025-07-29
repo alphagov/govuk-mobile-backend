@@ -29,7 +29,7 @@ parameter_overrides = "Environment=\"dev\" CodeSigningConfigArn=\"none\" Permiss
 Ensure you have pulled down the stack outputs from the SAM template to a `.env`, there is a helper script that can be run from the `/chat` directory that will do this:
 
 ```bash
-sh ../auth/helper-scripts/get-cloudformation-outputs.sh your-stack-name 
+sh ../auth/helper-scripts/get-cloudformation-outputs.sh your-stack-name
 ```
 
 There are multiple sets of tests, specifically, `unit`, `acc` & `int`, below is a brief description of what is expected for each:

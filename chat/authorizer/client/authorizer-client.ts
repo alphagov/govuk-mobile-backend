@@ -2,14 +2,14 @@ import type {
   APIGatewayRequestAuthorizerEvent,
   APIGatewayAuthorizerResult,
   StatementEffect,
-} from "aws-lambda";
-import type { SecretsConfig } from "../services/secrets-service";
-import { SecretsService } from "../services/secrets-service";
-import { CognitoJwtVerifier } from "aws-jwt-verify";
-import type { CognitoAccessTokenPayload } from "aws-jwt-verify/jwt-model";
+} from 'aws-lambda';
+import type { SecretsConfig } from '../services/secrets-service';
+import { SecretsService } from '../services/secrets-service';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import type { CognitoAccessTokenPayload } from 'aws-jwt-verify/jwt-model';
 
 export class AuthorizerClient {
-  public region = process.env["REGION"] ?? "eu-west-2";
+  public region = process.env['REGION'] ?? 'eu-west-2';
   public secretsService: SecretsService;
   public event: APIGatewayRequestAuthorizerEvent;
 
@@ -25,25 +25,26 @@ export class AuthorizerClient {
   public async authorizerResult(): Promise<APIGatewayAuthorizerResult> {
     const secrets = await this.getChatSecrets();
     const { clientId, userPoolId, bearerToken } = secrets;
-    const authHeader = this.event.headers?.["X-Auth"];
+    const authHeader = this.event.headers?.['X-Auth'];
 
-    if (authHeader === undefined || authHeader.trim() === "") {
+    if (authHeader === undefined || authHeader.trim() === '') {
       console.error("Authorization header 'X-Auth' is missing or empty");
       return AuthorizerClient.getAuthorizerResult(
-        "unknown",
-        "Deny",
-        bearerToken
+        'unknown',
+        'Deny',
+        bearerToken,
       );
     }
 
-    const cognitoTokenPayload = await AuthorizerClient.getCognitoTokenPayloadFromJwt(
-      authHeader,
-      userPoolId,
-      clientId
-    );
+    const cognitoTokenPayload =
+      await AuthorizerClient.getCognitoTokenPayloadFromJwt(
+        authHeader,
+        userPoolId,
+        clientId,
+      );
 
-    const effect: StatementEffect = cognitoTokenPayload ? "Allow" : "Deny";
-    const userId = cognitoTokenPayload?.sub ?? "unknown";
+    const effect: StatementEffect = cognitoTokenPayload ? 'Allow' : 'Deny';
+    const userId = cognitoTokenPayload?.sub ?? 'unknown';
 
     return AuthorizerClient.getAuthorizerResult(userId, effect, bearerToken);
   }
@@ -58,23 +59,23 @@ export class AuthorizerClient {
   public static getAuthorizerResult(
     userId: string,
     effect: StatementEffect,
-    bearerToken: string
+    bearerToken: string,
   ): APIGatewayAuthorizerResult | PromiseLike<APIGatewayAuthorizerResult> {
     return {
       principalId: userId,
       policyDocument: {
-        Version: "2012-10-17",
+        Version: '2012-10-17',
         Statement: [
           {
-            Action: "execute-api:Invoke",
+            Action: 'execute-api:Invoke',
             Effect: effect,
-            Resource: "*",
+            Resource: '*',
           },
         ],
       },
       context: {
         bearerToken: `Bearer ${bearerToken}`, // pragma: allowlist secret
-        "Govuk-Chat-End-User-Id": userId,
+        'Govuk-Chat-End-User-Id': userId,
       },
     };
   }
@@ -89,21 +90,21 @@ export class AuthorizerClient {
   public static async getCognitoTokenPayloadFromJwt(
     authHeader: string,
     userPoolId: string,
-    clientId: string
+    clientId: string,
   ): Promise<CognitoAccessTokenPayload | undefined> {
     const verifier = CognitoJwtVerifier.create({
       userPoolId: userPoolId,
-      tokenUse: "access",
+      tokenUse: 'access',
       clientId: clientId,
     });
 
     try {
       const payload: CognitoAccessTokenPayload = await verifier.verify(
-        authHeader
+        authHeader,
       );
       return payload;
     } catch (err) {
-      console.error("Token not valid", err);
+      console.error('Token not valid', err);
       return undefined;
     }
   }
@@ -113,20 +114,21 @@ export class AuthorizerClient {
    * @returns {Promise<SecretsConfig | string | undefined>} The secrets configuration object.
    */
   public async getChatSecrets(): Promise<SecretsConfig> {
-    const secretsName = process.env["CHAT_SECRET_NAME"];
-    if (secretsName === undefined || secretsName === "") {
+    const secretsName = process.env['CHAT_SECRET_NAME'];
+    if (secretsName === undefined || secretsName === '') {
       throw new Error('Environment variable "CHAT_SECRET_NAME" is not set');
     }
 
     const secretsObject = await this.secretsService.getSecret(secretsName);
 
     if (secretsObject === undefined) {
-      throw new Error("Failed to retrieve chat secret from Secrets Manager");
+      throw new Error('Failed to retrieve chat secret from Secrets Manager');
     }
 
-    if (typeof secretsObject === "string") { //pragma: allowlist secret
+    if (typeof secretsObject === 'string') {
+      //pragma: allowlist secret
       throw new Error(
-        "Retrieved secret is a string, expected an object with bearerToken, clientId, and userPoolId" //pragma: allowlist secret
+        'Retrieved secret is a string, expected an object with bearerToken, clientId, and userPoolId', //pragma: allowlist secret
       );
     }
     return secretsObject;

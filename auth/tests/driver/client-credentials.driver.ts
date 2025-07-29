@@ -2,8 +2,8 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
   GetSecretValueCommandOutput,
-} from "@aws-sdk/client-secrets-manager";
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+} from '@aws-sdk/client-secrets-manager';
+import axios, { AxiosRequestConfig } from 'axios';
 
 export class ClientCredentialsDriver {
   private readonly sharedSignalsSecretName: string;
@@ -17,22 +17,23 @@ export class ClientCredentialsDriver {
   public async getAccessToken(): Promise<string> {
     const secretsConfig: SecretsConfig =
       await this.getSharedSignalsSecretConfig();
-    const config: AxiosRequestConfig =
-      await this.constructAxiosRequestConfig(secretsConfig);
+    const config: AxiosRequestConfig = await this.constructAxiosRequestConfig(
+      secretsConfig,
+    );
 
     const response = await axios(config);
     return response.data.access_token;
   }
 
   private async constructAxiosRequestConfig(
-    secretsConfig: SecretsConfig
+    secretsConfig: SecretsConfig,
   ): Promise<AxiosRequestConfig> {
     const headers = {
-      "Content-Type": "application/x-www-form-urlencoded",
+      'Content-Type': 'application/x-www-form-urlencoded',
     };
 
     const data = {
-      grant_type: "client_credentials",
+      grant_type: 'client_credentials',
       client_id: secretsConfig.clientId,
       client_secret: secretsConfig.clientSecret,
     };
@@ -40,7 +41,7 @@ export class ClientCredentialsDriver {
     const authUrl = `https://${this.cognitoDomain}/oauth2/token`;
 
     const config: AxiosRequestConfig = {
-      method: "POST",
+      method: 'POST',
       url: authUrl,
       data,
       headers,
@@ -51,7 +52,7 @@ export class ClientCredentialsDriver {
 
   private async getSharedSignalsSecretConfig() {
     const secretsManagerClient = new SecretsManagerClient({
-      region: "eu-west-2",
+      region: 'eu-west-2',
     });
 
     const command = new GetSecretValueCommand({
@@ -62,7 +63,7 @@ export class ClientCredentialsDriver {
       await secretsManagerClient.send(command);
 
     const secretsConfig: SecretsConfig = JSON.parse(
-      secretValue.SecretString!
+      secretValue.SecretString!,
     ) as SecretsConfig;
     return secretsConfig;
   }

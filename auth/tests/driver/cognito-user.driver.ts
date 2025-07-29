@@ -5,8 +5,8 @@ import {
   AdminDeleteUserCommand,
   AdminGetUserCommand,
   AdminGetUserCommandInput,
-  AdminDeleteUserCommandInput
-} from "@aws-sdk/client-cognito-identity-provider";
+  AdminDeleteUserCommandInput,
+} from '@aws-sdk/client-cognito-identity-provider';
 
 export class CognitoUserDriver {
   private readonly userPoolId: string;
@@ -16,10 +16,10 @@ export class CognitoUserDriver {
   }
 
   public async createCognitoUserAndReturnUserName(
-    username: string
+    username: string,
   ): Promise<string> {
     const client = new CognitoIdentityProviderClient({
-      region: "eu-west-2",
+      region: 'eu-west-2',
     });
 
     const input = {
@@ -27,12 +27,12 @@ export class CognitoUserDriver {
       Username: username,
       UserAttributes: [
         {
-          Name: "email",
+          Name: 'email',
           Value: username,
         },
         {
-          Name: "email_verified",
-          Value: "true",
+          Name: 'email_verified',
+          Value: 'true',
         },
       ],
     } as AdminCreateUserRequest;
@@ -44,20 +44,20 @@ export class CognitoUserDriver {
 
   public async deleteUserFromCognito(username: string): Promise<void> {
     const client = new CognitoIdentityProviderClient({
-      region: "eu-west-2",
+      region: 'eu-west-2',
     });
     const input = {
       UserPoolId: this.userPoolId,
       Username: username,
     } as AdminDeleteUserCommandInput;
     const command = new AdminDeleteUserCommand(input);
-    console.log("Deleting user from Cognito:", username);
+    console.log('Deleting user from Cognito:', username);
     await client.send(command);
   }
 
   public async getUserAttributes(username: string): Promise<any> {
     const client = new CognitoIdentityProviderClient({
-      region: "eu-west-2",
+      region: 'eu-west-2',
     });
 
     const input = {

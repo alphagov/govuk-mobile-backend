@@ -6,7 +6,6 @@ This Lambda function enables tests to interact with AWS services in environments
 
 The Lambda receives a payload specifying an AWS SDK client and command to execute. For example:
 
-
 ```ts
 {
     service: "CloudWatchClient",
@@ -17,67 +16,67 @@ The Lambda receives a payload specifying an AWS SDK client and command to execut
 
 If the requested client and command are supported, the Lambda executes the command and returns the result. Otherwise, it rejects the request.
 
---- 
+---
 
 ## Adding a New AWS SDK Client or Command
 
 1. **Register the Client**
 
-    Edit `../acceptance/clients.ts` and add your client to `SUPPORTED_AWS_SDK_CLIENTS`:
+   Edit `../acceptance/clients.ts` and add your client to `SUPPORTED_AWS_SDK_CLIENTS`:
 
-    ```ts
-    export const SUPPORTED_AWS_SDK_CLIENTS = {
-        "CognitoIdentityProviderClient": CognitoIdentityProviderClient,
-        "CloudWatchClient": CloudWatchClient,
-        // Add your new AWS SDK client here
-    };
-    ```
+   ```ts
+   export const SUPPORTED_AWS_SDK_CLIENTS = {
+     CognitoIdentityProviderClient: CognitoIdentityProviderClient,
+     CloudWatchClient: CloudWatchClient,
+     // Add your new AWS SDK client here
+   };
+   ```
 
 2. **Register the Command**
 
-    In the same file, add your command to `SUPPORTED_AWS_SDK_COMMANDS` under the appropriate client:
+   In the same file, add your command to `SUPPORTED_AWS_SDK_COMMANDS` under the appropriate client:
 
-    ```ts
-    export const SUPPORTED_AWS_SDK_COMMANDS = {
-        CognitoIdentityProviderClient: {
-            "DescribeUserPoolCommand": DescribeUserPoolCommand,
-        },
-        CloudWatchClient: {
-            "DescribeAlarmsCommand": DescribeAlarmsCommand,
-        },
-        // Add your new client + command mapping here
-    };
-    ```
+   ```ts
+   export const SUPPORTED_AWS_SDK_COMMANDS = {
+     CognitoIdentityProviderClient: {
+       DescribeUserPoolCommand: DescribeUserPoolCommand,
+     },
+     CloudWatchClient: {
+       DescribeAlarmsCommand: DescribeAlarmsCommand,
+     },
+     // Add your new client + command mapping here
+   };
+   ```
 
-    > **Note:** If the Lambda receives a client/command combination not listed here, it will reject the request.
+   > **Note:** If the Lambda receives a client/command combination not listed here, it will reject the request.
 
 3. **Update IAM Permissions**
 
-    Add the required permissions to the `AcceptanceTestingFunctionIAMRole` in your CloudFormation/SAM template. For example:
+   Add the required permissions to the `AcceptanceTestingFunctionIAMRole` in your CloudFormation/SAM template. For example:
 
-    ```yaml
-    - Effect: Allow
-      Action:
-        - iam:GetRole
-      Resource: 
-        - !GetAtt SomeResourceRole.Arn
-    ```
+   ```yaml
+   - Effect: Allow
+     Action:
+       - iam:GetRole
+     Resource:
+       - !GetAtt SomeResourceRole.Arn
+   ```
 
-    Ensure the Lambda has all permissions needed for the new client/command.
+   Ensure the Lambda has all permissions needed for the new client/command.
 
 4. **Deploy and Test**
 
-    Deploy your changes to your ephemeral branch:
+   Deploy your changes to your ephemeral branch:
 
-    ```sh
-    sam deploy
-    ```
+   ```sh
+   sam deploy
+   ```
 
-    Then run the acceptance tests:
+   Then run the acceptance tests:
 
-    ```sh
-    npm run test:acc
-    ```
+   ```sh
+   npm run test:acc
+   ```
 
 ---
 
