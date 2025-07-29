@@ -2566,3 +2566,7 @@ Outputs:
     Condition: IsNotProduction
     Description: The Shared Signals WAF Access Log Group Name
     Value: !Ref SharedSignalWafLogGroup
+
+  AttestationEnabled:
+    Description: Attestation feature flag
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"

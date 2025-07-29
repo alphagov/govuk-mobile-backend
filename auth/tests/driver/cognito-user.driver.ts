@@ -25,6 +25,8 @@ export class CognitoUserDriver {
     const input = {
       UserPoolId: this.userPoolId,
       Username: username,
+      // suppress email sending
+      MessageAction: 'SUPPRESS',
       UserAttributes: [
         {
           Name: 'email',
