@@ -76,15 +76,15 @@ export class SharedSignalsHealthCheckService
         this.constructVerifyAxiosRequestConfig(token);
       const response = await axios(axiosConfig);
       isVerified = response.status === StatusCodes.NO_CONTENT.valueOf();
-      if (isVerified) {
-        console.info('Token verification successful');
-      } else {
+      if (!isVerified) {
         throw new VerifyError(
           `Failed to verify: ${response.status.toString()} ${
             response.statusText
           }`,
         );
       }
+      
+      console.info('Token verification successful');
       return isVerified;
     } catch (error) {
       throw new VerifyError(
