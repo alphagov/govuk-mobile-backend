@@ -43,22 +43,26 @@ export class SecretsService {
         return undefined;
       }
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        if (error.name === 'ResourceNotFoundException') {
-          console.error(`Secret ${secretName} was not found.`);
-        } else if (error.name === 'InvalidRequestException') {
-          console.error(`Invalid request to Secrets Manager: ${error.message}`);
-        } else if (error.name === 'InvalidParameterException') {
-          console.error(
-            `Invalid parameter for secret ${secretName}: ${error.message}`,
-          );
-        } else {
-          console.error(`Error retrieving secret ${secretName}:`, error);
-        }
-      }
-
-      return undefined;
+      return this.handleError(error, secretName);
     }
+  }
+
+  private handleError(error: unknown, secretName: string) {
+    if (error instanceof Error) {
+      if (error.name === 'ResourceNotFoundException') {
+        console.error(`Secret ${secretName} was not found.`);
+      } else if (error.name === 'InvalidRequestException') {
+        console.error(`Invalid request to Secrets Manager: ${error.message}`);
+      } else if (error.name === 'InvalidParameterException') {
+        console.error(
+          `Invalid parameter for secret ${secretName}: ${error.message}`,
+        );
+      } else {
+        console.error(`Error retrieving secret ${secretName}:`, error);
+      }
+    }
+
+    return undefined;
   }
 }
 
