@@ -43,7 +43,7 @@ export class SecretsService {
         return undefined;
       }
     } catch (error: unknown) {
-      return this.handleError(error, secretName);
+      this.handleError(error, secretName);
     }
   }
 
