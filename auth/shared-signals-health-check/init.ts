@@ -30,8 +30,8 @@ export const initialiseHealthCheckService =
 
     const healthCheckSecretName = process.env['HEALTH_CHECK_SECRET_NAME'];
     if (
-      healthCheckSecretName === undefined ||
-      healthCheckSecretName === 'undefined' // pragma: allowlist secret
+      healthCheckSecretName === undefined || //pragma: allowlist secret
+      healthCheckSecretName === 'undefined' //pragma: allowlist secret
     ) {
       throw new ConfigError(
         'HEALTH_CHECK_SECRET_NAME environment variable is not set',

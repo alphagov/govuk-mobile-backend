@@ -56,7 +56,7 @@ describe('SecretsService', () => {
   });
 
   it('should return undefined when neither SecretString nor SecretBinary is present', async () => {
-    const secretName = 'test-secret'; // pragma: allowlist secret
+    const secretName = 'test-secret'; //pragma: allowlist secret
 
     mockSend.mockResolvedValueOnce({} as GetSecretValueCommandOutput);
 
