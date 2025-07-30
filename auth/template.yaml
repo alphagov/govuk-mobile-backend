@@ -2008,7 +2008,7 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsHealthCheckFunction:
+  SharedSignalHealthCheckFunction:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
@@ -2021,7 +2021,12 @@ Resources:
       Events:
         EventBridgeEvent:
           Type: ScheduleV2
+          Name: !Sub ${AWS::StackName}-shared-signals-health-check-event
           Properties:
+            PermissionsBoundary: !If
+              - UsePermissionsBoundary
+              - !Ref PermissionsBoundary
+              - !Ref AWS::NoValue
             ScheduleExpression: rate(10 minutes)
             RetryPolicy:
               MaximumRetryAttempts: 2
