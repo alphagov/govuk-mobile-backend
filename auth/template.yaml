@@ -2008,7 +2008,7 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsHealthCheckFunction:
+  SharedSignalHealthCheckFunction:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:

@@ -14,7 +14,7 @@ describe('Shared Signals Health Check Function', () => {
 
   const functionResources = template.findResources('AWS::Serverless::Function');
   sharedSignalsHealthFunction = functionResources[
-    'SharedSignalsHealthCheckFunction'
+    'SharedSignalHealthCheckFunction'
   ] as any;
 
   it('should have a health check token url defined in the environment variables', () => {
