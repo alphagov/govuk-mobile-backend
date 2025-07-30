@@ -136,6 +136,7 @@ const getTestConfig = () => {
     unknownAndroidAppId: process.env.CFN_UnknownAndroidAppId!,
     redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
     attestationEnabled: process.env.CFN_AttestationEnabled == 'true',
+    sharedSignalWAFLogGroupName: process.env.CFN_SharedSignalWAFLogGroupName!,
   };
 };
 
