@@ -2021,6 +2021,7 @@ Resources:
       Events:
         EventBridgeEvent:
           Type: ScheduleV2
+          Name: !Sub ${AWS::StackName}-shared-signals-health-check-event
           Properties:
             PermissionsBoundary: !If
               - UsePermissionsBoundary
