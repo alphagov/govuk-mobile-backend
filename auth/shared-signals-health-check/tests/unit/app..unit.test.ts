@@ -56,9 +56,7 @@ describe('Unit test for shared-signals-health-check lambdaHandler', () => {
     const consoleInfoMock = vi
       .spyOn(console, 'info')
       .mockImplementation(() => undefined);
-    const { lambdaHandler } = await import(
-      '../../../shared-signals-health-check/app'
-    );
+    const { lambdaHandler } = await import('../../app');
 
     await lambdaHandler(mockEvent);
 
@@ -75,12 +73,8 @@ describe('Unit test for shared-signals-health-check lambdaHandler', () => {
   });
 
   it('Should log config error if ConfigError is thrown', async () => {
-    const { lambdaHandler } = await import(
-      '../../../shared-signals-health-check/app'
-    );
-    const { ConfigError } = await import(
-      '../../../shared-signals-health-check/errors'
-    );
+    const { lambdaHandler } = await import('../../app');
+    const { ConfigError } = await import('../../errors');
     healthCheckClientMock.performHealthCheck.mockRejectedValue(
       new ConfigError('Config error'),
     );
@@ -97,12 +91,8 @@ describe('Unit test for shared-signals-health-check lambdaHandler', () => {
   });
 
   it('Should log auth error if AuthError is thrown', async () => {
-    const { lambdaHandler } = await import(
-      '../../../shared-signals-health-check/app'
-    );
-    const { AuthError } = await import(
-      '../../../shared-signals-health-check/errors'
-    );
+    const { lambdaHandler } = await import('../../app');
+    const { AuthError } = await import('../../errors');
     healthCheckClientMock.performHealthCheck.mockRejectedValue(
       new AuthError('Auth error'),
     );
@@ -119,12 +109,8 @@ describe('Unit test for shared-signals-health-check lambdaHandler', () => {
   });
 
   it('Should log verify error if VerifyError is thrown', async () => {
-    const { lambdaHandler } = await import(
-      '../../../shared-signals-health-check/app'
-    );
-    const { VerifyError } = await import(
-      '../../../shared-signals-health-check/errors'
-    );
+    const { lambdaHandler } = await import('../../app');
+    const { VerifyError } = await import('../../errors');
     healthCheckClientMock.performHealthCheck.mockRejectedValue(
       new VerifyError('Verify error'),
     );
@@ -141,9 +127,7 @@ describe('Unit test for shared-signals-health-check lambdaHandler', () => {
   });
 
   it('Should log unhandled error for unknown error', async () => {
-    const { lambdaHandler } = await import(
-      '../../../shared-signals-health-check/app'
-    );
+    const { lambdaHandler } = await import('../../app');
     healthCheckClientMock.performHealthCheck.mockRejectedValue(
       new Error('Unknown error'),
     );
