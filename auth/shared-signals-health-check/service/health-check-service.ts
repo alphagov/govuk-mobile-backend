@@ -83,7 +83,7 @@ export class SharedSignalsHealthCheckService
           }`,
         );
       }
-      
+
       console.info('Token verification successful');
       return isVerified;
     } catch (error) {

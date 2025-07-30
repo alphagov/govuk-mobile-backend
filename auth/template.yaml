@@ -2022,6 +2022,10 @@ Resources:
         EventBridgeEvent:
           Type: ScheduleV2
           Properties:
+            PermissionsBoundary: !If
+              - UsePermissionsBoundary
+              - !Ref PermissionsBoundary
+              - !Ref AWS::NoValue
             ScheduleExpression: rate(10 minutes)
             RetryPolicy:
               MaximumRetryAttempts: 2
