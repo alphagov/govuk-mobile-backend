@@ -4,7 +4,6 @@ import { ConfigError } from '../../errors';
 import { SharedSignalsHealthCheckService } from '../../service/health-check-service';
 
 const ENV_VARS = {
-  REGION: 'eu-west-2',
   HEALTH_CHECK_TOKEN_URL: 'https://token.url',
   HEALTH_CHECK_VERIFY_URL: 'https://verify.url',
   HEALTH_CHECK_SECRET_NAME: 'secret-name', // pragma: allowlist secret
@@ -40,7 +39,6 @@ describe('initialiseHealthCheckService', () => {
   });
 
   it.each([
-    ['REGION', 'REGION environment variable is not set'],
     [
       'HEALTH_CHECK_TOKEN_URL',
       'HEALTH_CHECK_TOKEN_URL environment variable is not set',

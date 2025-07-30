@@ -1,10 +1,10 @@
-import type { SecretsConfig } from './secrets-service';
-import { SecretsService } from './secrets-service';
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 import { StatusCodes } from 'http-status-codes';
 import type { SharedSignalsHealthCheck } from '../interface/health-check';
 import { AuthError, VerifyError } from '../errors';
+import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import type { SecretsConfig } from '../interface/secret-config';
 
 export class SharedSignalsHealthCheckService
   implements SharedSignalsHealthCheck
@@ -12,15 +12,12 @@ export class SharedSignalsHealthCheckService
   private readonly healthCheckTokenUrl: string;
   private readonly healthCheckVerifyUrl: string;
   private readonly healthCheckSecretName: string;
-  private readonly secretsService: SecretsService;
 
   public constructor(
-    region: string,
     healthCheckTokenUrl: string,
     healthCheckVerifyUrl: string,
     healthCheckSecretName: string,
   ) {
-    this.secretsService = new SecretsService(region);
     this.healthCheckTokenUrl = healthCheckTokenUrl;
     this.healthCheckVerifyUrl = healthCheckVerifyUrl;
     this.healthCheckSecretName = healthCheckSecretName;
@@ -28,19 +25,25 @@ export class SharedSignalsHealthCheckService
 
   public async authorise(): Promise<string> {
     try {
-      const secret = await this.secretsService.getSecret(
-        this.healthCheckSecretName,
-      );
-
+      const secret = await getSecret(this.healthCheckSecretName);
       if (secret === undefined) {
         throw new AuthError(
           `Failed to retrieve secret for ${this.healthCheckSecretName}`,
         );
       }
+      // prettier-ignore
+      if (typeof secret !== 'string') { //pragma: allowlist secret
+        throw new AuthError(
+          `Secret for ${this.healthCheckSecretName} is not a string`,
+        );
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      const secretConfig: SecretsConfig = JSON.parse(secret) as SecretsConfig;
 
       const axiosConfig: AxiosRequestConfig =
         // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-        this.constructAuthoriseAxiosRequestConfig(secret as SecretsConfig);
+        this.constructAuthoriseAxiosRequestConfig(secretConfig);
 
       const response = await axios<{ access_token: string }>(axiosConfig);
 

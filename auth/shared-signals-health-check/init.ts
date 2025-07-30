@@ -3,11 +3,6 @@ import { SharedSignalsHealthCheckService } from './service/health-check-service'
 
 export const initialiseHealthCheckService =
   (): SharedSignalsHealthCheckService => {
-    const region = process.env['REGION'];
-    if (region === undefined || region === 'undefined') {
-      throw new ConfigError('REGION environment variable is not set');
-    }
-
     const healthCheckTokenUrl = process.env['HEALTH_CHECK_TOKEN_URL'];
     if (
       healthCheckTokenUrl === undefined ||
@@ -39,7 +34,6 @@ export const initialiseHealthCheckService =
     }
 
     return new SharedSignalsHealthCheckService(
-      region,
       healthCheckTokenUrl,
       healthCheckVerifyUrl,
       healthCheckSecretName,
