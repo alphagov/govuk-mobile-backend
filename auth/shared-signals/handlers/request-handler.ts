@@ -39,7 +39,6 @@ export const requestHandler = async (
       }
     }
 
-    console.error('No matching schema found for the request body');
     return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
   } catch {
     return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);

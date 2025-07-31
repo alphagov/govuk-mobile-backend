@@ -87,13 +87,12 @@ describe('requestHandler', () => {
     expect(result.statusCode).toBe(StatusCodes.NOT_IMPLEMENTED);
   });
 
-  it('should return a 400 response if no handler matches the parsed request', async () => {
+  it('should return a 400 response if there is an error with parsing the request body', async () => {
     const input = {
       foo: 'bar',
     };
 
     const result = await requestHandler(JSON.stringify(input));
-
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
   });
 });
