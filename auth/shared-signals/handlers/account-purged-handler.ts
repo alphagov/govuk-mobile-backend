@@ -19,16 +19,20 @@ export const handleAccountPurgedRequest = async (
     ].subject.uri;
 
   const correlationId = accountPurgedRequest.jti;
-  const logData = { userId, correlationId };
-
   await adminGlobalSignOut(userId);
   const isUserDeleted = await adminDeleteUser(userId);
 
   if (isUserDeleted) {
-    console.info(logMessages.SIGNAL_SUCCESS_ACCOUNT_PURGE, logData);
+    console.info(logMessages.SIGNAL_SUCCESS_ACCOUNT_PURGE, {
+      userId,
+      correlationId,
+    });
     return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
   } else {
-    console.error(logMessages.SIGNAL_ERROR_ACCOUNT_PURGE, logData);
+    console.error(logMessages.SIGNAL_ERROR_ACCOUNT_PURGE, {
+      userId,
+      correlationId,
+    });
 
     return generateResponse(
       StatusCodes.INTERNAL_SERVER_ERROR,

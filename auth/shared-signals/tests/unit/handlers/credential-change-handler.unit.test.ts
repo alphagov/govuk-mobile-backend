@@ -287,4 +287,33 @@ describe('handleCredentialChangeRequest', () => {
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
     });
   });
+
+  it('returns INTERNAL_SERVER_ERROR for invalid requests with message containing correlationId', async () => {
+    // Simulate an invalid request
+    const request: any = {
+      jti: '123e4567-e89b-12d3-a456-426614174000',
+      events: {},
+    } as any;
+
+    const response = await handleCredentialChangeRequest(request);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
+
+    expect(consoleErrorMock).toHaveBeenCalledWith(
+      'SIGNAL_ERROR_CREDENTIAL_CHANGE CorrelationId - 123e4567-e89b-12d3-a456-426614174000',
+      expect.any(Error),
+    );
+
+    expect(response).toEqual({
+      body: JSON.stringify({
+        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+    });
+  });
 });
