@@ -1956,7 +1956,7 @@ Resources:
     Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::StackName}-signal-role
+      RoleName: !Sub ${AWS::StackName}-shared-signal-receiver-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:

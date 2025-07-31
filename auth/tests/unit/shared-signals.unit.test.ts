@@ -63,7 +63,7 @@ describe('shared signal', () => {
     expect(resourceUnderTest.Type).toBe('AWS::IAM::Role');
     expect(resourceUnderTest.Condition).toBe('IsNotProduction');
     expect(resourceUnderTest.Properties.RoleName).toEqual({
-      'Fn::Sub': '${AWS::StackName}-signal-role',
+      'Fn::Sub': '${AWS::StackName}-shared-signal-receiver-role',
     });
 
     // Check AssumeRolePolicyDocument
