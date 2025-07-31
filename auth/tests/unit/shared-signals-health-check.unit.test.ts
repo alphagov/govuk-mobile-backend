@@ -54,9 +54,13 @@ describe('Shared Signals Health Check Function', () => {
       EventBridgeEvent: {
         Type: 'ScheduleV2',
         Name: {
-          'Fn::Sub': '${AWS::StackName}-shared-signals-health-check-event',
+          'Fn::Sub':
+            '${AWS::StackName}-shared-signal-health-check-event-bridge',
         },
         Properties: {
+          Name: {
+            'Fn::Sub': '${AWS::StackName}-shared-signal-health-check-event',
+          },
           PermissionsBoundary: {
             'Fn::If': [
               'UsePermissionsBoundary',
