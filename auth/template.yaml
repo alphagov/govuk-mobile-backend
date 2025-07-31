@@ -2009,8 +2009,8 @@ Resources:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-shared-signals-health-check
-      Description: Shared Signals health check function
+      FunctionName: !Sub ${AWS::StackName}-shared-signal-health-check
+      Description: Shared Signal health check function
       CodeUri: shared-signals-health-check/
       Handler: app.lambdaHandler
       Role: !GetAtt SharedSignalsHealthCheckFunctionIAMRole.Arn
@@ -2018,8 +2018,9 @@ Resources:
       Events:
         EventBridgeEvent:
           Type: ScheduleV2
-          Name: !Sub ${AWS::StackName}-shared-signals-health-check-event
+          Name: !Sub ${AWS::StackName}-shared-signal-health-check-event-bridge
           Properties:
+            Name: !Sub ${AWS::StackName}-shared-signal-health-check-event
             PermissionsBoundary: !If
               - UsePermissionsBoundary
               - !Ref PermissionsBoundary

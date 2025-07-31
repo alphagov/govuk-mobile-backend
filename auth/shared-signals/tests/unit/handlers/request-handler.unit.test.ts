@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { requestHandler } from '../../../handlers/request-handler';
-import { parseRequest } from '../../../parser';
 import { handleCredentialChangeRequest } from '../../../handlers/credential-change-handler';
 import { handleAccountPurgedRequest } from '../../../handlers/account-purged-handler';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
@@ -18,7 +17,6 @@ vi.mock('../../../handlers/account-purged-handler', () => ({
 
 describe('requestHandler', () => {
   const region = 'eu-west-2';
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     process.env = {
@@ -27,12 +25,10 @@ describe('requestHandler', () => {
       REGION: region,
     };
     vi.clearAllMocks();
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-    consoleLogSpy.mockRestore();
   });
 
   it('dispatches credentialChangeSchema to handleCredentialChangeRequest', async () => {
@@ -57,7 +53,7 @@ describe('requestHandler', () => {
           },
       },
     };
-    (parseRequest as any).mockReturnValue(input);
+
     (handleCredentialChangeRequest as any).mockReturnValue({
       statusCode: StatusCodes.ACCEPTED,
       body: ReasonPhrases.ACCEPTED,
@@ -65,7 +61,6 @@ describe('requestHandler', () => {
     const result = await requestHandler(JSON.stringify(input));
     expect(handleCredentialChangeRequest).toHaveBeenCalledWith(input);
     expect(result.statusCode).toBe(StatusCodes.ACCEPTED);
-    expect(consoleLogSpy).toHaveBeenCalledWith('CorrelationId: ', input.jti);
   });
 
   it('dispatches accountPurgedSchema to handleAccountPurgedRequest', async () => {
@@ -83,26 +78,22 @@ describe('requestHandler', () => {
         },
       },
     };
-    (parseRequest as any).mockReturnValue(input);
     (handleAccountPurgedRequest as any).mockReturnValue({
       statusCode: StatusCodes.NOT_IMPLEMENTED,
       body: ReasonPhrases.NOT_IMPLEMENTED,
     });
     const result = await requestHandler(JSON.stringify(input));
     expect(handleAccountPurgedRequest).toHaveBeenCalledWith(input);
-    expect(consoleLogSpy).toHaveBeenCalledWith('CorrelationId: ', input.jti);
     expect(result.statusCode).toBe(StatusCodes.NOT_IMPLEMENTED);
   });
 
-  it('should throw an error if no handler matches the parsed request', async () => {
+  it('should return a 400 response if no handler matches the parsed request', async () => {
     const input = {
       foo: 'bar',
     };
-    (parseRequest as any).mockReturnValue(input);
 
-    await expect(() => requestHandler(JSON.stringify(input))).rejects.toThrow(
-      'No handler found for parsed input',
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith('CorrelationId: ', undefined);
+    const result = await requestHandler(JSON.stringify(input));
+
+    expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
   });
 });

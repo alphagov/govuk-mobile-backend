@@ -70,6 +70,10 @@ describe('handleCredentialChangeRequest', () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
     expect(adminGlobalSignOut).toHaveBeenCalledWith(
       'urn:example:account:1234567890',
     );
@@ -117,6 +121,10 @@ describe('handleCredentialChangeRequest', () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
     expect(adminGlobalSignOut).toHaveBeenCalledWith(
       'urn:example:account:1234567890',
     );
@@ -167,6 +175,10 @@ describe('handleCredentialChangeRequest', () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
     expect(consoleErrorMock).toHaveBeenCalledWith('SIGNAL_ERROR_EMAIL_UPDATE', {
       userId: 'urn:example:account:1234567890',
     });
@@ -207,6 +219,10 @@ describe('handleCredentialChangeRequest', () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
     expect(consoleErrorMock).toHaveBeenCalledWith(
       'SIGNAL_ERROR_PASSWORD_UPDATE',
       {
@@ -250,6 +266,10 @@ describe('handleCredentialChangeRequest', () => {
     } as CredentialChangeRequest;
 
     const response = await handleCredentialChangeRequest(input);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
     expect(consoleErrorMock).toHaveBeenCalledWith(
       'Unhandled credential change type',
     );
