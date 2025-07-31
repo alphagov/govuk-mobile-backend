@@ -34,7 +34,7 @@ describe('Check the deployed Shared Signal WAF log group', async () => {
     assert.isNotEmpty(logGroup.kmsKeyId);
   });
 
-  it('has a log group name with the required shared signals prefix', () => {
+  it('has a log group name with the required shared signal prefix', () => {
     assert.include(logGroup.logGroupName, `aws-waf-logs-shared-signal`);
   });
 

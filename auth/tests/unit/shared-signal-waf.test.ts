@@ -82,7 +82,7 @@ describe('Shared Signal WAF', () => {
   it('should be associated with the api gateway', () => {
     expect(sharedSignalAssociation.Properties.ResourceArn).toEqual({
       'Fn::Sub':
-        'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalsApi}/stages/${SharedSignalsApi.Stage}',
+        'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalApi}/stages/${SharedSignalApi.Stage}',
     });
   });
 });
@@ -122,7 +122,7 @@ describe('Shared Signal WAF logging', () => {
     expect(statements[1].DataIdentifier).toContain('JWTTokens');
   });
 
-  it('has a log group name with the required shared signals prefix', () => {
+  it('has a log group name with the required shared signal prefix', () => {
     expect(wafLogGroup.Properties.LogGroupName).toEqual({
       'Fn::Sub': 'aws-waf-logs-shared-signal-${AWS::StackName}',
     });

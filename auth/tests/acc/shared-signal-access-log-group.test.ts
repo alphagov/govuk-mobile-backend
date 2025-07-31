@@ -10,7 +10,7 @@ import { TestLambdaDriver } from '../driver/testLambda.driver';
 const driver = new TestLambdaDriver();
 
 const commandInput: DescribeLogGroupsCommandInput = {
-  logGroupNamePrefix: testConfig.sharedSignalsAccessLogGroupName, //API gateway log group name
+  logGroupNamePrefix: testConfig.sharedAccessLogGroupName, //API gateway log group name
 };
 const command = new DescribeLogGroupsCommand(commandInput);
 

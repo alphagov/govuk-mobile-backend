@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach, expect } from 'vitest';
 import { initialiseHealthCheckService } from '../../init';
 import { ConfigError } from '../../errors';
-import { SharedSignalsHealthCheckService } from '../../service/health-check-service';
+import { SharedSignalHealthCheckService } from '../../service/health-check-service';
 
 const ENV_VARS = {
   HEALTH_CHECK_TOKEN_URL: 'https://token.url',
@@ -24,9 +24,9 @@ describe('initialiseHealthCheckService', () => {
     setEnv({});
   });
 
-  it('should initialise SharedSignalsHealthCheckService with correct env vars', () => {
+  it('should initialise SharedSignalHealthCheckService with correct env vars', () => {
     const service = initialiseHealthCheckService();
-    expect(service).toBeInstanceOf(SharedSignalsHealthCheckService);
+    expect(service).toBeInstanceOf(SharedSignalHealthCheckService);
     expect((service as any).healthCheckTokenUrl).toBe(
       ENV_VARS.HEALTH_CHECK_TOKEN_URL,
     );

@@ -5,7 +5,7 @@ import { CognitoUserDriver } from '../driver/cognito-user.driver';
 import { v4 as uuidv4 } from 'uuid';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
 
-describe('shared-signals', () => {
+describe('shared-signal-receiver', () => {
   const lambdaDriver = new TestLambdaDriver();
   const cognitoUserDriver = new CognitoUserDriver(
     testConfig.userPoolId,
@@ -40,7 +40,7 @@ describe('shared-signals', () => {
 
     // Send a password update signal
     const response = await fetch(
-      `${testConfig.sharedSignalsEndpoint}/receiver`,
+      `${testConfig.sharedSignalEndpoint}/receiver`,
       {
         method: 'POST',
         headers: {
@@ -81,7 +81,7 @@ describe('shared-signals', () => {
 
     // Send a password update signal
     const response = await fetch(
-      `${testConfig.sharedSignalsEndpoint}/receiver`,
+      `${testConfig.sharedSignalEndpoint}/receiver`,
       {
         method: 'POST',
         headers: {
@@ -127,7 +127,7 @@ describe('shared-signals', () => {
 
     // Send an email update signal
     const response = await fetch(
-      `${testConfig.sharedSignalsEndpoint}/receiver`,
+      `${testConfig.sharedSignalEndpoint}/receiver`,
       {
         method: 'POST',
         headers: {
@@ -182,7 +182,7 @@ describe('shared-signals', () => {
 
     // Send a password update signal
     const response = await fetch(
-      `${testConfig.sharedSignalsEndpoint}/receiver`,
+      `${testConfig.sharedSignalEndpoint}/receiver`,
       {
         method: 'POST',
         headers: {

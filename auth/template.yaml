@@ -1685,7 +1685,7 @@ Resources:
         AccessToken: seconds
       AccessTokenValidity: 3600 # 1 hour in seconds
 
-  SharedSignalsApi:
+  SharedSignalApi:
     Condition: IsNotProduction
     Type: AWS::Serverless::Api
     Metadata:
@@ -1695,28 +1695,16 @@ Resources:
           ignore_checks:
             - W1028
     Properties:
-      Name: !Join
-        - '-'
-        - - !Ref AWS::StackName
-          - shared-signals
-          - !Select
-            - 4
-            - !Split
-              - '-'
-              - !Select
-                - 2
-                - !Split
-                  - /
-                  - !Ref AWS::StackId
+      Name: !Sub ${AWS::StackName}-shared-signal
       StageName: !Ref Environment
       AccessLogSetting:
-        DestinationArn: !GetAtt SharedSignalsAccessLogGroup.Arn
+        DestinationArn: !GetAtt SharedSignalAccessLogGroup.Arn
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
       Auth:
-        DefaultAuthorizer: SharedSignalsAuthorizer
+        DefaultAuthorizer: SharedSignalAuthorizer
         Authorizers:
-          SharedSignalsAuthorizer:
-            FunctionArn: !GetAtt SharedSignalsAuthorizer.Arn
+          SharedSignalAuthorizer:
+            FunctionArn: !GetAtt SharedSignalAuthorizer.Arn
             FailureResponse:
               StatusCode: 401
               ResponseTemplates:
@@ -1729,13 +1717,13 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
-  SharedSignalsAccessLogGroup:
+  SharedSignalAccessLogGroup:
     Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
-      LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
-      KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
+      LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-shared-signal
+      KmsKeyId: !GetAtt SharedSignalAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
@@ -1764,11 +1752,11 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsAccessLogGroupKMSKey:
+  SharedSignalAccessLogGroupKMSKey:
     Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting the Shared Signals Access Log Group
+      Description: KMS key for encrypting the Shared Signal Access Log Group
       EnableKeyRotation: true
       KeyPolicy:
         Version: '2012-10-17'
@@ -1802,15 +1790,15 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsAuthorizer:
+  SharedSignalAuthorizer:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-shared-signal-authorizer
       CodeUri: shared-signal-authorizer/
       Handler: app.lambdaHandler
-      Role: !GetAtt SharedSignalsAuthorizerIAMRole.Arn
-      KmsKeyArn: !GetAtt SharedSignalsLambdaKMSKey.Arn
+      Role: !GetAtt SharedSignalAuthorizerIAMRole.Arn
+      KmsKeyArn: !GetAtt SharedSignalLambdaKMSKey.Arn
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1828,11 +1816,11 @@ Resources:
         EntryPoints:
           - app.ts
 
-  SharedSignalsAuthorizerIAMRole:
+  SharedSignalAuthorizerIAMRole:
     Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::StackName}-shared-signals-authorizer-role
+      RoleName: !Sub ${AWS::StackName}-shared-signal-authorizer-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1841,7 +1829,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: SharedSignalsAuthorizerPolicy
+        - PolicyName: SharedSignalAuthorizerPolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -1854,7 +1842,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-authorizer:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-authorizer:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1867,11 +1855,11 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsLambdaKMSKey:
+  SharedSignalLambdaKMSKey:
     Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting Shared Signals authorizer secrets
+      Description: KMS key for encrypting Shared Signal authorizer secrets
       EnableKeyRotation: true
       KeyPolicy:
         Version: '2012-10-17'
@@ -1899,21 +1887,21 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SignalsFunction:
+  SharedSignalReceiverFunction:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-shared-signals-receiver
-      Description: Shared Signals receiver function
-      CodeUri: shared-signals/
+      FunctionName: !Sub ${AWS::StackName}-shared-signal-receiver
+      Description: Shared Signal receiver function
+      CodeUri: shared-signal-receiver/
       Handler: app.lambdaHandler
-      Role: !GetAtt SignalsFunctionIAMRole.Arn
-      KmsKeyArn: !GetAtt SignalsFunctionKMSKey.Arn
+      Role: !GetAtt SharedSignalReceiverFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt SharedSignalReceiverFunctionKMSKey.Arn
       Events:
         HelloWorldApi:
           Type: Api
           Properties:
-            RestApiId: !Ref SharedSignalsApi
+            RestApiId: !Ref SharedSignalApi
             Path: /receiver
             Method: POST
       Environment:
@@ -1933,10 +1921,10 @@ Resources:
         EntryPoints:
           - app.ts
 
-  SignalsFunctionKMSKey:
+  SharedSignalReceiverFunctionKMSKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting shared signals receiver function secrets
+      Description: KMS key for encrypting shared signal receiver function secrets
       EnableKeyRotation: true
       KeyPolicy:
         Version: '2012-10-17'
@@ -1964,11 +1952,11 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SignalsFunctionIAMRole:
+  SharedSignalReceiverFunctionIAMRole:
     Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::StackName}-signals-role
+      RoleName: !Sub ${AWS::StackName}-signal-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1977,7 +1965,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: SignalsFunctionPolicy
+        - PolicyName: SharedSignalReceiverFunctionPolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -1986,7 +1974,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-receiver:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-receiver:*
               - Effect: Allow
                 Action:
                   - cognito-idp:AdminUserGlobalSignOut
@@ -2011,10 +1999,10 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-shared-signal-health-check
       Description: Shared Signal health check function
-      CodeUri: shared-signals-health-check/
+      CodeUri: shared-signal-health-check/
       Handler: app.lambdaHandler
-      Role: !GetAtt SharedSignalsHealthCheckFunctionIAMRole.Arn
-      KmsKeyArn: !GetAtt SharedSignalsHealthCheckFunctionKMSKey.Arn
+      Role: !GetAtt SharedSignalHealthCheckFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt SharedSignalHealthCheckFunctionKMSKey.Arn
       Events:
         EventBridgeEvent:
           Type: ScheduleV2
@@ -2048,10 +2036,10 @@ Resources:
         EntryPoints:
           - app.ts
 
-  SharedSignalsHealthCheckFunctionKMSKey:
+  SharedSignalHealthCheckFunctionKMSKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting shared signals health check function secrets
+      Description: KMS key for encrypting shared signal health check function secrets
       EnableKeyRotation: true
       KeyPolicy:
         Version: '2012-10-17'
@@ -2079,11 +2067,11 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsHealthCheckFunctionIAMRole:
+  SharedSignalHealthCheckFunctionIAMRole:
     Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::StackName}-shared-signals-health-check-role
+      RoleName: !Sub ${AWS::StackName}-shared-signal-health-check-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -2092,7 +2080,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: SharedSignalsHealthCheckFunctionPolicy
+        - PolicyName: SharedSignalHealthCheckFunctionPolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -2105,7 +2093,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-health-check:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2122,16 +2110,16 @@ Resources:
     Condition: IsNotProduction
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
-      ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalsApi}/stages/${SharedSignalsApi.Stage}
+      ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalApi}/stages/${SharedSignalApi.Stage}
       WebACLArn: !GetAtt SharedSignalWAF.Arn
 
   SharedSignalWAF:
     Condition: IsNotProduction
     Type: AWS::WAFv2::WebACL
     Properties:
-      Name: !Sub ${AWS::StackName}-shared-signals-waf
+      Name: !Sub ${AWS::StackName}-shared-signal-waf
       Scope: REGIONAL
-      Description: WAF for Shared Signals API
+      Description: WAF for Shared Signal API
       DefaultAction:
         Allow: {}
       VisibilityConfig:
@@ -2147,7 +2135,7 @@ Resources:
                 ResponseCode: 429
           Statement:
             RateBasedStatement:
-              Limit: 6000      # support minimum of 100 signals per second. Per minute this is 6000 signals request
+              Limit: 6000      # support minimum of 100 signal per second. Per minute this is 6000 signal request
               EvaluationWindowSec: 60      #1 minute window
               AggregateKeyType: IP
           VisibilityConfig:
@@ -2359,7 +2347,7 @@ Resources:
                 Action:
                   - apigateway:*
                 Resource:
-                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${SharedSignalsApi}/*
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${SharedSignalApi}/*
 
               - Effect: Allow
                 Action:
@@ -2505,20 +2493,20 @@ Outputs:
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
 
-  SharedSignalsEndpoint:
+  SharedSignalEndpoint:
     Condition: IsNotProduction
-    Description: The endpoint for the Shared Signals API
-    Value: !Sub https://${SharedSignalsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+    Description: The endpoint for the Shared Signal API
+    Value: !Sub https://${SharedSignalApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
-  SharedSignalsReceiverLogGroupName:
+  SharedSignalReceiverLogGroupName:
     Condition: IsNotProduction
-    Description: The name of the Shared Signals Receiver Lambda function log group
-    Value: !Sub /aws/lambda/${SignalsFunction}
+    Description: The name of the Shared Signal Receiver Lambda function log group
+    Value: !Sub /aws/lambda/${SharedSignalReceiverFunction}
 
-  SharedSignalsApiId:
+  SharedSignalApiId:
     Condition: IsNotProduction
-    Description: The ID of the Shared Signals API
-    Value: !Ref SharedSignalsApi
+    Description: The ID of the Shared Signal API
+    Value: !Ref SharedSignalApi
 
   PostAuthenticationFunctionName:
     Description: The name of the Post Authentication function
@@ -2610,10 +2598,10 @@ Outputs:
     Description: The name of the CloudWatch alarm for Auth Proxy WAF rate limiting
     Value: !Ref AuthProxyWafAlarm
 
-  SharedSignalsAccessLogGroupName:
+  SharedSignalAccessLogGroupName:
     Condition: IsNotProduction
-    Description: The Shared Signals Access Log Group Name
-    Value: !Ref SharedSignalsAccessLogGroup
+    Description: The Shared Signal Access Log Group Name
+    Value: !Ref SharedSignalAccessLogGroup
 
   TestLambdaFunctionName:
     Condition: IsTestingEnvironment
@@ -2621,7 +2609,7 @@ Outputs:
     Value: !Ref AcceptanceTestingFunction
 
   OneLoginEnvironment:
-    Description: The OneLogin domain name for the Shared Signals API
+    Description: The OneLogin domain name for the Shared Signal API
     Value: !FindInMap [OneLogin, Environment, !Ref Environment]
 
   DeployedEnvironment:
@@ -2634,5 +2622,5 @@ Outputs:
 
   SharedSignalWAFLogGroupName:
     Condition: IsNotProduction
-    Description: The Shared Signals WAF Access Log Group Name
+    Description: The Shared Signal WAF Access Log Group Name
     Value: !Ref SharedSignalWafLogGroup

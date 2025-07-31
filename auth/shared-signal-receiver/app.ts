@@ -17,7 +17,7 @@ import { requestHandler } from './handlers/request-handler';
 export const lambdaHandler = async (
   event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> => {
-  console.log('Shared signals receiver called');
+  console.log('Shared signal receiver called');
   try {
     if (event.body == undefined || event.body === '') {
       return generateResponse(

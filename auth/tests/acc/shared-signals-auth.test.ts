@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
 import axios, { AxiosError } from 'axios';
 
-describe('shared-signals authentication', () => {
+describe('shared-signal authentication', () => {
   const lambdaDriver = new TestLambdaDriver();
   const cognitoUserDriver = new CognitoUserDriver(
     testConfig.userPoolId,
@@ -21,7 +21,7 @@ describe('shared-signals authentication', () => {
 
   it('reject unauthorized requests', async () => {
     const response = await fetch(
-      `${testConfig.sharedSignalsEndpoint}/receiver`,
+      `${testConfig.sharedSignalEndpoint}/receiver`,
       {
         method: 'POST',
         headers: {
@@ -59,7 +59,7 @@ describe('shared-signals authentication', () => {
       );
 
     const response = await fetch(
-      `${testConfig.sharedSignalsEndpoint}/receiver`,
+      `${testConfig.sharedSignalEndpoint}/receiver`,
       {
         method: 'POST',
         headers: {

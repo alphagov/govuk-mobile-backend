@@ -1,7 +1,7 @@
 {
-  "name": "shared-signals",
+  "name": "shared-signal-receiver",
   "version": "1.0.0",
-  "description": "Shared Signals - Receiver",
+  "description": "Shared Signal - Receiver",
   "main": "app.js",
   "author": "govuk-app-backend",
   "license": "MIT",
