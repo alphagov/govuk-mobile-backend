@@ -12,6 +12,7 @@ export type AccountPurgedRequest = z.infer<typeof accountPurgedSchema>;
 export const handleAccountPurgedRequest = async (
   accountPurgedRequest: AccountPurgedRequest,
 ): Promise<APIGatewayProxyResult> => {
+  console.info('CorrelationId: ', accountPurgedRequest.jti);
   const userId =
     accountPurgedRequest.events[
       'https://schemas.openid.net/secevent/risc/event-type/account-purged'

@@ -77,6 +77,7 @@ export const handleCredentialChangeRequest = async (
   credentialChangeRequest: CredentialChangeRequest,
 ): Promise<APIGatewayProxyResult> => {
   try {
+    console.info('CorrelationId: ', credentialChangeRequest.jti);
     const events =
       credentialChangeRequest.events[
         'https://schemas.openid.net/secevent/caep/event-type/credential-change'

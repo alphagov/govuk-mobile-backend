@@ -64,6 +64,10 @@ describe('handleAccountPurgedRequest', () => {
     } as AccountPurgedRequest;
 
     const response = await handleAccountPurgedRequest(input);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      'unique-jti-12345',
+    );
     expect(adminGlobalSignOut).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(adminDeleteUser).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(consoleInfoMock).toHaveBeenCalledWith(
@@ -103,6 +107,10 @@ describe('handleAccountPurgedRequest', () => {
     } as AccountPurgedRequest;
 
     const response = await handleAccountPurgedRequest(input);
+    expect(consoleInfoMock).toHaveBeenCalledWith(
+      'CorrelationId: ',
+      'unique-jti-12345',
+    );
     expect(adminGlobalSignOut).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(adminDeleteUser).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(consoleErrorMock).toHaveBeenCalledWith(
