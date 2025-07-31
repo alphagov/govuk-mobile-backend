@@ -82,6 +82,7 @@ describe('handleCredentialChangeRequest', () => {
       'SIGNAL_SUCCESS_PASSWORD_UPDATE',
       {
         userId: 'urn:example:account:1234567890',
+        correlationId: input.jti,
       },
     );
     expect(response).toEqual({
@@ -136,6 +137,7 @@ describe('handleCredentialChangeRequest', () => {
       'SIGNAL_SUCCESS_EMAIL_UPDATE',
       {
         userId: 'urn:example:account:1234567890',
+        correlationId: input.jti,
       },
     );
     expect(response).toEqual({
@@ -181,6 +183,7 @@ describe('handleCredentialChangeRequest', () => {
     );
     expect(consoleErrorMock).toHaveBeenCalledWith('SIGNAL_ERROR_EMAIL_UPDATE', {
       userId: 'urn:example:account:1234567890',
+      correlationId: input.jti,
     });
     expect(response).toEqual({
       body: JSON.stringify({
@@ -227,6 +230,7 @@ describe('handleCredentialChangeRequest', () => {
       'SIGNAL_ERROR_PASSWORD_UPDATE',
       {
         userId: 'urn:example:account:1234567890',
+        correlationId: input.jti,
       },
     );
     expect(response).toEqual({
