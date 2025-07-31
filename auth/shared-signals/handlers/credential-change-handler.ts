@@ -40,13 +40,16 @@ const getCredentialChangeType = (
 
 const handlePasswordChange = async (
   userId: string,
+  correlationId: string,
 ): Promise<APIGatewayProxyResult> => {
   const isUserSignedOut = await adminGlobalSignOut(userId);
+  const logData = { userId, correlationId };
+
   if (isUserSignedOut) {
-    console.info(logMessages.SIGNAL_SUCCESS_PASSWORD_UPDATE, { userId });
+    console.info(logMessages.SIGNAL_SUCCESS_PASSWORD_UPDATE, logData);
     return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
   } else {
-    console.error(logMessages.SIGNAL_ERROR_PASSWORD_UPDATE, { userId });
+    console.error(logMessages.SIGNAL_ERROR_PASSWORD_UPDATE, logData);
     return generateResponse(
       StatusCodes.INTERNAL_SERVER_ERROR,
       ReasonPhrases.INTERNAL_SERVER_ERROR,
@@ -57,15 +60,22 @@ const handlePasswordChange = async (
 const handleEmailUpdate = async (
   userId: string,
   email: string,
+  correlationId: string,
 ): Promise<APIGatewayProxyResult> => {
   const isUserSignedOut = await adminGlobalSignOut(userId);
   const isEmailChanged = await adminUpdateEmailAddress(userId, email);
 
   if (isUserSignedOut && isEmailChanged) {
-    console.info(logMessages.SIGNAL_SUCCESS_EMAIL_UPDATE, { userId });
+    console.info(logMessages.SIGNAL_SUCCESS_EMAIL_UPDATE, {
+      userId,
+      correlationId,
+    }); // do not log email for security reasons
     return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
   } else {
-    console.error(logMessages.SIGNAL_ERROR_EMAIL_UPDATE, { userId });
+    console.error(logMessages.SIGNAL_ERROR_EMAIL_UPDATE, {
+      userId,
+      correlationId,
+    }); // do not log email for security reasons
     return generateResponse(
       StatusCodes.INTERNAL_SERVER_ERROR,
       ReasonPhrases.INTERNAL_SERVER_ERROR,
@@ -84,9 +94,10 @@ export const handleCredentialChangeRequest = async (
       ];
     const userId = events.subject.uri;
     const changeType = getCredentialChangeType(credentialChangeRequest);
+    const correlationId = credentialChangeRequest.jti;
 
     if (changeType === ChangeType.UPDATE_PASSWORD) {
-      return await handlePasswordChange(userId);
+      return await handlePasswordChange(userId, correlationId);
     }
 
     if (changeType === ChangeType.UPDATE_EMAIL_ADDRESS) {
@@ -101,7 +112,7 @@ export const handleCredentialChangeRequest = async (
           ReasonPhrases.BAD_REQUEST,
         );
       }
-      return await handleEmailUpdate(userId, emailAddress);
+      return await handleEmailUpdate(userId, emailAddress, correlationId);
     }
 
     console.error('Unhandled credential change type');
@@ -110,7 +121,10 @@ export const handleCredentialChangeRequest = async (
       ReasonPhrases.INTERNAL_SERVER_ERROR,
     );
   } catch (e) {
-    console.error('Credential change handling failed', e);
+    console.error(
+      `${logMessages.SIGNAL_ERROR_CREDENTIAL_CHANGE} CorrelationId - ${credentialChangeRequest.jti}`,
+      e,
+    );
     return generateResponse(
       StatusCodes.INTERNAL_SERVER_ERROR,
       ReasonPhrases.INTERNAL_SERVER_ERROR,

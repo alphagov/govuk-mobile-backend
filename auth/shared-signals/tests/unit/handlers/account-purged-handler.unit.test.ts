@@ -74,6 +74,7 @@ describe('handleAccountPurgedRequest', () => {
       'SIGNAL_SUCCESS_ACCOUNT_PURGE',
       {
         userId: 'urn:example:uri:12345',
+        correlationId: input.jti,
       },
     );
     expect(response).toEqual({
@@ -117,6 +118,7 @@ describe('handleAccountPurgedRequest', () => {
       'SIGNAL_ERROR_ACCOUNT_PURGE',
       {
         userId: 'urn:example:uri:12345',
+        correlationId: input.jti,
       },
     );
     expect(response).toEqual({
