@@ -18,14 +18,22 @@ export const handleAccountPurgedRequest = async (
       'https://schemas.openid.net/secevent/risc/event-type/account-purged'
     ].subject.uri;
 
+  const correlationId = accountPurgedRequest.jti;
   await adminGlobalSignOut(userId);
   const isUserDeleted = await adminDeleteUser(userId);
 
   if (isUserDeleted) {
-    console.info(logMessages.SIGNAL_SUCCESS_ACCOUNT_PURGE, { userId });
+    console.info(logMessages.SIGNAL_SUCCESS_ACCOUNT_PURGE, {
+      userId,
+      correlationId,
+    });
     return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
   } else {
-    console.error(logMessages.SIGNAL_ERROR_ACCOUNT_PURGE, { userId });
+    console.error(logMessages.SIGNAL_ERROR_ACCOUNT_PURGE, {
+      userId,
+      correlationId,
+    });
+
     return generateResponse(
       StatusCodes.INTERNAL_SERVER_ERROR,
       ReasonPhrases.INTERNAL_SERVER_ERROR,
