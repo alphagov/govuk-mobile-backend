@@ -33,7 +33,7 @@ const testCases: LambdaTestCase[] = [
   },
   {
     resourceName: 'SharedSignalAuthorizer',
-    functionName: 'shared-signal-authorizer',
+    functionName: 'shared-signal-authorizer-function',
     codeUri: 'shared-signal-authorizer/',
     handler: 'app.lambdaHandler',
     role: 'SharedSignalAuthorizerIAMRole',
