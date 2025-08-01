@@ -1794,7 +1794,7 @@ Resources:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-shared-signal-authorizer
+      FunctionName: !Sub ${AWS::StackName}-shared-signal-authorizer-function
       CodeUri: shared-signal-authorizer/
       Handler: app.lambdaHandler
       Role: !GetAtt SharedSignalAuthorizerIAMRole.Arn
