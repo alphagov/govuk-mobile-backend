@@ -8,7 +8,7 @@ import { generateResponse } from '../response';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 interface Handler {
-  schema: z.ZodTypeAny;
+  schema: z.ZodType;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   handle: (data: any) => Promise<APIGatewayProxyResult>;
 }
@@ -23,16 +23,13 @@ const handlers: Handler[] = [
 
 /**
  * Handles incoming requests by parsing the body and routing to the appropriate handler.
- * @param body - The request body as a string.
+ * @param jsonBody - The request body as a string.
  * @returns A promise that resolves to an APIGatewayProxyResult.
  */
 export const requestHandler = async (
-  body: string,
+  jsonBody: unknown,
 ): Promise<APIGatewayProxyResult> => {
-  let jsonBody: unknown = undefined;
   try {
-    jsonBody = JSON.parse(body);
-
     for (const { schema, handle } of handlers) {
       if (schema.safeParse(jsonBody).success) {
         return await handle(jsonBody);

@@ -58,7 +58,7 @@ describe('requestHandler', () => {
       statusCode: StatusCodes.ACCEPTED,
       body: ReasonPhrases.ACCEPTED,
     });
-    const result = await requestHandler(JSON.stringify(input));
+    const result = await requestHandler(input);
     expect(handleCredentialChangeRequest).toHaveBeenCalledWith(input);
     expect(result.statusCode).toBe(StatusCodes.ACCEPTED);
   });
@@ -82,7 +82,7 @@ describe('requestHandler', () => {
       statusCode: StatusCodes.NOT_IMPLEMENTED,
       body: ReasonPhrases.NOT_IMPLEMENTED,
     });
-    const result = await requestHandler(JSON.stringify(input));
+    const result = await requestHandler(input);
     expect(handleAccountPurgedRequest).toHaveBeenCalledWith(input);
     expect(result.statusCode).toBe(StatusCodes.NOT_IMPLEMENTED);
   });
@@ -92,7 +92,7 @@ describe('requestHandler', () => {
       foo: 'bar',
     };
 
-    const result = await requestHandler(JSON.stringify(input));
+    const result = await requestHandler(input);
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
   });
 });

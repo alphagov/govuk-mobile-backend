@@ -12,8 +12,8 @@ cd /tests
 
 echo "Running tests in ${TEST_ENVIRONMENT}"
 
-nx run-many -t test:acc 
-nx run-many -t test:int 
+nx run auth:test:acc 
+nx run auth:test:int 
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 

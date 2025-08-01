@@ -3,21 +3,12 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "targets": {
-    "install": {
-      "cache": true,
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "npm i",
-        "cwd": "auth"
-      }
-    },
     "build": {
       "cache": true,
       "executor": "nx:run-commands",
       "outputs": ["{options.outputFile}"],
-      "dependsOn": ["install"],
       "options": {
-        "command": "npm i && npm run compile",
+        "command": "npm run compile",
         "cwd": "auth/hello-world"
       }
     },
@@ -25,7 +16,7 @@
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["./**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": ["./auth/**/*.{ts,tsx,js,jsx}"]
       }
     },
     "checkov": {
@@ -35,24 +26,26 @@
       }
     },
     "test:unit": {
-      "dependsOn": ["install"],
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run test:unit",
-        "cwd": "auth"
+        "command": "vitest auth/**/* --project unit"
       }
     },
     "test:acc": {
-      "dependsOn": ["install"],
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run test --project acc",
-        "cwd": "auth"
+        "command": "vitest auth/**/* --project acc"
+      },
+      "outputs": ["{options.outputFile}"]
+    },
+    "test:int": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest auth/**/* --project int"
       },
       "outputs": ["{options.outputFile}"]
     },
     "test:functional": {
-      "dependsOn": ["install"],
       "executor": "nx:run-commands",
       "options": {
         "command": "npm run test --project functional",
@@ -63,8 +56,7 @@
     "test:coverage": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run test:coverage",
-        "cwd": "auth"
+        "command": "vitest run auth/**/* --coverage --project unit"
       }
     }
   }

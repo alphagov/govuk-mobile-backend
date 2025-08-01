@@ -5,8 +5,9 @@ import { CognitoUserDriver } from '../driver/cognito-user.driver';
 import { v4 as uuidv4 } from 'uuid';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
 import axios, { AxiosError } from 'axios';
+import { SharedSignalsDriver } from '../driver/shared-signals.driver';
 
-describe('shared-signal authentication', () => {
+describe('shared-signal authentication', async () => {
   const lambdaDriver = new TestLambdaDriver();
   const cognitoUserDriver = new CognitoUserDriver(
     testConfig.userPoolId,
@@ -18,6 +19,11 @@ describe('shared-signal authentication', () => {
   );
   const passwordUpdateUserId = uuidv4();
   const passwordUpdateUserName = `${passwordUpdateUserId}@test.com`;
+
+  const sharedSignalsDriver = new SharedSignalsDriver(
+    testConfig.sharedSignalEndpoint,
+  );
+  await sharedSignalsDriver.setPrivateKey();
 
   it('reject unauthorized requests', async () => {
     const response = await fetch(
@@ -58,37 +64,11 @@ describe('shared-signal authentication', () => {
         passwordUpdateUserName,
       );
 
-    const response = await fetch(
-      `${testConfig.sharedSignalEndpoint}/receiver`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          iss: 'https://identity.example.com',
-          jti: '123e4567-e89b-12d3-a456-426614174000',
-          iat: 1721126400,
-          aud: 'https://service.example.gov.uk',
-          events: {
-            'https://schemas.openid.net/secevent/caep/event-type/credential-change':
-              {
-                change_type: 'update',
-                credential_type: 'password',
-                subject: {
-                  uri: cognitoUserId,
-                  format: 'urn:example:format:account-id',
-                },
-              },
-            'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-              {
-                email: passwordUpdateUserName,
-              },
-          },
-        }),
-      },
-    );
+    const response = await sharedSignalsDriver.sendPasswordSignal({
+      accessToken,
+      email: passwordUpdateUserName,
+      userId: cognitoUserId,
+    });
 
     expect(response.ok).toBe(true);
     expect(response.status).toBe(202);

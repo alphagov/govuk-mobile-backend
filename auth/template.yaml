@@ -1908,6 +1908,12 @@ Resources:
         Variables:
           USER_POOL_ID: !Ref CognitoUserPool
           REGION: !Ref AWS::Region
+          SHARED_SIGNALS_ISSUER: https://ssf.account.gov.uk/
+          SHARED_SIGNALS_AUDIENCE: !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}.auth.${AWS::Region}.amazoncognito.com"
+          JWKS_URI: !If 
+            - IsTestingEnvironment
+            - !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json
+            - https://ssf-transmitter.transaction.integration.account.gov.uk/jwks.json
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -2254,7 +2260,7 @@ Resources:
       LogDestinationConfigs:
         - !GetAtt SharedSignalWafLogGroup.Arn
       ResourceArn: !GetAtt SharedSignalWAF.Arn
-
+      
   ############################
   # Acceptance Testing Resources
   ############################
@@ -2415,6 +2421,87 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref AuthProxyFunction
       Principal: !Ref TestRoleArn
+
+  MockSharedSignalsTransmitterApi:
+    #checkov:skip=CKV_AWS_76:Ensure API Gateway has Access Logging enabled
+    Condition: IsTestingEnvironment
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "${AWS::StackName}-mock-shared-signals-transmitter-api"
+      StageName: !Ref Environment
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+
+  MockSharedSignalsTransmitterFunction:
+    Condition: IsTestingEnvironment
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-mock-shared-signals-transmitter"
+      Description: "Function required to mock the shared signals transmitter"
+      CodeUri: tests/lambdas/transmitter
+      Handler: app.lambdaHandler
+      Role: !GetAtt MockSharedSignalsTransmitterFunctionIAMRole.Arn
+      Environment:
+        Variables:
+          #checkov:skip=CKV_AWS_173:Check encryption settings for Lambda environment variable
+          JWKS_KEY: !Sub "{{resolve:ssm:/${ConfigStackName}/shared-signal/mock/jwks}}"
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId:
+              Ref: MockSharedSignalsTransmitterApi
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  MockSharedSignalsTransmitterFunctionIAMRole:
+    Condition: IsTestingEnvironment
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-mock-shared-signals-transmitter-function-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AcceptanceTestingFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-mock-shared-signals-transmitter:*"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
 Outputs:
   AWSAccountId:
@@ -2624,3 +2711,8 @@ Outputs:
     Condition: IsNotProduction
     Description: The Shared Signal WAF Access Log Group Name
     Value: !Ref SharedSignalWafLogGroup
+
+  TransmitterApiUrl:
+    Condition: IsTestingEnvironment
+    Description: Shared signals mock transmitter api url
+    Value: !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/

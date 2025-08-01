@@ -3,20 +3,12 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "targets": {
-    "install": {
-      "cache": true,
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "npm i",
-        "cwd": "chat"
-      }
-    },
     "build": {},
     "lint": {
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["./**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": ["./chat/**/*.{ts,tsx,js,jsx}"]
       }
     },
     "checkov": {
@@ -26,36 +18,36 @@
       }
     },
     "test:unit": {
-      "dependsOn": ["install"],
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run test:unit",
-        "cwd": "chat"
+        "command": "vitest chat/**/* --project unit"
       }
     },
     "test:acc": {
-      "dependsOn": ["install"],
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run test --project acc",
-        "cwd": "chat"
+        "command": "vitest chat/**/* --project acc"
+      },
+      "outputs": ["{options.outputFile}"]
+    },
+    "test:int": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest chat/**/* --project int"
       },
       "outputs": ["{options.outputFile}"]
     },
     "test:functional": {
-      "dependsOn": ["install"],
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run test --project functional",
-        "cwd": "chat"
+        "command": "vitest --dir chat --project functional"
       },
       "outputs": ["{options.outputFile}"]
     },
     "test:coverage": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run test:coverage",
-        "cwd": "chat"
+        "command": "vitest run chat/**/* --coverage --project unit"
       }
     }
   }
