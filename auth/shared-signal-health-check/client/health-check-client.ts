@@ -1,9 +1,9 @@
-import type { SharedSignalsHealthCheckService } from '../service/health-check-service';
+import type { SharedSignalHealthCheckService } from '../service/health-check-service';
 
 export class HealthCheckClient {
-  private readonly healthCheckService: SharedSignalsHealthCheckService;
+  private readonly healthCheckService: SharedSignalHealthCheckService;
 
-  public constructor(healthCheckService: SharedSignalsHealthCheckService) {
+  public constructor(healthCheckService: SharedSignalHealthCheckService) {
     this.healthCheckService = healthCheckService;
   }
 

@@ -9,9 +9,9 @@ const getTestConfig = () => {
     'CFN_AppUserPoolClientId',
     'TEST_ENVIRONMENT',
     'CFN_CognitoWafLogGroupName',
-    'CFN_SharedSignalsEndpoint',
-    'CFN_SharedSignalsReceiverLogGroupName',
-    'CFN_SharedSignalsApiId',
+    'CFN_SharedSignalEndpoint',
+    'CFN_SharedSignalReceiverLogGroupName',
+    'CFN_SharedSignalApiId',
     'CFN_PostAuthenticationFunctionName',
     'CFN_PostAuthenticationFunctionIAMRoleName',
     'CFN_PostAuthenticationFunctionIAMRolePolicyName',
@@ -43,14 +43,14 @@ const getTestConfig = () => {
     'CFN_CognitoUrl',
     'CFN_AttestationApiLogGroupName',
     'CFN_TestLambdaFunctionName',
-    'CFN_SharedSignalsAccessLogGroupName',
+    'CFN_SharedSignalAccessLogGroupName',
     'CFN_AttestationEnabled',
     'CFN_AttestationEnabled',
     'CFN_OneLoginEnvironment',
     'CFN_FirebaseIosAppId',
     'CFN_FirebaseAndroidAppId',
     'CFN_UnknownAndroidAppId',
-    'CFN_SharedSignalsAccessLogGroupName',
+    'CFN_SharedSignalAccessLogGroupName',
     'CFN_DeployedEnvironment',
     'CFN_SharedSignalWAFLogGroupName',
   ];
@@ -77,10 +77,10 @@ const getTestConfig = () => {
     isLocalEnvironment: process.env.TEST_ENVIRONMENT === 'local',
     isSlowRunning: process.env.SLOW_RUNNING_TESTS === 'true',
     cognitoWafLogGroupName: process.env.CFN_CognitoWafLogGroupName!,
-    sharedSignalsEndpoint: process.env.CFN_SharedSignalsEndpoint!,
-    sharedSignalsReceiverLogGroupName:
-      process.env.CFN_SharedSignalsReceiverLogGroupName!,
-    sharedSignalsApiId: process.env.CFN_SharedSignalsApiId!,
+    sharedSignalEndpoint: process.env.CFN_SharedSignalEndpoint!,
+    sharedSignalReceiverLogGroupName:
+      process.env.CFN_SharedSignalReceiverLogGroupName!,
+    sharedSignalApiId: process.env.CFN_SharedSignalApiId!,
     postAuthenticationLambda: process.env.CFN_PostAuthenticationFunctionName!,
     postAuthenticationFunctionIAMRoleName:
       process.env.CFN_PostAuthenticationFunctionIAMRoleName!,
@@ -118,9 +118,9 @@ const getTestConfig = () => {
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName!,
     configStackName: process.env.CFN_ConfigStackName!,
-    sharedSignalsClientId: process.env.CFN_SharedSignalClientId!,
-    sharedSignalsAccessLogGroupName:
-      process.env.CFN_SharedSignalsAccessLogGroupName!,
+    sharedSignalClientId: process.env.CFN_SharedSignalClientId!,
+    sharedSignalAccessLogGroupName:
+      process.env.CFN_SharedSignalAccessLogGroupName!,
     userPoolProviderId: process.env.CFN_UserPoolProviderUrl!,
     //WAF configurations
     cloudWatchWafRateLimitingAlarmName:

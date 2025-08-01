@@ -1,7 +1,7 @@
 {
-  "name": "shared-signals-health-check",
+  "name": "shared-signal-health-check",
   "version": "1.0.0",
-  "description": "Shared Signals - Health Check",
+  "description": "Shared Signal - Health Check",
   "main": "app.js",
   "author": "govuk-app-backend",
   "license": "MIT",

@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HealthCheckClient } from '../../../client/health-check-client';
-import { SharedSignalsHealthCheckService } from '../../../service/health-check-service';
+import { SharedSignalHealthCheckService } from '../../../service/health-check-service';
 
 describe('HealthCheckClient', () => {
-  let healthCheckServiceMock: SharedSignalsHealthCheckService;
+  let healthCheckServiceMock: SharedSignalHealthCheckService;
   let client: HealthCheckClient;
 
   beforeEach(() => {
     healthCheckServiceMock = {
       authorise: vi.fn(),
       verify: vi.fn(),
-    } as unknown as SharedSignalsHealthCheckService;
+    } as unknown as SharedSignalHealthCheckService;
     client = new HealthCheckClient(healthCheckServiceMock);
   });
 

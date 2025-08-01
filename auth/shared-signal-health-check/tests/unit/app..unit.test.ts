@@ -1,6 +1,6 @@
 import { describe, beforeEach, vi, it, expect } from 'vitest';
 
-describe('Unit test for shared-signals-health-check lambdaHandler', () => {
+describe('Unit test for shared-signal-health-check lambdaHandler', () => {
   const mockEvent = {
     id: 'test-event-id',
     time: '2024-06-01T00:00:00Z',
@@ -24,17 +24,17 @@ describe('Unit test for shared-signals-health-check lambdaHandler', () => {
     initialiseHealthCheckServiceSpy = vi.fn().mockReturnValue({});
 
     vi.doMock(
-      '../../../shared-signals-health-check/client/health-check-client',
+      '../../../shared-signal-health-check/client/health-check-client',
       () => ({
         HealthCheckClient: HealthCheckClientSpy,
       }),
     );
 
-    vi.doMock('../../../shared-signals-health-check/init', () => ({
+    vi.doMock('../../../shared-signal-health-check/init', () => ({
       initialiseHealthCheckService: initialiseHealthCheckServiceSpy,
     }));
 
-    vi.doMock('../../../shared-signals-health-check/log-messages', () => ({
+    vi.doMock('../../../shared-signal-health-check/log-messages', () => ({
       logMessages: {
         HEALTH_CHECK_START: 'Health check started',
         HEALTH_CHECK_END: 'Health check ended',
@@ -45,7 +45,7 @@ describe('Unit test for shared-signals-health-check lambdaHandler', () => {
       },
     }));
 
-    vi.doMock('../../../shared-signals-health-check/errors', () => ({
+    vi.doMock('../../../shared-signal-health-check/errors', () => ({
       ConfigError: class ConfigError extends Error {},
       AuthError: class AuthError extends Error {},
       VerifyError: class VerifyError extends Error {},

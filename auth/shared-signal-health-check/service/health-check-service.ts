@@ -1,14 +1,12 @@
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 import { StatusCodes } from 'http-status-codes';
-import type { SharedSignalsHealthCheck } from '../interface/health-check';
+import type { SharedSignalHealthCheck } from '../interface/health-check';
 import { AuthError, VerifyError } from '../errors';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 import type { SecretsConfig } from '../interface/secret-config';
 
-export class SharedSignalsHealthCheckService
-  implements SharedSignalsHealthCheck
-{
+export class SharedSignalHealthCheckService implements SharedSignalHealthCheck {
   private readonly healthCheckTokenUrl: string;
   private readonly healthCheckVerifyUrl: string;
   private readonly healthCheckSecretName: string;

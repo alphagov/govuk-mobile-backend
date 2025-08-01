@@ -3,42 +3,11 @@ import { loadTemplateFromFile } from '../common/template';
 
 const template = loadTemplateFromFile('./template.yaml');
 
-describe('shared signals', () => {
+describe('shared signal', () => {
   it('should provision an api gateway', () => {
     template.hasResourceProperties('AWS::Serverless::Api', {
       Name: {
-        'Fn::Join': [
-          '-',
-          [
-            {
-              Ref: 'AWS::StackName',
-            },
-            'shared-signals',
-            {
-              'Fn::Select': [
-                4,
-                {
-                  'Fn::Split': [
-                    '-',
-                    {
-                      'Fn::Select': [
-                        2,
-                        {
-                          'Fn::Split': [
-                            '/',
-                            {
-                              Ref: 'AWS::StackId',
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        ],
+        'Fn::Sub': '${AWS::StackName}-shared-signal',
       },
     });
   });
@@ -53,7 +22,7 @@ describe('shared signals', () => {
         },
       },
       FunctionName: {
-        'Fn::Sub': '${AWS::StackName}-shared-signals-receiver',
+        'Fn::Sub': '${AWS::StackName}-shared-signal-receiver',
       },
     });
   });
@@ -64,37 +33,37 @@ describe('shared signals', () => {
       Properties: any;
     };
     const resources = template.findResources('AWS::Serverless::Api');
-    resourceUnderTest = resources['SharedSignalsApi'] as any;
+    resourceUnderTest = resources['SharedSignalApi'] as any;
 
     expect(resourceUnderTest.Properties.Auth.DefaultAuthorizer).toBe(
-      'SharedSignalsAuthorizer',
+      'SharedSignalAuthorizer',
     );
   });
 
-  it('should have a shared signals authorizer lambda', () => {
+  it('should have a shared signal authorizer lambda', () => {
     let resourceUnderTest: {
       Type: any;
       Properties: any;
     };
     const resources = template.findResources('AWS::Serverless::Function');
-    resourceUnderTest = resources['SharedSignalsAuthorizer'] as any;
+    resourceUnderTest = resources['SharedSignalAuthorizer'] as any;
 
     expect(resourceUnderTest.Type).toBeDefined();
   });
 
-  it('SignalsFunctionIAMRole should have correct properties', () => {
+  it('SharedSignalReceiverFunctionIAMRole should have correct properties', () => {
     let resourceUnderTest: {
       Type: any;
       Properties: any;
       Condition?: any;
     };
     const resources = template.findResources('AWS::IAM::Role');
-    resourceUnderTest = resources['SignalsFunctionIAMRole'] as any;
+    resourceUnderTest = resources['SharedSignalReceiverFunctionIAMRole'] as any;
 
     expect(resourceUnderTest.Type).toBe('AWS::IAM::Role');
     expect(resourceUnderTest.Condition).toBe('IsNotProduction');
     expect(resourceUnderTest.Properties.RoleName).toEqual({
-      'Fn::Sub': '${AWS::StackName}-signals-role',
+      'Fn::Sub': '${AWS::StackName}-shared-signal-receiver-role',
     });
 
     // Check AssumeRolePolicyDocument
@@ -114,7 +83,7 @@ describe('shared signals', () => {
     // Check Policies
     const policies = resourceUnderTest.Properties.Policies;
     expect(Array.isArray(policies)).toBe(true);
-    expect(policies[0].PolicyName).toBe('SignalsFunctionPolicy');
+    expect(policies[0].PolicyName).toBe('SharedSignalReceiverFunctionPolicy');
     expect(policies[0].PolicyDocument.Version).toBe('2012-10-17');
     const statements = policies[0].PolicyDocument.Statement;
     expect(statements).toEqual(
@@ -128,7 +97,7 @@ describe('shared signals', () => {
           ]),
           Resource: {
             'Fn::Sub':
-              'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-receiver:*',
+              'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-receiver:*',
           },
         }),
         expect.objectContaining({
@@ -162,17 +131,17 @@ describe('shared signals', () => {
     );
   });
 
-  it('SignalsFunctionKMSKey should have correct properties', () => {
+  it('SharedSignalReceiverFunctionKMSKey should have correct properties', () => {
     let resourceUnderTest: {
       Type: any;
       Properties: any;
     };
     const resources = template.findResources('AWS::KMS::Key');
-    resourceUnderTest = resources['SignalsFunctionKMSKey'] as any;
+    resourceUnderTest = resources['SharedSignalReceiverFunctionKMSKey'] as any;
 
     expect(resourceUnderTest.Type).toBe('AWS::KMS::Key');
     expect(resourceUnderTest.Properties.Description).toBe(
-      'KMS key for encrypting shared signals receiver function secrets',
+      'KMS key for encrypting shared signal receiver function secrets',
     );
     expect(resourceUnderTest.Properties.EnableKeyRotation).toBe(true);
 
