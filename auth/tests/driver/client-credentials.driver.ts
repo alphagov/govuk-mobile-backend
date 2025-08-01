@@ -6,17 +6,17 @@ import {
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export class ClientCredentialsDriver {
-  private readonly sharedSignalsSecretName: string;
+  private readonly sharedSignalSecretName: string;
   private readonly cognitoDomain: string;
 
-  constructor(sharedSignalsSecretName: string, cognitoDomain: string) {
-    this.sharedSignalsSecretName = sharedSignalsSecretName;
+  constructor(sharedSignalSecretName: string, cognitoDomain: string) {
+    this.sharedSignalSecretName = sharedSignalSecretName;
     this.cognitoDomain = cognitoDomain;
   }
 
   public async getAccessToken(): Promise<string> {
     const secretsConfig: SecretsConfig =
-      await this.getSharedSignalsSecretConfig();
+      await this.getSharedSignalSecretConfig();
     const config: AxiosRequestConfig = await this.constructAxiosRequestConfig(
       secretsConfig,
     );
@@ -61,13 +61,13 @@ export class ClientCredentialsDriver {
     return config;
   }
 
-  private async getSharedSignalsSecretConfig() {
+  private async getSharedSignalSecretConfig() {
     const secretsManagerClient = new SecretsManagerClient({
       region: 'eu-west-2',
     });
 
     const command = new GetSecretValueCommand({
-      SecretId: this.sharedSignalsSecretName,
+      SecretId: this.sharedSignalSecretName,
     });
 
     const secretValue: GetSecretValueCommandOutput =

@@ -9,7 +9,7 @@ import { TestLambdaDriver } from '../driver/testLambda.driver';
 const driver = new TestLambdaDriver();
 const input = {
   UserPoolId: testConfig.userPoolId,
-  ClientId: testConfig.sharedSignalsClientId,
+  ClientId: testConfig.sharedSignalClientId,
   TestEnvironment: testConfig.environment,
 };
 

@@ -13,7 +13,7 @@ type DataProtectionPolicyStatement = {
 
 describe('Shared signal Data Protection Policies', () => {
   const logGroup = template.findResources('AWS::Logs::LogGroup')[
-    'SharedSignalsAccessLogGroup'
+    'SharedSignalAccessLogGroup'
   ] as any;
 
   it('has a data protection policy', () => {

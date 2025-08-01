@@ -32,18 +32,18 @@ const testCases: LambdaTestCase[] = [
     role: 'AuthProxyFunctionIAMRole',
   },
   {
-    resourceName: 'SharedSignalsAuthorizer',
+    resourceName: 'SharedSignalAuthorizer',
     functionName: 'shared-signal-authorizer',
     codeUri: 'shared-signal-authorizer/',
     handler: 'app.lambdaHandler',
-    role: 'SharedSignalsAuthorizerIAMRole',
+    role: 'SharedSignalAuthorizerIAMRole',
   },
   {
-    resourceName: 'SignalsFunction',
-    functionName: 'shared-signals-receiver',
-    codeUri: 'shared-signals/',
+    resourceName: 'SharedSignalReceiverFunction',
+    functionName: 'shared-signal-receiver',
+    codeUri: 'shared-signal-receiver/',
     handler: 'app.lambdaHandler',
-    role: 'SignalsFunctionIAMRole',
+    role: 'SharedSignalReceiverFunctionIAMRole',
   },
 ];
 

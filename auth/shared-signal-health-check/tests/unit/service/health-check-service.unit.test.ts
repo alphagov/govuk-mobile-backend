@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, vi, expect } from 'vitest';
 import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
-import { SharedSignalsHealthCheckService } from '../../../service/health-check-service';
+import { SharedSignalHealthCheckService } from '../../../service/health-check-service';
 import { AuthError, VerifyError } from '../../../errors';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 
@@ -19,13 +19,13 @@ const secretsConfig = {
 
 const secretString = JSON.stringify(secretsConfig);
 
-const service = new SharedSignalsHealthCheckService(
+const service = new SharedSignalHealthCheckService(
   TOKEN_URL,
   VERIFY_URL,
   SECRET_NAME,
 );
 
-describe('SharedSignalsHealthCheckService', () => {
+describe('SharedSignalHealthCheckService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

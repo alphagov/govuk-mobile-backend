@@ -11,11 +11,11 @@ import { TestLambdaDriver } from '../driver/testLambda.driver';
 const driver = new TestLambdaDriver();
 
 const command = new GetResourcesCommand({
-  restApiId: testConfig.sharedSignalsApiId,
+  restApiId: testConfig.sharedSignalApiId,
 });
 
 // not supported by permissions boundary
-describe.skip('shared signals', async () => {
+describe.skip('shared signal', async () => {
   describe('API Gateway', () => {
     it('should have a POST method associated with a Lambda function', async () => {
       let lambdaAttached = false;
@@ -34,7 +34,7 @@ describe.skip('shared signals', async () => {
 
         for (const method in methods) {
           const methodInfoCommand = new GetMethodCommand({
-            restApiId: testConfig.sharedSignalsApiId,
+            restApiId: testConfig.sharedSignalApiId,
             resourceId,
             httpMethod: method,
           });
@@ -75,7 +75,7 @@ describe.skip('shared signals', async () => {
 
         for (const method in methods) {
           const methodInfoCommand = new GetMethodCommand({
-            restApiId: testConfig.sharedSignalsApiId,
+            restApiId: testConfig.sharedSignalApiId,
             resourceId,
             httpMethod: method,
           });

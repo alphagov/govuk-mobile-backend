@@ -1,8 +1,8 @@
 import { ConfigError } from './errors';
-import { SharedSignalsHealthCheckService } from './service/health-check-service';
+import { SharedSignalHealthCheckService } from './service/health-check-service';
 
 export const initialiseHealthCheckService =
-  (): SharedSignalsHealthCheckService => {
+  (): SharedSignalHealthCheckService => {
     const healthCheckTokenUrl = process.env['HEALTH_CHECK_TOKEN_URL'];
     if (
       healthCheckTokenUrl === undefined ||
@@ -33,7 +33,7 @@ export const initialiseHealthCheckService =
       );
     }
 
-    return new SharedSignalsHealthCheckService(
+    return new SharedSignalHealthCheckService(
       healthCheckTokenUrl,
       healthCheckVerifyUrl,
       healthCheckSecretName,

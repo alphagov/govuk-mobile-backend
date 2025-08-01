@@ -6,20 +6,20 @@ const template = loadTemplateFromFile(
   path.join(__dirname, '..', '..', 'template.yaml'),
 );
 
-describe('Shared Signals Health Check Function', () => {
-  let sharedSignalsHealthFunction: {
+describe('Shared Signal Health Check Function', () => {
+  let sharedSignalHealthFunction: {
     Type: any;
     Properties: any;
   };
 
   const functionResources = template.findResources('AWS::Serverless::Function');
-  sharedSignalsHealthFunction = functionResources[
+  sharedSignalHealthFunction = functionResources[
     'SharedSignalHealthCheckFunction'
   ] as any;
 
   it('should have a health check token url defined in the environment variables', () => {
     expect(
-      sharedSignalsHealthFunction.Properties.Environment.Variables,
+      sharedSignalHealthFunction.Properties.Environment.Variables,
     ).containSubset({
       HEALTH_CHECK_TOKEN_URL: {
         'Fn::Sub':
@@ -30,7 +30,7 @@ describe('Shared Signals Health Check Function', () => {
 
   it('should have a health check verify url defined in the environment variables', () => {
     expect(
-      sharedSignalsHealthFunction.Properties.Environment.Variables,
+      sharedSignalHealthFunction.Properties.Environment.Variables,
     ).containSubset({
       HEALTH_CHECK_VERIFY_URL: {
         'Fn::Sub':
@@ -41,7 +41,7 @@ describe('Shared Signals Health Check Function', () => {
 
   it('should have a health check secret name defined in the environment variables', () => {
     expect(
-      sharedSignalsHealthFunction.Properties.Environment.Variables,
+      sharedSignalHealthFunction.Properties.Environment.Variables,
     ).containSubset({
       HEALTH_CHECK_SECRET_NAME: {
         'Fn::Sub': '/${ConfigStackName}/shared-signal/health-check-secrets',
@@ -50,7 +50,7 @@ describe('Shared Signals Health Check Function', () => {
   });
 
   it('should have a schedule expression defined that runs the health check every 10 minutes with a retry policy of 2 attempts every 1 minute', () => {
-    expect(sharedSignalsHealthFunction.Properties.Events).containSubset({
+    expect(sharedSignalHealthFunction.Properties.Events).containSubset({
       EventBridgeEvent: {
         Type: 'ScheduleV2',
         Name: {
