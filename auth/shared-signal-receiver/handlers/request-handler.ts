@@ -6,6 +6,7 @@ import { handleAccountPurgedRequest } from './account-purged-handler';
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import { generateResponse } from '../response';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
+import { CognitoError } from '../errors';
 
 interface Handler {
   schema: z.ZodTypeAny;
@@ -40,7 +41,10 @@ export const requestHandler = async (
     }
 
     return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
-  } catch {
+  } catch (error) {
+    if (error instanceof CognitoError) {
+      return generateResponse(StatusCodes.INTERNAL_SERVER_ERROR, error.message);
+    }
     return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
   }
 };
