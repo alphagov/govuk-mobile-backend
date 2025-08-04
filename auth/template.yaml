@@ -63,6 +63,9 @@ Mappings:
 
   SharedSignalsJwksUri:
     Environment:
+      build: '...'
+      dev: '...'
+      staging: '...'
       integration: https://ssf-transmitter.transaction.integration.account.gov.uk/jwks.json
       production: https://shared-signals-transmitter.transaction.account.gov.uk/jwks.json
 
@@ -99,21 +102,21 @@ Conditions:
     Fn::Or:
       - Fn::Equals:
           - !Ref Environment
-          - production
+          - 'production'
       - Fn::Equals:
           - !Ref Environment
-          - integration
+          - 'integration'
 
   IsNonIntegratedEnvironment:
     Fn::Or:
       - Fn::Not:
           - Fn::Equals:
               - !Ref Environment
-              - production
+              - 'production'
       - Fn::Not:
           - Fn::Equals:
               - !Ref Environment
-              - integration
+              - 'integration'
 
 Globals:
   Function:
@@ -2743,3 +2746,8 @@ Outputs:
     Condition: IsNonIntegratedEnvironment
     Description: Shared signals mock transmitter api url
     Value: !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+
+  MockSharedSignalJwk:
+    Condition: IsNonIntegratedEnvironment
+    Description: Shared signals mock jwk
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/shared-signal/mock/jwks}}"

@@ -1,13 +1,13 @@
 class CognitoError extends Error {
-  public constructor() {
-    super();
+  public constructor(message: string) {
+    super(message);
     this.name = 'CognitoError';
   }
 }
 
 class SignatureVerificationError extends Error {
-  public constructor() {
-    super();
+  public constructor(message: string) {
+    super(message);
     this.name = 'SignatureVerificationError';
   }
 }
