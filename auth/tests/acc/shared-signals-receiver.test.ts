@@ -119,7 +119,7 @@ describe('shared-signal-receiver', () => {
       let response: Response;
       beforeAll(async () => {
         const accessToken = await clientCredentialsDriver.getAccessToken();
-        const { privateKey } = await generateKeyPair('RS256');
+        const { privateKey } = await generateKeyPair('PS256');
         await sharedSignalsDriver.setPrivateKey(privateKey);
         response = await sharedSignalsDriver.sendEmailSignal({
           userId: 'foo',

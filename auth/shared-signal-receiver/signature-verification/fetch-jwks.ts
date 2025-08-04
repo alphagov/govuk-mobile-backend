@@ -27,7 +27,7 @@ export const getJwks = async ({
 }: FetchJwksInput): Promise<CryptoKey> => {
   if (jwksResolver) {
     return jwksResolver({
-      alg: 'RS256',
+      alg: 'PS256',
       kid,
     });
   } else {
@@ -42,7 +42,7 @@ export const getJwks = async ({
     });
 
     return cachedResolver({
-      alg: 'RS256',
+      alg: 'PS256',
       kid,
     });
   }
