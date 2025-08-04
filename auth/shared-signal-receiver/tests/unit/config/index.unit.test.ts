@@ -10,6 +10,7 @@ describe('Config', () => {
         JWKS_URI: 'foo',
         SHARED_SIGNALS_AUDIENCE: 'foo',
         SHARED_SIGNALS_ISSUER: 'foo',
+        JWKS_CACHE_DURATION: '600000',
       };
 
       config = getConfig();
@@ -20,11 +21,13 @@ describe('Config', () => {
         jwksUri: 'foo',
         audience: 'foo',
         issuer: 'foo',
+        // should coerce to number
+        cacheDurationMs: 600000,
       });
     });
   });
 
-  describe('Given all config values are provided correctly', () => {
+  describe('Given all config values are invalid', () => {
     const deleteEnvVar = (name: string) => {
       delete process.env[name];
     };

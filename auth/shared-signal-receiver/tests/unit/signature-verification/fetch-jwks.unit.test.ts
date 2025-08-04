@@ -25,6 +25,7 @@ const mockJwks = {
 
 describe('fetchJwks', () => {
   const jwksUri = 'https://example.com/jwks.json';
+  const cacheDurationMs = 11 * 60 * 1000;
   describe('Given a valid JWKS endpoint', () => {
     afterEach(() => {
       vi.useRealTimers();
@@ -48,6 +49,7 @@ describe('fetchJwks', () => {
           } as unknown as Response);
           await getJwks({
             jwksUri,
+            cacheDurationMs,
             requestFn: mockFetch,
             kid: validKeyId,
           });
@@ -60,6 +62,7 @@ describe('fetchJwks', () => {
         it('Re-uses the existing resolver on subsequent calls', async () => {
           await getJwks({
             jwksUri,
+            cacheDurationMs,
             requestFn: mockFetch,
             kid: validKeyId,
           });
@@ -88,6 +91,7 @@ describe('fetchJwks', () => {
         await expect(
           getJwks({
             jwksUri,
+            cacheDurationMs,
             requestFn: mockFetch,
             kid: 'unknown',
           }),
@@ -115,16 +119,18 @@ describe('fetchJwks', () => {
         it('Re-fetches the JWKS from remote', async () => {
           await getJwks({
             jwksUri,
+            cacheDurationMs,
             requestFn: mockFetch,
             kid: validKeyId,
             jwksResolver: null,
           });
 
           vi.setSystemTime(Date.now());
-          vi.advanceTimersByTime(11 * 60 * 1000);
+          vi.advanceTimersByTime(cacheDurationMs + 1000);
 
           await getJwks({
             jwksUri,
+            cacheDurationMs,
             requestFn: mockFetch,
             kid: validKeyId,
           });
@@ -146,6 +152,7 @@ describe('fetchJwks', () => {
         await expect(
           getJwks({
             jwksUri,
+            cacheDurationMs,
             requestFn: mockFetch,
             kid: 'unknown',
             jwksResolver: null,
