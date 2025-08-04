@@ -53,7 +53,6 @@ const getTestConfig = () => {
     'CFN_SharedSignalAccessLogGroupName',
     'CFN_DeployedEnvironment',
     'CFN_SharedSignalWAFLogGroupName',
-    'CFN_MockSharedSignalJwk',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -139,7 +138,6 @@ const getTestConfig = () => {
     redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
     attestationEnabled: process.env.CFN_AttestationEnabled == 'true',
     sharedSignalWAFLogGroupName: process.env.CFN_SharedSignalWAFLogGroupName!,
-    mockTransmitterJwk: process.env.CFN_MockSharedSignalJwk!,
   };
 };
 
