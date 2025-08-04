@@ -7,6 +7,7 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
 import { generateResponse } from '../response';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { CognitoError } from '../errors';
+import { doesUserExists } from '../cognito/verify-users';
 
 interface Handler {
   schema: z.ZodTypeAny;
@@ -36,6 +37,11 @@ export const requestHandler = async (
 
     for (const { schema, handle } of handlers) {
       if (schema.safeParse(jsonBody).success) {
+        if (!await doesUserExists(jsonBody)) {
+          // User does not exist, return accepted response
+          console.info('Root level handler - username not found');
+          return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+        }
         return await handle(jsonBody);
       }
     }

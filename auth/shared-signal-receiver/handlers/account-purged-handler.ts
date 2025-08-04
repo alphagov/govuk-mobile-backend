@@ -6,7 +6,7 @@ import type { z } from 'zod';
 import { adminDeleteUser } from '../cognito/delete-user';
 import { adminGlobalSignOut } from '../cognito/sign-out-user';
 import { logMessages } from '../log-messages';
-import { verifyUserExists } from '../cognito/verify-users';
+import { verifyUsername } from '../cognito/verify-users';
 
 export type AccountPurgedRequest = z.infer<typeof accountPurgedSchema>;
 
@@ -22,7 +22,7 @@ export const handleAccountPurgedRequest = async (
   const correlationId = accountPurgedRequest.jti;
 
   // verify if user exists before processing the request
-  if (!(await verifyUserExists(userId))) {
+  if (!(await verifyUsername(userId))) {
     // User does not exist, log and return accepted response
     console.warn(logMessages.SIGNAL_WARN_USER_NOT_FOUND, {
       userId: userId,

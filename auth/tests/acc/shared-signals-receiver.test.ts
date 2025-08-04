@@ -210,4 +210,50 @@ describe('shared-signal-receiver', () => {
     expect(response.ok).toBe(true);
     expect(response.status).toBe(202);
   });
+
+   it('should return 202 when user not found for UPDATE EMAIL', async () => {
+    // Generate an access token
+    const accessToken = await clientCredentialsDriver.getAccessToken();
+
+    // Create a test user to send a signal for
+    const cognitoUserId = 'any-user-not-found' //artitrary user not found
+
+    // Send an email update signal
+    const response = await fetch(
+      `${testConfig.sharedSignalEndpoint}/receiver`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          iss: 'https://identity.example.com',
+          jti: '123e4567-e89b-12d3-a456-426614174000',
+          iat: 1721126400,
+          aud: 'https://service.example.gov.uk',
+          events: {
+            'https://schemas.openid.net/secevent/caep/event-type/credential-change':
+              {
+                change_type: 'update',
+                credential_type: 'email',
+                subject: {
+                  uri: cognitoUserId,
+                  format: 'urn:example:format:account-id',
+                },
+              },
+            'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
+              {
+                email: emailAddressForUpdate,
+              },
+          },
+        }),
+      },
+    );
+
+    expect(response.ok).toBe(true);
+    expect(response.status).toBe(202);
+  });
+
+  
 });

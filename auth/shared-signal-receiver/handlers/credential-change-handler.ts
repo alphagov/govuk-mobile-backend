@@ -7,7 +7,7 @@ import type { APIGatewayProxyResult } from 'aws-lambda';
 import { adminUpdateEmailAddress } from '../cognito/update-email-address';
 import { logMessages } from '../log-messages';
 import { UserNotFoundException } from '@aws-sdk/client-cognito-identity-provider';
-import { verifyUserExists } from '../cognito/verify-users';
+import { verifyUsername } from '../cognito/verify-users';
 
 export type CredentialChangeRequest = z.infer<typeof credentialChangeSchema>;
 
@@ -129,7 +129,7 @@ export const handleCredentialChangeRequest = async (
     }
 
     // verify if user exists before processing the request
-    if (!(await verifyUserExists(userId))) {
+    if (!(await verifyUsername(userId))) {
       // User does not exist, log and return accepted response
       console.warn(logMessages.SIGNAL_WARN_USER_NOT_FOUND, {
         userId: userId,

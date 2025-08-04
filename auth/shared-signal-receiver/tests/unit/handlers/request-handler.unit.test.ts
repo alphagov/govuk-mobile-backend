@@ -4,6 +4,7 @@ import { handleCredentialChangeRequest } from '../../../handlers/credential-chan
 import { handleAccountPurgedRequest } from '../../../handlers/account-purged-handler';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { CognitoError } from '../../../errors';
+import {doesUserExists} from '../../../cognito/verify-users'
 
 // Mocks
 vi.mock('../../../parser', () => ({
@@ -14,6 +15,10 @@ vi.mock('../../../handlers/credential-change-handler', () => ({
 }));
 vi.mock('../../../handlers/account-purged-handler', () => ({
   handleAccountPurgedRequest: vi.fn(),
+}));
+
+vi.mock('../../../cognito/verify-users', () => ({
+  doesUserExists: vi.fn(),
 }));
 
 describe('requestHandler', () => {
@@ -98,6 +103,37 @@ describe('requestHandler', () => {
   });
 
   it('should return a 500 response if there is a CognitoError', async () => {
+    const input = {
+      iss: 'https://identity.example.com',
+      jti: '123e4567-e89b-12d3-a456-426614174000',
+      iat: 1721126400,
+      aud: 'https://service.example.gov.uk',
+      events: {
+        'https://schemas.openid.net/secevent/caep/event-type/credential-change':
+          {
+            change_type: 'update',
+            credential_type: 'password',
+            subject: {
+              uri: 'urn:example:account:1234567890',
+              format: 'urn:example:format:account-id',
+            },
+          },
+        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
+          {
+            email: 'user@example.com',
+          },
+      },
+    };
+
+    (handleCredentialChangeRequest as any).mockRejectedValue(
+      new CognitoError('Failed to process request'),
+    );
+
+    const result = await requestHandler(JSON.stringify(input));
+    expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+  });
+
+   it('should return a 200 user does not exist', async () => {
     const input = {
       iss: 'https://identity.example.com',
       jti: '123e4567-e89b-12d3-a456-426614174000',
