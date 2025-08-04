@@ -36,13 +36,6 @@ const getPrivateKey = async () => {
 
   return await importJWK(JSON.parse(privateKeyJwk), 'PS256');
 };
-
-const getKid = () => {
-  const publicKey = JSON.parse(testConfig.mockTransmitterJwk);
-
-  return publicKey.kid;
-};
-
 export class SharedSignalsDriver {
   baseUrl: string;
   privateKey: KeyLike | Uint8Array<ArrayBufferLike>;
@@ -56,7 +49,7 @@ export class SharedSignalsDriver {
       typ: 'secevent+jwt',
       iss: 'https://ssf.account.gov.uk/',
       // set in config repo
-      kid: getKid(),
+      kid: '0005cc89-76f5-4efe-8a3b-4be67159f419',
     };
   }
 
