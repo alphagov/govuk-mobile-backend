@@ -8,14 +8,12 @@ type JWKSResolver = (
   jwt?: FlattenedJWSInput,
 ) => Promise<CryptoKey>;
 
-// eslint-disable-next-line @typescript-eslint/no-magic-numbers
-const tenMinutes = 10 * 60 * 1000;
-
 let cachedResolver: JWKSResolver | null = null; // Store the resolver for reuse - this holds JWKS local cache
 
 interface FetchJwksInput {
   jwksUri: string;
   kid: string;
+  cacheDurationMs: number;
   requestFn?: typeof sendHttpRequest;
   jwksResolver?: JWKSResolver | null;
 }
@@ -23,6 +21,7 @@ interface FetchJwksInput {
 export const getJwks = async ({
   jwksUri,
   kid,
+  cacheDurationMs,
   requestFn = sendHttpRequest,
   jwksResolver = cachedResolver,
 }: FetchJwksInput): Promise<CryptoKey> => {
@@ -33,7 +32,7 @@ export const getJwks = async ({
     });
   } else {
     cachedResolver = createRemoteJWKSet(new URL(jwksUri), {
-      cacheMaxAge: tenMinutes,
+      cacheMaxAge: cacheDurationMs,
       [customFetch]: async (url, { headers, method }) => {
         return requestFn(url, {
           method,
