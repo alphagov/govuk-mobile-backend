@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { loadTemplateFromFile } from '../common/template';
+import path from 'path';
 
-const template = loadTemplateFromFile('./template.yaml');
+const template = loadTemplateFromFile(
+  path.join(__dirname, '..', '..', 'template.yaml'),
+);
 
 describe('shared signal', () => {
   it('should provision an api gateway', () => {
