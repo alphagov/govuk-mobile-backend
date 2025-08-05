@@ -15,7 +15,7 @@ export const credentialChangeInformationClassSchema = z.object({
 });
 
 export const credentialChangeClassSchema = z.object({
-  change_type: z.literal('update').optional(),
+  change_type: z.string().optional().nullable(),
   credential_type: credentialTypeEnumSchema.optional(),
   subject: accountIdentifierSubjectClassSchema,
 });
