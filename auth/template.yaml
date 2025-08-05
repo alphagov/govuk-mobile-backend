@@ -52,6 +52,11 @@ Parameters:
     Description: The ARN of the role that will used for integration tests
     Default: none
 
+  # Do not modify default parameter - this is used to allow us to unpack an array parameter
+  SharedSignalsWhitelistedIpsParameter:
+    Type: AWS::SSM::Parameter::Value<List<String>>
+    Default: /govuk-app-config/shared-signal/ip-whitelist
+
 Mappings:
   OneLogin:
     Environment:
@@ -117,6 +122,12 @@ Conditions:
           - Fn::Equals:
               - !Ref Environment
               - 'integration'
+
+  # temporary condition used whilst SS is not deployed to production 
+  IsNotProductionAndIsIntegrated:
+    Fn::Equals:
+          - !Ref Environment
+          - 'integration'
 
 Globals:
   Function:
@@ -2141,6 +2152,23 @@ Resources:
         - Key: System
           Value: Authentication
 
+  SharedSignalIPSet:
+    Condition: IsNotProductionAndIsIntegrated
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: !Sub ${AWS::StackName}-shared-signals-ipset
+      Scope: REGIONAL
+      Description: IP whitelist for Shared Signals transmitter
+      IPAddressVersion: IPV4
+      Addresses: !Ref SharedSignalsWhitelistedIpsParameter
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   SharedSignalWafAssociation:
     Condition: IsNotProduction
     Type: AWS::WAFv2::WebACLAssociation
@@ -2162,6 +2190,23 @@ Resources:
         CloudWatchMetricsEnabled: true
         MetricName: !Sub SharedSignalWAFMetric-${AWS::StackName}
       Rules:
+        - !If
+          - IsNotProductionAndIsIntegrated
+          - 
+            Name: BlockUntrustedIPs
+            Priority: 0 # Set a low priority to ensure this rule is evaluated first
+            Action:
+              Block: {} # Allow requests from the IPSet
+            Statement:
+              NotStatement:
+                Statement:
+                  IPSetReferenceStatement:
+                    Arn: !GetAtt SharedSignalIPSet.Arn
+            VisibilityConfig:
+              CloudWatchMetricsEnabled: true
+              MetricName: BlockUntrustedIPsMetric
+              SampledRequestsEnabled: true
+          - !Ref "AWS::NoValue"
         - Name: SharedSignalThrottlingRule
           Priority: 1
           Action:
