@@ -36,7 +36,7 @@ export interface CredentialChangeClass {
   /**
    * The credential change type
    */
-  change_type?: string | null;
+  change_type?: 'update'; // Currently only 'update' is supported
   credential_type?: CredentialTypeEnum;
   subject: AccountIdentifierSubjectClass;
 }
