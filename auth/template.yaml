@@ -123,12 +123,6 @@ Conditions:
               - !Ref Environment
               - 'integration'
 
-  # temporary condition used whilst SS is not deployed to production 
-  IsNotProductionAndIsIntegrated:
-    Fn::Equals:
-          - !Ref Environment
-          - 'integration'
-
 Globals:
   Function:
     CodeSigningConfigArn: !If
