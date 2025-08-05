@@ -120,37 +120,3 @@ export const requestHandler = async (
     return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
   }
 };
-
-const isUserValid = async (
-  incomingRequest: AccountPurgedSchema | CredentialChangeSchema,
-): Promise<boolean> => {
-  const jti = incomingRequest.jti;
-  const accountPurgeEventSchema =
-    'https://schemas.openid.net/secevent/risc/event-type/account-purged';
-  const credentialChangeEventSchema =
-    'https://schemas.openid.net/secevent/caep/event-type/credential-change';
-  let schema = (incomingRequest as AccountPurgedSchema).events[
-    accountPurgeEventSchema
-  ];
-  if (!schema) {
-    schema = (incomingRequest as CredentialChangeSchema).events[
-      credentialChangeEventSchema
-    ];
-  }
-
-  if (!schema) {
-    console.error('No valid event schema found in the request');
-    throw new CognitoError('Invalid request schema');
-  }
-
-  const username = schema?.subject?.uri;
-
-  if (!(await verifyUsername(username))) {
-    console.warn(logMessages.SIGNAL_WARN_USER_NOT_FOUND, {
-      userId: username,
-      correlationId: jti,
-    });
-    return false;
-  }
-  return true;
-};
