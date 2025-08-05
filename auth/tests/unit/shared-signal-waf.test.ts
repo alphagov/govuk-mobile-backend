@@ -25,9 +25,45 @@ describe('Shared Signal WAF', () => {
 
   it('should have the correct WAF rules', () => {
     const rules = sharedSignalWaf.Properties.Rules;
-    expect(rules).toHaveLength(2); // 3 rules configured
-    expect(rules[0].Name).toEqual('SharedSignalThrottlingRule');
-    expect(rules[1].Name).toEqual('SharedSignalAWSManagedBadInputsRuleSet');
+
+    expect(rules[0].Name).toEqual('BlockUntrustedIPs');
+    expect(rules).toHaveLength(3); // 3 rules configured
+    expect(rules[1].Name).toEqual('SharedSignalThrottlingRule');
+    expect(rules[2].Name).toEqual('SharedSignalAWSManagedBadInputsRuleSet');
+  });
+
+  it('should block all unrecognised IP addresses', () => {
+    const rules = sharedSignalWaf.Properties.Rules;
+
+    const ipsetRule = rules[0];
+
+    expect(ipsetRule.Action).toEqual({
+      Block: {},
+    });
+
+    expect(ipsetRule.Statement).toEqual({
+      // blocks all IPs not in the IP set
+      NotStatement: {
+        Statement: {
+          IPSetReferenceStatement: {
+            Arn: {
+              'Fn::GetAtt': ['SharedSignalIPSet', 'Arn'],
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('should block all unrecognised IP addresses', () => {
+    const rules = sharedSignalWaf.Properties.Rules;
+    const ipsetRule = rules[0];
+
+    expect(ipsetRule.VisibilityConfig).toEqual({
+      CloudWatchMetricsEnabled: true,
+      MetricName: 'BlockUntrustedIPsMetric',
+      SampledRequestsEnabled: true,
+    });
   });
 
   it('should have correct WAF throttling rule configuration', () => {
