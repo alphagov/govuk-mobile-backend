@@ -26,28 +26,16 @@ describe('Shared Signal WAF', () => {
   it('should have the correct WAF rules', () => {
     const rules = sharedSignalWaf.Properties.Rules;
 
-    const firstRule = rules[0]['Fn::If'];
-
-    expect(firstRule[1].Name).toEqual('BlockUntrustedIPs');
+    expect(rules[0].Name).toEqual('BlockUntrustedIPs');
     expect(rules).toHaveLength(3); // 3 rules configured
     expect(rules[1].Name).toEqual('SharedSignalThrottlingRule');
     expect(rules[2].Name).toEqual('SharedSignalAWSManagedBadInputsRuleSet');
   });
 
-  it('should conditionally create an IP whitelist for integrated environments', () => {
-    const rules = sharedSignalWaf.Properties.Rules;
-
-    expect(rules[0]['Fn::If'][0]).toEqual('IsNotProductionAndIsIntegrated');
-    // else don't create resource
-    expect(rules[0]['Fn::If'][2]).toEqual({
-      Ref: 'AWS::NoValue',
-    });
-  });
-
   it('should block all unrecognised IP addresses', () => {
     const rules = sharedSignalWaf.Properties.Rules;
 
-    const ipsetRule = rules[0]['Fn::If'][1];
+    const ipsetRule = rules[0];
 
     expect(ipsetRule.Action).toEqual({
       Block: {},
@@ -69,7 +57,7 @@ describe('Shared Signal WAF', () => {
 
   it('should block all unrecognised IP addresses', () => {
     const rules = sharedSignalWaf.Properties.Rules;
-    const ipsetRule = rules[0]['Fn::If'][1];
+    const ipsetRule = rules[0];
 
     expect(ipsetRule.VisibilityConfig).toEqual({
       CloudWatchMetricsEnabled: true,

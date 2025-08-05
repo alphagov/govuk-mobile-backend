@@ -2153,7 +2153,7 @@ Resources:
           Value: Authentication
 
   SharedSignalIPSet:
-    Condition: IsNotProductionAndIsIntegrated
+    Condition: IsNotProduction
     Type: AWS::WAFv2::IPSet
     Properties:
       Name: !Sub ${AWS::StackName}-shared-signals-ipset
@@ -2190,23 +2190,21 @@ Resources:
         CloudWatchMetricsEnabled: true
         MetricName: !Sub SharedSignalWAFMetric-${AWS::StackName}
       Rules:
-        - !If
-          - IsNotProductionAndIsIntegrated
-          - 
-            Name: BlockUntrustedIPs
-            Priority: 0 # Set a low priority to ensure this rule is evaluated first
-            Action:
-              Block: {} # Allow requests from the IPSet
-            Statement:
-              NotStatement:
-                Statement:
-                  IPSetReferenceStatement:
-                    Arn: !GetAtt SharedSignalIPSet.Arn
-            VisibilityConfig:
-              CloudWatchMetricsEnabled: true
-              MetricName: BlockUntrustedIPsMetric
-              SampledRequestsEnabled: true
-          - !Ref "AWS::NoValue"
+        - Name: BlockUntrustedIPs
+          Priority: 0 # Set a low priority to ensure this rule is evaluated first
+          Action:
+            Block: {} # Allow requests from the IPSet
+          Statement:
+            # inverts the matching rule - required since default action is allow
+            # blocks all IPs not in the ipset
+            NotStatement:
+              Statement:
+                IPSetReferenceStatement:
+                  Arn: !GetAtt SharedSignalIPSet.Arn
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: BlockUntrustedIPsMetric
+            SampledRequestsEnabled: true
         - Name: SharedSignalThrottlingRule
           Priority: 1
           Action:
