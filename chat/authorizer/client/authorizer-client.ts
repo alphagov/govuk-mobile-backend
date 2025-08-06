@@ -8,7 +8,7 @@ import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import type { CognitoAccessTokenPayload } from 'aws-jwt-verify/jwt-model';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 import { ConfigError } from '../errors';
-import type { SecretsConfig } from '../secret-config';
+import type { SecretsConfig } from '../types';
 
 export class AuthorizerClient {
   public region = process.env['REGION'] ?? 'eu-west-2';
