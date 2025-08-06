@@ -111,19 +111,13 @@ describe('AuthorizerClient', () => {
   });
 
   it('getChatSecrets returns secrets config when valid', async () => {
-    const event = { ...baseEvent, headers: { 'X-Auth': 'bad-token' } };
-    client = new AuthorizerClient(event);
-    client['secretsService'] = secretsServiceMock;
-    const secrets = await client.getChatSecrets();
+    const secrets = await AuthorizerClient.getChatSecrets();
     expect(secrets).toEqual(mockSecrets);
   });
 
   it('getChatSecrets logs error if CHAT_SECRET_NAME is not set', async () => {
     process.env['CHAT_SECRET_NAME'] = '';
-    client = new AuthorizerClient(baseEvent);
-    client['secretsService'] = secretsServiceMock;
-
-    await expect(client.getChatSecrets()).rejects.toThrow(
+    await expect(AuthorizerClient.getChatSecrets()).rejects.toThrow(
       `Environment variable "CHAT_SECRET_NAME" is not set`,
     );
   });
@@ -132,9 +126,8 @@ describe('AuthorizerClient', () => {
     (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       undefined,
     );
-    client = new AuthorizerClient(baseEvent);
-    client['secretsService'] = secretsServiceMock;
-    await expect(client.getChatSecrets()).rejects.toThrow(
+
+    await expect(AuthorizerClient.getChatSecrets()).rejects.toThrow(
       'Failed to retrieve chat secrets: Failed to retrieve secret for test-chat-secret-name',
     );
   });
@@ -143,9 +136,7 @@ describe('AuthorizerClient', () => {
     (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       'string-secret',
     );
-    client = new AuthorizerClient(baseEvent);
-    client['secretsService'] = secretsServiceMock;
-    await expect(client.getChatSecrets()).rejects.toThrow(
+    await expect(AuthorizerClient.getChatSecrets()).rejects.toThrow(
       'Failed to retrieve chat secrets: Unexpected token \'s\', "string-secret" is not valid JSON',
     );
   });
