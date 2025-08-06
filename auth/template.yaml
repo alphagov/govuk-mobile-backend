@@ -1948,6 +1948,7 @@ Resources:
             - !FindInMap [SharedSignalsJwksUri, Environment, !Ref Environment]
             - !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json
           JWKS_CACHE_DURATION: 600000 # ten minutes in ms
+          ENABLE_SHARED_SIGNAL: !Sub '{{resolve:ssm:/${ConfigStackName}/feature-flags/shared-signals}}'
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
