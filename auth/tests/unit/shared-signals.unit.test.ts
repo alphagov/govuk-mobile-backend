@@ -109,6 +109,7 @@ describe('shared signal', () => {
             'cognito-idp:AdminUserGlobalSignOut',
             'cognito-idp:AdminDeleteUser',
             'cognito-idp:AdminUpdateUserAttributes',
+            'cognito-idp:AdminGetUser',
           ]),
           Resource: { 'Fn::GetAtt': ['CognitoUserPool', 'Arn'] },
         }),
