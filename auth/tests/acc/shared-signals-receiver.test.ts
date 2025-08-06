@@ -83,12 +83,8 @@ describe('shared-signal-receiver', () => {
     });
 
     it('sends a email update signal with an unsupported change type and receives a 400 BAD REQUEST response', async () => {
-      const cognitoUserId =
-        await cognitoUserDriver.createCognitoUserAndReturnUserName(
-          passwordUpdateUserName,
-        );
       const response = await sharedSignalsDriver.sendEmailSignal({
-        userId: cognitoUserId,
+        userId: 'foo',
         accessToken,
         email: 'test@test.com',
         changeType: 'CREATE', // unsupported change type
