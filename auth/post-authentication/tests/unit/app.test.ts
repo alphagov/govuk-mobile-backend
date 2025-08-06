@@ -31,7 +31,9 @@ describe('Unit test for post-authentication handler', function () {
 
     const result: PostAuthenticationTriggerEvent = await lambdaHandler(event);
 
-        expect(consoleMock).toHaveBeenCalledWith('Source = PostAuthentication_Authentication');
-        expect(result).toEqual(event);
-    });
+    expect(consoleMock).toHaveBeenCalledWith(
+      'Source = PostAuthentication_Authentication',
+    );
+    expect(result).toEqual(event);
+  });
 });
