@@ -22,6 +22,7 @@ interface CredentialChangeSignalInput {
   userId: string;
   email: string;
   accessToken: string;
+  changeType?: string;
 }
 
 interface AccountPurgeSignalInput {
@@ -97,13 +98,14 @@ export class SharedSignalsDriver {
     userId,
     email,
     accessToken,
+    changeType = 'update',
   }: CredentialChangeSignalInput) {
     return this._sendRequest(
       {
         events: {
           'https://schemas.openid.net/secevent/caep/event-type/credential-change':
             {
-              change_type: 'update',
+              change_type: changeType,
               credential_type: 'email',
               subject: {
                 uri: userId,

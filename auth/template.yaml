@@ -2020,6 +2020,7 @@ Resources:
                   - cognito-idp:AdminUserGlobalSignOut
                   - cognito-idp:AdminDeleteUser
                   - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminGetUser
                 Resource: !GetAtt CognitoUserPool.Arn
       PermissionsBoundary: !If
         - UsePermissionsBoundary
