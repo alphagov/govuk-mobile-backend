@@ -17,10 +17,8 @@ jobs:
           echo "${{ secrets.PIPELINE_REPO_SSH_KEY }}" > ~/.ssh/pipeline_repo_key
           chmod 600 ~/.ssh/config_repo_key
           chmod 600 ~/.ssh/pipeline_repo_key
-
           # Add GitHub to known hosts
           ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-
       - name: Get cross-repo versions
         env:
           ORG_NAME: alphagov
@@ -29,22 +27,18 @@ jobs:
         run: |
           # Get current code repo SHA (short)
           CODE_SHA=$(git rev-parse --short HEAD)
-
           # Clone config repo and get latest SHA
           mkdir /tmp/config-repo -p
           git clone --depth=1 git@github.com:$ORG_NAME/$CONFIG_REPO.git /tmp/config-repo \
             -c core.sshCommand="ssh -i ~/.ssh/config_repo_key -o StrictHostKeyChecking=no"
            CONFIG_SHA=$(cd /tmp/config-repo && git rev-parse --short HEAD)
-
           # Clone pipeline repo and get latest SHA
           mkdir /tmp/pipeline-repo -p
           git clone --depth=1 git@github.com:$ORG_NAME/$PIPELINE_REPO.git /tmp/pipeline-repo \
             -c core.sshCommand="ssh -i ~/.ssh/pipeline_repo_key -o StrictHostKeyChecking=no"
           PIPELINE_SHA=$(cd /tmp/pipeline-repo && git rev-parse --short HEAD)
-
           # Create version string
           VERSION="${CODE_SHA}:${CONFIG_SHA}:${PIPELINE_SHA}"
           echo "✅ Cross-repo version: $VERSION"
-
           # Clean up
           rm -rf /tmp/config-repo /tmp/pipeline-repo

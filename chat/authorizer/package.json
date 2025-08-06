@@ -14,6 +14,7 @@
     "clean": "rm -rf debug && rm -rf dist"
   },
   "dependencies": {
+    "@aws-lambda-powertools/parameters": "^2.24.1",
     "@aws-sdk/client-secrets-manager": "^3.312.0",
     "aws-jwt-verify": "^5.1.0",
     "aws-lambda": "^1.0.0",
