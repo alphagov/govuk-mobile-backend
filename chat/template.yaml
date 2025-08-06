@@ -29,6 +29,7 @@ Parameters:
     Type: String
     Description: Stack Name for Config Stack
     Default: govuk-app-config
+  
 
 Conditions:
   UseCodeSigning: !Not
@@ -304,10 +305,13 @@ Resources:
 Outputs:
   AWSAccountId:
     Value: !Ref AWS::AccountId
-  StackName:
-    Value: !Ref AWS::StackName
   ConfigStackName:
     Value: !Ref ConfigStackName
+  StackName:
+    Value: !Ref AWS::StackName
+  ChatApiGatewayUrl:
+    Description: Auth Proxy Gateway endpoint URL
+    Value: !Sub https://${ChatApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
   ChatApiGatewayId:
     Value: !Ref ChatApiGateway
   ChatApiGatewayResourceId:
