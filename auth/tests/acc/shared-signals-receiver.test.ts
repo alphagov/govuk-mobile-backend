@@ -60,15 +60,53 @@ describe('shared-signal-receiver', () => {
       expect(response.status).toBe(202);
     });
 
-    it('sends a password update signal with an invalid user and receives a 500 response', async () => {
+    it('sends a password update signal with an invalid user and receives a 202 ACCEPTED response', async () => {
       const response = await sharedSignalsDriver.sendPasswordSignal({
-        userId: uuidv4(),
+        userId: uuidv4(), //arbitrary user not found
         accessToken,
         email: 'test@test.com',
       });
 
+      expect(response.ok).toBe(true); // The response is 202 because the user is not found, but the signal is still accepted
+      expect(response.status).toBe(202);
+    });
+
+    it('sends a email update signal with an invalid user and receives a 202 ACCEPTED response', async () => {
+      const response = await sharedSignalsDriver.sendEmailSignal({
+        userId: uuidv4(), //arbitrary user not found
+        accessToken,
+        email: 'test@test.com',
+      });
+
+      expect(response.ok).toBe(true); // The response is 202 because the user is not found, but the signal is still accepted
+      expect(response.status).toBe(202);
+    });
+
+    it('sends a email update signal with an unsupported change type and receives a 400 BAD REQUEST response', async () => {
+      const cognitoUserId =
+        await cognitoUserDriver.createCognitoUserAndReturnUserName(
+          passwordUpdateUserName,
+        );
+      const response = await sharedSignalsDriver.sendEmailSignal({
+        userId: cognitoUserId,
+        accessToken,
+        email: 'test@test.com',
+        changeType: 'CREATE', // unsupported change type
+      });
+
       expect(response.ok).toBe(false);
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ message: 'Bad Request' });
+    });
+
+    it('sends a  purge user signal with an invalid user and receives a 202 ACCEPTED response', async () => {
+      const response = await sharedSignalsDriver.sendAccountPurgeSignal({
+        userId: uuidv4(), //arbitrary user not found
+        accessToken,
+      });
+
+      expect(response.ok).toBe(true); // The response is 202 because the user is not found, but the signal is still accepted
+      expect(response.status).toBe(202);
     });
 
     it('sends an email update signal with a valid user and receives a 202 response', async () => {
