@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { loadTemplateFromFile } from '../common/template';
-import { testConfig } from '../common/config';
 
 import path from 'path';
 
@@ -17,13 +16,6 @@ type LambdaTestCase = {
 };
 
 const testCases: LambdaTestCase[] = [
-  {
-    resourceName: 'PostAuthenticationFunction',
-    functionName: 'post-authentication',
-    codeUri: 'post-authentication/',
-    handler: 'app.lambdaHandler',
-    role: 'PostAuthenticationFunctionIAMRole',
-  },
   {
     resourceName: 'AuthProxyFunction',
     functionName: 'auth-proxy',
