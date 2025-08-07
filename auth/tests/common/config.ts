@@ -12,9 +12,6 @@ const getTestConfig = () => {
     'CFN_SharedSignalEndpoint',
     'CFN_SharedSignalReceiverLogGroupName',
     'CFN_SharedSignalApiId',
-    'CFN_PostAuthenticationFunctionName',
-    'CFN_PostAuthenticationFunctionIAMRoleName',
-    'CFN_PostAuthenticationFunctionIAMRolePolicyName',
     'CFN_CloudWatchAlarmSignUpThrottlesName', // pragma: allowlist-secret
     'CFN_CloudWatchAlarmSignInThrottlesName',
     'CFN_CloudWatchAlarmTokenRefreshThrottlesName',
@@ -25,7 +22,6 @@ const getTestConfig = () => {
     'CFN_SlackSupportChannelConfigurationARN',
     'CFN_CognitoSecretName',
     'CFN_SharedSignalClientId',
-    'CFN_PostAuthenticationFunctionName',
     'CFN_AWSAccountId',
     'CFN_AuthProxyId',
     'CFN_AuthProxyLogGroupName',
@@ -81,11 +77,6 @@ const getTestConfig = () => {
     sharedSignalReceiverLogGroupName:
       process.env.CFN_SharedSignalReceiverLogGroupName!,
     sharedSignalApiId: process.env.CFN_SharedSignalApiId!,
-    postAuthenticationLambda: process.env.CFN_PostAuthenticationFunctionName!,
-    postAuthenticationFunctionIAMRoleName:
-      process.env.CFN_PostAuthenticationFunctionIAMRoleName!,
-    postAuthenticationFunctionIAMRolePolicyName:
-      process.env.CFN_PostAuthenticationFunctionIAMRolePolicyName!,
     authProxyUrl: process.env.CFN_AuthProxyUrl!,
     attestationLowCompletionAlarmName:
       process.env.CFN_AttestationLowCompletionAlarmName!,
@@ -112,8 +103,6 @@ const getTestConfig = () => {
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
     authProxyId: process.env.CFN_AuthProxyId!,
     environment: process.env.TEST_ENVIRONMENT,
-    postAuthenticationFunctionInvokePermission:
-      process.env.CFN_PostAuthenticationFunctionInvokePermission!,
     region: process.env.CFN_AWS_REGION || 'eu-west-2',
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName!,
