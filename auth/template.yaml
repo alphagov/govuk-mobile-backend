@@ -166,8 +166,6 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-      LambdaConfig:
-        PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
 
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
@@ -885,60 +883,6 @@ Resources:
             Principal:
               Service: chatbot.amazonaws.com
             Action: sts:AssumeRole
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  PostAuthenticationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-post-authentication
-      CodeUri: post-authentication/
-      Handler: app.lambdaHandler
-      Role: !GetAtt PostAuthenticationFunctionIAMRole.Arn
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
-        SourceMap: false
-        EntryPoints:
-          - app.ts
-
-  PostAuthenticationFunctionIAMRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::StackName}-post-authentication-role
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: PostAuthenticationFunctionPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication:*
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1668,14 +1612,6 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AttestationProxyApi}/*/*/*
 
-  PostAuthLambdaInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref PostAuthenticationFunction
-      Action: lambda:InvokeFunction
-      Principal: cognito-idp.amazonaws.com
-      SourceArn: !GetAtt CognitoUserPool.Arn
-
   CognitoResourceServer:
     Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolResourceServer
@@ -2360,7 +2296,6 @@ Resources:
                   - iam:GetRolePolicy
                 Resource:
                   - !GetAtt AuthProxyFunctionIAMRole.Arn
-                  - !GetAtt PostAuthenticationFunctionIAMRole.Arn
 
               - Effect: Allow
                 Action:
@@ -2375,7 +2310,6 @@ Resources:
                   - lambda:GetFunction
                 Resource:
                   - !GetAtt AuthProxyFunction.Arn
-                  - !GetAtt PostAuthenticationFunction.Arn
 
               - Effect: Allow
                 Action:
@@ -2659,22 +2593,6 @@ Outputs:
     Condition: IsNotProduction
     Description: The ID of the Shared Signal API
     Value: !Ref SharedSignalApi
-
-  PostAuthenticationFunctionName:
-    Description: The name of the Post Authentication function
-    Value: !Ref PostAuthenticationFunction
-
-  PostAuthenticationFunctionIAMRoleName:
-    Description: The name of the Post Authentication Lambda function IAM role
-    Value: !Sub ${AWS::StackName}-post-authentication-role
-
-  PostAuthenticationFunctionIAMRolePolicyName:
-    Description: The name of the Post Authentication Lambda function IAM role policy name
-    Value: PostAuthenticationFunctionPolicy
-
-  PostAuthenticationFunctionInvokePermission:
-    Description: The name of the Post Authentication Invoke Permission
-    Value: !Ref PostAuthLambdaInvokePermission
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
