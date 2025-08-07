@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { SharedSignalsHealthCheckDriver } from '../driver/sharedSignalsHealthcheck.driver';
 import { TestLambdaDriver } from '../driver/testLambda.driver';
 import { testConfig } from '../common/config';
@@ -22,18 +22,25 @@ describe('Shared Signals Health-check', () => {
 
       it('Should return a confirmation log', async () => {
         const response = await loggingDriver.findLogMessageWithRetries({
-          logGroupName: testConfig.authProxyLogGroup,
+          logGroupName: testConfig.sharedSignalHealthCheckFunctionLogGroupName,
           searchString: 'HEALTH_CHECK_END',
           startTime,
-          delayMs: 3000,
+          delayMs: 5000,
         });
 
         expect(response).toBeDefined();
       });
 
-      it('And a verification state');
+      it('Should log the verification result', async () => {
+        const response = await loggingDriver.findLogMessageWithRetries({
+          logGroupName: testConfig.sharedSignalHealthCheckFunctionLogGroupName,
+          searchString: 'Token verification successful',
+          startTime,
+          delayMs: 5000,
+        });
+
+        expect(response).toBeDefined();
+      });
     });
   });
-
-  describe('Given the health-check receives a success response', () => {});
 });
