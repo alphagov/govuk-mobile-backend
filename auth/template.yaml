@@ -1,12 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
-Description: >
+Description: |
   GOVUK Mobile Backend Authentication template.
 
 Parameters:
   Environment:
-    Description: "The name of the environment to deploy to"
-    Type: "String"
+    Description: The name of the environment to deploy to
+    Type: String
     AllowedValues:
       - build
       - staging
@@ -18,58 +18,110 @@ Parameters:
 
   CodeSigningConfigArn:
     Type: String
-    Description: >
+    Description: |
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
-    Default: "none"
+    Default: none
 
   PermissionsBoundary:
     Type: String
-    Description: >
+    Description: |
       The ARN of the permissions boundary to apply to any role created by the template
-    Default: "none"
+    Default: none
 
   CustomScopeName:
     Type: String
     Description: Name for the custom OAuth scope
-    Default: "read"
+    Default: read
 
   ConfigStackName:
     Type: String
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
+  AccountLevel:
+    Type: String
+    Description: |
+      Whether this is an account level deployment or not. If true, the template will create resources at the account level.
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+
+  TestRoleArn:
+    Type: String
+    Description: The ARN of the role that will used for integration tests
+    Default: none
+
+  # Do not modify default parameter - this is used to allow us to unpack an array parameter
+  SharedSignalsWhitelistedIpsParameter:
+    Type: AWS::SSM::Parameter::Value<List<String>>
+    Default: /govuk-app-config/shared-signal/ip-whitelist
+
 Mappings:
   OneLogin:
     Environment:
-      build: "integration"
-      dev: "integration"
-      staging: "staging"
-      integration: "integration"
-      production: "production"
+      build: integration
+      dev: integration
+      staging: staging
+      integration: integration
+      production: production
+
+  SharedSignalsJwksUri:
+    Environment:
+      build: '...'
+      dev: '...'
+      staging: '...'
+      integration: https://ssf-transmitter.transaction.integration.account.gov.uk/jwks.json
+      production: https://shared-signals-transmitter.transaction.account.gov.uk/jwks.json
 
 Conditions:
-  UseCodeSigning:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref CodeSigningConfigArn
-          - "none"
+  UseCodeSigning: !Not
+    - !Equals
+      - !Ref CodeSigningConfigArn
+      - none
 
-  UsePermissionsBoundary:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref PermissionsBoundary
-          - "none"
+  UsePermissionsBoundary: !Not
+    - !Equals
+      - !Ref PermissionsBoundary
+      - none
 
-  IsNotProduction:
-    Fn::Not:
+  IsNotProduction: !Not
+    - !Equals
+      - !Ref Environment
+      - production
+
+  IsProduction: !Equals
+    - !Ref Environment
+    - production
+
+  IsTestingEnvironment:
+    Fn::Or:
       - Fn::Equals:
           - !Ref Environment
-          - "production"
+          - 'dev'
+      - Fn::Equals:
+          - !Ref Environment
+          - 'staging'
 
-  IsProduction:
-    Fn::Equals:
-      - !Ref Environment
-      - "production"
+  IsIntegratedEnvironment:
+    Fn::Or:
+      - Fn::Equals:
+          - !Ref Environment
+          - 'production'
+      - Fn::Equals:
+          - !Ref Environment
+          - 'integration'
+
+  IsNonIntegratedEnvironment:
+    Fn::Or:
+      - Fn::Not:
+          - Fn::Equals:
+              - !Ref Environment
+              - 'production'
+      - Fn::Not:
+          - Fn::Equals:
+              - !Ref Environment
+              - 'integration'
 
 Globals:
   Function:
@@ -90,18 +142,18 @@ Resources:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "user-pool"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+          - user-pool
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
       DeletionProtection: ACTIVE
       UsernameAttributes:
         - email
@@ -129,18 +181,18 @@ Resources:
     Properties:
       UserPoolId: !Ref CognitoUserPool
       ClientName: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "user-pool-client"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+          - user-pool-client
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
       SupportedIdentityProviders:
         - !Ref UserPoolIdentityProvider
       AllowedOAuthFlows:
@@ -149,30 +201,29 @@ Resources:
         - email
         - openid
       GenerateSecret: true # pragma: allowlist secret
-      CallbackURLs:
-        - "govuk://govuk/login-auth-callback"
-      LogoutURLs: 
-        Fn::If:
-          - IsProduction
-          - 
-            - "https://oidc.account.gov.uk/logout"
-          - 
-            - Fn::Join:
-                - ""
-                - 
-                  - "https://oidc."
-                  - Fn::FindInMap:
-                      - OneLogin
-                      - Environment
-                      - Ref: Environment
-                  - ".account.gov.uk/logout"
+      CallbackURLs: !If
+        - IsTestingEnvironment
+        - - govuk://govuk/login-auth-callback
+          - https://d84l1y8p4kdic.cloudfront.net
+        - - govuk://govuk/login-auth-callback
+      LogoutURLs: !If
+        - IsProduction
+        - - https://oidc.account.gov.uk/logout
+        - - !Join
+            - ''
+            - - https://oidc.
+              - !FindInMap
+                - OneLogin
+                - Environment
+                - !Ref Environment
+              - .account.gov.uk/logout
       TokenValidityUnits:
         AccessToken: seconds
         IdToken: seconds
         RefreshToken: seconds
       AccessTokenValidity: 300 # 5 minutes in seconds
       IdTokenValidity: 3600 # 1 hour in seconds
-      RefreshTokenValidity: 86400 # 24 Hrs in seconds (24 hours * 3600 seconds)
+      RefreshTokenValidity: 604800 # 7 days in seconds (7* 24 hours * 3600 seconds)
       EnableTokenRevocation: true
       AllowedOAuthFlowsUserPoolClient: true
 
@@ -180,7 +231,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-waf-error-rate
-      AlarmDescription: "Alarm when the WAF error rate exceeds 5 per minute"
+      AlarmDescription: !Sub |
+        Alarm when the WAF error rate exceeds 5 incidents per minute.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4529389569/Runbook+WAF+-+High+number+WAF+throttling
       ActionsEnabled: true
       MetricName: WAFErrorRate
       Namespace: AWS/WAFV2
@@ -192,7 +246,35 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: WebACL
-          Value: !Ref CognitoWebApplicationFirewall
+          Value: !Join
+            - '-'
+            - - !Ref AWS::StackName
+              - waf-cognito
+              - !Select
+                - 4
+                - !Split
+                  - '-'
+                  - !Select
+                    - 2
+                    - !Split
+                      - '/'
+                      - !Ref AWS::StackId
+        - Name: Rule
+          Value: !Join
+            - '-'
+            - - !Ref AWS::StackName
+              - 'cognito-waf-rate-limit-rule'
+              - !Select
+                - 4
+                - !Split
+                  - '-'
+                  - !Select
+                    - 2
+                    - !Split
+                      - '/'
+                      - !Ref AWS::StackId
+        - Name: Region
+          Value: !Ref AWS::Region
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -209,37 +291,37 @@ Resources:
     Type: AWS::WAFv2::WebACL
     Properties:
       Name: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "waf-cognito"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Description: "Web Application Firewall for Cognito User Pool"
+          - waf-cognito
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
+      Description: Web Application Firewall for Cognito User Pool
       DefaultAction:
         Allow: {}
       Scope: REGIONAL
       VisibilityConfig:
         CloudWatchMetricsEnabled: true
         MetricName: !Join
-          - "-"
+          - '-'
           - - !Ref AWS::StackName
-            - "waf-cognito-acl-rules"
-            - Fn::Select:
-                - 4
-                - Fn::Split:
-                    - "-"
-                    - Fn::Select:
-                        - 2
-                        - Fn::Split:
-                            - "/"
-                            - Ref: AWS::StackId
+            - waf-cognito-acl-rules
+            - !Select
+              - 4
+              - !Split
+                - '-'
+                - !Select
+                  - 2
+                  - !Split
+                    - /
+                    - !Ref AWS::StackId
         SampledRequestsEnabled: true
       Rules:
         - Name: RateLimitRule
@@ -255,18 +337,18 @@ Resources:
           VisibilityConfig:
             CloudWatchMetricsEnabled: true
             MetricName: !Join
-              - "-"
+              - '-'
               - - !Ref AWS::StackName
-                - "rate-limit-rule"
-                - Fn::Select:
-                    - 4
-                    - Fn::Split:
-                        - "-"
-                        - Fn::Select:
-                            - 2
-                            - Fn::Split:
-                                - "/"
-                                - Ref: AWS::StackId
+                - cognito-waf-rate-limit-rule
+                - !Select
+                  - 4
+                  - !Split
+                    - '-'
+                    - !Select
+                      - 2
+                      - !Split
+                        - /
+                        - !Ref AWS::StackId
             SampledRequestsEnabled: true
         - Name: AWSManagedRulesKnownBadInputsRuleSet
           Priority: 2
@@ -280,18 +362,18 @@ Resources:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: !Join
-              - "-"
+              - '-'
               - - !Ref AWS::StackName
-                - "aws-managed-rules-known-bad-inputs-rule-set"
-                - Fn::Select:
-                    - 4
-                    - Fn::Split:
-                        - "-"
-                        - Fn::Select:
-                            - 2
-                            - Fn::Split:
-                                - "/"
-                                - Ref: AWS::StackId
+                - aws-managed-rules-known-bad-inputs-rule-set
+                - !Select
+                  - 4
+                  - !Split
+                    - '-'
+                    - !Select
+                      - 2
+                      - !Split
+                        - /
+                        - !Ref AWS::StackId
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -312,22 +394,28 @@ Resources:
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
-        Version: "2021-06-01"
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - JWTTokens
             Operation:
               Audit:
                 FindingsDestination: {}
           - Sid: redact-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - JWTTokens
             Operation:
               Deidentify:
                 MaskConfig: {}
       LogGroupClass: STANDARD
-      LogGroupName: !Sub "aws-waf-logs-cognito-${AWS::StackName}"
+      LogGroupName: !Sub aws-waf-logs-cognito-${AWS::StackName}
       KmsKeyId: !GetAtt CognitoWAFLogGroupKMSKey.Arn
       RetentionInDays: 30
       Tags:
@@ -351,29 +439,29 @@ Resources:
       Description: KMS key for encrypting the Cognito WAF Log Group
       EnableKeyRotation: true
       KeyPolicy:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action:
-              - "kms:*"
+              - kms:*
             Resource:
-              - "*"
+              - '*'
           - Effect: Allow
             Principal:
-              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey*"
-              - "kms:Describe*"
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
             Resource:
-              - "*"
+              - '*'
             Condition:
               ArnLike:
-                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -386,13 +474,16 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      Domain: !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
+      Domain: !Sub '{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}'
 
   CloudWatchAlarmSignUpThrottles:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-sign-up-throttles
-      AlarmDescription: "Alarm when the sign up rate exceeds 5 per minute"
+      AlarmDescription: !Sub |
+        Alarm when the sign up rate exceeds 5 per minute.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4531716123/Runbook+Attestation+WAF+throttling
       MetricName: SignUpThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -423,7 +514,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-sign-in-throttles
-      AlarmDescription: "Alarm when the sign in rate exceeds 5 per minute"
+      AlarmDescription: !Sub |
+        Alarm when the sign in rate exceeds 5 per minute.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4539416577/Runbook+Cognito+Alarms
       MetricName: SignInThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -454,7 +548,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-token-refresh-throttles
-      AlarmDescription: "Alarm when the token refresh rate exceeds 5 per minute"
+      AlarmDescription: !Sub |
+        Alarm when the token refresh rate exceeds 5 per minute.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4539416577/Runbook+Cognito+Alarms
       MetricName: TokenRefreshThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -485,7 +582,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-cognito-federation-throttles
-      AlarmDescription: "Alarm when federated requests exceeds 5 per minute"
+      AlarmDescription: !Sub |
+        Alarm when federated requests exceeds 5 per minute.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4539416577/Runbook+Cognito+Alarms
       MetricName: FederationThrottles
       Namespace: AWS/Cognito
       Statistic: Sum
@@ -518,7 +618,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-4xx-errors
-      AlarmDescription: "Alarm detects a high rate of client-side errors."
+      AlarmDescription: !Sub |
+        Alarm detects a high rate of client-side errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -553,7 +656,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-5xx-errors
-      AlarmDescription: "Alarm detects a high rate of server-side errors."
+      AlarmDescription: !Sub |
+        Alarm detects a high rate of server-side errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -582,7 +688,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-latency-errors
-      AlarmDescription: "Alarm detects a high rate of latency errors."
+      AlarmDescription: !Sub |
+        Alarm detects a high rate of latency errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms
       Namespace: AWS/ApiGateway
       ExtendedStatistic: p90
       ActionsEnabled: true
@@ -612,18 +721,18 @@ Resources:
     Properties:
       KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
       DisplayName: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "cloudwatch-alarm-topic"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+          - cloudwatch-alarm-topic
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -639,7 +748,7 @@ Resources:
       Endpoint: !If
         - IsNotProduction
         - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub "{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}"
+        - !Sub '{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}'
       Protocol: !If
         - IsNotProduction
         - lambda
@@ -669,38 +778,38 @@ Resources:
       KeyPolicy:
         Version: 2012-10-17
         Statement:
-          - Sid: "Allow the account to manage the key"
+          - Sid: Allow the account to manage the key
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action:
-              - "kms:*"
+              - kms:*
             Resource:
-              - "*"
-          - Sid: "Allow Cloudwatch alarms access"
+              - '*'
+          - Sid: Allow Cloudwatch alarms access
             Effect: Allow
             Principal:
               Service: cloudwatch.amazonaws.com
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey*"
-              - "kms:Describe*"
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
             Resource:
-              - "*"
-          - Sid: "Allow CWE access"
+              - '*'
+          - Sid: Allow CWE access
             Effect: Allow
             Principal:
               Service: events.amazonaws.com
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey*"
-              - "kms:Describe*"
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
             Resource:
-              - "*"
+              - '*'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -724,7 +833,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
+        Target: es2020
         SourceMap: false
         EntryPoints:
           - app.ts
@@ -742,21 +851,21 @@ Resources:
     Type: AWS::Chatbot::SlackChannelConfiguration
     Properties:
       ConfigurationName: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "support-channel"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+          - support-channel
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
       IamRoleArn: !GetAtt SlackSupportChannelConfigurationIAMRole.Arn
-      SlackChannelId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}"
-      SlackWorkspaceId: !Sub "{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}"
+      SlackChannelId: !Sub '{{resolve:ssm:/${ConfigStackName}/slack/out-of-hours-channel-id}}'
+      SlackWorkspaceId: !Sub '{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}'
       SnsTopicArns:
         - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
@@ -771,13 +880,13 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       #checkov:skip=CKV2_GOVUKAPP_1:Ensure lambda function has a permissions boundary via an IAM role
-      RoleName: !Sub "${AWS::StackName}-support-channel-role"
+      RoleName: !Sub ${AWS::StackName}-support-channel-role
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
         - !Ref AWS::NoValue
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
@@ -794,7 +903,7 @@ Resources:
   PostAuthenticationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-post-authentication"
+      FunctionName: !Sub ${AWS::StackName}-post-authentication
       CodeUri: post-authentication/
       Handler: app.lambdaHandler
       Role: !GetAtt PostAuthenticationFunctionIAMRole.Arn
@@ -806,7 +915,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
+        Target: es2020
         SourceMap: false
         EntryPoints:
           - app.ts
@@ -814,9 +923,9 @@ Resources:
   PostAuthenticationFunctionIAMRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-post-authentication-role"
+      RoleName: !Sub ${AWS::StackName}-post-authentication-role
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
@@ -825,14 +934,14 @@ Resources:
       Policies:
         - PolicyName: PostAuthenticationFunctionPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication:*"
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -849,54 +958,69 @@ Resources:
     Type: AWS::Cognito::UserPoolIdentityProvider
     Properties:
       UserPoolId: !Ref CognitoUserPool
-      ProviderName: "onelogin"
-      ProviderType: "OIDC"
+      ProviderName: onelogin
+      ProviderType: OIDC
       ProviderDetails:
-        attributes_request_method: "GET"
+        attributes_request_method: GET
         attributes_url: !If
           - IsProduction
-          - "https://oidc.account.gov.uk/userinfo"
+          - https://oidc.account.gov.uk/userinfo
           - !Join
-            - ""
-            - - "https://oidc."
-              - !FindInMap [OneLogin, Environment, !Ref Environment]
-              - ".account.gov.uk/userinfo"
+            - ''
+            - - https://oidc.
+              - !FindInMap
+                - OneLogin
+                - Environment
+                - !Ref Environment
+              - .account.gov.uk/userinfo
         attributes_url_add_attributes: false
-        authorize_scopes: "openid email"
+        authorize_scopes: openid email
         authorize_url: !If
           - IsProduction
-          - "https://oidc.account.gov.uk/authorize"
+          - https://oidc.account.gov.uk/authorize
           - !Join
-            - ""
-            - - "https://oidc."
-              - !FindInMap [OneLogin, Environment, !Ref Environment]
-              - ".account.gov.uk/authorize"
-        client_id: !Sub "{{resolve:ssm:/${ConfigStackName}/onelogin/client_id}}"
-        client_secret: !Sub "{{resolve:secretsmanager:/${ConfigStackName}/onelogin/client_secret:SecretString}}" # pragma: allowlist secret
+            - ''
+            - - https://oidc.
+              - !FindInMap
+                - OneLogin
+                - Environment
+                - !Ref Environment
+              - .account.gov.uk/authorize
+        client_id: !Sub '{{resolve:ssm:/${ConfigStackName}/onelogin/client_id}}'
+        client_secret: !Sub '{{resolve:secretsmanager:/${ConfigStackName}/onelogin/client_secret:SecretString}}' # pragma: allowlist secret
         jwks_uri: !If
           - IsProduction
-          - "https://oidc.account.gov.uk/.well-known/jwks.json"
+          - https://oidc.account.gov.uk/.well-known/jwks.json
           - !Join
-            - ""
-            - - "https://oidc."
-              - !FindInMap [OneLogin, Environment, !Ref Environment]
-              - ".account.gov.uk/.well-known/jwks.json"
+            - ''
+            - - https://oidc.
+              - !FindInMap
+                - OneLogin
+                - Environment
+                - !Ref Environment
+              - .account.gov.uk/.well-known/jwks.json
         oidc_issuer: !If
           - IsProduction
-          - "https://oidc.account.gov.uk"
+          - https://oidc.account.gov.uk
           - !Join
-            - ""
-            - - "https://oidc."
-              - !FindInMap [OneLogin, Environment, !Ref Environment]
-              - ".account.gov.uk"
+            - ''
+            - - https://oidc.
+              - !FindInMap
+                - OneLogin
+                - Environment
+                - !Ref Environment
+              - .account.gov.uk
         token_url: !If
           - IsProduction
-          - "https://oidc.account.gov.uk/token"
+          - https://oidc.account.gov.uk/token
           - !Join
-            - ""
-            - - "https://oidc."
-              - !FindInMap [OneLogin, Environment, !Ref Environment]
-              - ".account.gov.uk/token"
+            - ''
+            - - https://oidc.
+              - !FindInMap
+                - OneLogin
+                - Environment
+                - !Ref Environment
+              - .account.gov.uk/token
       IdpIdentifiers:
         - onelogin
       AttributeMapping:
@@ -908,37 +1032,37 @@ Resources:
     Type: AWS::WAFv2::WebACL
     Properties:
       Name: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "waf-auth-proxy"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
-      Description: "Web Application Firewall for Auth Proxy"
+          - waf-auth-proxy
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
+      Description: Web Application Firewall for Auth Proxy
       DefaultAction:
         Allow: {}
       Scope: REGIONAL
       VisibilityConfig:
         CloudWatchMetricsEnabled: true
         MetricName: !Join
-          - "-"
+          - '-'
           - - !Ref AWS::StackName
-            - "waf-auth-proxy-acl-rules"
-            - Fn::Select:
-                - 4
-                - Fn::Split:
-                    - "-"
-                    - Fn::Select:
-                        - 2
-                        - Fn::Split:
-                            - "/"
-                            - Ref: AWS::StackId
+            - waf-auth-proxy-acl-rules
+            - !Select
+              - 4
+              - !Split
+                - '-'
+                - !Select
+                  - 2
+                  - !Split
+                    - /
+                    - !Ref AWS::StackId
         SampledRequestsEnabled: true
       Rules:
         - Name: RateLimitRule
@@ -954,18 +1078,18 @@ Resources:
           VisibilityConfig:
             CloudWatchMetricsEnabled: true
             MetricName: !Join
-              - "-"
+              - '-'
               - - !Ref AWS::StackName
-                - "rate-limit-rule"
-                - Fn::Select:
-                    - 4
-                    - Fn::Split:
-                        - "-"
-                        - Fn::Select:
-                            - 2
-                            - Fn::Split:
-                                - "/"
-                                - Ref: AWS::StackId
+                - rate-limit-rule
+                - !Select
+                  - 4
+                  - !Split
+                    - '-'
+                    - !Select
+                      - 2
+                      - !Split
+                        - /
+                        - !Ref AWS::StackId
             SampledRequestsEnabled: true
         - Name: AWSManagedRulesKnownBadInputsRuleSet
           Priority: 2
@@ -978,18 +1102,18 @@ Resources:
           VisibilityConfig:
             SampledRequestsEnabled: true
             MetricName: !Join
-              - "-"
+              - '-'
               - - !Ref AWS::StackName
-                - "aws-managed-rules-known-bad-inputs-rule-set"
-                - Fn::Select:
-                    - 4
-                    - Fn::Split:
-                        - "-"
-                        - Fn::Select:
-                            - 2
-                            - Fn::Split:
-                                - "/"
-                                - Ref: AWS::StackId
+                - aws-managed-rules-known-bad-inputs-rule-set
+                - !Select
+                  - 4
+                  - !Split
+                    - '-'
+                    - !Select
+                      - 2
+                      - !Split
+                        - /
+                        - !Ref AWS::StackId
             CloudWatchMetricsEnabled: true
       Tags:
         - Key: Product
@@ -1003,10 +1127,13 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-auth-proxy-waf-rate-limit
-      AlarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes"
+      AlarmDescription: !Sub |
+        Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4531716123/Runbook+Attestation+WAF+throttling
       Namespace: AWS/WAFV2
       ActionsEnabled: true
-      MetricName: AuthWAFErrorRate
+      MetricName: BlockedRequests
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 5
@@ -1015,7 +1142,35 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: WebACL
-          Value: !Ref AuthProxyWaf
+          Value: !Join
+            - '-'
+            - - !Ref AWS::StackName
+              - waf-auth-proxy
+              - !Select
+                - 4
+                - !Split
+                  - '-'
+                  - !Select
+                    - 2
+                    - !Split
+                      - /
+                      - !Ref AWS::StackId
+        - Name: Rule
+          Value: !Join
+            - '-'
+            - - !Ref AWS::StackName
+              - 'rate-limit-rule'
+              - Fn::Select:
+                  - 4
+                  - Fn::Split:
+                      - '-'
+                      - Fn::Select:
+                          - 2
+                          - Fn::Split:
+                              - '/'
+                              - Ref: AWS::StackId
+        - Name: Region
+          Value: !Ref AWS::Region
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -1031,29 +1186,110 @@ Resources:
   AuthProxyWafAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
-      ResourceArn: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}"
+      ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}
       WebACLArn: !GetAtt AuthProxyWaf.Arn
+
+  AuthProxyWafLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      # log stream must start with aws-waf-logs-
+      LogGroupName: !Sub aws-waf-logs-attestation-${AWS::StackName}
+      KmsKeyId: !GetAtt AuthProxyWAFLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AuthProxyWAFLoggingConfiguration:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !GetAtt AuthProxyWafLogGroup.Arn
+      ResourceArn: !GetAtt AuthProxyWaf.Arn
+
+  AuthProxyWAFLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the Auth Proxy WAF Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   AttestationProxyApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "auth-proxy"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+          - auth-proxy
+          - !Select
+            - 4
+            - !Split
+              - '-'
+              - !Select
+                - 2
+                - !Split
+                  - /
+                  - !Ref AWS::StackId
       StageName: !Ref Environment
       AccessLogSetting:
         DestinationArn: !GetAtt AttestationProxyApiAccessLogGroup.Arn
-        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
+        Format: '{"extendedRequestId":"$context.extendedRequestId","path":"$context.path","responseLength":"$context.responseLength","userAgent":"$context.identity.userAgent","integrationLatency":"$context.integrationLatency","integrationStatus":"$context.integrationStatus","integrationErrorMessage":"$context.integrationErrorMessage","wafResponseCode":"$context.wafResponseCode","errorMessage":"$context.error.message","errorType":"$context.error.type","errorResponseType":"$context.error.responseType","validationErrorString":"$context.error.validationErrorString","requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1079,29 +1315,29 @@ Resources:
       Description: KMS key for encrypting the Auth Proxy Api Access Log Group
       EnableKeyRotation: true
       KeyPolicy:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action:
-              - "kms:*"
+              - kms:*
             Resource:
-              - "*"
+              - '*'
           - Effect: Allow
             Principal:
-              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey*"
-              - "kms:Describe*"
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
             Resource:
-              - "*"
+              - '*'
             Condition:
               ArnLike:
-                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1118,13 +1354,16 @@ Resources:
       MetricTransformations:
         - MetricName: Attestation200ResponseCount
           MetricNamespace: !Sub ${AWS::StackName}/Responses
-          MetricValue: "1"
+          MetricValue: '1'
 
   AttestationLambdaErrorRateAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       ActionsEnabled: true
-      AlarmDescription: "Alarm for high number of attestation errors. \nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmDescription: !Sub |
+        Alarm for high number of attestation errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4517658627/Runbook+High+number+of+attestation+failures
       AlarmName: !Sub ${AWS::StackName}-attestation-lambda-error-rate
       ComparisonOperator: GreaterThanOrEqualToThreshold
       DatapointsToAlarm: 1
@@ -1164,7 +1403,9 @@ Resources:
           ReturnData: false
         - Expression: IF(lambdaInvocations>=10, lambdaErrorPercentage)
           Id: lambdaErrorPercentageHighTraffic
-          Label: Percentage of invocations that result in a function error with at least 10 invocations a minute
+          Label:
+            Percentage of invocations that result in a function error with at least
+            10 invocations a minute
           ReturnData: true
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
@@ -1184,7 +1425,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       ActionsEnabled: true
-      AlarmDescription: "A large proportion of Attestation requests have not completed successfully.\nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmDescription: !Sub |
+        A large proportion of Attestation requests have not completed successfully.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4517658627/Runbook+High+number+of+attestation+failures
       AlarmName: !Sub ${AWS::StackName}-attestation-low-completion
       ComparisonOperator: LessThanOrEqualToThreshold
       DatapointsToAlarm: 1
@@ -1246,7 +1490,11 @@ Resources:
       - Attestation200ResponseCountMetricFilter
     Properties:
       ActionsEnabled: false # disable until baseline is established
-      AlarmDescription: "A decrease has been detected in the proportion of 200 responses returned from the attestation endpoint, \nbased on the anomaly detection model.\nSee resolution steps in runbook: \nhttps://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4517658627/Runbook+High+number+of+attestation+failures\n"
+      AlarmDescription: !Sub |
+        A decrease has been detected in the proportion of 200 responses returned from the attestation endpoint,
+        based on the anomaly detection model.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4517658627/Runbook+High+number+of+attestation+failures
       AlarmName: !Sub ${AWS::StackName}-attestation-low-200-response-proportion
       ComparisonOperator: LessThanLowerThreshold
       DatapointsToAlarm: 5
@@ -1303,8 +1551,10 @@ Resources:
   AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-auth-proxy"
-      Description: "Auth proxy - performs app integrity checks and forwards requests to the Cognito User Pool"
+      FunctionName: !Sub ${AWS::StackName}-auth-proxy
+      Description:
+        Auth proxy - performs app integrity checks and forwards requests to
+        the Cognito User Pool
       CodeUri: proxy/
       Events:
         ApiEvent:
@@ -1312,23 +1562,22 @@ Resources:
           Properties:
             Path: /oauth2/token
             Method: post
-            RestApiId:
-              Ref: AttestationProxyApi
+            RestApiId: !Ref AttestationProxyApi
       Handler: app.lambdaHandler
       Role: !GetAtt AuthProxyFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt AuthProxyFunctionKMSKey.Arn
       Environment:
         Variables:
-          ENABLE_ATTESTATION: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
+          ENABLE_ATTESTATION: !Sub '{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}'
           COGNITO_URL: !Join
-            - ""
-            - - "https://"
-              - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-              - !Sub ".auth.${AWS::Region}.amazoncognito.com"
-          FIREBASE_IOS_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
-          FIREBASE_ANDROID_APP_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
-          FIREBASE_PROJECT_ID: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/project-id}}"
-          FIREBASE_AUDIENCE: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/audience}}"
+            - ''
+            - - https://
+              - !Sub '{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}'
+              - !Sub .auth.${AWS::Region}.amazoncognito.com
+          FIREBASE_IOS_APP_ID: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}'
+          FIREBASE_ANDROID_APP_ID: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}'
+          FIREBASE_PROJECT_ID: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/project-id}}'
+          FIREBASE_AUDIENCE: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/audience}}'
           COGNITO_SECRET_NAME: !Sub /${ConfigStackName}/cognito/client-secret
           REGION: !Ref AWS::Region
           COGNITO_CUSTOM_DOMAIN_SSM_NAME: !Sub /${ConfigStackName}/cognito/custom-domain
@@ -1340,7 +1589,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
+        Target: es2020
         SourceMap: false
         EntryPoints:
           - app.ts
@@ -1348,9 +1597,9 @@ Resources:
   AuthProxyFunctionIAMRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-auth-proxy-role"
+      RoleName: !Sub ${AWS::StackName}-auth-proxy-role
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
@@ -1359,7 +1608,7 @@ Resources:
       Policies:
         - PolicyName: AuthProxyFunctionPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -1371,10 +1620,10 @@ Resources:
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain
               - Effect: Allow
                 Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*"
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1393,23 +1642,23 @@ Resources:
       Description: KMS key for encrypting auth proxy secrets
       EnableKeyRotation: true
       KeyPolicy:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action:
-              - "kms:*"
+              - kms:*
             Resource:
-              - "*"
+              - '*'
           - Effect: Allow
             Principal:
-              Service: !Sub "lambda.amazonaws.com"
+              Service: !Sub lambda.amazonaws.com
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
+              - kms:Encrypt*
+              - kms:Decrypt*
             Resource:
-              - "*"
+              - '*'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1452,9 +1701,9 @@ Resources:
     Properties:
       UserPoolId: !Ref CognitoUserPool
       ClientName: !Join
-        - "-"
+        - '-'
         - - !Ref AWS::StackName
-          - "shared-signal-user-pool-client"
+          - shared-signal-user-pool-client
       AllowedOAuthFlows:
         - client_credentials
       AllowedOAuthFlowsUserPoolClient: true
@@ -1469,56 +1718,65 @@ Resources:
         AccessToken: seconds
       AccessTokenValidity: 3600 # 1 hour in seconds
 
-  SharedSignalsApi:
+  SharedSignalApi:
     Condition: IsNotProduction
     Type: AWS::Serverless::Api
     Metadata:
-      cfn-lint: # Add this to your existing Metadata block
+      cfn-lint:
+        # Add this to your existing Metadata block
         config:
           ignore_checks:
             - W1028
     Properties:
-      Name: !Join
-        - "-"
-        - - !Ref AWS::StackName
-          - "shared-signals"
-          - Fn::Select:
-              - 4
-              - Fn::Split:
-                  - "-"
-                  - Fn::Select:
-                      - 2
-                      - Fn::Split:
-                          - "/"
-                          - Ref: AWS::StackId
+      Name: !Sub ${AWS::StackName}-shared-signal
       StageName: !Ref Environment
       AccessLogSetting:
-        DestinationArn: !GetAtt SharedSignalsAccessLogGroup.Arn
+        DestinationArn: !GetAtt SharedSignalAccessLogGroup.Arn
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
       Auth:
-        DefaultAuthorizer: SharedSignalsAuthorizer
+        DefaultAuthorizer: SharedSignalAuthorizer
         Authorizers:
-          SharedSignalsAuthorizer:
-            FunctionArn: !GetAtt SharedSignalsAuthorizer.Arn
+          SharedSignalAuthorizer:
+            FunctionArn: !GetAtt SharedSignalAuthorizer.Arn
             FailureResponse:
               StatusCode: 401
               ResponseTemplates:
                 application/json: '{"message": "Unauthorized"}'
             Identity:
               Header: Authorization
-              ValidationExpression: "Bearer [a-zA-Z0-9._-]+"
+              ValidationExpression: Bearer [a-zA-Z0-9._-]+
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
 
-  SharedSignalsAccessLogGroup:
+  SharedSignalAccessLogGroup:
     Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/shared-signals-${AWS::StackName}
-      KmsKeyId: !GetAtt SharedSignalsAccessLogGroupKMSKey.Arn
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-shared-signal
+      KmsKeyId: !GetAtt SharedSignalAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Deidentify:
+                MaskConfig: {} # marks sensitive data with asterisks
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1527,36 +1785,36 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsAccessLogGroupKMSKey:
+  SharedSignalAccessLogGroupKMSKey:
     Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting the Shared Signals Access Log Group
+      Description: KMS key for encrypting the Shared Signal Access Log Group
       EnableKeyRotation: true
       KeyPolicy:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action:
-              - "kms:*"
+              - kms:*
             Resource:
-              - "*"
+              - '*'
           - Effect: Allow
             Principal:
-              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
-              - "kms:ReEncrypt*"
-              - "kms:GenerateDataKey*"
-              - "kms:Describe*"
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
             Resource:
-              - "*"
+              - '*'
             Condition:
               ArnLike:
-                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1565,15 +1823,15 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsAuthorizer:
+  SharedSignalAuthorizer:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-shared-signal-authorizer"
+      FunctionName: !Sub ${AWS::StackName}-shared-signal-authorizer-function
       CodeUri: shared-signal-authorizer/
       Handler: app.lambdaHandler
-      Role: !GetAtt SharedSignalsAuthorizerIAMRole.Arn
-      KmsKeyArn: !GetAtt SharedSignalsLambdaKMSKey.Arn
+      Role: !GetAtt SharedSignalAuthorizerIAMRole.Arn
+      KmsKeyArn: !GetAtt SharedSignalLambdaKMSKey.Arn
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1586,27 +1844,27 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "es2020"
+        Target: es2020
         SourceMap: false
         EntryPoints:
           - app.ts
 
-  SharedSignalsAuthorizerIAMRole:
+  SharedSignalAuthorizerIAMRole:
     Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-shared-signals-authorizer-role"
+      RoleName: !Sub ${AWS::StackName}-shared-signal-authorizer-role
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: SharedSignalsAuthorizerPolicy
+        - PolicyName: SharedSignalAuthorizerPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -1614,10 +1872,10 @@ Resources:
                 Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/shared-signal/secrets-config-*
               - Effect: Allow
                 Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-authorizer:*"
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-authorizer:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1630,30 +1888,30 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalsLambdaKMSKey:
+  SharedSignalLambdaKMSKey:
     Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting Shared Signals authorizer secrets
+      Description: KMS key for encrypting Shared Signal authorizer secrets
       EnableKeyRotation: true
       KeyPolicy:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action:
-              - "kms:*"
+              - kms:*
             Resource:
-              - "*"
+              - '*'
           - Effect: Allow
             Principal:
-              Service: !Sub "lambda.amazonaws.com"
+              Service: !Sub lambda.amazonaws.com
             Action:
-              - "kms:Encrypt*"
-              - "kms:Decrypt*"
+              - kms:Encrypt*
+              - kms:Decrypt*
             Resource:
-              - "*"
+              - '*'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1662,23 +1920,34 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SignalsFunction:
+  SharedSignalReceiverFunction:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-shared-signals-receiver"
-      Description: "Shared Signals receiver function"
-      CodeUri: shared-signals/
+      FunctionName: !Sub ${AWS::StackName}-shared-signal-receiver
+      Description: Shared Signal receiver function
+      CodeUri: shared-signal-receiver/
       Handler: app.lambdaHandler
-      Role: !GetAtt SignalsFunctionIAMRole.Arn
+      Role: !GetAtt SharedSignalReceiverFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt SharedSignalReceiverFunctionKMSKey.Arn
       Events:
         HelloWorldApi:
           Type: Api
           Properties:
-            RestApiId:
-              Ref: SharedSignalsApi
+            RestApiId: !Ref SharedSignalApi
             Path: /receiver
             Method: POST
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref CognitoUserPool
+          REGION: !Ref AWS::Region
+          SHARED_SIGNALS_ISSUER: https://ssf.account.gov.uk/
+          SHARED_SIGNALS_AUDIENCE: !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}.auth.${AWS::Region}.amazoncognito.com"
+          JWKS_URI: !If 
+            - IsIntegratedEnvironment
+            - !FindInMap [SharedSignalsJwksUri, Environment, !Ref Environment]
+            - !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json
+          JWKS_CACHE_DURATION: 600000 # ten minutes in ms
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1692,11 +1961,586 @@ Resources:
         EntryPoints:
           - app.ts
 
-  SignalsFunctionIAMRole:
+  SharedSignalReceiverFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting shared signal receiver function secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+            Resource:
+              - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalReceiverFunctionIAMRole:
     Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-signals-role"
+      RoleName: !Sub ${AWS::StackName}-shared-signal-receiver-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SharedSignalReceiverFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-receiver:*
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminUserGlobalSignOut
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminGetUser
+                Resource: !GetAtt CognitoUserPool.Arn
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckFunction:
+    Condition: IsNotProduction
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-shared-signal-health-check
+      Description: Shared Signal health check function
+      CodeUri: shared-signal-health-check/
+      Handler: app.lambdaHandler
+      Role: !GetAtt SharedSignalHealthCheckFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt SharedSignalHealthCheckFunctionKMSKey.Arn
+      Events:
+        EventBridgeEvent:
+          Type: ScheduleV2
+          Name: !Sub ${AWS::StackName}-shared-signal-health-check-event-bridge
+          Properties:
+            Name: !Sub ${AWS::StackName}-shared-signal-health-check-event
+            PermissionsBoundary: !If
+              - UsePermissionsBoundary
+              - !Ref PermissionsBoundary
+              - !Ref AWS::NoValue
+            ScheduleExpression: rate(10 minutes)
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+              MaximumEventAgeInSeconds: 60
+      Environment:
+        Variables:
+          REGION: !Ref AWS::Region
+          HEALTH_CHECK_TOKEN_URL: !Sub '{{resolve:ssm:/${ConfigStackName}/shared-signal/health-check-token-url}}'
+          HEALTH_CHECK_VERIFY_URL: !Sub '{{resolve:ssm:/${ConfigStackName}/shared-signal/health-check-verify-url}}'
+          HEALTH_CHECK_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/health-check-secrets
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  SharedSignalHealthCheckFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting shared signal health check function secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+            Resource:
+              - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckFunctionIAMRole:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-shared-signal-health-check-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SharedSignalHealthCheckFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/shared-signal/health-check-secrets-*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check:*
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalIPSet:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: !Sub ${AWS::StackName}-shared-signals-ipset
+      Scope: REGIONAL
+      Description: IP whitelist for Shared Signals transmitter
+      IPAddressVersion: IPV4
+      Addresses: !Ref SharedSignalsWhitelistedIpsParameter
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalWafAssociation:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalApi}/stages/${SharedSignalApi.Stage}
+      WebACLArn: !GetAtt SharedSignalWAF.Arn
+
+  SharedSignalWAF:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub ${AWS::StackName}-shared-signal-waf
+      Scope: REGIONAL
+      Description: WAF for Shared Signal API
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub SharedSignalWAFMetric-${AWS::StackName}
+      Rules:
+        - Name: BlockUntrustedIPs
+          Priority: 0 # Set a low priority to ensure this rule is evaluated first
+          Action:
+            Block: {} # Allow requests from the IPSet
+          Statement:
+            # inverts the matching rule - required since default action is allow
+            # blocks all IPs not in the ipset
+            NotStatement:
+              Statement:
+                IPSetReferenceStatement:
+                  Arn: !GetAtt SharedSignalIPSet.Arn
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: BlockUntrustedIPsMetric
+            SampledRequestsEnabled: true
+        - Name: SharedSignalThrottlingRule
+          Priority: 1
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          Statement:
+            RateBasedStatement:
+              Limit: 6000      # support minimum of 100 signal per second. Per minute this is 6000 signal request
+              EvaluationWindowSec: 60      #1 minute window
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join
+              - "-"
+              - - SharedSignalWAFMetricRule
+                - !Sub ${AWS::StackName}
+        - Name: SharedSignalAWSManagedBadInputsRuleSet
+          Priority: 2
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join
+              - "-"
+              - - SharedSignalWAFBadInputsRule
+                - !Sub ${AWS::StackName}        
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication   
+
+  SharedSignalWafLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      # must starts with aws-waf-logs-
+      LogGroupName: !Sub aws-waf-logs-shared-signal-${AWS::StackName}
+      KmsKeyId: !GetAtt SharedSignalWafLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?  
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}  # marks sensitive data with asterisks
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalWafLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for Shared Signal WAF log group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication 
+
+  SharedSignalWAFLoggingConfiguration:
+    Condition: IsNotProduction
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !GetAtt SharedSignalWafLogGroup.Arn
+      ResourceArn: !GetAtt SharedSignalWAF.Arn
+      
+  ############################
+  # Acceptance Testing Resources
+  ############################
+  AcceptanceTestingFunctionIAMRole:
+    Condition: IsTestingEnvironment
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-acceptance-testing-function-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AcceptanceTestingFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:DescribeUserPoolClient
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
+                Resource: !GetAtt CognitoUserPool.Arn
+
+              - Effect: Allow
+                Action:
+                  - chatbot:DescribeSlackChannelConfigurations
+                Resource:
+                  - !GetAtt SlackSupportChannelConfiguration.Arn
+
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:GetRolePolicy
+                Resource:
+                  - !GetAtt AuthProxyFunctionIAMRole.Arn
+                  - !GetAtt PostAuthenticationFunctionIAMRole.Arn
+
+              - Effect: Allow
+                Action:
+                  - logs:DescribeLogGroups
+                Resource:
+                  - !GetAtt CognitoWAFLogGroup.Arn
+                  - !GetAtt AuthProxyWafLogGroup.Arn
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group::log-stream*
+
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                Resource:
+                  - !GetAtt AuthProxyFunction.Arn
+                  - !GetAtt PostAuthenticationFunction.Arn
+
+              - Effect: Allow
+                Action:
+                  - sns:GetTopicAttributes
+                Resource:
+                  - !GetAtt CloudWatchAlarmTopicPagerDuty.TopicArn
+
+              - Effect: Allow
+                Action:
+                  - logs:FilterLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-cognito-${AWS::StackName}:log-stream*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-attestation-${AWS::StackName}:log-stream*
+                  - !GetAtt AttestationProxyApiAccessLogGroup.Arn
+
+              - Effect: Allow
+                Action:
+                  - cloudwatch:SetAlarmState
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:DescribeAlarmHistory
+                Resource:
+                  - !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
+                  - !GetAtt CognitoWebApplicationFirewallAlarm.Arn
+                  - !GetAtt CloudWatchAlarmSignUpThrottles.Arn
+                  - !GetAtt CloudWatchAlarmSignInThrottles.Arn
+                  - !GetAtt CloudWatchAlarmTokenRefreshThrottles.Arn
+                  - !GetAtt CloudWatchAlarmFederationThrottles.Arn
+                  - !GetAtt AttestationLow200ResponseProportionAlarm.Arn
+                  - !GetAtt AttestationLowCompletionAlarm.Arn
+                  - !GetAtt AttestationLambdaErrorRateAlarm.Arn
+                  - !GetAtt AuthProxyWafAlarm.Arn
+
+              - Effect: Allow
+                Action:
+                  - apigateway:*
+                Resource:
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${SharedSignalApi}/*
+
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  - !GetAtt AuthProxyFunctionKMSKey.Arn
+
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*
+
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-testing-function:*'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AcceptanceTestingFunction:
+    Condition: IsTestingEnvironment
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-testing-function'
+      Description: 'Function required to perform testing actions'
+      CodeUri: tests/lambdas/acceptance
+      Handler: app.lambdaHandler
+      Role: !GetAtt AcceptanceTestingFunctionIAMRole.Arn
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  TestContainerInvokeLambdaPolicy:
+    Condition: IsTestingEnvironment
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AcceptanceTestingFunction
+      Principal: !Ref TestRoleArn
+
+  TestContainerInvokeAttestationLambdaPolicy:
+    Condition: IsTestingEnvironment
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthProxyFunction
+      Principal: !Ref TestRoleArn
+
+  # Mock shared signals function deployed to all non-integrated environments
+  MockSharedSignalsTransmitterApi:
+    Condition: IsNonIntegratedEnvironment
+    #checkov:skip=CKV_AWS_76:Ensure API Gateway has Access Logging enabled
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "${AWS::StackName}-mock-shared-signals-transmitter-api"
+      StageName: !Ref Environment
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+
+  MockSharedSignalsTransmitterFunction:
+    Condition: IsNonIntegratedEnvironment
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-mock-shared-signals-transmitter"
+      Description: "Function required to mock the shared signals transmitter"
+      CodeUri: tests/lambdas/transmitter
+      Handler: app.lambdaHandler
+      Role: !GetAtt MockSharedSignalsTransmitterFunctionIAMRole.Arn
+      Environment:
+        Variables:
+          #checkov:skip=CKV_AWS_173:Check encryption settings for Lambda environment variable
+          JWKS_KEY_NAME: !Sub "/${ConfigStackName}/shared-signal/mock/jwks"
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId:
+              Ref: MockSharedSignalsTransmitterApi
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts
+
+  MockSharedSignalsTransmitterFunctionIAMRole:
+    Condition: IsNonIntegratedEnvironment
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-mock-shared-signals-transmitter-function-role"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -1705,16 +2549,20 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: SignalsFunctionPolicy
+        - PolicyName: MockSharedSignalsTransmitterFunctionPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
+                  - "ssm:GetParameter"
+                Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/shared-signal/mock/jwks"
+              - Effect: Allow
+                Action:
                   - "logs:CreateLogGroup"
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signals-receiver:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-mock-shared-signals-transmitter:*"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1739,9 +2587,9 @@ Outputs:
   CognitoUrl:
     Description: The domain name for the Cognito User Pool
     Value: !Join
-      - ""
-      - - !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
-        - !Sub ".auth.${AWS::Region}.amazoncognito.com"
+      - ''
+      - - !Sub '{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}'
+        - !Sub .auth.${AWS::Region}.amazoncognito.com
 
   AppUserPoolClientId:
     Description: The id of the cognito user pool
@@ -1759,7 +2607,10 @@ Outputs:
     Description: The name of the Cognito WAF log group
     Value: !Ref CognitoWAFLogGroup
 
-  # Testing Outputs
+  AuthProxyWafLogGroupName:
+    Description: The name of the Attestation API Gateway WAF log group
+    Value: !Ref AuthProxyWafLogGroup
+
   AuthProxyFunctionName:
     Description: The name of the Auth Proxy Lambda function
     Value: !Ref AuthProxyFunction
@@ -1768,9 +2619,13 @@ Outputs:
     Description: The name of the Auth Proxy Lambda function log group
     Value: !Sub /aws/lambda/${AuthProxyFunction}
 
+  AttestationApiLogGroupName:
+    Description: The name of the Attestation API Gateway WAF log group
+    Value: !Ref AttestationProxyApiAccessLogGroup
+
   AuthProxyFunctionIAMRoleName:
     Description: The name of the Auth Proxy Lambda function IAM role
-    Value: !Sub "${AWS::StackName}-auth-proxy-role"
+    Value: !Sub ${AWS::StackName}-auth-proxy-role
 
   AuthProxyFunctionIAMRolePolicyName:
     Description: The name of the Auth Proxy Lambda function IAM role policy name
@@ -1778,15 +2633,15 @@ Outputs:
 
   FirebaseIosAppId:
     Description: The Firebase iOS App ID
-    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}"
+    Value: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}'
 
   FirebaseAndroidAppId:
     Description: The Firebase Android App ID
-    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}"
+    Value: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/android-app-id}}'
 
   UnknownAndroidAppId:
     Description: The Unknown Android App ID
-    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/unknown-app-id}}"
+    Value: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/unknown-app-id}}'
 
   AppClientId:
     Description: The App Client ID for the Cognito User Pool
@@ -1797,20 +2652,20 @@ Outputs:
     Description: The id of the shared signal user pool client
     Value: !Ref CognitoM2MClient
 
-  SharedSignalsEndpoint:
+  SharedSignalEndpoint:
     Condition: IsNotProduction
-    Description: The endpoint for the Shared Signals API
-    Value: !Sub https://${SharedSignalsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+    Description: The endpoint for the Shared Signal API
+    Value: !Sub https://${SharedSignalApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
-  SharedSignalsReceiverLogGroupName:
+  SharedSignalReceiverLogGroupName:
     Condition: IsNotProduction
-    Description: The name of the Shared Signals Receiver Lambda function log group
-    Value: !Sub /aws/lambda/${SignalsFunction}
+    Description: The name of the Shared Signal Receiver Lambda function log group
+    Value: !Sub /aws/lambda/${SharedSignalReceiverFunction}
 
-  SharedSignalsApiId:
+  SharedSignalApiId:
     Condition: IsNotProduction
-    Description: The ID of the Shared Signals API
-    Value: !Ref SharedSignalsApi
+    Description: The ID of the Shared Signal API
+    Value: !Ref SharedSignalApi
 
   PostAuthenticationFunctionName:
     Description: The name of the Post Authentication function
@@ -1818,7 +2673,7 @@ Outputs:
 
   PostAuthenticationFunctionIAMRoleName:
     Description: The name of the Post Authentication Lambda function IAM role
-    Value: !Sub "${AWS::StackName}-post-authentication-role"
+    Value: !Sub ${AWS::StackName}-post-authentication-role
 
   PostAuthenticationFunctionIAMRolePolicyName:
     Description: The name of the Post Authentication Lambda function IAM role policy name
@@ -1857,7 +2712,8 @@ Outputs:
     Value: !Ref SlackSupportChannelConfiguration
 
   CognitoSecretName:
-    Description: The name of the App Cognito User Pool Client Secret stored in Secrets manager.
+    Description: The name of the App Cognito User Pool Client Secret stored in
+      Secrets manager.
     Value: !Sub /${ConfigStackName}/cognito/client-secret
 
   StackName:
@@ -1900,3 +2756,35 @@ Outputs:
   AuthProxyWafAlarm:
     Description: The name of the CloudWatch alarm for Auth Proxy WAF rate limiting
     Value: !Ref AuthProxyWafAlarm
+
+  SharedSignalAccessLogGroupName:
+    Condition: IsNotProduction
+    Description: The Shared Signal Access Log Group Name
+    Value: !Ref SharedSignalAccessLogGroup
+
+  TestLambdaFunctionName:
+    Condition: IsTestingEnvironment
+    Description: The name of the Testing Lambda function
+    Value: !Ref AcceptanceTestingFunction
+
+  OneLoginEnvironment:
+    Description: The OneLogin domain name for the Shared Signal API
+    Value: !FindInMap [OneLogin, Environment, !Ref Environment]
+
+  DeployedEnvironment:
+    Description: SAM deployed environment
+    Value: !Ref Environment
+
+  AttestationEnabled:
+    Description: Attestation feature flag
+    Value: !Sub "{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}"
+
+  SharedSignalWAFLogGroupName:
+    Condition: IsNotProduction
+    Description: The Shared Signal WAF Access Log Group Name
+    Value: !Ref SharedSignalWafLogGroup
+
+  TransmitterApiUrl:
+    Condition: IsNonIntegratedEnvironment
+    Description: Shared signals mock transmitter api url
+    Value: !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/

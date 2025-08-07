@@ -1,7 +1,7 @@
 {
-  "name": "shared-signals-authoriser",
+  "name": "shared-signal-authoriser",
   "version": "1.0.0",
-  "description": "Shared Signals Authoriser for M2M",
+  "description": "Shared Signal Authoriser for M2M",
   "main": "app.js",
   "author": "govuk-app-backend",
   "license": "MIT",

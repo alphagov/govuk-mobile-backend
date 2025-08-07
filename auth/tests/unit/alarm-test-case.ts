@@ -1,6 +1,6 @@
 export type AlarmTestCase = {
   name: string;
-  alarmName:string;
+  alarmName: string;
   actionsEnabled: boolean;
   alarmResource: string;
   topicResource: string;
@@ -15,7 +15,7 @@ export type AlarmTestCase = {
   datapointsToAlarm: number;
   threshold: number;
   comparisonOperator: string;
-  dimensions: any[];
+  dimensions?: any[];
   namespace?: string;
   statistic?: string;
   extendedStatistic?: string;

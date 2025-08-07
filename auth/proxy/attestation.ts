@@ -3,7 +3,10 @@ import type { AppConfig } from './config';
 import type { SanitizedRequestHeadersWithAttestation } from './sanitize-headers';
 
 export interface AttestationUseCase {
-  validateAttestationHeaderOrThrow: (headers: SanitizedRequestHeadersWithAttestation, config: AppConfig) => Promise<void>
+  validateAttestationHeaderOrThrow: (
+    headers: SanitizedRequestHeadersWithAttestation,
+    config: AppConfig,
+  ) => Promise<void>;
 }
 
 /**
@@ -13,16 +16,16 @@ export interface AttestationUseCase {
  * @param headers - Attestation headers
  * @param config - Firebase app config
  * @returns - Returns void or throws exception
- * @throws {MissingAttestationTokenError} 
+ * @throws {MissingAttestationTokenError}
  */
 export const validateAttestationHeaderOrThrow = async (
   headers: SanitizedRequestHeadersWithAttestation,
-  config: AppConfig
+  config: AppConfig,
 ): Promise<void> => {
   const attestationToken = headers['x-attestation-token'];
 
   await validateFirebaseJWT({
     token: attestationToken,
-    configValues: config,  
-  })
-}
+    configValues: config,
+  });
+};

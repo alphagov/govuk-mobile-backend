@@ -12,18 +12,30 @@ cd /tests
 
 echo "Running tests in ${TEST_ENVIRONMENT}"
 
-git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
-cd /tmp/repo
-npm i
-
-if git log origin/production --merges --ancestry-path "$commitsha"..origin/production -1 --format="%H" | grep -q .; then
-  nx affected -t test --base=production --head=HEAD
-else
-  nx affected -t test --base=main --head=HEAD
-fi
-
+nx run auth:test:acc 
+nx run auth:test:int 
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
+
+git clone "https://github.com/alphagov/govuk-mobile-backend.git" /tmp/repo
+cd /tmp/repo
+# npm i
+
+# Find which branches contain this commit
+BRANCHES=$(git branch -r --contains "$commitsha" 2>/dev/null | grep -E "(origin/main|origin/production)")
+
+if echo "$BRANCHES" | grep -q "origin/production" && ! echo "$BRANCHES" | grep -q "origin/main"; then
+    BASE_BRANCH="origin/production"
+    echo "Using production as base"
+elif echo "$BRANCHES" | grep -q "origin/main"; then
+    BASE_BRANCH="origin/main"
+    echo "Using main as base"
+else
+    echo "Error: Commit not found in main or production"
+    exit 1
+fi
+
+echo "Performing branch checks"
 
 # 1. Check if we're in the penultimate environment
 # Note TEST_ENVIRONMENT is being forced to lowercase here by using ${VAR,,}
@@ -48,7 +60,7 @@ if [[ "${TEST_ENVIRONMENT,,}" == @(staging|local) ]]; then
     echo -e "${YELLOW}🍌 Checking git lineage for commit: $commitsha${NC}"
 
     # Check if the commit exists on your production branch
-    if ! git merge-base --is-ancestor "$commitsha"..origin/production -1 2>/dev/null; then
+    if [[ "$BASE_BRANCH" != "origin/production" ]]; then
 	echo -e "${RED}✘ ERROR: Commit $commitsha is not from production branch${NC}"
 	if ! git show "$commitsha" 2>/dev/null; then
 	    echo -e "${RED}✘ The sha $commitsha does not appear to be a valid commit${NC}"
