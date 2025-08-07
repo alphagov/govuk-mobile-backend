@@ -1,4 +1,13 @@
 {
   "extends": "../tsconfig.base",
-  "compilerOptions": {}
+  "compilerOptions": {
+    "outDir": "../../dist/auth"
+  },
+  "include": ["./**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "**/tests/**",
+    "**/feature-tests/**",
+    "**/**/vitest.*.ts"
+  ]
 }

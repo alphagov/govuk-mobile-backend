@@ -4,7 +4,11 @@
   "version": "0.0.1",
   "private": true,
   "devDependencies": {},
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
+    "compile": "tsc",
     "test": "vitest run",
     "test:acc": "vitest acc",
     "test:int": "vitest int",
