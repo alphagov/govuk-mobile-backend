@@ -1,0 +1,27 @@
+{
+  "name": "shared-signals-transmitter",
+  "version": "1.0.0",
+  "description": "Testing Function to mock the shared signals event transmitter",
+  "main": "app.js",
+  "repository": "https://github.com/awslabs/aws-sam-cli/tree/develop/samcli/local/init/templates/cookiecutter-aws-sam-hello-nodejs",
+  "author": "SAM CLI",
+  "license": "MIT",
+  "scripts": {
+    "unit": "vitest run",
+    "lint": "eslint '*.ts' --quiet --fix",
+    "compile": "tsc",
+    "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify",
+    "test": "npm run compile && npm run unit"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.92",
+    "@types/node": "^20.5.7",
+    "prettier": "^2.8.8",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4",
+    "vitest": "^3.1.1"
+  }
+}

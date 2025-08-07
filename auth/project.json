@@ -1,89 +1,63 @@
 {
-    "name": "auth",
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
-    "projectType": "application",
-    "targets": {
-        "install": {
-            "cache": true,
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "npm i",
-                "cwd": "auth"
-            }
-        },
-        "build": {
-            "cache": true,
-            "executor": "nx:run-commands",
-            "outputs": [
-                "{options.outputFile}"
-            ],
-            "dependsOn": [
-                "install"
-            ],
-            "options": {
-                "command": "npm i && npm run compile",
-                "cwd": "auth/hello-world"
-            }
-        },
-        "lint": {
-            "executor": "@nx/eslint:lint",
-            "outputs": [
-                "{options.outputFile}"
-            ],
-            "options": {
-                "lintFilePatterns": [
-                    "./**/*.{ts,tsx,js,jsx}"
-                ]
-            }
-        },
-        "checkov": {
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "checkov --framework cloudformation --quiet -d . -o cli -o junitxml --output-file-path console,checkov.xml"
-            },
-        },
-        "test:unit": {
-            "dependsOn": [
-                "install"
-            ],
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "npm run test:unit",
-                "cwd": "auth"
-            }
-        },
-        "test:acc": {
-            "dependsOn": [
-                "install"
-            ],
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "npm run test --project acc",
-                "cwd": "auth"
-            },
-            "outputs": [
-                "{options.outputFile}"
-            ]
-        },
-        "test:functional": {
-            "dependsOn": [
-                "install"
-            ],
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "npm run test --project functional",
-                "cwd": "auth"
-            },
-            "outputs": [
-                "{options.outputFile}"
-            ]
-        },
-        "test:coverage": {
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "npm run test:coverage",
-                "cwd": "auth"
-            }
-        }
+  "name": "auth",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "cache": true,
+      "executor": "nx:run-commands",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "command": "npm run compile",
+        "cwd": "auth/hello-world"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["./auth/**/*.{ts,tsx,js,jsx}"]
+      }
+    },
+    "checkov": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "checkov --framework cloudformation --quiet -d . -o cli -o junitxml --output-file-path console,checkov.xml"
+      }
+    },
+    "test:unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest auth/**/* --project unit"
+      }
+    },
+    "test:acc": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest auth/**/* --project acc"
+      },
+      "outputs": ["{options.outputFile}"]
+    },
+    "test:int": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest auth/**/* --project int"
+      },
+      "outputs": ["{options.outputFile}"]
+    },
+    "test:functional": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run test --project functional",
+        "cwd": "auth"
+      },
+      "outputs": ["{options.outputFile}"]
+    },
+    "test:coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run auth/**/* --coverage --project unit"
+      }
     }
+  }
 }

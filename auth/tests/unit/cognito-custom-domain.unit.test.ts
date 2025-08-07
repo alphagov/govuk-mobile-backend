@@ -1,24 +1,24 @@
-import { describe, it, beforeAll } from "vitest";
-import { loadTemplateFromFile } from "../common/template";
+import { describe, it, beforeAll } from 'vitest';
+import { loadTemplateFromFile } from '../common/template';
 
-import path from "path";
+import path from 'path';
 
 const template = loadTemplateFromFile(
-  path.join(__dirname, "..", "..", "template.yaml")
+  path.join(__dirname, '..', '..', 'template.yaml'),
 );
 
-describe("Set up the Cognito User Custom Domain", () => {
-  it("has an associated user pool", () => {
-    template.hasResourceProperties("AWS::Cognito::UserPoolDomain", {
+describe('Set up the Cognito User Custom Domain', () => {
+  it('has an associated user pool', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolDomain', {
       UserPoolId: {
-        Ref: "CognitoUserPool",
+        Ref: 'CognitoUserPool',
       },
     });
   });
-  it("has a custom domain", () => {
-    template.hasResourceProperties("AWS::Cognito::UserPoolDomain", {
+  it('has a custom domain', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolDomain', {
       Domain: {
-       "Fn::Sub": "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}"
+        'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}',
       },
     });
   });

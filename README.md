@@ -91,11 +91,14 @@ cz commit
 ```
 
 If you run into issues where cz commit is not updating the secrets detection and showing false results:
+
 ```bash
 pip install detect-secrets
 ```
+
 Update secrets baseline
-``` bash
+
+```bash
 detect-secrets scan --baseline .secrets.baseline
 ```
 
@@ -121,8 +124,8 @@ We use a helper script to automate the process of extracting outputs from your A
 
 Before running this script, ensure you have the following installed and configured:
 
-* AWS CLI
-* jq
+- AWS CLI
+- jq
 
 ### Running the script
 
@@ -142,15 +145,16 @@ This will generate a `.env` file in the current directory (`auth`) containing yo
 ```
 
 ### SAM deploy to Dev Environment
+
 - Setup AWS CLI - https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html  
-Validate the SAM template `sam validate --lint`
+  Validate the SAM template `sam validate --lint`
 - Build SAM project `sam build`
-- Run guided deployment `sam deploy --guided` to create the *.toml file
+- Run guided deployment `sam deploy --guided` to create the \*.toml file
 - Update the toml file as below and update local deployment variables
+
 ```
 ...
 stack_name = "<your-stack-name>"
 s3_prefix = "<your-stack-name>"
-parameter_overrides = "Environment=\"dev\" CodeSigningConfigArn=\"none\" PermissionsBoundary=\"none\" ConfigStackName=\"<your-ssm-config-name>\" AccountLevel=\"False\""
+parameter_overrides = "Environment=\"dev\" CodeSigningConfigArn=\"none\" PermissionsBoundary=\"none\" ConfigStackName=\"<your-ssm-config-name>\""
 ```
-

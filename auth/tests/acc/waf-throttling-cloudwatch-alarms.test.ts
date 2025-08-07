@@ -1,62 +1,61 @@
 import {
-  CloudWatchClient,
   DescribeAlarmsCommand,
-} from "@aws-sdk/client-cloudwatch";
-import {
-  ChatbotClient,
-  DescribeSlackChannelConfigurationsCommand,
-} from "@aws-sdk/client-chatbot";
-import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
-import { assert, describe, it } from "vitest";
-import { testConfig } from "../common/config";
-import { AlarmTestCase } from "./alarm-test-case";
+  DescribeAlarmsOutput,
+} from '@aws-sdk/client-cloudwatch';
+import { assert, describe, it } from 'vitest';
+import { testConfig } from '../common/config';
+import { AlarmTestCase } from '../types/alarm-test-case';
+import { TestLambdaDriver } from '../driver/testLambda.driver';
 
-const cloudWatchClient = new CloudWatchClient({ region: "eu-west-2" });
-const snsClient = new SNSClient({ region: "eu-west-2" });
-const chatbotClient = new ChatbotClient({ region: "us-east-2" });
+const driver = new TestLambdaDriver();
 
 const testCases: AlarmTestCase[] = [
   {
-    name: "AuthWafThrottles",
+    name: 'AuthWafThrottles',
     alarmName: `${testConfig.stackName}-auth-proxy-waf-rate-limit`,
     actionsEnabled: true,
-    metricName: "BlockedRequests",
-    alarmDescription: "Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes",
-    topicDisplayName: "cloudwatch-alarm-topic",
+    metricName: 'BlockedRequests',
+    alarmDescription:
+      'Alarm when the Auth Proxy WAF rate limit exceeds 300 requests per 5 minutes',
+    topicDisplayName: 'cloudwatch-alarm-topic',
     extendedStatistic: undefined, // No extended statistic for WAF
     period: 300,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
     threshold: 300,
-    comparisonOperator: "GreaterThanThreshold",
-    namespace: "AWS/WAFV2",
-    statistic: "Sum", // WAF metrics typically use Sum
+    comparisonOperator: 'GreaterThanThreshold',
+    namespace: 'AWS/WAFV2',
+    statistic: 'Sum', // WAF metrics typically use Sum
     dimensions: [
-      { Name: "WebACL", Value: testConfig.authProxyWAF.split("|")[0] }, // Extract the WAF ID (format: "<waf-id>|<uuid>|<scope>")
-      { Name: "Region", Value: testConfig.region },
-      { Name: "Rule", Value: "rate-limit-rule" }, // Assuming a rule name for rate limiting
+      { Name: 'WebACL', Value: testConfig.authProxyWAF.split('|')[0] }, // Extract the WAF ID (format: "<waf-id>|<uuid>|<scope>")
+      { Name: 'Region', Value: testConfig.region },
+      { Name: 'Rule', Value: 'rate-limit-rule' }, // Assuming a rule name for rate limiting
     ],
   },
   {
-      name: 'WAFRateLimitingAlarm',
-      alarmName: `${testConfig.stackName}-cognito-waf-error-rate`,
-      actionsEnabled: true,
-      metricName: "BlockedRequests",
-      alarmDescription: "Alarm when the WAF error rate exceeds 5 incidents per minute",
-      statistic: "Sum",
-      period: 60,
-      evaluationPeriods: 5,
-      datapointsToAlarm: 5,
-      threshold: 5,
-      namespace: "AWS/WAFV2",
-      comparisonOperator: "GreaterThanThreshold",
-      dimensions: [
-        { Name: "WebACL", Value: testConfig.cognitoWebApplicationFirewall.split("|")[0] }, // Extract the WAF ID (format: "<waf-id>|<uuid>|<scope>")
-        { Name: "Region", Value: testConfig.region },
-        { Name: "Rule", Value: "cognito-waf-rate-limit-rule" }, // Assuming a rule name for rate limiting
-      ],
-      topicDisplayName: "cognito-waf-alarm-topic",
-    },
+    name: 'WAFRateLimitingAlarm',
+    alarmName: `${testConfig.stackName}-cognito-waf-error-rate`,
+    actionsEnabled: true,
+    metricName: 'WAFErrorRate',
+    alarmDescription:
+      'Alarm when the WAF error rate exceeds 5 incidents per minute',
+    statistic: 'Sum',
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 5,
+    namespace: 'AWS/WAFV2',
+    comparisonOperator: 'GreaterThanThreshold',
+    dimensions: [
+      {
+        Name: 'WebACL',
+        Value: testConfig.cognitoWebApplicationFirewall.split('|')[0],
+      }, // Extract the WAF ID (format: "<waf-id>|<uuid>|<scope>")
+      { Name: 'Region', Value: testConfig.region },
+      { Name: 'Rule', Value: 'cognito-waf-rate-limit-rule' }, // Assuming a rule name for rate limiting
+    ],
+    topicDisplayName: 'cognito-waf-alarm-topic',
+  },
 ];
 
 describe.each(testCases)(
@@ -66,29 +65,31 @@ describe.each(testCases)(
     actionsEnabled,
     metricName,
     alarmDescription,
-    dimensions,
     statistic,
     extendedStatistic,
     period,
     evaluationPeriods,
     datapointsToAlarm,
+    dimensions,
     threshold,
     comparisonOperator,
-    namespace
+    namespace,
   }) => {
-    const alarmResponse = await cloudWatchClient.send(
-      new DescribeAlarmsCommand({ AlarmNames: [alarmName] })
-    );
+    const alarmResponse = await driver.performAction<DescribeAlarmsOutput>({
+      service: 'CloudWatchClient',
+      command: new DescribeAlarmsCommand({ AlarmNames: [alarmName] }),
+      action: 'DescribeAlarmsCommand',
+    });
     const alarm = alarmResponse.MetricAlarms?.[0];
 
     if (!alarm) {
       throw new Error(`Alarm not found: ${alarmName}`);
     }
-    it("should have the correct AlarmDescription", () => {
+    it('should have the correct AlarmDescription', () => {
       assert.include(alarm.AlarmDescription, alarmDescription);
     });
 
-    it("should have ActionsEnabled set to true", () => {
+    it('should have ActionsEnabled set to true', () => {
       assert.equal(alarm.ActionsEnabled, actionsEnabled);
     });
 
@@ -128,17 +129,17 @@ describe.each(testCases)(
       assert.equal(alarm.ComparisonOperator, comparisonOperator);
     });
 
-    it("should have OKActions and AlarmActions as arrays", () => {
+    it('should have OKActions and AlarmActions as arrays', () => {
       assert.isArray(alarm.OKActions);
       assert.isArray(alarm.AlarmActions);
     });
 
-    it("should have Dimensions as an array", () => {
+    it('should have Dimensions as an array', () => {
       const actualDimensions = alarm.Dimensions || [];
-      const WebACL = actualDimensions.find((d) => d.Name === "WebACL");
-      const region = actualDimensions.find((d) => d.Name === "Region");
-      const rule = actualDimensions.find((d) => d.Name === "Rule");
-      
+      const WebACL = actualDimensions.find((d) => d.Name === 'WebACL');
+      const region = actualDimensions.find((d) => d.Name === 'Region');
+      const rule = actualDimensions.find((d) => d.Name === 'Rule');
+
       assert.equal(region?.Value, dimensions[1].Value);
       assert.equal(WebACL?.Value, dimensions[0].Value); // WAF ID
       assert.include(rule?.Value, dimensions[2].Value); // WAF rules are dynamic, so we use a partial match
@@ -149,51 +150,5 @@ describe.each(testCases)(
     if (!alarmOKActions) {
       throw new Error(`No OKActions found for alarm: ${alarmName}`);
     }
-
-    alarmOKActions?.forEach(async (action) => {
-      const topic = await snsClient.send(
-        new GetTopicAttributesCommand({ TopicArn: action })
-      );
-      const topicAttributes = topic.Attributes;
-      it("$action topic should be encrypted", () => {
-        assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
-      });
-    });
-
-    const alarmAlarmActions = alarm.AlarmActions;
-
-    if (!alarmAlarmActions) {
-      throw new Error(`No AlarmActions found for alarm: ${alarmName}`);
-    }
-
-    alarmAlarmActions?.forEach(async (action) => {
-      const topic = await snsClient.send(
-        new GetTopicAttributesCommand({ TopicArn: action })
-      );
-      const topicAttributes = topic.Attributes;
-      it("$action topic should be encrypted", () => {
-        assert.isNotEmpty(topicAttributes?.KmsMasterKeyId);
-      });
-    });
-
-    const chatConfigurationResponse = await chatbotClient.send(
-      new DescribeSlackChannelConfigurationsCommand({
-        ChatConfigurationArn: testConfig.chatConfigurationArn,
-      })
-    );
-    const chatConfiguration =
-      chatConfigurationResponse.SlackChannelConfigurations?.[0];
-    if (!chatConfiguration) {
-      throw new Error(
-        `No SlackChannelConfigurations found for ARN: ${testConfig.chatConfigurationArn}`
-      );
-    }
-
-    it("should have the correct number of SnsTopicArns", () => {
-      assert.equal(chatConfiguration.SnsTopicArns?.length, 1);
-      chatConfiguration.SnsTopicArns?.forEach((arn) => {
-        assert.include(arn, "CloudWatchAlarm");
-      });
-    });
-  }
+  },
 );

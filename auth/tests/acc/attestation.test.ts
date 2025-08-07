@@ -1,41 +1,23 @@
-import "dotenv/config";
 import {
   SecretsManagerClient,
   GetSecretValueCommand,
-} from "@aws-sdk/client-secrets-manager";
-import { describe, it, expect, assert } from "vitest";
-import { testConfig } from "../common/config";
-import { GetFunctionCommand, LambdaClient } from "@aws-sdk/client-lambda";
-import {
-  IAMClient,
-  GetRoleCommand,
-  GetRolePolicyCommand,
-} from "@aws-sdk/client-iam";
-import { CloudWatchClient, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
-import { SNSClient, GetTopicAttributesCommand } from "@aws-sdk/client-sns";
+} from '@aws-sdk/client-secrets-manager';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { testConfig } from '../common/config';
+import { AttestationDriver } from '../driver/attestation.driver';
+import { TestDataLoader } from '../driver/testDataLoader.driver';
+import { AxiosAuthDriver } from '../driver/axiosAuth.driver';
+import { LoggingDriver } from '../driver/logging.driver';
+import querystring from 'querystring';
+import { TestLambdaDriver } from '../driver/testLambda.driver';
 
-const lambdaClient = new LambdaClient({ region: testConfig.region });
-const functionCommand = new GetFunctionCommand({
-  FunctionName: testConfig.authProxyFunctionName,
-});
+describe.skipIf(!testConfig.isLocalEnvironment)('attestation', async () => {
+  describe('attestation proxy is a confidential client', () => {
+    const secretsManagerClient = new SecretsManagerClient({
+      region: testConfig.region,
+    });
 
-const iamClient = new IAMClient({ region: testConfig.region });
-
-const iamCommandForAuthProxyLambdaRole = new GetRoleCommand({
-  RoleName: testConfig.authProxyFunctionIAMRoleName,
-});
-
-const iamCommandGetRolePolicy = new GetRolePolicyCommand({
-  RoleName: testConfig.authProxyFunctionIAMRoleName,
-  PolicyName: testConfig.authProxyFunctionIAMRolePolicyName,
-});
-
-
-describe("attestation", async () => {
-  describe("attestation proxy is a confidential client", () => {
-    const secretsManagerClient = new SecretsManagerClient({ region: testConfig.region });
-
-    it("retrieves shared signal credentials from Secrets Manager", async () => {
+    it('retrieves shared signal credentials from Secrets Manager', async () => {
       const secretId = testConfig.cognitoSecretName;
 
       const getSecretCommand = new GetSecretValueCommand({
@@ -46,177 +28,167 @@ describe("attestation", async () => {
       expect(secretResponse.SecretString).toBeDefined();
 
       const secretData = JSON.parse(secretResponse.SecretString as string);
-      expect(secretData).toHaveProperty("client_secret");
+      expect(secretData).toHaveProperty('client_secret');
     });
   });
+});
 
-  describe("deployed lambda configuration", async () => {
-    const response = await lambdaClient.send(functionCommand);
-    const attestationLambda = response.Configuration!;
+describe.skipIf(!testConfig.attestationEnabled)('app attestation', () => {
+  const testDataLoader = new TestDataLoader(
+    testConfig.region,
+    testConfig.configStackName,
+  );
+  const authDriver = new AxiosAuthDriver(
+    testConfig.clientId,
+    testConfig.cognitoUrl,
+    testConfig.redirectUri,
+    testConfig.authProxyUrl,
+    testConfig.oneLoginEnvironment,
+  );
+  const attestationDriver = new AttestationDriver();
+  const testLambdaDriver = new TestLambdaDriver();
+  const loggingDriver = new LoggingDriver(testLambdaDriver);
 
-    it("has the correct timeout", () => {
-      assert.equal(attestationLambda.Timeout, 60);
-    });
-
-    it("has the correct memory size", () => {
-      assert.equal(attestationLambda.MemorySize, 128);
-    });
-
-    it("has the correct tracing configuration", () => {
-      assert.equal(attestationLambda.TracingConfig?.Mode, "PassThrough");
-    });
-
-    it("has the correct runtime", () => {
-      assert.equal(attestationLambda.Runtime, "nodejs22.x");
-    });
-
-    it("has the correct handler", () => {
-      assert.equal(attestationLambda.Handler, "app.lambdaHandler");
-    });
-
-    it("has the correct package type", () => {
-      assert.equal(attestationLambda.PackageType, "Zip");
-    });
-
-    it("has the correct state", () => {
-      assert.equal(attestationLambda.State, "Active");
-    });
-
-    it("has the correct ephemeral storage size", () => {
-      assert.equal(attestationLambda.EphemeralStorage?.Size, 512);
-    });
-
-    it("has the correct architecture", () => {
-      assert.deepEqual(attestationLambda.Architectures, ["x86_64"]);
-    });
-
-    it("has the correct logging configuration", () => {
-      assert.equal(attestationLambda.LoggingConfig?.LogFormat, "Text");
-      assert.equal(
-        attestationLambda.LoggingConfig?.LogGroup,
-        `/aws/lambda/${testConfig.authProxyFunctionName}`
-      );
-    });
-
-    it("has the correct environment variables", () => {
-      expect(attestationLambda.Environment?.Variables).toBeDefined();
-      expect(attestationLambda.Environment?.Variables).toHaveProperty(
-        "ENABLE_ATTESTATION"
-      );
-      expect(attestationLambda.Environment?.Variables).toHaveProperty(
-        "COGNITO_URL"
-      );
-      expect(attestationLambda.Environment?.Variables).toHaveProperty(
-        "FIREBASE_IOS_APP_ID"
-      );
-      expect(attestationLambda.Environment?.Variables).toHaveProperty(
-        "FIREBASE_ANDROID_APP_ID"
-      );
-      expect(attestationLambda.Environment?.Variables).toHaveProperty(
-        "FIREBASE_PROJECT_ID"
-      );
-      expect(attestationLambda.Environment?.Variables).toHaveProperty(
-        "FIREBASE_AUDIENCE"
-      );
-      expect(attestationLambda.Environment?.Variables).toHaveProperty(
-        "COGNITO_SECRET_NAME"
-      );
-    });
+  beforeAll(async () => {
+    try {
+      await attestationDriver.build();
+    } catch (error) {
+      console.error('Error during AttestationDriver build:', error);
+      throw error;
+    }
   });
 
-  describe("deployed auth proxy lambda IAM role", async () => {
-    const roleResponse = await iamClient.send(iamCommandForAuthProxyLambdaRole);
-    const authProxyLambdaRole = roleResponse.Role!;
-
-    const rolePolicyResponse = await iamClient.send(iamCommandGetRolePolicy);
-    const authProxyLambdaRolePolicy = rolePolicyResponse.PolicyDocument!;
-
-    it("has the correct assume role policy document", () => {
-      assert.deepEqual(
-        JSON.parse(
-          decodeURIComponent(authProxyLambdaRole.AssumeRolePolicyDocument!)
-        ),
-        {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: {
-                Service: "lambda.amazonaws.com",
-              },
-              Action: "sts:AssumeRole",
-            },
-          ],
-        }
-      );
+  it('unsuccessful requests are logged', async () => {
+    await authDriver.exchangeCodeForTokens({
+      attestationHeader: 'invalid-header',
+      code: 'invalid-code',
+      code_verifier: 'invalid-code-verifier',
     });
 
-    it("has the correct role policy document", () => {
-      assert.deepEqual(
-        JSON.parse(decodeURIComponent(authProxyLambdaRolePolicy)),
-        {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Action: ["secretsmanager:GetSecretValue"],
-              Effect: "Allow",
-              Resource: `arn:aws:secretsmanager:eu-west-2:${testConfig.awsAccountId}:secret:/${testConfig.configStackName}/cognito/client-secret-*`,
-            },
-            {
-              Action: ["ssm:GetParameter"],
-              Effect: "Allow",
-              Resource: `arn:aws:ssm:eu-west-2:${testConfig.awsAccountId}:parameter/${testConfig.configStackName}/cognito/custom-domain`,
-            },
-            {
-              Action: [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents",
-              ],
-              Effect: "Allow",
-              Resource: `arn:aws:logs:eu-west-2:${testConfig.awsAccountId}:log-group:/aws/lambda/${testConfig.stackName}-auth-proxy:*`,
-            },
-          ],
-        }
-      );
+    const logMessages = await loggingDriver.findLogMessageWithRetries({
+      logGroupName: testConfig.authProxyLogGroup,
+      searchString: 'ERROR',
+      delayMs: 5000,
+      startTime: new Date(Date.now() - 60 * 60 * 1000).getTime(),
     });
+
+    expect(logMessages).toBeDefined();
   });
 
-  describe("alarms", async () => {
-    const cloudWatchClient = new CloudWatchClient({ region: testConfig.region });
-
-    const alarms = await cloudWatchClient.send(
-      new DescribeAlarmsCommand()
+  it('valid attestation tokens are accepted', async () => {
+    const user = await testDataLoader.getSuccessfulSignInUser();
+    const { code, code_verifier } = await authDriver.loginAndGetCode(user);
+    const { token: attestationToken } = await attestationDriver.getToken(
+      testConfig.firebaseIosAppId,
     );
-
-    const attestationAlarms = alarms.MetricAlarms?.filter((ma) => ma.AlarmName?.includes("attestation"))
-
-    const action = attestationAlarms[0].OKActions[0];
-
-    describe("notifications", () => {
-      const snsClient = new SNSClient({ region: testConfig.region });
-      it('alarm topic should encrpyt messages', async () => {
-        const topic = await snsClient.send(
-          new GetTopicAttributesCommand({ TopicArn: action })
-        );
-        expect(topic.Attributes.KmsMasterKeyId).toBeDefined();
-      });
+    const { status } = await authDriver.exchangeCodeForTokens({
+      attestationHeader: attestationToken,
+      code,
+      code_verifier,
     });
 
-    it.each([
-      'attestation-low-200-response-proportion',
-      'attestation-low-completion',
-      'attestation-lambda-error-rate',
-    ])('generate a %s alarm to monitor attestation lambda', (alarmName) => {
-      expect(attestationAlarms?.find((a) => a.AlarmName?.includes(alarmName))).toBeTruthy()
-    })
+    expect(status).toEqual(200);
+  });
 
-    describe('low 200 response proportion alarm', () => {
-      it('should be disabled', () => {
-        const alarm = attestationAlarms?.find((a) => a.AlarmName?.includes("attestation-low-200-response"));
+  it.each([
+    ['invalid', 401],
+    [
+      'eyJraWQiOiJEX28wMGciLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxOjI5OTE5NjM2OTk3OTppb3M6ZDExODUyMzkyN2UxODFjMWUzZTAxZSIsImF1ZCI6WyJwcm9qZWN0c1wvMjk5MTk2MzY5OTc5IiwicHJvamVjdHNcL2dvdnVrLWFwcCJdLCJwcm92aWRlciI6ImN1c3RvbSIsImlzcyI6Imh0dHBzOlwvXC9maXJlYmFzZWFwcGNoZWNrLmdvb2dsZWFwaXMuY29tXC8yOTkxOTYzNjk5NzkiLCJleHAiOjE3NDU4NTgxNzcsImlhdCI6MTc0NTg1NDU3NywianRpIjoieDJON1JjdVZGUkFoVzFNUUI3ZFM2Y2lsdmhpd19PeWhpSVFZdkdOb3ZrWSJ9.Dod8We-byeW6j0QA9qM54fjURTtVdB86Mglt7h1D4_uMbs-3DrYTJoFVlZh4hagDj3Oo2udFi7ZsP3yREl8fnyiBpRsVZcAUoe28_d9Qex0niibkhO2tYRu8aWwIGEUlZUuJRK8Xm-OgCtRDICb_QRNtPkR1jPesqM5xSViW8M59-jc1YB0Z1zg-Igt0eglpeWHbF-BFZTLQiaHd6DVpUSzlW6eJdyRLyV6K9mcSi5-AViHaaC0zHiF8Mt6SzLVBvwnezX1Tn8LRgDmzIWVT7ir8F9oRtNPYyxUyCGtD-JWEU0zA9MUtQwWJORsmVcEnI2RM6hwiQHAJQoJPOapQC89JHtPGAH2x6E02J4pewWR2FzbAVBUxOPyaLhgNiHwzhIWsD524Uh_4EtMBcpE-9TBW9XyiYBByRm1QY9ni4x3TC_K39xQx-76WI37C0pKQgGMhtRhCRWE8A5Tv6wUJtoOBYgP32PjRhLbn9xLc9mr2u5_NUN2MBN1aG8Yx6oNd', // pragma: allowlist-secret
+      401,
+    ],
+  ])(
+    'attestation tokens are verified',
+    async (attestationHeader, expectedStatus) => {
+      const { status } = await authDriver.exchangeCodeForTokens({
+        attestationHeader,
+        code: 'validcode',
+        code_verifier: 'validcodeverifier',
+      });
+      expect(status).toEqual(expectedStatus);
+    },
+  );
 
-        expect(alarm?.ActionsEnabled).toBe(false)
-      })
-    })
-  })
+  it.each([
+    // missing attestation header
+    [
+      {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      {
+        grant_type: 'authorization_code',
+        client_id: testConfig.clientId,
+        code: 'valid-code',
+        redirect_uri: 'https://example.com/callback',
+        code_verifier: 'valid-code-verifier',
+        scope: 'email openid',
+      },
+    ],
+    // missing contet-type header
+    [
+      {
+        'X-Attestation-Token': 'valid-attestation-token',
+      },
+      {
+        grant_type: 'authorization_code',
+        client_id: testConfig.clientId,
+        code: 'valid-code',
+        redirect_uri: 'https://example.com/callback',
+        code_verifier: 'valid-code-verifier',
+        scope: 'email openid',
+      },
+    ],
+    // missing grant-type
+    [
+      {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Attestation-Token': 'valid-attestation-token',
+      },
+      {
+        client_id: testConfig.clientId,
+        code: 'valid-code',
+        redirect_uri: 'https://example.com/callback',
+        code_verifier: 'valid-code-verifier',
+        scope: 'email openid',
+      },
+    ],
+    // missing client id
+    [
+      {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Attestation-Token': 'valid-attestation-token',
+      },
+      {
+        grant_type: 'authorization_code',
+        code: 'valid-code',
+        redirect_uri: 'https://example.com/callback',
+        code_verifier: 'valid-code-verifier',
+        scope: 'email openid',
+      },
+    ],
+  ])('attestation requests are validated', async (headers, body) => {
+    const response = await fetch(`${testConfig.authProxyUrl}oauth2/token`, {
+      method: 'POST',
+      headers,
+      body: querystring.stringify(body),
+    });
+
+    expect(response.status).toEqual(400);
+    expect(response.statusText).toContain('Bad Request');
+  });
+
+  it('should reject tokens from unknown apps', async () => {
+    const attestationToken = await attestationDriver.getToken(
+      testConfig.unknownAndroidAppId,
+    );
+    const response = await authDriver.exchangeCodeForTokens({
+      attestationHeader: attestationToken.token,
+      code: 'valid-code',
+      code_verifier: 'valid-code-verifier',
+    });
+
+    expect(response.status).toEqual(401);
+    expect(response.statusText).toContain(
+      '{"message":"Unknown app associated with attestation token"}',
+    );
+  });
 });

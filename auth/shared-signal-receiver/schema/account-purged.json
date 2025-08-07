@@ -1,0 +1,75 @@
+{
+  "$defs": {
+    "AccountIdentifierSubjectClass": {
+      "additionalProperties": false,
+      "description": "Used when an account is the subject of the signal",
+      "properties": {
+        "format": {
+          "description": "The format of the subject of the shared signal",
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        }
+      },
+      "required": ["uri", "format"],
+      "title": "AccountIdentifierSubjectClass",
+      "type": "object"
+    },
+    "AccountPurgedClass": {
+      "additionalProperties": false,
+      "description": "",
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/AccountIdentifierSubjectClass",
+          "description": "The subject for the shared signal"
+        }
+      },
+      "required": ["subject"],
+      "title": "AccountPurgedClass",
+      "type": "object"
+    },
+    "AccountPurgedEventsClass": {
+      "additionalProperties": false,
+      "description": "",
+      "properties": {
+        "https://schemas.openid.net/secevent/risc/event-type/account-purged": {
+          "$ref": "#/$defs/AccountPurgedClass"
+        }
+      },
+      "required": [
+        "https://schemas.openid.net/secevent/risc/event-type/account-purged"
+      ],
+      "title": "AccountPurgedEventsClass",
+      "type": "object"
+    }
+  },
+  "$id": "https://vocab.account.gov.uk/linkml/account-purged",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "additionalProperties": false,
+  "description": "Account has been deleted.",
+  "properties": {
+    "aud": {
+      "description": "The `aud` (audience) claim identifies the recipients that the JWT is intended for.",
+      "type": "string"
+    },
+    "events": {
+      "$ref": "#/$defs/AccountPurgedEventsClass"
+    },
+    "iat": {
+      "description": "The `iat` (issued at) claim identifies the time at which the JWT was issued.",
+      "type": "integer"
+    },
+    "iss": {
+      "description": "The `iss` (issuer) claim identifies the principal that issued the JWT.",
+      "type": "string"
+    },
+    "jti": {
+      "description": "The `jti` (JWT ID) claim identifies the unique identifier of the JWT.",
+      "type": "string"
+    }
+  },
+  "required": ["events", "iss", "jti", "iat", "aud"],
+  "title": "account-purged-schema",
+  "type": "object"
+}
