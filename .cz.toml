@@ -44,7 +44,7 @@ message = "subject:"
 [[tool.commitizen.customize.questions]]
 type = "input"
 name = "scope"
-message = "scope: e.g. post-auth-lambda"
+message = "scope: e.g. shared-signals"
 
 [[tool.commitizen.customize.questions]]
 type = "input"

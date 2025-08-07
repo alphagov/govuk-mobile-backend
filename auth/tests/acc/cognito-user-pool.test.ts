@@ -50,9 +50,4 @@ describe.skip('Check deployed Cognito User Pool Client', async () => {
   it('should have UserPoolTier set to ESSENTIALS', () => {
     assert.equal(userPool.UserPoolTier, 'ESSENTIALS');
   });
-
-  it('should have a LambdaConfig with PostAuthentication defined', () => {
-    assert.isDefined(userPool.LambdaConfig.PostAuthentication);
-    assert.match(userPool.LambdaConfig.PostAuthentication, /^arn:aws:lambda:/);
-  });
 });
