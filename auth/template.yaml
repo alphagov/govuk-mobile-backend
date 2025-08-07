@@ -2514,7 +2514,7 @@ Resources:
       Environment:
         Variables:
           #checkov:skip=CKV_AWS_173:Check encryption settings for Lambda environment variable
-          JWKS_KEY: !Sub "{{resolve:ssm:/${ConfigStackName}/shared-signal/mock/jwks}}"
+          JWKS_KEY_NAME: !Sub "/${ConfigStackName}/shared-signal/mock/jwks"
       Events:
         ApiEvent:
           Type: Api
@@ -2549,10 +2549,14 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: AcceptanceTestingFunctionPolicy
+        - PolicyName: MockSharedSignalsTransmitterFunctionPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/shared-signal/mock/jwks"
               - Effect: Allow
                 Action:
                   - "logs:CreateLogGroup"
