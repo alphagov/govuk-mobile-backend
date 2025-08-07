@@ -54,6 +54,7 @@ const getTestConfig = () => {
     'CFN_DeployedEnvironment',
     'CFN_SharedSignalWAFLogGroupName',
     'CFN_SharedSignalHealthCheckFunctionName',
+    'CFN_SharedSignalHealthCheckFunctionLogGroupName',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -141,6 +142,8 @@ const getTestConfig = () => {
     sharedSignalWAFLogGroupName: process.env.CFN_SharedSignalWAFLogGroupName!,
     sharedSignalHealthCheckFunctionName:
       process.env.CFN_SharedSignalHealthCheckFunctionName!,
+    sharedSignalHealthCheckFunctionLogGroupName:
+      process.env.CFN_SharedSignalHealthCheckFunctionLogGroupName!,
   };
 };
 
