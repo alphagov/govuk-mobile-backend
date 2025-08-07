@@ -165,10 +165,9 @@ describe('Chat API Gateway Authorizer', () => {
       'method.request.header.X-Auth',
     );
   });
-  // TODO: Address as part of GOVUKAPP-2109
-  it('should have a TTL of 0 seconds', () => {
+  it('should have an authorizer result TTL of 300 seconds', () => {
     expect(resourceUnderTest.Properties.AuthorizerResultTtlInSeconds).toEqual(
-      0,
+      300,
     );
   });
 });
