@@ -29,6 +29,7 @@ Parameters:
     Type: String
     Description: Stack Name for Config Stack
     Default: govuk-app-config
+  
 
 Conditions:
   UseCodeSigning: !Not
@@ -119,7 +120,7 @@ Resources:
       Type: REQUEST
       IdentitySource: method.request.header.X-Auth
       AuthorizerUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatAuthorizerFunction.Arn}/invocations"
-      AuthorizerResultTtlInSeconds: 0
+      AuthorizerResultTtlInSeconds: 300
 
   ChatApiGatewayAccessLogGroup:
     Type: AWS::Logs::LogGroup
@@ -303,34 +304,53 @@ Resources:
 
 Outputs:
   AWSAccountId:
+    Description: The AWS Account ID
     Value: !Ref AWS::AccountId
-  StackName:
-    Value: !Ref AWS::StackName
   ConfigStackName:
+    Description: The name of the configuration stack
     Value: !Ref ConfigStackName
+  StackName:
+    Description: The name of the CloudFormation stack
+    Value: !Ref AWS::StackName
+  ChatApiGatewayUrl:
+    Description: Auth Proxy Gateway endpoint URL
+    Value: !Sub https://${ChatApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
   ChatApiGatewayId:
+    Description: The ID of the Chat API Gateway
     Value: !Ref ChatApiGateway
   ChatApiGatewayResourceId:
+    Description: The ID of the Chat API Gateway resource
     Value: !Ref ChatApiGatewayResource
   ChatApiGatewayMethodId:
+    Description: The ID of the Chat API Gateway method
     Value: !Ref ChatApiGatewayMethod
   ChatApiGatewayDeploymentId:
+    Description: The ID of the Chat API Gateway deployment
     Value: !Ref ChatApiGatewayDeployment
   ChatApiGatewayAuthorizerId:
+    Description: The ID of the Chat API Gateway authorizer
     Value: !Ref ChatApiGatewayAuthorizer
   ChatApiGatewayAccessLogGroupArn:
+    Description: The ARN of the Chat API Gateway access log group
     Value: !GetAtt ChatApiGatewayAccessLogGroup.Arn
   ChatApiGatewayAccessLogGroupKMSKeyArn:
+    Description: The ARN of the Chat API Gateway access log group KMS key
     Value: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
   ChatApiGatewayStageName:
+    Description: The name of the Chat API Gateway stage
     Value: !Ref ChatApiGatewayStage
   ChatAuthorizerFunctionName:
+    Description: The name of the Chat authorizer Lambda function
     Value: !Ref ChatAuthorizerFunction
   ChatAuthorizerInvokePermissionId:
+    Description: The ID of the permission allowing API Gateway to invoke the Chat authorizer function
     Value: !Ref ChatAuthorizerInvokePermission
   ChatAuthorizerFunctionIAMRoleName:
+    Description: The name of the IAM role for the Chat authorizer function
     Value: !Sub ${AWS::StackName}-chat-proxy-authorizer-role
   ChatAuthorizerFunctionIAMRolePolicyName:
+    Description: The name of the policy attached to the Chat authorizer function IAM role
     Value: ChatAuthorizerFunctionPolicy
   ChatAuthorizerFunctionKMSKeyArn:
+    Description: The ARN of the KMS key used by the Chat authorizer function
     Value: !GetAtt ChatAuthorizerFunctionKMSKey.Arn

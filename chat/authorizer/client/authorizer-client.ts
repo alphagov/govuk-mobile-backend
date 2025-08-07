@@ -3,18 +3,18 @@ import type {
   APIGatewayAuthorizerResult,
   StatementEffect,
 } from 'aws-lambda';
-import type { SecretsConfig } from '../services/secrets-service';
-import { SecretsService } from '../services/secrets-service';
+
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import type { CognitoAccessTokenPayload } from 'aws-jwt-verify/jwt-model';
+import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import { ConfigError } from '../errors';
+import type { SecretsConfig } from '../types';
 
 export class AuthorizerClient {
   public region = process.env['REGION'] ?? 'eu-west-2';
-  public secretsService: SecretsService;
   public event: APIGatewayRequestAuthorizerEvent;
 
   public constructor(event: APIGatewayRequestAuthorizerEvent) {
-    this.secretsService = new SecretsService(this.region);
     this.event = event;
   }
 
@@ -23,7 +23,7 @@ export class AuthorizerClient {
    * @returns The authorizer result.
    */
   public async authorizerResult(): Promise<APIGatewayAuthorizerResult> {
-    const secrets = await this.getChatSecrets();
+    const secrets = await AuthorizerClient.getChatSecrets();
     const { clientId, userPoolId, bearerToken } = secrets;
     const authHeader = this.event.headers?.['X-Auth'];
 
@@ -114,24 +114,34 @@ export class AuthorizerClient {
    * Retrieves chat secrets from AWS Secrets Manager.
    * @returns The secrets configuration object.
    */
-  public async getChatSecrets(): Promise<SecretsConfig> {
-    const secretsName = process.env['CHAT_SECRET_NAME'];
-    if (secretsName === undefined || secretsName === '') {
-      throw new Error('Environment variable "CHAT_SECRET_NAME" is not set');
-    }
+  public static async getChatSecrets(): Promise<SecretsConfig> {
+    try {
+      const secretName = process.env['CHAT_SECRET_NAME'];
+      if (secretName === undefined || secretName === '') {
+        throw new ConfigError(
+          'Environment variable "CHAT_SECRET_NAME" is not set',
+        );
+      }
+      const secret = await getSecret(secretName);
+      if (secret === undefined) {
+        throw new ConfigError(`Failed to retrieve secret for ${secretName}`);
+      }
+      // prettier-ignore
+      if (typeof secret !== 'string') { //pragma: allowlist secret
+        throw new ConfigError(
+          `Secret for ${secretName} is not a string`,
+        );
+      }
 
-    const secretsObject = await this.secretsService.getSecret(secretsName);
-
-    if (secretsObject === undefined) {
-      throw new Error('Failed to retrieve chat secret from Secrets Manager');
-    }
-
-    // prettier-ignore
-    if (typeof secretsObject === 'string') { // pragma: allowlist secret
-      throw new Error(
-        'Retrieved secret is a string, expected an object with bearerToken, clientId, and userPoolId', // pragma: allowlist secret
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      const secretConfig: SecretsConfig = JSON.parse(secret) as SecretsConfig;
+      return secretConfig;
+    } catch (error) {
+      throw new ConfigError(
+        `Failed to retrieve chat secrets: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       );
     }
-    return secretsObject;
   }
 }
