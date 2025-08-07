@@ -113,15 +113,8 @@ Conditions:
           - 'integration'
 
   IsNonIntegratedEnvironment:
-    Fn::Or:
-      - Fn::Not:
-          - Fn::Equals:
-              - !Ref Environment
-              - 'production'
-      - Fn::Not:
-          - Fn::Equals:
-              - !Ref Environment
-              - 'integration'
+    Fn::Not:
+    - Condition: IsIntegratedEnvironment
 
 Globals:
   Function:
