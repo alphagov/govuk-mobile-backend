@@ -215,7 +215,7 @@ describe('requestHandler', () => {
     verifyUsernameMock.mockReset();
   });
 
-  it('should throw an error if SHARED_SIGNAL is disabled', async () => {
+  it('should return SERVICE_UNAVAILABLE when SHARED_SIGNAL is disabled', async () => {
     process.env.ENABLE_SHARED_SIGNAL = 'false'; // Disable shared signal feature
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
