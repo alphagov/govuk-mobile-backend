@@ -15,6 +15,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      pull-requests: write
+      statuses: write
+      checks: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -63,4 +66,10 @@ jobs:
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+            ${{ github.event_name == 'pull_request' && format('-Dsonar.pullrequest.key={0} -Dsonar.pullrequest.branch={1} -Dsonar.pullrequest.base={2}', github.event.number, github.head_ref, github.base_ref) || '' }}
