@@ -30,6 +30,7 @@ import {
   GetMethodCommand,
   GetResourcesCommand,
 } from '@aws-sdk/client-api-gateway';
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 
 /**
  * Map of supported AWS SDK clients
@@ -46,6 +47,7 @@ export const SUPPORTED_AWS_SDK_CLIENTS: { [key: string]: any } = {
   // "LambdaClient": LambdaClient, not supported
   // "IAMClient": IAMClient, not supported
   APIGatewayClient: APIGatewayClient,
+  LambdaClient: LambdaClient,
 };
 
 // --- Define a map of supported commands for each client ---
@@ -83,5 +85,8 @@ export const SUPPORTED_AWS_SDK_COMMANDS: {
   APIGatewayClient: {
     GetMethodCommand: GetMethodCommand,
     GetResourcesCommand: GetResourcesCommand,
+  },
+  LambdaClient: {
+    InvokeCommand: InvokeCommand,
   },
 };

@@ -37,6 +37,7 @@ const getPrivateKey = async () => {
 
   return await importJWK(JSON.parse(privateKeyJwk), 'PS256');
 };
+
 export class SharedSignalsDriver {
   baseUrl: string;
   privateKey: KeyLike | Uint8Array<ArrayBufferLike>;
