@@ -6,7 +6,7 @@ export const lambdaHandler = async (event: any): Promise<any> => {
   try {
     if (event.path === '/.well-known/jwks.json' && event.httpMethod === 'GET') {
       return generateResponse(200, {
-        keys: getJwksKeys(),
+        keys: await getJwksKeys(),
       });
     }
 
