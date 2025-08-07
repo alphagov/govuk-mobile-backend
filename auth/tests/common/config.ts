@@ -53,6 +53,8 @@ const getTestConfig = () => {
     'CFN_SharedSignalAccessLogGroupName',
     'CFN_DeployedEnvironment',
     'CFN_SharedSignalWAFLogGroupName',
+    'CFN_SharedSignalHealthCheckFunctionName',
+    'CFN_SharedSignalHealthCheckFunctionLogGroupName',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -138,6 +140,10 @@ const getTestConfig = () => {
     redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
     attestationEnabled: process.env.CFN_AttestationEnabled == 'true',
     sharedSignalWAFLogGroupName: process.env.CFN_SharedSignalWAFLogGroupName!,
+    sharedSignalHealthCheckFunctionName:
+      process.env.CFN_SharedSignalHealthCheckFunctionName!,
+    sharedSignalHealthCheckFunctionLogGroupName:
+      process.env.CFN_SharedSignalHealthCheckFunctionLogGroupName!,
   };
 };
 
