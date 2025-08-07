@@ -5,6 +5,7 @@
   "main": "app.js",
   "author": "govuk-app-backend",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
