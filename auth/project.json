@@ -4,12 +4,11 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "cache": true,
-      "executor": "nx:run-commands",
-      "outputs": ["{options.outputFile}"],
+      "executor": "@nx/js:tsc",
       "options": {
-        "command": "npm run compile",
-        "cwd": "auth/hello-world"
+        "outputPath": "dist/auth",
+        "main": "auth/proxy/app.ts",
+        "tsConfig": "auth/tsconfig.json"
       }
     },
     "lint": {
