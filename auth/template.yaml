@@ -1877,6 +1877,7 @@ Resources:
             - !FindInMap [SharedSignalsJwksUri, Environment, !Ref Environment]
             - !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json
           JWKS_CACHE_DURATION: 600000 # ten minutes in ms
+          ENABLE_SHARED_SIGNAL: !Sub '{{resolve:ssm:/${ConfigStackName}/feature-flags/shared-signal}}'
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -2308,8 +2309,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - lambda:GetFunction
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:GetFunctionConfiguration
                 Resource:
                   - !GetAtt AuthProxyFunction.Arn
+                  - !GetAtt SharedSignalReceiverFunction.Arn
 
               - Effect: Allow
                 Action:
@@ -2595,6 +2599,11 @@ Outputs:
     Condition: IsNotProduction
     Description: The name of the Shared Signal Receiver Lambda function log group
     Value: !Sub /aws/lambda/${SharedSignalReceiverFunction}
+
+  SharedSignalReceiverFunctionName:
+    Condition: IsNotProduction
+    Description: The name of the Shared Signal Receiver Lambda function
+    Value: !Ref SharedSignalReceiverFunction  
 
   SharedSignalApiId:
     Condition: IsNotProduction
