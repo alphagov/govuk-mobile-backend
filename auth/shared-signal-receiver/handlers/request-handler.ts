@@ -11,6 +11,7 @@ import { generateResponse } from '../response';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { CognitoError } from '../errors';
 import { isChangeTypeValid, isUserValid } from '../service/validation-service';
+import { logMessages } from '../log-messages';
 
 interface Handler {
   schema: z.ZodType;
@@ -58,15 +59,13 @@ export const requestHandler = async (
   try {
     for (const { schema, handle, schemaName, allowedChangeType } of handlers) {
       if (schema.safeParse(jsonBody).success) {
-        if (
-          !isChangeTypeValid(jsonBody as any, schemaName, allowedChangeType)
-        ) {
+        if (!isChangeTypeValid(jsonBody, schemaName, allowedChangeType)) {
           return generateResponse(
             StatusCodes.BAD_REQUEST,
             ReasonPhrases.BAD_REQUEST,
           );
         }
-        if (!(await isUserValid(jsonBody as any, schemaName))) {
+        if (!(await isUserValid(jsonBody, schemaName))) {
           return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
         }
         return await handle(jsonBody);

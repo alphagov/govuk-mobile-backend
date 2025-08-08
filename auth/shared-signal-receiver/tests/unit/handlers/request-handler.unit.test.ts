@@ -226,13 +226,11 @@ describe('requestHandler', () => {
     const result = await requestHandler(input);
     expect(result.statusCode).toBe(StatusCodes.ACCEPTED);
     expect(handleAccountPurgedRequest).not.toHaveBeenCalled();
-    expect(verifyUsernameMock).toHaveBeenCalledWith('acct:someone@example.com');
-    expect(warnSpy).toHaveBeenCalledWith('SIGNAL_WARN_USER_NOT_FOUND', {
-      userId: 'acct:someone@example.com',
-      correlationId: '123e4567-e89b-12d3-a456-426614174000',
-    });
-
-    verifyUsernameMock.mockReset();
+    expect(isUserValidMock).toHaveBeenCalledWith(
+      input,
+      'https://schemas.openid.net/secevent/risc/event-type/account-purged',
+    );
+    isUserValidMock.mockReset();
   });
 
   it('should return SERVICE_UNAVAILABLE when SHARED_SIGNAL is disabled', async () => {
