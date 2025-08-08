@@ -51,6 +51,7 @@ const getTestConfig = () => {
     'CFN_SharedSignalWAFLogGroupName',
     'CFN_SharedSignalHealthCheckFunctionName',
     'CFN_SharedSignalHealthCheckFunctionLogGroupName',
+    'CFN_SharedSignalReceiverFunctionName',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -113,6 +114,8 @@ const getTestConfig = () => {
     sharedSignalAccessLogGroupName:
       process.env.CFN_SharedSignalAccessLogGroupName!,
     userPoolProviderId: process.env.CFN_UserPoolProviderUrl!,
+    sharedSignalReceiverFunctionName:
+      process.env.CFN_SharedSignalReceiverFunctionName!,
     //WAF configurations
     cloudWatchWafRateLimitingAlarmName:
       process.env.CFN_CloudWatchWafRateLimitingAlarmName!,
