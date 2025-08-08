@@ -134,6 +134,25 @@ Resources:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs
       KmsKeyId: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Deidentify:
+                MaskConfig: {} # marks sensitive data with asterisks
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -252,6 +271,82 @@ Resources:
     Properties:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ChatApiGateway}/stages/${ChatApiGatewayStage}
       WebACLArn: !GetAtt ChatApiGatewayWaf.Arn
+
+  ChatApiGatewayWafLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      # log stream must start with aws-waf-logs-
+      LogGroupName: !Sub aws-waf-logs-chat-proxy-${AWS::StackName}
+      KmsKeyId: !GetAtt ChatApiGatewayWafLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  ChatApiGatewayWafLogGroupKMSKey:
+    Condition: IsNotProduction
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the Chat API Gateway WAF Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
 
   ChatAuthorizerFunction:
     Condition: IsNotProduction
