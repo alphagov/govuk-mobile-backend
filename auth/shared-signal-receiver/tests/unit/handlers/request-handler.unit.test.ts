@@ -5,6 +5,7 @@ import { handleAccountPurgedRequest } from '../../../handlers/account-purged-han
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { verifyUsername } from '../../../cognito/verify-users';
 import { CognitoError } from '../../../errors';
+import { logMessages } from '../../../log-messages';
 
 // Mocks
 vi.mock('../../../parser', () => ({
@@ -28,6 +29,7 @@ describe('requestHandler', () => {
       ...process.env,
       USER_POOL_ID: '123',
       REGION: region,
+      ENABLE_SHARED_SIGNAL: 'true',
     };
     vi.clearAllMocks();
   });
@@ -211,5 +213,32 @@ describe('requestHandler', () => {
     });
 
     verifyUsernameMock.mockReset();
+  });
+
+  it('should return SERVICE_UNAVAILABLE when SHARED_SIGNAL is disabled', async () => {
+    process.env.ENABLE_SHARED_SIGNAL = 'false'; // Disable shared signal feature
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const input = {
+      iss: 'https://issuer.example.com',
+      jti: '123e4567-e89b-12d3-a456-426614174000',
+      iat: 1721120400,
+      aud: 'https://audience.example.com',
+      events: {
+        'https://schemas.openid.net/secevent/risc/event-type/account-purged': {
+          subject: {
+            uri: 'acct:someone@example.com',
+            format: 'acct',
+          },
+        },
+      },
+    };
+
+    const result = await requestHandler(input);
+    expect(result.statusCode).toBe(StatusCodes.SERVICE_UNAVAILABLE);
+    expect(errorSpy).toHaveBeenCalledWith(
+      logMessages.SIGNAL_DISABLED,
+      'Shared signal feature is disabled',
+    );
   });
 });

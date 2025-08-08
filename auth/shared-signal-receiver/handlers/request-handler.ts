@@ -94,6 +94,17 @@ const isChangeTypeValid = (
 export const requestHandler = async (
   jsonBody: unknown,
 ): Promise<APIGatewayProxyResult> => {
+  const isDisabled = process.env['ENABLE_SHARED_SIGNAL'] !== 'true';
+  if (isDisabled) {
+    console.error(
+      logMessages.SIGNAL_DISABLED,
+      'Shared signal feature is disabled',
+    );
+    return generateResponse(
+      StatusCodes.SERVICE_UNAVAILABLE,
+      ReasonPhrases.SERVICE_UNAVAILABLE,
+    );
+  }
   try {
     for (const { schema, handle, schemaName, allowedChangeType } of handlers) {
       if (schema.safeParse(jsonBody).success) {

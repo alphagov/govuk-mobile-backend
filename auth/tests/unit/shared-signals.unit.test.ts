@@ -54,6 +54,28 @@ describe('shared signal', () => {
     expect(resourceUnderTest.Type).toBeDefined();
   });
 
+  it('should have correct environment variables for the receiver function', () => {
+    let resourceUnderTest: {
+      Type: any;
+      Properties: any;
+    };
+    const resources = template.findResources('AWS::Serverless::Function');
+    resourceUnderTest = resources['SharedSignalReceiverFunction'] as any;
+
+    const envVars = resourceUnderTest.Properties.Environment.Variables;
+    expect(Object.keys(envVars)).toEqual(
+      expect.arrayContaining([
+        'USER_POOL_ID',
+        'REGION',
+        'SHARED_SIGNALS_ISSUER',
+        'SHARED_SIGNALS_AUDIENCE',
+        'JWKS_URI',
+        'JWKS_CACHE_DURATION',
+        'ENABLE_SHARED_SIGNAL',
+      ]),
+    );
+  });
+
   it('SharedSignalReceiverFunctionIAMRole should have correct properties', () => {
     let resourceUnderTest: {
       Type: any;
