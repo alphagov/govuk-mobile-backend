@@ -165,6 +165,7 @@ samconfig.toml
 
 # junit
 report/
+reports/
 junit.xml
 results.json
 
