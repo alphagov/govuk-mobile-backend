@@ -25,7 +25,7 @@ const baseEvent: APIGatewayRequestAuthorizerEvent = {
   resource: '/test',
   path: '/test',
   httpMethod: 'GET',
-  headers: { 'X-Auth': 'jwt-token' },
+  headers: { Authorization: 'Bearer jwt-token' },
   queryStringParameters: null,
   pathParameters: null,
   stageVariables: null,
@@ -51,7 +51,10 @@ describe('AuthorizerClient', () => {
     (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       secretString,
     );
-    const event = { ...baseEvent, headers: { 'X-Auth': 'valid-token' } };
+    const event = {
+      ...baseEvent,
+      headers: { Authorization: 'Bearer valid-token' },
+    };
     client = new AuthorizerClient(event);
     const result = await client.authorizerResult();
     expect(result).toMatchObject({
@@ -73,7 +76,7 @@ describe('AuthorizerClient', () => {
     });
   });
 
-  it('should return Deny authorizer result if X-Auth header is missing', async () => {
+  it('should return Deny authorizer result if Authorization header is missing', async () => {
     const event = { ...baseEvent, headers: {} };
     client = new AuthorizerClient(event);
     client['secretsService'] = secretsServiceMock;
@@ -82,7 +85,7 @@ describe('AuthorizerClient', () => {
   });
 
   it('should return Deny authorizer result if Cognito token payload is undefined', async () => {
-    const event = { ...baseEvent, headers: { 'X-Auth': undefined } };
+    const event = { ...baseEvent, headers: { Authorization: undefined } };
     client = new AuthorizerClient(event);
     client['secretsService'] = secretsServiceMock;
     const result = await client.authorizerResult();
@@ -90,7 +93,7 @@ describe('AuthorizerClient', () => {
   });
 
   it('getCognitoTokenPayloadFromJwt returns payload when valid', async () => {
-    const event = { ...baseEvent, headers: { 'X-Auth': 'bad-token' } };
+    const event = { ...baseEvent, headers: { Authorization: 'bad-token' } };
     client = new AuthorizerClient(event);
     client['secretsService'] = secretsServiceMock;
     const payload = await AuthorizerClient.getCognitoTokenPayloadFromJwt(

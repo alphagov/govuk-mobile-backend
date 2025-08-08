@@ -123,7 +123,7 @@ Resources:
       Name: !Sub ${AWS::StackName}-chat-proxy-authorizer
       RestApiId: !Ref ChatApiGateway
       Type: REQUEST
-      IdentitySource: method.request.header.X-Auth
+      IdentitySource: method.request.header.Authorization
       AuthorizerUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatAuthorizerFunction.Arn}/invocations"
       AuthorizerResultTtlInSeconds: 300
 
@@ -357,15 +357,15 @@ Resources:
       Handler: app.lambdaHandler
       Role: !GetAtt ChatAuthorizerFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt ChatAuthorizerFunctionKMSKey.Arn
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Chat
       Environment:
         Variables:
           CHAT_SECRET_NAME: !Sub /${ConfigStackName}/chat/secrets
           REGION: !Ref AWS::Region
           OIDC_ISSUER: !FindInMap [OneLogin, Environment, !Ref Environment]
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Chat
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
