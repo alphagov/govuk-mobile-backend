@@ -183,7 +183,7 @@ describe('Chat API Gateway Authorizer', () => {
   });
   it('should have an identity source of the Authorization header', () => {
     expect(resourceUnderTest.Properties.IdentitySource).toEqual(
-      'method.request.header.X-Auth',
+      'method.request.header.Authorization',
     );
   });
   it('should have an authorizer result TTL of 300 seconds', () => {

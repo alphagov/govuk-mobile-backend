@@ -25,10 +25,23 @@ export class AuthorizerClient {
   public async authorizerResult(): Promise<APIGatewayAuthorizerResult> {
     const secrets = await AuthorizerClient.getChatSecrets();
     const { clientId, userPoolId, bearerToken } = secrets;
-    const authHeader = this.event.headers?.['X-Auth'];
+    const authHeader = this.event.headers?.['Authorization'];
 
     if (authHeader === undefined || authHeader.trim() === '') {
-      console.error("Authorization header 'X-Auth' is missing or empty");
+      console.error("Authorization header 'Authorization' is missing or empty");
+      return AuthorizerClient.getAuthorizerResult(
+        'unknown',
+        'Deny',
+        bearerToken,
+      );
+    }
+
+    const [, token] = authHeader.split(' ');
+
+    if (token === undefined || token.trim() === '') {
+      console.error(
+        "Authorization header 'Authorization' does not contain a token",
+      );
       return AuthorizerClient.getAuthorizerResult(
         'unknown',
         'Deny',
@@ -38,7 +51,7 @@ export class AuthorizerClient {
 
     const cognitoTokenPayload =
       await AuthorizerClient.getCognitoTokenPayloadFromJwt(
-        authHeader,
+        token,
         userPoolId,
         clientId,
       );
