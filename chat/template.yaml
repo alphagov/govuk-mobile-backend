@@ -30,6 +30,11 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
   
+  AuthStackName:
+    Type: String
+    Description: Stack Name for Auth Stack
+    Default: govuk-mobile-backend
+  
 
 Conditions:
   UseCodeSigning: !Not
@@ -123,7 +128,7 @@ Resources:
       Name: !Sub ${AWS::StackName}-chat-proxy-authorizer
       RestApiId: !Ref ChatApiGateway
       Type: REQUEST
-      IdentitySource: method.request.header.X-Auth
+      IdentitySource: method.request.header.Authorization
       AuthorizerUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatAuthorizerFunction.Arn}/invocations"
       AuthorizerResultTtlInSeconds: 300
 
@@ -134,6 +139,25 @@ Resources:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs
       KmsKeyId: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Deidentify:
+                MaskConfig: {} # marks sensitive data with asterisks
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -253,6 +277,82 @@ Resources:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ChatApiGateway}/stages/${ChatApiGatewayStage}
       WebACLArn: !GetAtt ChatApiGatewayWaf.Arn
 
+  ChatApiGatewayWafLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      # log stream must start with aws-waf-logs-
+      LogGroupName: !Sub aws-waf-logs-chat-proxy-${AWS::StackName}
+      KmsKeyId: !GetAtt ChatApiGatewayWafLogGroupKMSKey.Arn
+      RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: redact-policy
+            DataIdentifier:
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  ChatApiGatewayWafLogGroupKMSKey:
+    Condition: IsNotProduction
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting the Chat API Gateway WAF Log Group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
   ChatAuthorizerFunction:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
@@ -262,15 +362,15 @@ Resources:
       Handler: app.lambdaHandler
       Role: !GetAtt ChatAuthorizerFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt ChatAuthorizerFunctionKMSKey.Arn
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Chat
       Environment:
         Variables:
           CHAT_SECRET_NAME: !Sub /${ConfigStackName}/chat/secrets
           REGION: !Ref AWS::Region
           OIDC_ISSUER: !FindInMap [OneLogin, Environment, !Ref Environment]
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Chat
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -364,64 +464,89 @@ Outputs:
   AWSAccountId:
     Description: The AWS Account ID
     Value: !Ref AWS::AccountId
+
   ConfigStackName:
     Description: The name of the configuration stack
     Value: !Ref ConfigStackName
+
+  AuthStackName:
+    Description: The name of the Auth stack
+    Value: !Ref AuthStackName
+
   StackName:
     Description: The name of the CloudFormation stack
     Value: !Ref AWS::StackName
+
   ChatApiGatewayUrl:
     Condition: IsNotProduction
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${ChatApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+
   ChatApiGatewayId:
     Condition: IsNotProduction
     Description: The ID of the Chat API Gateway
     Value: !Ref ChatApiGateway
+
   ChatApiGatewayResourceId:
     Condition: IsNotProduction
     Description: The ID of the Chat API Gateway resource
     Value: !Ref ChatApiGatewayResource
+
   ChatApiGatewayMethodId:
     Condition: IsNotProduction
     Description: The ID of the Chat API Gateway method
     Value: !Ref ChatApiGatewayMethod
+
   ChatApiGatewayDeploymentId:
     Condition: IsNotProduction
     Description: The ID of the Chat API Gateway deployment
     Value: !Ref ChatApiGatewayDeployment
+
   ChatApiGatewayAuthorizerId:
     Condition: IsNotProduction
     Description: The ID of the Chat API Gateway authorizer
     Value: !Ref ChatApiGatewayAuthorizer
+
   ChatApiGatewayAccessLogGroupArn:
     Condition: IsNotProduction
     Description: The ARN of the Chat API Gateway access log group
     Value: !GetAtt ChatApiGatewayAccessLogGroup.Arn
+
+  ChatApiGatewayAccessLogGroupName:
+    Condition: IsNotProduction
+    Description: The name of the Chat API Gateway access log group
+    Value: !Ref ChatApiGatewayAccessLogGroup
+
   ChatApiGatewayAccessLogGroupKMSKeyArn:
     Condition: IsNotProduction
     Description: The ARN of the Chat API Gateway access log group KMS key
     Value: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
+
   ChatApiGatewayStageName:
     Condition: IsNotProduction
     Description: The name of the Chat API Gateway stage
     Value: !Ref ChatApiGatewayStage
+
   ChatAuthorizerFunctionName:
     Condition: IsNotProduction
     Description: The name of the Chat authorizer Lambda function
     Value: !Ref ChatAuthorizerFunction
+
   ChatAuthorizerInvokePermissionId:
     Condition: IsNotProduction
     Description: The ID of the permission allowing API Gateway to invoke the Chat authorizer function
     Value: !Ref ChatAuthorizerInvokePermission
+
   ChatAuthorizerFunctionIAMRoleName:
     Condition: IsNotProduction
     Description: The name of the IAM role for the Chat authorizer function
     Value: !Sub ${AWS::StackName}-chat-proxy-authorizer-role
+
   ChatAuthorizerFunctionIAMRolePolicyName:
     Condition: IsNotProduction
     Description: The name of the policy attached to the Chat authorizer function IAM role
     Value: ChatAuthorizerFunctionPolicy
+
   ChatAuthorizerFunctionKMSKeyArn:
     Condition: IsNotProduction
     Description: The ARN of the KMS key used by the Chat authorizer function
