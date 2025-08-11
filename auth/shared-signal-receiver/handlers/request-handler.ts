@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-type-assertion */
 import type z from 'zod';
 import { accountPurgedSchema } from '../schema/account-purged';
 import { credentialChangeSchema } from '../schema/credential-change';

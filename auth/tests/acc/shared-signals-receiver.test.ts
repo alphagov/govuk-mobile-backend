@@ -214,7 +214,7 @@ describe('shared-signal-receiver', () => {
 
     let environmentVariables: Record<string, string>;
 
-    const client = SUPPORTED_AWS_SDK_CLIENTS.LambdaClient; // Using the supported client
+    const testClient = new SUPPORTED_AWS_SDK_CLIENTS.LambdaClient(); // Using the supported client
 
     beforeAll(async () => {
       let getFnConfigCommand =
@@ -227,7 +227,7 @@ describe('shared-signal-receiver', () => {
       let config: any;
 
       try {
-        config = await client.send(getFnConfigCommand);
+        config = await testClient.send(getFnConfigCommand);
       } catch (error) {
         console.error('error retrieving function configuration:', error);
         throw error;
@@ -249,7 +249,7 @@ describe('shared-signal-receiver', () => {
           new SUPPORTED_AWS_SDK_COMMANDS.LambdaClient.UpdateFunctionConfigurationCommand(
             updateFunctionConfig,
           );
-        await client.send(updateFnConfigCommand);
+        await testClient.send(updateFnConfigCommand);
       } catch (error) {
         console.error('Error updating function configuration:', error);
         throw error; // Ensure the test fails if this fails
@@ -275,7 +275,7 @@ describe('shared-signal-receiver', () => {
           config,
         );
       try {
-        await client.send(command);
+        await testClient.send(command);
       } catch (error) {
         console.error('Error resetting the function configuration:', error);
         throw error; // Ensure the test fails if this fails
