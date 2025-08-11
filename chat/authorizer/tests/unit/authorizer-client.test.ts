@@ -84,6 +84,14 @@ describe('AuthorizerClient', () => {
     expect(result.policyDocument.Statement[0].Effect).toBe('Deny');
   });
 
+  it('should return Deny authorizer result if Authorization header Bearer token is empty', async () => {
+    const event = { ...baseEvent, headers: { Authorization: 'Bearer ' } };
+    client = new AuthorizerClient(event);
+    client['secretsService'] = secretsServiceMock;
+    const result = await client.authorizerResult();
+    expect(result.policyDocument.Statement[0].Effect).toBe('Deny');
+  });
+
   it('should return Deny authorizer result if Cognito token payload is undefined', async () => {
     const event = { ...baseEvent, headers: { Authorization: undefined } };
     client = new AuthorizerClient(event);
