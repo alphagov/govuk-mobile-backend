@@ -18,7 +18,6 @@ import {
   AdminGetUserCommand,
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
-  DescribeUserPoolCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { GetTopicAttributesCommand, SNSClient } from '@aws-sdk/client-sns';
 import {
@@ -30,7 +29,11 @@ import {
   GetMethodCommand,
   GetResourcesCommand,
 } from '@aws-sdk/client-api-gateway';
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import {
+  InvokeCommand,
+  LambdaClient,
+  GetFunctionConfigurationCommand,
+} from '@aws-sdk/client-lambda';
 
 /**
  * Map of supported AWS SDK clients
@@ -88,5 +91,6 @@ export const SUPPORTED_AWS_SDK_COMMANDS: {
   },
   LambdaClient: {
     InvokeCommand: InvokeCommand,
+    GetFunctionConfigurationCommand: GetFunctionConfigurationCommand,
   },
 };
