@@ -201,111 +201,114 @@ describe('shared-signal-receiver', () => {
     },
   );
 
-  describe('shared signal feature flag', async () => {
-    const clientCredentialsDriver = new ClientCredentialsDriver(
-      `/${testConfig.configStackName}/shared-signal/secrets-config`,
-      testConfig.cognitoUrl,
-    );
-    const sharedSignalsDriver = new SharedSignalsDriver(
-      testConfig.sharedSignalEndpoint,
-    );
+  describe.runIf(testConfig.isLocalEnvironment)(
+    'shared signal feature flag',
+    async () => {
+      const clientCredentialsDriver = new ClientCredentialsDriver(
+        `/${testConfig.configStackName}/shared-signal/secrets-config`,
+        testConfig.cognitoUrl,
+      );
+      const sharedSignalsDriver = new SharedSignalsDriver(
+        testConfig.sharedSignalEndpoint,
+      );
 
-    // Generate an access token
-    const accessToken = await clientCredentialsDriver.getAccessToken();
+      // Generate an access token
+      const accessToken = await clientCredentialsDriver.getAccessToken();
 
-    let environmentVariables: Record<string, string>;
+      let environmentVariables: Record<string, string>;
 
-    beforeAll(async () => {
-      const client = new LambdaClient({});
-      let getCommand = new GetFunctionConfigurationCommand({
-        FunctionName: testConfig.sharedSignalReceiverFunctionName,
-      });
+      beforeAll(async () => {
+        const client = new LambdaClient({});
+        let getCommand = new GetFunctionConfigurationCommand({
+          FunctionName: testConfig.sharedSignalReceiverFunctionName,
+        });
 
-      let config: any;
+        let config: any;
 
-      try {
-        config = await client.send(getCommand);
-      } catch (error) {
-        console.error('error retrieving function configuration:', error);
-        throw error;
-      }
+        try {
+          config = await client.send(getCommand);
+        } catch (error) {
+          console.error('error retrieving function configuration:', error);
+          throw error;
+        }
 
-      environmentVariables = config.Environment?.Variables || {};
+        environmentVariables = config.Environment?.Variables || {};
 
-      const updateFunctionConfig = {
-        FunctionName: testConfig.sharedSignalReceiverFunctionName,
-        Environment: {
-          Variables: {
-            ...environmentVariables,
-            ENABLE_SHARED_SIGNAL: 'false', // Disable shared signal feature
+        const updateFunctionConfig = {
+          FunctionName: testConfig.sharedSignalReceiverFunctionName,
+          Environment: {
+            Variables: {
+              ...environmentVariables,
+              ENABLE_SHARED_SIGNAL: 'false', // Disable shared signal feature
+            },
           },
-        },
-      };
-      try {
-        const updateLambdaCommand = new UpdateFunctionConfigurationCommand(
-          updateFunctionConfig,
-        );
-        await client.send(updateLambdaCommand);
-      } catch (error) {
-        console.error('Error updating function configuration:', error);
-        throw error; // Ensure the test fails if this fails
-      }
-      // Set a valid private key
-      sharedSignalsDriver.setPrivateKey();
+        };
+        try {
+          const updateLambdaCommand = new UpdateFunctionConfigurationCommand(
+            updateFunctionConfig,
+          );
+          await client.send(updateLambdaCommand);
+        } catch (error) {
+          console.error('Error updating function configuration:', error);
+          throw error; // Ensure the test fails if this fails
+        }
+        // Set a valid private key
+        sharedSignalsDriver.setPrivateKey();
 
-      await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait for the environment variable to be updated
-    });
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait for the environment variable to be updated
+      });
 
-    afterAll(async () => {
-      const config = {
-        FunctionName: testConfig.sharedSignalReceiverFunctionName,
-        Environment: {
-          Variables: {
-            ...environmentVariables,
-            ENABLE_SHARED_SIGNAL: 'true', // enable shared signal feature
+      afterAll(async () => {
+        const config = {
+          FunctionName: testConfig.sharedSignalReceiverFunctionName,
+          Environment: {
+            Variables: {
+              ...environmentVariables,
+              ENABLE_SHARED_SIGNAL: 'true', // enable shared signal feature
+            },
           },
-        },
-      };
-      const client = new LambdaClient({});
-      const command = new UpdateFunctionConfigurationCommand(config);
-      try {
-        await client.send(command);
-      } catch (error) {
-        console.error('Error resetting the function configuration:', error);
-        throw error; // Ensure the test fails if this fails
-      }
-    });
-
-    it('sends a password update signal with a shared signal disabled return 503', async () => {
-      const response = await sharedSignalsDriver.sendPasswordSignal({
-        userId: uuidv4(), //any arbitrary user
-        accessToken,
-        email: 'an@example.com',
+        };
+        const client = new LambdaClient({});
+        const command = new UpdateFunctionConfigurationCommand(config);
+        try {
+          await client.send(command);
+        } catch (error) {
+          console.error('Error resetting the function configuration:', error);
+          throw error; // Ensure the test fails if this fails
+        }
       });
 
-      expect(response.ok).toBe(false);
-      expect(response.status).toBe(503); // Expecting 503 Service Unavailable due to feature flag being off
-    });
+      it('sends a password update signal with a shared signal disabled return 503', async () => {
+        const response = await sharedSignalsDriver.sendPasswordSignal({
+          userId: uuidv4(), //any arbitrary user
+          accessToken,
+          email: 'an@example.com',
+        });
 
-    it('sends a email update signal with a shared signal disabled return 503', async () => {
-      const response = await sharedSignalsDriver.sendEmailSignal({
-        userId: uuidv4(), //any arbitrary user
-        accessToken,
-        email: 'an@example.com',
+        expect(response.ok).toBe(false);
+        expect(response.status).toBe(503); // Expecting 503 Service Unavailable due to feature flag being off
       });
 
-      expect(response.ok).toBe(false);
-      expect(response.status).toBe(503); // Expecting 503 Service Unavailable due to feature flag being off
-    });
+      it('sends a email update signal with a shared signal disabled return 503', async () => {
+        const response = await sharedSignalsDriver.sendEmailSignal({
+          userId: uuidv4(), //any arbitrary user
+          accessToken,
+          email: 'an@example.com',
+        });
 
-    it('sends a purge account signal with a shared signal disabled return 503', async () => {
-      const response = await sharedSignalsDriver.sendAccountPurgeSignal({
-        userId: uuidv4(), //any arbitrary user
-        accessToken,
+        expect(response.ok).toBe(false);
+        expect(response.status).toBe(503); // Expecting 503 Service Unavailable due to feature flag being off
       });
 
-      expect(response.ok).toBe(false);
-      expect(response.status).toBe(503); // Expecting 503 Service Unavailable due to feature flag being off
-    });
-  });
+      it('sends a purge account signal with a shared signal disabled return 503', async () => {
+        const response = await sharedSignalsDriver.sendAccountPurgeSignal({
+          userId: uuidv4(), //any arbitrary user
+          accessToken,
+        });
+
+        expect(response.ok).toBe(false);
+        expect(response.status).toBe(503); // Expecting 503 Service Unavailable due to feature flag being off
+      });
+    },
+  );
 });
