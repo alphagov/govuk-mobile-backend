@@ -1,4 +1,4 @@
-import { SignJWT, importJWK, JWK, KeyLike } from 'jose';
+import { SignJWT, importJWK, KeyLike } from 'jose';
 import { testConfig } from '../common/config';
 import { getClientSecret } from '../common/secrets';
 
