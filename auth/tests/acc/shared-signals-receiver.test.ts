@@ -7,10 +7,9 @@ import { TestLambdaDriver } from '../driver/testLambda.driver';
 import { SharedSignalsDriver } from '../driver/shared-signals.driver';
 import { generateKeyPair } from 'jose';
 import {
-  GetFunctionConfigurationCommand,
-  LambdaClient,
-  UpdateFunctionConfigurationCommand,
-} from '@aws-sdk/client-lambda';
+  SUPPORTED_AWS_SDK_CLIENTS,
+  SUPPORTED_AWS_SDK_COMMANDS,
+} from '../lambdas/acceptance/clients';
 
 describe('shared-signal-receiver', () => {
   const lambdaDriver = new TestLambdaDriver();
@@ -215,16 +214,20 @@ describe('shared-signal-receiver', () => {
 
     let environmentVariables: Record<string, string>;
 
+    const client = SUPPORTED_AWS_SDK_CLIENTS.LambdaClient; // Using the supported client
+
     beforeAll(async () => {
-      const client = new LambdaClient({});
-      let getCommand = new GetFunctionConfigurationCommand({
-        FunctionName: testConfig.sharedSignalReceiverFunctionName,
-      });
+      let getFnConfigCommand =
+        new SUPPORTED_AWS_SDK_COMMANDS.LambdaClient.GetFunctionConfigurationCommand(
+          {
+            FunctionName: testConfig.sharedSignalReceiverFunctionName,
+          },
+        );
 
       let config: any;
 
       try {
-        config = await client.send(getCommand);
+        config = await client.send(getFnConfigCommand);
       } catch (error) {
         console.error('error retrieving function configuration:', error);
         throw error;
@@ -242,10 +245,11 @@ describe('shared-signal-receiver', () => {
         },
       };
       try {
-        const updateLambdaCommand = new UpdateFunctionConfigurationCommand(
-          updateFunctionConfig,
-        );
-        await client.send(updateLambdaCommand);
+        const updateFnConfigCommand =
+          new SUPPORTED_AWS_SDK_COMMANDS.LambdaClient.UpdateFunctionConfigurationCommand(
+            updateFunctionConfig,
+          );
+        await client.send(updateFnConfigCommand);
       } catch (error) {
         console.error('Error updating function configuration:', error);
         throw error; // Ensure the test fails if this fails
@@ -266,8 +270,10 @@ describe('shared-signal-receiver', () => {
           },
         },
       };
-      const client = new LambdaClient({});
-      const command = new UpdateFunctionConfigurationCommand(config);
+      const command =
+        new SUPPORTED_AWS_SDK_COMMANDS.LambdaClient.UpdateFunctionConfigurationCommand(
+          config,
+        );
       try {
         await client.send(command);
       } catch (error) {

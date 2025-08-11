@@ -33,6 +33,7 @@ import {
   InvokeCommand,
   LambdaClient,
   GetFunctionConfigurationCommand,
+  UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
 
 /**
@@ -92,5 +93,6 @@ export const SUPPORTED_AWS_SDK_COMMANDS: {
   LambdaClient: {
     InvokeCommand: InvokeCommand,
     GetFunctionConfigurationCommand: GetFunctionConfigurationCommand,
+    UpdateFunctionConfigurationCommand: UpdateFunctionConfigurationCommand,
   },
 };
