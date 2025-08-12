@@ -248,7 +248,7 @@ Resources:
               AggregateKeyType: IP
           VisibilityConfig:
             CloudWatchMetricsEnabled: true
-            MetricName: !Sub ${AWS::StackName}-waf-chat-proxy-rate-limit-rule
+            MetricName: !Sub ${AWS::StackName}-chat-proxy-waf-rate-limit-rule
             SampledRequestsEnabled: true
         - Name: AWSManagedRulesKnownBadInputsRuleSet
           Priority: 2
@@ -460,125 +460,16 @@ Resources:
         - Key: System
           Value: Chat
 
-  #############################################################
-  # PagerDuty Test Function and SNS Topic for CloudWatch Alarms
-  #############################################################
-  PagerDutyTestFunction:
-    Condition: IsNotProduction
-    Type: AWS::Serverless::Function
-    #checkov:skip=CKV2_GOVUKAPP_1:Ensure lambda function has a permissions boundary via an IAM role
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-pager-duty-test-endpoint
-      CodeUri: pager-duty-test-endpoint/
-      Handler: app.lambdaHandler
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Chat
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
-        SourceMap: false
-        EntryPoints:
-          - app.ts
-
-  PagerDutyTestFunctionCloudWatchAlarmPermission:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PagerDutyTestFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn: !Ref CloudWatchAlarmTopicSubscriptionPagerDuty
-
-  CloudWatchAlarmTopicSubscriptionPagerDuty:
-    Condition: IsNotProduction
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref CloudWatchAlarmTopicPagerDuty
-      Endpoint: !If
-        - IsNotProduction
-        - !GetAtt PagerDutyTestFunction.Arn
-        - !Sub '{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}'
-      Protocol: !If
-        - IsNotProduction
-        - lambda
-        - https
-
-  CloudWatchAlarmTopicPagerDuty:
-    Condition: IsNotProduction
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Sub ${AWS::StackName}-cloudwatch-alarm-topic
-      KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Sub ${AWS::StackName}-cloudwatch-alarm-topic
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Chat
-
-  CloudWatchAlarmNotificationTopicKey:
-    Condition: IsNotProduction
-    Type: AWS::KMS::Key
-    Properties:
-      Description: KMS key for encrypting CloudWatch alarm notifications for Chat
-      EnableKeyRotation: true
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Allow the account to manage the key
-            Effect: Allow
-            Principal:
-              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
-            Action:
-              - kms:*
-            Resource:
-              - '*'
-          - Sid: Allow Cloudwatch alarms access
-            Effect: Allow
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Action:
-              - kms:Encrypt*
-              - kms:Decrypt*
-              - kms:ReEncrypt*
-              - kms:GenerateDataKey*
-              - kms:Describe*
-            Resource:
-              - '*'
-          - Sid: Allow CWE access
-            Effect: Allow
-            Principal:
-              Service: events.amazonaws.com
-            Action:
-              - kms:Encrypt*
-              - kms:Decrypt*
-              - kms:ReEncrypt*
-              - kms:GenerateDataKey*
-              - kms:Describe*
-            Resource:
-              - '*'
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Chat
 
   CloudwatchAlarmChatProxy4xxErrors:
+    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-chat-proxy-4xx-errors
       AlarmDescription: !Sub |
         Alarm detects a high rate of client-side errors.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4613701633/Runbook+Chat+API+Gateway+alarms
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -598,9 +489,9 @@ Resources:
         - Name: Method
           Value: ANY
       AlarmActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -610,13 +501,14 @@ Resources:
           Value: Chat
 
   CloudwatchAlarmChatProxy5xxErrors:
+    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-chat-proxy-5xx-errors
       AlarmDescription: !Sub |
         Alarm detects a high rate of server-side errors.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4613701633/Runbook+Chat+API+Gateway+alarms
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -630,9 +522,45 @@ Resources:
         - Name: ApiName
           Value: !Ref ChatApiGateway
       AlarmActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  CloudWatchAlarmChatProxyWafAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-chat-proxy-waf-rate-limit
+      AlarmDescription: !Sub |
+        Alarm when the Chat Proxy WAF rate limit exceeds 300 requests per 5 minutes.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4613373954/Runbook+Chat+WAF+throttling
+      Namespace: AWS/WAFV2
+      ActionsEnabled: true
+      MetricName: BlockedRequests
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 5
+      Threshold: 300
+      DatapointsToAlarm: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: WebACL
+          Value: !Sub ${AWS::StackName}-waf-chat-proxy
+        - Name: Rule
+          Value: !Sub ${AWS::StackName}-chat-proxy-waf-rate-limit-rule
+        - Name: Region
+          Value: !Ref AWS::Region
+      AlarmActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
+      OKActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
       Tags:
         - Key: Product
           Value: GOV.UK

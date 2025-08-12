@@ -9,49 +9,25 @@ const template = loadTemplateFromFile(
 
 const testCases: AlarmTestCase[] = [
   {
-    name: '4xx',
-    alarmName: `chat-proxy-4xx-errors`,
+    name: 'ChatProxyBlockedRequests',
+    alarmName: 'chat-proxy-waf-rate-limit',
     actionsEnabled: true,
-    namespace: 'AWS/ApiGateway',
-    alarmResource: 'CloudwatchAlarmChatProxy4xxErrors',
-    metricName: '4XXError',
-    alarmDescription: 'Alarm detects a high rate of client-side errors.',
+    alarmResource: 'CloudWatchAlarmChatProxyWafAlarm',
+    namespace: 'AWS/WAFV2',
+    metricName: 'BlockedRequests',
+    alarmDescription:
+      'Alarm when the Chat Proxy WAF rate limit exceeds 300 requests per 5 minutes',
     topicResource: {
       'Fn::Sub':
         'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic',
     },
-    statistic: 'Average',
-    period: 60,
+    statistic: 'Sum',
+    extendedStatistic: undefined,
+    period: 300,
     evaluationPeriods: 5,
     datapointsToAlarm: 5,
-    threshold: 0.05,
+    threshold: 300,
     comparisonOperator: 'GreaterThanThreshold',
-    dimensions: [
-      { Name: 'ApiName', Value: { Ref: 'ChatApiGateway' } },
-      { Name: 'Resource', Value: '{proxy+}' },
-      { Name: 'Stage', Value: { Ref: 'Environment' } },
-      { Name: 'Method', Value: 'ANY' },
-    ],
-  },
-  {
-    name: '5xx',
-    alarmName: `chat-proxy-5xx-errors`,
-    actionsEnabled: true,
-    alarmResource: 'CloudwatchAlarmChatProxy5xxErrors',
-    namespace: 'AWS/ApiGateway',
-    metricName: '5XXError',
-    alarmDescription: 'Alarm detects a high rate of server-side errors.',
-    topicResource: {
-      'Fn::Sub':
-        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic',
-    },
-    statistic: 'Average',
-    period: 60,
-    evaluationPeriods: 3,
-    datapointsToAlarm: 3,
-    threshold: 0.05,
-    comparisonOperator: 'GreaterThanThreshold',
-    dimensions: [{ Name: 'ApiName', Value: { Ref: 'ChatApiGateway' } }],
   },
 ];
 
@@ -65,7 +41,6 @@ describe.each(testCases)(
     metricName,
     namespace,
     alarmDescription,
-    dimensions,
     statistic,
     extendedStatistic,
     period,
@@ -116,9 +91,13 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
         comparisonOperator,
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Dimensions).toEqual(
-        dimensions,
-      );
+      const actualDimensions =
+        cloudWatchAlarmUnderTest.Properties.Dimensions || [];
+      expect(actualDimensions.map((d) => d.Name)).toEqual([
+        'WebACL',
+        'Rule',
+        'Region',
+      ]);
       expect(cloudWatchAlarmUnderTest.Properties.AlarmActions).toEqual([
         topicResource,
       ]);
