@@ -264,31 +264,7 @@ describe.each(testCases)(
       expect(snsTopicUnderTest.Type).toEqual('AWS::SNS::Topic');
       expect(snsTopicUnderTest.Properties).toBeDefined();
       expect(snsTopicUnderTest.Properties.DisplayName).toEqual({
-        'Fn::Join': [
-          '-',
-          [
-            { Ref: 'AWS::StackName' },
-            topicDisplayName,
-            {
-              'Fn::Select': [
-                4,
-                {
-                  'Fn::Split': [
-                    '-',
-                    {
-                      'Fn::Select': [
-                        2,
-                        {
-                          'Fn::Split': ['/', { Ref: 'AWS::StackId' }],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        ],
+        'Fn::Sub': '${AWS::StackName}-cloudwatch-alarm-topic',
       });
       expect(snsTopicUnderTest.Properties.KmsMasterKeyId).toEqual({
         Ref: 'CloudWatchAlarmNotificationTopicKey',
