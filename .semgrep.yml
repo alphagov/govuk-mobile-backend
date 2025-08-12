@@ -1,0 +1,258 @@
+extends:
+  - r/javascript.lang.security
+  - r/typescript.lang.security
+  - r/nodejs
+  - r/owasp-top-ten
+
+rules:
+  # Native Caching Implementation
+  - id: manual-cache-global-variable
+    patterns:
+      - pattern: |
+          let $CACHE = {};
+          ...
+          if ($CACHE[$KEY]) { ... }
+      - pattern: |
+          const $CACHE = new Map();
+          ...
+          if ($CACHE.has($KEY)) { ... }
+      - pattern: |
+          var $CACHE = {};
+          ...
+          $CACHE[$KEY] = $VALUE;
+    message: 'Avoid manual caching with global variables in Lambda. Use ElastiCache, DynamoDB, or Parameter Store instead. If you need to implement container level caching please use the provided caching utility functions'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      cwe: 'CWE-400: Uncontrolled Resource Consumption'
+
+  - id: synchronous-cache-operations
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: $CACHE.get($KEY)
+              - metavariable-regex:
+                  metavariable: $CACHE
+                  regex: .*(cache|Cache).*
+          - patterns:
+              - pattern: $CACHE[$KEY] = $VALUE
+              - metavariable-regex:
+                  metavariable: $CACHE
+                  regex: .*(cache|Cache).*
+          - patterns:
+              - pattern: $OBJ[$PROP] = $VALUE
+              - metavariable-regex:
+                  metavariable: $PROP
+                  regex: .*(cache|Cache).*
+    message: 'Synchronous cache operations can block Lambda execution. Consider async caching patterns or use the caching utility functions provided.'
+    languages: [javascript, typescript]
+    severity: INFO
+
+  # Thundering herd Anti Patterns
+  - id: missing-jitter-in-retry
+    pattern-either:
+      - pattern: |
+          setTimeout($FUNC, $DELAY)
+      - pattern: |
+          await new Promise(resolve => setTimeout(resolve, $DELAY))
+      - pattern: |
+          sleep($DELAY)
+    message: 'Fixed delays can cause thundering herd. Add jitter: Math.random() * baseDelay'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: simulataneous-cache-refresh
+    pattern: |
+      if (!$CACHE[$KEY]) {
+        $CACHE[$KEY] = await $FETCH_FUNC(...);
+      }
+    message: 'Cache refresh without locking can cause thundering herd. Consider using single-flight pattern.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: missing-circuit-breaker
+    pattern-either:
+      - pattern: |
+          for (let $I = 0; $I < $RETRIES; $I++) {
+            try {
+              await $API_CALL(...);
+              break;
+            } catch ($E) {
+              ...
+            }
+          }
+      - pattern: |
+          while ($CONDITION) {
+            try {
+              await $API_CALL(...);
+            } catch ($E) {
+              ...
+            }
+          }
+    message: 'Retry loops without circuit breaker can amplify failures. Consider AWS SDK retry config or circuit breaker pattern.'
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  # Resource Handling
+  - id: unclosed-database-connection
+    patterns:
+      - pattern-either:
+          - pattern: |
+              const $CLIENT = new $DB_CLIENT(...);
+              ...
+              await $CLIENT.query(...);
+          - pattern: |
+              const $CLIENT = new $DB_CLIENT(...);
+              ...
+              await $CLIENT.execute(...);
+          - pattern: |
+              const $CLIENT = new $DB_CLIENT(...);
+              ...
+              $CLIENT.connect(...);
+      - pattern-not-inside: |
+          const $CLIENT = new $DB_CLIENT(...);
+          ...
+          $CLIENT.end();
+      - pattern-not-inside: |
+          const $CLIENT = new $DB_CLIENT(...);
+          ...
+          await $CLIENT.end();
+      - pattern-not-inside: |
+          const $CLIENT = new $DB_CLIENT(...);
+          ...
+          $CLIENT.close();
+      - metavariable-regex:
+          metavariable: $DB_CLIENT
+          regex: .*(Client|Pool|Connection|Database).*
+    message: 'Database client not explicitly closed. Can cause connection leaks in Lambda.'
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: aws-sdk-client-not-reused
+    patterns:
+      - pattern-inside: |
+          exports.handler = async ($EVENT, $CONTEXT) => {
+            ...
+          }
+      - pattern: |
+          const $CLIENT = new AWS.$SERVICE(...);
+    message: 'AWS SDK clients should be initialised outside handler for connection reuse.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Missing Retry Patterns
+  - id: http-request-no-retry
+    patterns:
+      - pattern-either:
+          - pattern: await fetch($URL, ...)
+          - pattern: await fetch($URL)
+          - pattern: await axios.get($URL, ...)
+          - pattern: await axios.post($URL, ...)
+          - pattern: await axios.put($URL, ...)
+          - pattern: await request($OPTIONS)
+          - pattern: await $CLIENT.send($COMMAND)
+      - pattern-not-inside: |
+          for (...) {
+            ...
+          }
+      - pattern-not-inside: |
+          while (...) {
+            ...
+          }
+      - pattern-not-inside: |
+          do {
+            ...
+          } while (...)
+      - pattern-not-inside: |
+          const $RETRY = async (...) => {
+            ...
+          }
+      - pattern-not-inside: |
+          async function $RETRY(...) {
+            ...
+          }
+      - metavariable-regex:
+          metavariable: $CLIENT
+          regex: .*(Client|Service).*
+    message: 'HTTP requests should have retry logic for transient failures. Consider using retry libraries or AWS SDK retry config.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: aws-sdk-no-retry-config
+    patterns:
+      - pattern: |
+          new AWS.$SERVICE({
+            $...PARAMS
+          })
+      - pattern-not: |
+          new AWS.$SERVICE({
+            ...,
+            maxRetries: $RETRIES,
+            ...
+          })
+      - pattern-not: |
+          new AWS.$SERVICE({
+            ...,
+            retryDelayOptions: $OPTIONS,
+            ...
+          })
+    message: 'AWS SDK clients should configure retry behaviour. Add maxRetries and retryDelayOptions.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: database-query-no-retry
+    patterns:
+      - pattern-either:
+          - pattern: |
+              await $DB.query($QUERY, ...)
+          - pattern: |
+              await $DB.execute($QUERY, ...)
+          - pattern: |
+              await $POOL.query($QUERY, ...)
+          - pattern: |
+              await $CLIENT.query($QUERY, ...)
+      - pattern-not-inside: |
+          for (...) {
+            ...
+          }
+      - pattern-not-inside: |
+          while (...) {
+            ...
+          }
+      - pattern-not-inside: |
+          try {
+            ...
+          } catch ($E) {
+            ...
+          }
+    message: 'Database queries should have retry logic for connection timeouts and transient failures.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: http-request-no-timeout
+    patterns:
+      - pattern-either:
+          - pattern: await fetch($URL, $OPTIONS)
+          - pattern: await fetch($URL)
+      - pattern-not: |
+          await fetch($URL, {
+            ...,
+            signal: AbortSignal.timeout($TIMEOUT),
+            ...
+          })
+      - pattern-not: |
+          await fetch($URL, {
+            ...,
+            timeout: $TIMEOUT,
+            ...
+          })
+      - pattern-not: |
+          await fetch($URL, {
+            ...,
+            signal: $SIGNAL,
+            ...
+          })
+    message: 'HTTP requests should have timeout handling to prevent Lambda hanging. Use AbortSignal.timeout() or request timeout.'
+    languages: [javascript, typescript]
+    severity: ERROR
