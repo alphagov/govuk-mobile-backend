@@ -711,19 +711,8 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - '-'
-        - - !Ref AWS::StackName
-          - cloudwatch-alarm-topic
-          - !Select
-            - 4
-            - !Split
-              - '-'
-              - !Select
-                - 2
-                - !Split
-                  - /
-                  - !Ref AWS::StackId
+      TopicName: !Sub '${AWS::StackName}-cloudwatch-alarm-topic'
+      DisplayName: !Sub '${AWS::StackName}-cloudwatch-alarm-topic'
       Tags:
         - Key: Product
           Value: GOV.UK
