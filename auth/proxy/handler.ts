@@ -23,6 +23,7 @@ const generateErrorResponse = ({
 export const createHandler =
   (dependencies: Dependencies) =>
   async (event: APIGatewayEvent): Promise<APIGatewayProxyResultV2> => {
+    console.log('humour me');
     try {
       console.log(logMessages.ATTESTATION_STARTED);
 
