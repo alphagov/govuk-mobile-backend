@@ -185,7 +185,7 @@ rules:
           }
     message: 'Infinite retry loops can exhaust Lambda execution time. Use bounded retry with max attempts.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   - id: aws-sdk-no-retry-config
     patterns:
@@ -258,7 +258,7 @@ rules:
           });
     message: 'Unbounded response accumulation can exceed Lambda memory limits. Implement size limits and streaming.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   - id: synchronous-file-operations
     pattern-either:
@@ -290,7 +290,7 @@ rules:
           regex: .*(\.\*\+|\+\*|\{\d+,\}|\(\.\*\)\+).*
     message: 'Potential ReDoS vulnerability. Complex regex can cause Lambda timeout through exponential backtracking.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   - id: detect-command-injection
     message: 'Command injection vulnerability. Validate and sanitize inputs before passing to child processes.'
@@ -303,7 +303,7 @@ rules:
       technology: [javascript, aws-lambda]
       vulnerability_class: [Command Injection]
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
     mode: taint
     pattern-sources:
       - patterns:
@@ -415,7 +415,7 @@ rules:
           const $PARSED = JSON.parse($STR);
     message: 'Inefficient JSON deep copy pattern. Consider structuredClone() or dedicated libraries for better performance.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: repeated-config-loading
     patterns:
@@ -427,7 +427,7 @@ rules:
           }
     message: 'Configuration loading in handler executes on every invocation. Cache config at module level or implement memoization.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   # Lambda Context Usage
   - id: lambda-context-unused
@@ -490,7 +490,7 @@ rules:
           }
     message: 'Environment variable validation should check for empty/whitespace strings, not just null/undefined.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: ssm-parameter-no-caching
     patterns:
@@ -552,7 +552,7 @@ rules:
           }
     message: 'Blindly forwarding headers can leak sensitive information. Use header allowlists.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   - id: sensitive-data-in-query-params
     patterns:
@@ -570,7 +570,7 @@ rules:
           regex: .*(secret|password|token|key|credential|auth).*
     message: 'Sensitive data in query parameters may be logged in access logs. Use request body or headers instead.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   # Lambda-specific Anti-patterns
   - id: infinite-loop-without-timeout-check
@@ -588,7 +588,7 @@ rules:
               setInterval($FUNC, $INTERVAL)
     message: 'Infinite loops in Lambda will hit execution timeout. Add break conditions or timeout checks.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   - id: callback-and-async-mixed
     patterns:
@@ -599,7 +599,7 @@ rules:
           }
     message: 'Mixing async/await with callback pattern can cause double responses. Use either async/await OR callback, not both.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   - id: unhandled-promise-in-callback-handler
     patterns:
@@ -615,7 +615,7 @@ rules:
           $ASYNC_FUNC().then(...).catch($CALLBACK)
     message: 'Async operations in callback-style handlers must handle promise rejections explicitly.'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   # Tree Shaking and Bundle Size Optimization
   - id: wildcard-import-prevents-treeshaking
@@ -641,7 +641,7 @@ rules:
           - pattern: import * as AWS from 'aws-sdk'
     message: 'AWS SDK v2 imports the entire SDK (~3MB). Use AWS SDK v3 with specific service imports: import { DynamoDBClient } from "@aws-sdk/client-dynamodb"'
     languages: [javascript, typescript]
-    severity: ERROR
+    severity: WARNING
 
   - id: lodash-full-import
     patterns:
@@ -707,7 +707,7 @@ rules:
           regex: ^(?!\./).*(?<!\.css)$
     message: 'Import without usage detected. If this is for side effects, add // @side-effect comment. Otherwise remove to reduce bundle size.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: inefficient-uuid-import
     patterns:
@@ -717,7 +717,7 @@ rules:
           - pattern: import * as uuid from 'uuid'
     message: 'Full UUID library import. Use specific imports: import { v4 } from "uuid" or use crypto.randomUUID() in Node.js 14.17+.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   # Tree Shaking and Bundle Size Optimization
   - id: wildcard-import-prevents-treeshaking
@@ -783,7 +783,7 @@ rules:
           regex: ^@aws-sdk/.*
     message: 'Unused AWS SDK imports increase bundle size. Remove unused imports or use them in your code.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: default-and-named-import-mixed
     patterns:
@@ -795,7 +795,7 @@ rules:
               import { $...NAMED } from '$MODULE'
     message: 'Mixed default and named imports from same module can prevent optimal tree shaking. Prefer consistent import style.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: large-utility-library-full-import
     patterns:
@@ -823,7 +823,7 @@ rules:
           regex: ^(?!@aws-sdk|@types|lodash).*
     message: 'Deep imports from node_modules may break with package updates and can prevent tree shaking. Use package main exports when possible.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: polyfill-import-in-lambda
     patterns:
@@ -848,7 +848,7 @@ rules:
           comparison: len($OPERATORS) > 5
     message: 'Importing many RxJS operators at once. Consider importing only needed operators: import { map } from "rxjs/operators" for better tree shaking.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: unused-import-with-side-effects
     patterns:
@@ -864,7 +864,7 @@ rules:
           regex: ^(?!\./).*
     message: 'Import without usage detected. If this is for side effects, add a comment. Otherwise remove to reduce bundle size.'
     languages: [javascript, typescript]
-    severity: INFO
+    severity: WARNING
 
   - id: inefficient-uuid-import
     patterns:

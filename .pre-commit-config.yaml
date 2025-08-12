@@ -46,8 +46,7 @@ repos:
     rev: v1.131.0
     hooks:
       - id: semgrep
-        args:
-          ['--config=.semgrep.yml', '--severity=ERROR', '--severity=WARNING']
+        args: ['--config=.semgrep.yml']
         pass_filenames: false # This forces it to scan all files in repo
         always_run: true # Run even if no files match
         verbose: true
