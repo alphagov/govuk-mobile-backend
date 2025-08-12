@@ -803,6 +803,7 @@ Resources:
     Type: AWS::Serverless::Function
     #checkov:skip=CKV2_GOVUKAPP_1:Ensure lambda function has a permissions boundary via an IAM role
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-pager-duty-test-endpoint'
       CodeUri: pager-duty-test-endpoint/
       Handler: app.lambdaHandler
       Tags:
