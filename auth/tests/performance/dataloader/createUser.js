@@ -13,7 +13,7 @@ export const createUser = async (email) => {
       { Name: 'email', Value: email },
       { Name: 'email_verified', Value: 'true' },
     ],
-    MessageAction: 'SUPPRESS', // Optional: don't send invite email
+    MessageAction: 'SUPPRESS', // doesn't send invite email
   });
 
   try {

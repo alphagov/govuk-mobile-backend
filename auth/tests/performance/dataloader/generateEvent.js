@@ -1,27 +1,21 @@
 // import sharedSignals from '../dataloader/fixtures.json' assert { type: 'json' };
 
-const accountPurgedEvent = (userId, email) => ({
+const accountPurgedEvent = (userId) => ({
   events: {
-    'https://schemas.openid.net/secevent/caep/event-type/credential-change': {
-      change_type: 'update',
-      credential_type: 'password',
+    'https://schemas.openid.net/secevent/risc/event-type/account-purged': {
       subject: {
+        format: 'urn:example:format',
         uri: userId,
-        format: 'urn:example:format:account-id',
       },
     },
-    'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-      {
-        email,
-      },
   },
 });
 
-const credentialChangeEvent = ({ email, id, changeType }) => ({
+const credentialChangeEvent = ({ email, id, credentialType }) => ({
   events: {
     'https://schemas.openid.net/secevent/caep/event-type/credential-change': {
-      change_type: changeType,
-      credential_type: 'email',
+      change_type: 'update',
+      credential_type: credentialType,
       subject: {
         uri: id,
         format: 'urn:example:format:account-id',
@@ -34,16 +28,16 @@ const credentialChangeEvent = ({ email, id, changeType }) => ({
   },
 });
 
-export function generateEvent(eventType, user) {
-  if (eventType === 'email') {
+export function generateEvent(eventType, user, credentialType) {
+  if (eventType === 'credential-change') {
     return credentialChangeEvent({
       ...user,
-      changeType: 'update',
+      credentialType,
     });
   }
 
-  if (eventType === 'purge') {
-    return accountPurgedEvent('foo', 'foobar@foo.com');
+  if (eventType === 'account-purge') {
+    return accountPurgedEvent(user.id);
   }
 
   throw new Error('No matching event type');
