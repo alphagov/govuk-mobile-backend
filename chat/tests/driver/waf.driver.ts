@@ -11,7 +11,6 @@ export const repeatedlyRequestEndpoint = async (
       const response = await requestFn();
       responseCodes.push(response.status);
     } catch (e) {
-      console.log(`Request failed: ${e.message}`);
       responseCodes.push(e.response.status);
     }
 
