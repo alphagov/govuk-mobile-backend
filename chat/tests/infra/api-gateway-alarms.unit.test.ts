@@ -27,10 +27,8 @@ const testCases: AlarmTestCase[] = [
     threshold: 0.05,
     comparisonOperator: 'GreaterThanThreshold',
     dimensions: [
-      { Name: 'ApiName', Value: { Ref: 'ChatApiGateway' } },
-      { Name: 'Resource', Value: '{proxy+}' },
+      { Name: 'ApiName', Value: { 'Fn::Sub': '${AWS::StackName}-chat-proxy' } },
       { Name: 'Stage', Value: { Ref: 'Environment' } },
-      { Name: 'Method', Value: 'ANY' },
     ],
   },
   {
@@ -51,7 +49,10 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 3,
     threshold: 0.05,
     comparisonOperator: 'GreaterThanThreshold',
-    dimensions: [{ Name: 'ApiName', Value: { Ref: 'ChatApiGateway' } }],
+    dimensions: [
+      { Name: 'ApiName', Value: { 'Fn::Sub': '${AWS::StackName}-chat-proxy' } },
+      { Name: 'Stage', Value: { Ref: 'Environment' } },
+    ],
   },
 ];
 

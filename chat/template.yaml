@@ -481,13 +481,9 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ApiName
-          Value: !Ref ChatApiGateway
-        - Name: Resource
-          Value: "{proxy+}"
+          Value: !Sub ${AWS::StackName}-chat-proxy
         - Name: Stage
           Value: !Ref Environment
-        - Name: Method
-          Value: ANY
       AlarmActions:
         - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
       OKActions:
@@ -520,7 +516,9 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ApiName
-          Value: !Ref ChatApiGateway
+          Value: !Sub ${AWS::StackName}-chat-proxy
+        - Name: Stage
+          Value: !Ref Environment
       AlarmActions:
         - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
       OKActions:
