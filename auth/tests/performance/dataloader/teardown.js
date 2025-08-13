@@ -5,14 +5,9 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 
 const REGION = process.env.AWS_REGION || 'eu-west-2';
-const USER_POOL_ID = process.env.USER_POOL_ID;
 const DRY_RUN = (process.env.DRY_RUN || 'false').toLowerCase() === 'true';
-const PREFIX = process.env.EMAIL_PREFIX || 'perf-test-';
-
-if (!USER_POOL_ID) {
-  console.error('USER_POOL_ID is required');
-  process.exit(1);
-}
+const PREFIX = process.env.PREFIX || 'perf-test-';
+const USER_POOL_ID = process.env.USER_POOL_ID;
 
 const client = new CognitoIdentityProviderClient({ region: REGION });
 
@@ -69,6 +64,7 @@ async function deleteUser(username) {
         deleted++;
         if (deleted % 25 === 0)
           console.log(`Deleted ${deleted}/${users.length} users...`);
+        await new Promise((r) => setTimeout(r, 100));
       } catch (err) {
         failed++;
         console.error(`Failed to delete ${Username}:`, err?.message || err);
