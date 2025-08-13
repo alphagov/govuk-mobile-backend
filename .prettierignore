@@ -15,4 +15,5 @@ tsconfig.tsbuildinfo
 package-lock.json
 dist
 build
+.build/
 .nx

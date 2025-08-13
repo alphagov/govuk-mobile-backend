@@ -35,6 +35,11 @@ jobs:
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
+      - name: Set Up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Set up SAM cli
         uses: aws-actions/setup-sam@v2
         with:
@@ -47,18 +52,23 @@ jobs:
           aws-region: eu-west-2
 
       - name: SAM validate
-        working-directory: ./auth
+        working-directory: ./services/auth
         run: sam validate --lint
 
+      - name: Install Dependencies
+        working-directory: ./services/auth
+        run: npm ci
+
       - name: SAM build
-        run: sam build
+        working-directory: ./services/auth
+        run: npm run build
 
       - name: Deploy Auth SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
           artifact-bucket-name: ${{ vars.ARTIFACT_BUCKET_NAME }}
           signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
-          working-directory: ./auth/.aws-sam/build
+          working-directory: ./services/auth/.aws-sam/build
 
       - name: Build, tag, and push testing images to Amazon ECR
         uses: govuk-one-login/devplatform-upload-action-ecr@v1.4.0
