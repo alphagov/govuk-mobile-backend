@@ -2,7 +2,7 @@
 
 ## Shared Signals
 
-## Setup
+### Setup
 
 - Ensure your application is deployed using aws sam:
 
@@ -22,7 +22,7 @@ brew install k6
 npm i
 ```
 
-## Running the tests
+### Running the tests
 
 - create a `.env` file with the correct variables:
 
@@ -32,6 +32,10 @@ TOKEN_EXCHANGE_URL=
 CLIENT_ID=
 CLIENT_SECRET=
 SCOPE=
+PUBLIC_KEY=
+PRIVATE_KEY=
+USER_POOL_ID=
+AUDIENCE=
 ```
 
 - **Note:** these variables are automatically exported/checked via the Makefile
@@ -56,16 +60,9 @@ make load-shared-signals-scenario
 - Run one of the performance test scenarios:
 
 ```sh
-make run-smoke
-
-# ...
-
-make run-stress
-
-# ...
-
-# Or to run both scenarios
 make run-test
+
+make run-test-stress
 ```
 
 - To teardown your test data:
