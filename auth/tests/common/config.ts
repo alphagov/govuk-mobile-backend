@@ -52,6 +52,8 @@ const getTestConfig = () => {
     'CFN_SharedSignalHealthCheckFunctionName',
     'CFN_SharedSignalHealthCheckFunctionLogGroupName',
     'CFN_SharedSignalReceiverFunctionName',
+    'CFN_SharedSignalApiGatewayAlarm4xxErrors',
+    'CFN_SharedSignalApiGatewayAlarm5xxErrors',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -136,6 +138,10 @@ const getTestConfig = () => {
       process.env.CFN_SharedSignalHealthCheckFunctionName!,
     sharedSignalHealthCheckFunctionLogGroupName:
       process.env.CFN_SharedSignalHealthCheckFunctionLogGroupName!,
+    sharedSignalApiGatewayAlarm4xxErrors:
+      process.env.CFN_SharedSignalApiGatewayAlarm4xxErrors!,
+    sharedSignalApiGatewayAlarm5xxErrors:
+      process.env.CFN_SharedSignalApiGatewayAlarm5xxErrors!,
   };
 };
 

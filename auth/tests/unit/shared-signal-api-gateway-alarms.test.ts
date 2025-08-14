@@ -30,7 +30,7 @@ const testCases: AlarmTestCase[] = [
     dimensions: [
       {
         Name: 'ApiName',
-        Value: { Ref: 'SharedSignalApi' },
+        Value: { 'Fn::Sub': '${AWS::StackName}-shared-signal' },
       },
       { Name: 'Stage', Value: { Ref: 'Environment' } },
     ],
@@ -39,7 +39,7 @@ const testCases: AlarmTestCase[] = [
     name: '5xx',
     alarmName: 'shared-signal-5xx-errors',
     actionsEnabled: true,
-    alarmResource: 'SharedSignalAPIGatewayAlarm5xxErrors',
+    alarmResource: 'SharedSignalApiGatewayAlarm5xxErrors',
     topicResource: 'CloudWatchAlarmTopicPagerDuty',
     namespace: 'AWS/ApiGateway',
     subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
@@ -57,7 +57,7 @@ const testCases: AlarmTestCase[] = [
     dimensions: [
       {
         Name: 'ApiName',
-        Value: { Ref: 'SharedSignalApi' },
+        Value: { 'Fn::Sub': '${AWS::StackName}-shared-signal' },
       },
       { Name: 'Stage', Value: { Ref: 'Environment' } },
     ],

@@ -15,7 +15,8 @@ const testCases: AlarmTestCase[] = [
     alarmName: `${testConfig.stackName}-shared-signal-4xx-errors`,
     actionsEnabled: true,
     metricName: '4XXError',
-    alarmDescription: 'Alarm detects a high rate of client-side errors.',
+    alarmDescription:
+      'Shared Signal Alarm detects a high rate of client-side errors.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     statistic: 'Average',
     period: 60,
@@ -25,7 +26,7 @@ const testCases: AlarmTestCase[] = [
     comparisonOperator: 'GreaterThanThreshold',
     namespace: 'AWS/ApiGateway',
     dimensions: [
-      { Name: 'ApiName', Value: testConfig.sharedSignalApiId },
+      { Name: 'ApiName', Value: `${testConfig.stackName}-shared-signal` },
       { Name: 'Stage', Value: testConfig.deployedEnvironment },
     ],
   },
@@ -34,7 +35,8 @@ const testCases: AlarmTestCase[] = [
     alarmName: `${testConfig.stackName}-shared-signal-5xx-errors`,
     actionsEnabled: true,
     metricName: '5XXError',
-    alarmDescription: 'Alarm detects a high rate of server-side errors.',
+    alarmDescription:
+      'Shared Signal Alarm detects a high rate of server-side errors.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     statistic: 'Average',
     period: 60,
@@ -44,7 +46,7 @@ const testCases: AlarmTestCase[] = [
     comparisonOperator: 'GreaterThanThreshold',
     namespace: 'AWS/ApiGateway',
     dimensions: [
-      { Name: 'ApiName', Value: testConfig.sharedSignalApiId },
+      { Name: 'ApiName', Value: `${testConfig.stackName}-shared-signal` },
       { Name: 'Stage', Value: testConfig.deployedEnvironment },
     ],
   },

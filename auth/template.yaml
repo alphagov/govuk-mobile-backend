@@ -1748,7 +1748,7 @@ Resources:
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-4xx-errors
       AlarmDescription: !Sub |
-        Alarm detects a high rate of client-side errors.
+        Shared Signal Alarm detects a high rate of client-side errors.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
       Namespace: AWS/ApiGateway
@@ -1762,7 +1762,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ApiName
-          Value: !Ref SharedSignalApi
+          Value: !Sub ${AWS::StackName}-shared-signal
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
@@ -1777,13 +1777,13 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalAPIGatewayAlarm5xxErrors:
+  SharedSignalApiGatewayAlarm5xxErrors:
     Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-5xx-errors
       AlarmDescription: !Sub |
-        Alarm detects a high rate of server-side errors.
+        Shared Signal Alarm detects a high rate of server-side errors.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
       Namespace: AWS/ApiGateway
@@ -1797,7 +1797,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ApiName
-          Value: !Ref SharedSignalApi
+          Value: !Sub ${AWS::StackName}-shared-signal
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
@@ -2669,6 +2669,16 @@ Outputs:
     Condition: IsNotProduction
     Description: The ID of the Shared Signal API
     Value: !Ref SharedSignalApi
+
+  SharedSignalApiGatewayAlarm4xxErrors:
+    Condition: IsNotProduction
+    Description: The name of the shared signal CloudWatch alarm for 4xx errors
+    Value: !Ref SharedSignalApiGatewayAlarm4xxErrors
+
+  SharedSignalApiGatewayAlarm5xxErrors:
+    Condition: IsNotProduction
+    Description: The name of the shared signal CloudWatch alarm for 5xx errors
+    Value: !Ref SharedSignalApiGatewayAlarm5xxErrors
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
