@@ -6,6 +6,7 @@ import {
   DescribeAlarmHistoryCommand,
 } from '@aws-sdk/client-cloudwatch';
 import { testConfig } from '../common/config';
+import test from 'node:test';
 const cloudWatchClient = new CloudWatchClient({ region: 'eu-west-2' });
 
 const alarmsToTest = [
@@ -13,7 +14,7 @@ const alarmsToTest = [
   testConfig.sharedSignalApiGatewayAlarm5xxErrors,
 ];
 
-describe.each(alarmsToTest)(
+describe.runIf(testConfig.isLocalEnvironment).each(alarmsToTest)(
   'Shared Signal API gateway cloudWatch Alarm: %s',
   (alarmName) => {
     it('should successfully execute its actions', async () => {
