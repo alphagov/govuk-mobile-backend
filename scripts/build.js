@@ -3,45 +3,12 @@
 import { readFileSync } from 'fs';
 import { yamlParse } from 'yaml-cfn';
 import * as esbuild from 'esbuild';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
 import { execSync } from 'child_process';
+import fetchProjectsToProcess from './modules/fetchProjectsToProcess.mjs';
 
-//Fetch command line arguments -- projects: affected or all, and process into array of projects to build
-const argv = yargs(hideBin(process.argv)).parse();
+let projects = fetchProjectsToProcess();
 
-if (!argv.project && !argv.projects) {
-  throw Error(
-    "Missing argument 'project' - should be specific Nx project name || or argument 'projects': Should be of value affected or all",
-  );
-}
-let affected;
-if (argv.project) {
-  affected = [argv.project];
-  console.log(`Building project: ${affected}`);
-} else {
-  if (argv.projects !== 'affected' && argv.projects !== 'all') {
-    throw Error("Argument 'projects' must be of valued 'affected' or 'all'");
-  }
-  if (argv.projects === 'all') {
-    affected = execSync('nx show projects')
-      .toString('utf-8')
-      .replace('\n', ',')
-      .trim()
-      .split(',');
-    console.log(`Building all Projects: ${affected}`);
-  }
-  if (argv.projects === 'affected') {
-    affected = execSync('nx show projects --affected')
-      .toString('utf-8')
-      .replace('\n', ',')
-      .trim()
-      .split(',');
-    console.log(`Projects to build: ${affected}`);
-  }
-}
-
-affected.forEach((project) => {
+projects.forEach((project) => {
   console.log(
     `===============  Begining ESBuild for project: ${project}  ===============`,
   );

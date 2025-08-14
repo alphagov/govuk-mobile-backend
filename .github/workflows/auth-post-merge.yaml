@@ -19,7 +19,6 @@ permissions:
 defaults:
   run:
     shell: bash
-    working-directory: ./auth
 
 jobs:
   deploy:
@@ -40,6 +39,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install Dependencies
+        run: npm ci
+
       - name: Set up SAM cli
         uses: aws-actions/setup-sam@v2
         with:
@@ -52,16 +54,10 @@ jobs:
           aws-region: eu-west-2
 
       - name: SAM validate
-        working-directory: ./services/auth
-        run: sam validate --lint
+        run: nx run auth:sam:validate
 
-      - name: Install Dependencies
-        working-directory: ./services/auth
-        run: npm ci
-
-      - name: SAM build
-        working-directory: ./services/auth
-        run: npm run build
+      - name: Build Auth
+        run: nx run auth:build
 
       - name: Deploy Auth SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4

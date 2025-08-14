@@ -9,8 +9,10 @@
     "test:acc": "nx run-many --target=test:acc",
     "test:int": "nx run-many --target=test:int",
     "lint": "nx run-many --target lint",
-    "build:affected": "node bundle.js --projects=affected",
-    "build:all": "node bundle.js --projects=all",
+    "build:affected": "node ./scripts/build.js --projects=affected",
+    "build:all": "node ./scripts/build.js --projects=all",
+    "validate:affected": "node ./scripts/validate.js --projects=affected",
+    "validate:all": "node ./scripts/validate.js --projects=all",
     "commit": "cz commit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

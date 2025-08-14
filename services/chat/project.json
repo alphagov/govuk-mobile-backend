@@ -6,7 +6,13 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node bundle.js --project=chat"
+        "command": "node ./scripts/build.js --projects=chat"
+      }
+    },
+    "sam:validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node ./scripts/validate --projects=chat"
       }
     },
     "lint": {
