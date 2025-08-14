@@ -6,7 +6,6 @@ import {
   DescribeAlarmHistoryCommand,
 } from '@aws-sdk/client-cloudwatch';
 import { testConfig } from '../common/config';
-import test from 'node:test';
 const cloudWatchClient = new CloudWatchClient({ region: 'eu-west-2' });
 
 const alarmsToTest = [
