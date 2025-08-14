@@ -44,6 +44,7 @@ export default tseslint.config(
       'eslint.config.mjs',
       'scripts/*.js',
       'scripts/modules/*.mjs',
+      'bundle.js',
       '**/.build/*',
     ],
   },
