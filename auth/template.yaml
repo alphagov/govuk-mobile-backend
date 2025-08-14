@@ -1742,6 +1742,76 @@ Resources:
         - Key: System
           Value: Authentication
 
+  SharedSignalApiGatewayAlarm4xxErrors:
+    Condition: IsNotProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-4xx-errors
+      AlarmDescription: !Sub |
+        Shared Signal Alarm detects a high rate of client-side errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 4XXError
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub ${AWS::StackName}-shared-signal
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalApiGatewayAlarm5xxErrors:
+    Condition: IsNotProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-5xx-errors
+      AlarmDescription: !Sub |
+        Shared Signal Alarm detects a high rate of server-side errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 5XXError
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub ${AWS::StackName}-shared-signal
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+      - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   SharedSignalAuthorizer:
     Condition: IsNotProduction
     Type: AWS::Serverless::Function
@@ -2599,6 +2669,16 @@ Outputs:
     Condition: IsNotProduction
     Description: The ID of the Shared Signal API
     Value: !Ref SharedSignalApi
+
+  SharedSignalApiGatewayAlarm4xxErrors:
+    Condition: IsNotProduction
+    Description: The name of the shared signal CloudWatch alarm for 4xx errors
+    Value: !Ref SharedSignalApiGatewayAlarm4xxErrors
+
+  SharedSignalApiGatewayAlarm5xxErrors:
+    Condition: IsNotProduction
+    Description: The name of the shared signal CloudWatch alarm for 5xx errors
+    Value: !Ref SharedSignalApiGatewayAlarm5xxErrors
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
