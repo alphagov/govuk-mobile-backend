@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-type-assertion */
 import type z from 'zod';
 import { accountPurgedSchema } from '../schema/account-purged';
 import { credentialChangeSchema } from '../schema/credential-change';
@@ -9,29 +6,26 @@ import { handleAccountPurgedRequest } from './account-purged-handler';
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import { generateResponse } from '../response';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
-import { CognitoError } from '../errors';
-import { isChangeTypeValid, isUserValid } from '../service/validation-service';
+import { isUserValid } from '../service/validation-service';
 import { logMessages } from '../log-messages';
 
 interface Handler {
   schema: z.ZodType;
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  handle: (data: any) => Promise<APIGatewayProxyResult>;
+  handler: (data: any) => Promise<APIGatewayProxyResult>;
   schemaName: string;
-  allowedChangeType?: string;
 }
 
 const handlers: Handler[] = [
   {
     schema: credentialChangeSchema,
-    handle: handleCredentialChangeRequest,
+    handler: handleCredentialChangeRequest,
     schemaName:
       'https://schemas.openid.net/secevent/caep/event-type/credential-change',
-    allowedChangeType: 'update',
   },
   {
     schema: accountPurgedSchema,
-    handle: handleAccountPurgedRequest,
+    handler: handleAccountPurgedRequest,
     schemaName:
       'https://schemas.openid.net/secevent/risc/event-type/account-purged',
   },
@@ -56,27 +50,15 @@ export const requestHandler = async (
       ReasonPhrases.SERVICE_UNAVAILABLE,
     );
   }
-  try {
-    for (const { schema, handle, schemaName, allowedChangeType } of handlers) {
-      if (schema.safeParse(jsonBody).success) {
-        if (!isChangeTypeValid(jsonBody, schemaName, allowedChangeType)) {
-          return generateResponse(
-            StatusCodes.BAD_REQUEST,
-            ReasonPhrases.BAD_REQUEST,
-          );
-        }
-        if (!(await isUserValid(jsonBody, schemaName))) {
-          return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
-        }
-        return await handle(jsonBody);
-      }
-    }
 
-    return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
-  } catch (error) {
-    if (error instanceof CognitoError) {
-      return generateResponse(StatusCodes.INTERNAL_SERVER_ERROR, error.message);
+  for (const { schema, handler, schemaName } of handlers) {
+    if (schema.safeParse(jsonBody).success) {
+      if (!(await isUserValid(jsonBody, schemaName))) {
+        return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+      }
+      return await handler(jsonBody);
     }
-    return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
   }
+
+  return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
 };
