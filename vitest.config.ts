@@ -45,6 +45,10 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     watch: false,
+    reporters: process.env.CI ? ['default', 'junit'] : ['default'],
+    outputFile: {
+      junit: './reports/source/test-results.xml',
+    },
     coverage: {
       exclude: [
         ...coverageConfigDefaults.exclude,
