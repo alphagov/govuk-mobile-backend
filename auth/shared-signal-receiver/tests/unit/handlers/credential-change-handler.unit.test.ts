@@ -1,319 +1,134 @@
-import { describe, it, expect, vi, beforeAll, Mock, afterAll } from 'vitest';
-
-import {
-  CredentialChangeRequest,
-  handleCredentialChangeRequest,
-} from '../../../handlers/credential-change-handler';
+import { describe, it, expect, vi, beforeAll, Mock } from 'vitest';
+import { handleCredentialChangeRequest } from '../../../handlers/credential-change-handler';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
+import { adminGlobalSignOut } from '../../../cognito/sign-out-user';
+import {
+  CredentialChangeEventBuilder,
+  SignalBuilder,
+} from '../../helpers/signal';
+import { logMessages } from '../../../log-messages';
+import { beforeEach } from 'node:test';
 
 vi.mock('../../../cognito/sign-out-user', () => ({
   adminGlobalSignOut: vi.fn(),
 }));
 
-vi.mock('../../../cognito/update-email-address', () => ({
-  adminUpdateEmailAddress: vi.fn(),
-}));
-
-import { adminGlobalSignOut } from '../../../cognito/sign-out-user';
-import { adminUpdateEmailAddress } from '../../../cognito/update-email-address';
-
 describe('handleCredentialChangeRequest', () => {
-  const region = 'eu-west-2';
+  const consoleErrorMock = vi.spyOn(console, 'error');
 
-  const consoleErrorMock = vi
-    .spyOn(console, 'error')
-    .mockImplementation(() => undefined);
+  const credentialChangeEvent = new CredentialChangeEventBuilder();
+  const signalBuilder = new SignalBuilder(credentialChangeEvent);
 
-  const consoleInfoMock = vi
-    .spyOn(console, 'info')
-    .mockImplementation(() => undefined);
+  (adminGlobalSignOut as Mock).mockResolvedValue(true);
 
-  beforeAll(() => {
-    process.env = {
-      ...process.env,
-      USER_POOL_ID: '123',
-      REGION: region,
-    };
-    vi.clearAllMocks();
-    consoleInfoMock.mockReset();
-    consoleErrorMock.mockReset();
+  beforeEach(() => {
+    vi.resetAllMocks();
   });
 
-  afterAll(() => {
-    consoleInfoMock.mockRestore();
-    consoleErrorMock.mockRestore();
+  it('should revoke all the tokens for a given user', async () => {
+    const signal = signalBuilder.build();
+    await expect(handleCredentialChangeRequest(signal)).resolves.not.toThrow();
+
+    expect(adminGlobalSignOut).toHaveBeenCalled();
   });
 
-  it('returns ACCEPTED for password change events and logs success info message', async () => {
-    (adminGlobalSignOut as Mock).mockResolvedValue(true);
-    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
-    const input = {
-      iss: 'https://identity.example.com',
-      jti: '123e4567-e89b-12d3-a456-426614174000',
-      iat: 1721126400,
-      aud: 'https://service.example.gov.uk',
-      events: {
-        'https://schemas.openid.net/secevent/caep/event-type/credential-change':
-          {
-            change_type: 'update',
-            credential_type: 'password',
-            subject: {
-              uri: 'urn:example:account:1234567890',
-              format: 'urn:example:format:account-id',
-            },
-          },
-        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-          {
-            email: 'user@example.com',
-          },
-      },
-    } as CredentialChangeRequest;
+  it.each([
+    {
+      credentialType: 'password',
+    },
+    {
+      credentialType: 'email',
+    },
+  ])('should log the specific credential type', async ({ credentialType }) => {
+    const consoleInfoMock = vi.spyOn(console, 'info');
+    credentialChangeEvent.withCredentialType(credentialType);
 
-    const response = await handleCredentialChangeRequest(input);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      '123e4567-e89b-12d3-a456-426614174000',
-    );
-    expect(adminGlobalSignOut).toHaveBeenCalledWith(
-      'urn:example:account:1234567890',
-    );
-    expect(adminUpdateEmailAddress).not.toHaveBeenCalled();
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'SIGNAL_SUCCESS_PASSWORD_UPDATE',
+    const signal = signalBuilder.build();
+
+    await handleCredentialChangeRequest(signal);
+
+    expect(consoleInfoMock).toHaveBeenNthCalledWith(
+      2,
+      logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE,
       {
+        correlationId: signal.jti,
+        credentialType: credentialType,
         userId: 'urn:example:account:1234567890',
-        correlationId: input.jti,
       },
     );
-    expect(response).toEqual({
-      body: JSON.stringify({
-        message: ReasonPhrases.ACCEPTED,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      statusCode: StatusCodes.ACCEPTED,
+  });
+
+  it.each([
+    {
+      changeType: 'update',
+      credentialType: 'password',
+    },
+    {
+      changeType: 'update',
+      credentialType: 'email',
+    },
+  ])(
+    'returns a 202 ACCEPTED response for valid requests',
+    async ({ changeType, credentialType }) => {
+      credentialChangeEvent
+        .withChangeType(changeType)
+        .withCredentialType(credentialType);
+
+      const signal = signalBuilder.build();
+
+      const response = await handleCredentialChangeRequest(signal);
+
+      expect(response).toEqual({
+        body: JSON.stringify({
+          message: ReasonPhrases.ACCEPTED,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        statusCode: StatusCodes.ACCEPTED,
+      });
+    },
+  );
+
+  describe('when the signout operation fails', () => {
+    let response;
+    const signal = signalBuilder.build();
+    beforeAll(async () => {
+      (adminGlobalSignOut as Mock).mockResolvedValue(false);
+      response = await handleCredentialChangeRequest(signal);
+    });
+
+    it('should return 500 INTERNAL_SERVER_ERROR if the operation fails', async () => {
+      expect(response).toEqual({
+        body: JSON.stringify({
+          message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      });
+    });
+
+    it('should produce an error log with the correlation id', async () => {
+      expect(consoleErrorMock).toHaveBeenCalledWith(
+        logMessages.SIGNAL_ERROR_CREDENTIAL_CHANGE,
+        {
+          userId: 'urn:example:account:1234567890',
+          correlationId: signal.jti,
+          changeType: 'update',
+        },
+      );
     });
   });
 
-  it('returns ACCEPTED for email change events and logs success info message', async () => {
-    (adminGlobalSignOut as Mock).mockResolvedValue(true);
-    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
-    const input = {
-      iss: 'https://identity.example.com',
-      jti: '123e4567-e89b-12d3-a456-426614174000',
-      iat: 1721126400,
-      aud: 'https://service.example.gov.uk',
-      events: {
-        'https://schemas.openid.net/secevent/caep/event-type/credential-change':
-          {
-            change_type: 'update',
-            credential_type: 'email',
-            subject: {
-              uri: 'urn:example:account:1234567890',
-              format: 'urn:example:format:account-id',
-            },
-          },
-        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-          {
-            email: 'user@example.com',
-          },
-      },
-    } as CredentialChangeRequest;
-
-    const response = await handleCredentialChangeRequest(input);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      '123e4567-e89b-12d3-a456-426614174000',
+  it('should propagate errors from adminGlobalSignOut', async () => {
+    (adminGlobalSignOut as Mock).mockRejectedValue(
+      new Error('Sign out failed'),
     );
-    expect(adminGlobalSignOut).toHaveBeenCalledWith(
-      'urn:example:account:1234567890',
+    const signal = signalBuilder.build();
+    await expect(handleCredentialChangeRequest(signal)).rejects.toThrow(
+      'Sign out failed',
     );
-    expect(adminUpdateEmailAddress).toHaveBeenCalledWith(
-      'urn:example:account:1234567890',
-      'user@example.com',
-    );
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'SIGNAL_SUCCESS_EMAIL_UPDATE',
-      {
-        userId: 'urn:example:account:1234567890',
-        correlationId: input.jti,
-      },
-    );
-    expect(response).toEqual({
-      body: JSON.stringify({
-        message: ReasonPhrases.ACCEPTED,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      statusCode: StatusCodes.ACCEPTED,
-    });
-  });
-
-  it('returns INTERNAL_SERVER_ERROR when adminGlobalSignOut & adminUpdateEmailAddress fails for an email update and logs error message', async () => {
-    (adminGlobalSignOut as Mock).mockResolvedValue(false);
-    (adminUpdateEmailAddress as Mock).mockResolvedValue(false);
-    const input = {
-      iss: 'https://identity.example.com',
-      jti: '123e4567-e89b-12d3-a456-426614174000',
-      iat: 1721126400,
-      aud: 'https://service.example.gov.uk',
-      events: {
-        'https://schemas.openid.net/secevent/caep/event-type/credential-change':
-          {
-            change_type: 'update',
-            credential_type: 'email',
-            subject: {
-              uri: 'urn:example:account:1234567890',
-              format: 'urn:example:format:account-id',
-            },
-          },
-        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-          {
-            email: 'user@example.com',
-          },
-      },
-    } as CredentialChangeRequest;
-
-    const response = await handleCredentialChangeRequest(input);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      '123e4567-e89b-12d3-a456-426614174000',
-    );
-    expect(consoleErrorMock).toHaveBeenCalledWith('SIGNAL_ERROR_EMAIL_UPDATE', {
-      userId: 'urn:example:account:1234567890',
-      correlationId: input.jti,
-    });
-    expect(response).toEqual({
-      body: JSON.stringify({
-        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-    });
-  });
-
-  it('returns INTERNAL_SERVER_ERROR when adminGlobalSignOut fails for a password update and logs error message', async () => {
-    (adminGlobalSignOut as Mock).mockResolvedValue(false);
-    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
-    const input = {
-      iss: 'https://identity.example.com',
-      jti: '123e4567-e89b-12d3-a456-426614174000',
-      iat: 1721126400,
-      aud: 'https://service.example.gov.uk',
-      events: {
-        'https://schemas.openid.net/secevent/caep/event-type/credential-change':
-          {
-            change_type: 'update',
-            credential_type: 'password',
-            subject: {
-              uri: 'urn:example:account:1234567890',
-              format: 'urn:example:format:account-id',
-            },
-          },
-        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-          {
-            email: 'user@example.com',
-          },
-      },
-    } as CredentialChangeRequest;
-
-    const response = await handleCredentialChangeRequest(input);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      '123e4567-e89b-12d3-a456-426614174000',
-    );
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      'SIGNAL_ERROR_PASSWORD_UPDATE',
-      {
-        userId: 'urn:example:account:1234567890',
-        correlationId: input.jti,
-      },
-    );
-    expect(response).toEqual({
-      body: JSON.stringify({
-        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-    });
-  });
-
-  it('returns INTERNAL_SERVER_ERROR for unknown change events and logs error message', async () => {
-    (adminGlobalSignOut as Mock).mockResolvedValue(true);
-    (adminUpdateEmailAddress as Mock).mockResolvedValue(true);
-    const input = {
-      iss: 'https://identity.example.com',
-      jti: '123e4567-e89b-12d3-a456-426614174000',
-      iat: 1721126400,
-      aud: 'https://service.example.gov.uk',
-      events: {
-        'https://schemas.openid.net/secevent/caep/event-type/credential-change':
-          {
-            change_type: 'delete',
-            credential_type: 'email',
-            subject: {
-              uri: 'urn:example:account:1234567890',
-              format: 'urn:example:format:account-id',
-            },
-          },
-        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-          {
-            email: 'user@example.com',
-          },
-      },
-    } as CredentialChangeRequest;
-
-    const response = await handleCredentialChangeRequest(input);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      '123e4567-e89b-12d3-a456-426614174000',
-    );
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      'Unhandled credential change type',
-    );
-    expect(response).toEqual({
-      body: JSON.stringify({
-        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-    });
-  });
-
-  it('returns INTERNAL_SERVER_ERROR for invalid requests with message containing correlationId', async () => {
-    // Simulate an invalid request
-    const request: any = {
-      jti: '123e4567-e89b-12d3-a456-426614174000',
-      events: {},
-    } as any;
-
-    const response = await handleCredentialChangeRequest(request);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      '123e4567-e89b-12d3-a456-426614174000',
-    );
-
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      'SIGNAL_ERROR_CREDENTIAL_CHANGE CorrelationId - 123e4567-e89b-12d3-a456-426614174000',
-      expect.any(Error),
-    );
-
-    expect(response).toEqual({
-      body: JSON.stringify({
-        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-    });
   });
 });

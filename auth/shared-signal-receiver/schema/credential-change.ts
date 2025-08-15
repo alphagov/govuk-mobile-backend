@@ -15,7 +15,7 @@ export const credentialChangeInformationClassSchema = z.object({
 });
 
 export const credentialChangeClassSchema = z.object({
-  change_type: z.string().optional().nullable(),
+  change_type: z.enum(['update', 'delete', 'create', 'revoke']),
   credential_type: credentialTypeEnumSchema.optional(),
   subject: accountIdentifierSubjectClassSchema,
 });
