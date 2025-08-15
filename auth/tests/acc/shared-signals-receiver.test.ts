@@ -45,7 +45,7 @@ describe('shared-signal-receiver', () => {
 
     afterAll(async () => {
       await cognitoUserDriver.deleteUserFromCognito(passwordUpdateUserName);
-      await cognitoUserDriver.deleteUserFromCognito(emailAddressForUpdate);
+      await cognitoUserDriver.deleteUserFromCognito(emailUpdateUserName);
     });
 
     it('sends a password update signal with a valid user and receives a 202 response', async () => {
