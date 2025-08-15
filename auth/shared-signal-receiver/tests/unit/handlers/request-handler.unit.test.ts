@@ -5,10 +5,7 @@ import { handleAccountPurgedRequest } from '../../../handlers/account-purged-han
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { CognitoError } from '../../../errors';
 import { logMessages } from '../../../log-messages';
-import {
-  isUserValid,
-  isChangeTypeValid,
-} from '../../../service/validation-service';
+import { isUserValid } from '../../../service/validation-service';
 
 // Mocks
 vi.mock('../../../parser', () => ({
@@ -33,7 +30,6 @@ describe('requestHandler', () => {
     'https://schemas.openid.net/secevent/risc/event-type/account-purged';
 
   const isUserValidMock = isUserValid as Mock;
-  const isChangeTypeValidMock = isChangeTypeValid as Mock;
 
   beforeEach(() => {
     process.env = {
@@ -48,11 +44,9 @@ describe('requestHandler', () => {
   afterEach(() => {
     vi.clearAllMocks();
     isUserValidMock.mockReset();
-    isChangeTypeValidMock.mockReset();
   });
 
   it('dispatches credentialChangeSchema to handleCredentialChangeRequest', async () => {
-    isChangeTypeValidMock.mockReturnValue(true);
     isUserValidMock.mockResolvedValue(true);
 
     const input = {
@@ -84,18 +78,11 @@ describe('requestHandler', () => {
     const result = await requestHandler(input);
     expect(handleCredentialChangeRequest).toHaveBeenCalledWith(input);
     expect(result.statusCode).toBe(StatusCodes.ACCEPTED);
-    expect(isChangeTypeValidMock).toHaveBeenCalledWith(
-      input,
-      credentialChangeSchema,
-      'update',
-    );
     expect(isUserValidMock).toHaveBeenCalledWith(input, credentialChangeSchema);
     isUserValidMock.mockReset();
-    isChangeTypeValidMock.mockReset();
   });
 
   it('dispatches accountPurgedSchema to handleAccountPurgedRequest', async () => {
-    isChangeTypeValidMock.mockReturnValue(true);
     isUserValidMock.mockResolvedValue(true);
 
     const input = {
@@ -119,14 +106,8 @@ describe('requestHandler', () => {
     const result = await requestHandler(input);
     expect(handleAccountPurgedRequest).toHaveBeenCalledWith(input);
     expect(result.statusCode).toBe(StatusCodes.ACCEPTED);
-    expect(isChangeTypeValidMock).toHaveBeenCalledWith(
-      input,
-      accountPurgedSchema,
-      undefined, // No change type for account purged
-    );
     expect(isUserValidMock).toHaveBeenCalledWith(input, accountPurgedSchema);
     isUserValidMock.mockReset();
-    isChangeTypeValidMock.mockReset();
   });
 
   it('should return a 400 response if there is an error with parsing the request body', async () => {
@@ -140,7 +121,6 @@ describe('requestHandler', () => {
   });
 
   it('return BAD_REQUEST 400 response when change type is invalid', async () => {
-    isChangeTypeValidMock.mockReturnValue(false);
     isUserValidMock.mockResolvedValue(true);
 
     const input = {
@@ -176,11 +156,9 @@ describe('requestHandler', () => {
     );
     expect(isUserValidMock).not.toHaveBeenCalled();
     isUserValidMock.mockReset();
-    isChangeTypeValidMock.mockReset();
   });
 
-  it('should return a 500 response if an CognitoError occurs', async () => {
-    isChangeTypeValidMock.mockReturnValue(true);
+  it('should propogate any errors to the root error handler', async () => {
     isUserValidMock.mockRejectedValue(new CognitoError('Cognito error'));
 
     const input = {
@@ -197,16 +175,11 @@ describe('requestHandler', () => {
         },
       },
     };
-    const result = await requestHandler(input);
-    expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(handleAccountPurgedRequest).not.toHaveBeenCalled();
-    isUserValidMock.mockReset();
-    isChangeTypeValidMock.mockReset();
+    await expect(requestHandler(input)).rejects.toThrow(CognitoError);
   });
 
   it('should return a 202 when user is not valid with warning for account purged', async () => {
     isUserValidMock.mockResolvedValue(false);
-    isChangeTypeValidMock.mockReturnValue(true);
 
     const input = {
       iss: 'https://issuer.example.com',

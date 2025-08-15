@@ -125,16 +125,6 @@ describe('shared-signal-receiver', () => {
 
       expect(response.ok).toBe(true);
       expect(response.status).toBe(202);
-
-      // not support by permissions boundary
-      // Verify the email was updated in Cognito
-      // const userAttributes =
-      //   await cognitoUserDriver.getUserAttributes(cognitoUserId);
-      // const emailAttribute = userAttributes.find(
-      //   (attr: any) => attr.Name === "email"
-      // );
-      // expect(emailAttribute).toBeDefined();
-      // expect(emailAttribute.Value).toBe(emailAddressForUpdate);
     });
 
     it('sends an account purge signal with a valid user and receives a 202 response', async () => {

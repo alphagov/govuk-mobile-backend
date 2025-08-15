@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { verifyUsername } from '../../../cognito/verify-users';
-import {
-  isUserValid,
-  isChangeTypeValid,
-} from '../../../service/validation-service';
+import { isUserValid } from '../../../service/validation-service';
 import { logMessages } from '../../../log-messages';
 
 vi.mock('../../../cognito/verify-users', () => ({
@@ -65,60 +62,6 @@ describe('validation-service', () => {
       expect(consoleWarnMock).toHaveBeenCalledWith(
         logMessages.SIGNAL_WARN_USER_NOT_FOUND,
         { userId: username, correlationId: jti },
-      );
-    });
-  });
-
-  describe('isChangeTypeValid', () => {
-    it('returns true if changeType is undefined', () => {
-      const incomingRequest = {
-        jti,
-        events: {
-          [schemaName]: {
-            change_type: 'update',
-            subject: { uri: username },
-          },
-        },
-      };
-      const result = isChangeTypeValid(incomingRequest, schemaName);
-      expect(result).toBe(true);
-      expect(consoleErrorMock).not.toHaveBeenCalled();
-    });
-
-    it('returns true if incomingChangeType matches changeType', () => {
-      const incomingRequest = {
-        jti,
-        events: {
-          [schemaName]: {
-            change_type: 'update',
-            subject: { uri: username },
-          },
-        },
-      };
-      const result = isChangeTypeValid(incomingRequest, schemaName, 'update');
-      expect(result).toBe(true);
-      expect(consoleErrorMock).not.toHaveBeenCalled();
-    });
-
-    it('returns false and logs error if incomingChangeType does not match', () => {
-      const incomingRequest = {
-        jti,
-        events: {
-          [schemaName]: {
-            change_type: 'delete',
-            subject: { uri: username },
-          },
-        },
-      };
-      const result = isChangeTypeValid(incomingRequest, schemaName, 'update');
-      expect(result).toBe(false);
-      expect(consoleErrorMock).toHaveBeenCalledWith(
-        logMessages.SIGNAL_ERROR_UNKNOWN_CHANGE_TYPE,
-        {
-          userId: username,
-          correlationId: jti,
-          changeType: 'delete',
-        },
       );
     });
   });
