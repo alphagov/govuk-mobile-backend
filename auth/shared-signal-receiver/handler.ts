@@ -18,7 +18,7 @@ import type { Dependencies } from './app';
 export const createHandler =
   (dependencies: Dependencies) =>
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    console.log('Shared signals receiver called');
+    console.log(logMessages.SIGNAL_RECEIVER_CALLED);
     try {
       if (event.body == undefined || event.body === '') {
         return generateResponse(
