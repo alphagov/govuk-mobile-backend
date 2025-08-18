@@ -31,31 +31,4 @@ const isUserValid = async (
   return true;
 };
 
-const isChangeTypeValid = (
-  incomingRequest: any,
-  schemaName: string,
-  changeType?: string,
-): boolean => {
-  if (changeType === undefined) {
-    return true;
-  }
-  const jti = incomingRequest.jti as string;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, security/detect-object-injection
-  const schema = (incomingRequest as { events: Record<string, any> }).events[
-    schemaName
-  ];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const incomingChangeType = schema.change_type;
-  if (incomingChangeType !== changeType) {
-    console.error(logMessages.SIGNAL_ERROR_UNKNOWN_CHANGE_TYPE, {
-      userId: schema.subject.uri as string,
-      correlationId: jti,
-      changeType: incomingChangeType as string,
-    });
-    return false;
-  }
-
-  return true;
-};
-
-export { isUserValid, isChangeTypeValid };
+export { isUserValid };

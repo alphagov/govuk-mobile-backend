@@ -51,15 +51,11 @@ describe('verifyUserExists', () => {
     expect(result).toBe(false);
   });
 
-  it('throws CognitoError for other exceptions', async () => {
+  it('throws exceptions for all other errors', async () => {
     const error = new Error('Some other error');
     (cognitoClient.send as any).mockRejectedValueOnce(error);
     await expect(verifyUsername(input)).rejects.toThrow(
-      new CognitoError('Failed to verify user existence'),
-    );
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      'Error other than UserNotFoundException:',
-      error,
+      new Error('Some other error'),
     );
     expect(cognitoClient.send).toHaveBeenCalledWith(
       expect.any(AdminGetUserCommand),
