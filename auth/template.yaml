@@ -2137,6 +2137,44 @@ Resources:
         - Key: System
           Value: Authentication
 
+  SharedSignalHealthCheckMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-health-check
+      FilterPattern: "ERROR"
+      MetricTransformations:
+        - MetricValue: 1
+          MetricNamespace: SharedSignal/Metrics
+          MetricName: ErrorCount
+
+  SharedSignalHealthCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-alarm
+      AlarmDescription: !Sub |
+        Alarm when the shared signal health check error exceeds 1 incident per 20 minutes.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4620714004/Health+endpoint+failure
+      ActionsEnabled: true  
+      MetricName: ErrorCount
+      Namespace: SharedSignal/Metrics
+      Statistic: Sum
+      Period: 1200 # 20 minutes
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   SharedSignalIPSet:
     Condition: IsNotProduction
     Type: AWS::WAFv2::IPSet
