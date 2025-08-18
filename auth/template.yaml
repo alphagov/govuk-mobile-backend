@@ -38,15 +38,6 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
-  AccountLevel:
-    Type: String
-    Description: |
-      Whether this is an account level deployment or not. If true, the template will create resources at the account level.
-    Default: 'True'
-    AllowedValues:
-      - 'True'
-      - 'False'
-
   TestRoleArn:
     Type: String
     Description: The ARN of the role that will used for integration tests
@@ -56,6 +47,14 @@ Parameters:
   SharedSignalsWhitelistedIpsParameter:
     Type: AWS::SSM::Parameter::Value<List<String>>
     Default: /govuk-app-config/shared-signal/ip-whitelist
+
+  IsEphemeralStack:
+    Type: String
+    Default: 'False'
+    Description: Indicates whether the stack is ephemeral. If set to 'True', the stack is considered ephemeral.
+    AllowedValues:
+      - 'True'
+      - 'False'
 
 Mappings:
   OneLogin:
@@ -115,6 +114,11 @@ Conditions:
   IsNonIntegratedEnvironment:
     Fn::Not:
     - Condition: IsIntegratedEnvironment
+
+  IsEphemeralStack:
+    Fn::Equals:
+      - !Ref IsEphemeralStack
+      - 'True'
 
 Globals:
   Function:
@@ -1664,10 +1668,51 @@ Resources:
             Identity:
               Header: Authorization
               ValidationExpression: Bearer [a-zA-Z0-9._-]+
+      EndpointConfiguration: REGIONAL
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+
+  SharedSignalsApiRecordSet:
+    Condition: IsNotProduction
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Sub '{{resolve:ssm:/dns/env-hosted-zone-id}}' 
+      Type: A
+      Name: !Sub "${SharedSignalDomainName}."
+      AliasTarget:
+        DNSName: !GetAtt SharedSignalDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt SharedSignalDomainName.RegionalHostedZoneId
+
+  SharedSignalDomainName:
+    Condition: IsNotProduction
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: !Sub '{{resolve:ssm:/certificates/domain-certificate}}'
+      DomainName: !If
+        - IsEphemeralStack
+        - !Sub ${AWS::StackName}.shared-signals.${Environment}.app-backend.service.gov.uk
+        - !Sub shared-signals.${Environment}.app-backend.service.gov.uk
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalBasePathMapping:
+    Condition: IsNotProduction
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref SharedSignalDomainName
+      RestApiId: !Ref SharedSignalApi
+      Stage: !Ref SharedSignalApi.Stage
 
   SharedSignalAccessLogGroup:
     Condition: IsNotProduction
@@ -2653,7 +2698,7 @@ Outputs:
   SharedSignalEndpoint:
     Condition: IsNotProduction
     Description: The endpoint for the Shared Signal API
-    Value: !Sub https://${SharedSignalApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+    Value: !Sub "https://${SharedSignalDomainName}"
 
   SharedSignalReceiverLogGroupName:
     Condition: IsNotProduction
