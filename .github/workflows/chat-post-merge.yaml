@@ -56,7 +56,7 @@ jobs:
       - name: Deploy Chat SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
-          artifact-bucket-name: ${{ vars.ARTIFACT_BUCKET_NAME }}
+          artifact-bucket-name: ${{ vars.CHAT_ARTIFACT_BUCKET_NAME }} # Need to configure git environment for the new buckets
           signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
           working-directory: ./chat/.aws-sam/build
 
