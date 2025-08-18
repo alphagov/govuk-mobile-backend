@@ -12,7 +12,7 @@
     "sam:validate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node ./scripts/validate --projects=chat"
+        "command": "node ./scripts/validate --projects=auth"
       }
     },
     "lint": {

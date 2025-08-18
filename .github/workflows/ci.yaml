@@ -49,7 +49,7 @@ jobs:
       - uses: nrwl/nx-set-shas@v4
 
       - name: Build
-        run: npm run build
+        run: npm run build:affected
 
       - name: Lint
         run: npx nx affected -t lint

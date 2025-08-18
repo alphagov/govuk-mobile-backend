@@ -55,6 +55,8 @@ projects.forEach((project) => {
   console.log(
     `===============  Finished ESBuild for project: ${project}  ===============`,
   );
+
+  //SAM Build step can be broken out, doesn't need to be part of this build step.
   console.log(
     `=============== Starting SAM build for project: ${project} ===============`,
   );
