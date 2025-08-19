@@ -13,15 +13,28 @@ permissions:
   contents: read
 
 jobs:
-  deploy-to-dev:
-    name: Dev
+  deploy-to-dev-auth:
+    name: deploy-to-dev-auth
     uses: ./.github/workflows/auth-post-merge.yaml
     with:
       environment: dev
 
-  deploy-to-build:
-    name: Build
+  # deploy-to-dev-chat:
+  #   name: deploy-to-dev-chat
+  #   uses: ./.github/workflows/chat-post-merge.yaml
+  #   with:
+  #     environment: dev
+
+  deploy-to-build-auth:
+    name: deploy-to-build-auth
     uses: ./.github/workflows/auth-post-merge.yaml
     if: ${{ github.head_ref || contains(fromJSON('["main", "production"]'), github.ref_name) }}
     with:
       environment: build
+
+  # deploy-to-build-chat:
+  #   name: deploy-to-build-chat
+  #   uses: ./.github/workflows/chat-post-merge.yaml
+  #   if: ${{ github.head_ref || contains(fromJSON('["main", "production"]'), github.ref_name) }}
+  #   with:
+  #     environment: build
