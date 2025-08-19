@@ -2137,32 +2137,59 @@ Resources:
         - Key: System
           Value: Authentication
 
-  SharedSignalHealthCheckMetricFilter:
-    Type: AWS::Logs::MetricFilter
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-health-check
-      FilterPattern: "ERROR"
-      MetricTransformations:
-        - MetricValue: 1
-          MetricNamespace: SharedSignal/Metrics
-          MetricName: ErrorCount
 
-  SharedSignalHealthCheckAlarm:
+  SharedSignalHealthCheckAlarmErrors:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-alarm
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-errors-alarm
       AlarmDescription: !Sub |
         Alarm when the shared signal health check error exceeds 1 incident per 20 minutes.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4620714004/Health+endpoint+failure
       ActionsEnabled: true  
-      MetricName: ErrorCount
-      Namespace: SharedSignal/Metrics
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalHealthCheckFunction
       Statistic: Sum
       Period: 1200 # 20 minutes
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckAlarmFailedInvocations:
+    Type: AWS::CloudWatch::Alarm
+    Properties: 
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-failed-invocations-alarm
+      AlarmDescription: !Sub |
+        Alarm when the shared signal health check failed invocations exceed 1 incident per 20 minutes.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4620714004/Health+endpoint+failure
+      ActionsEnabled: true  
+      MetricName: Invocations
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 1200
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: LessThanOrEqualToThreshold
+      TreatMissingData: breaching # Treat missing data as breaching i.e. equivalent to no invocations in this case
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalHealthCheckFunction
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:

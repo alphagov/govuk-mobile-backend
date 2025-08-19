@@ -10,15 +10,15 @@ const template = loadTemplateFromFile(
 const testCases: AlarmTestCase[] = [
   {
     name: 'Shared Signal Health Check',
-    alarmName: `shared-signal-health-check-alarm`,
+    alarmName: `shared-signal-health-check-errors-alarm`,
     actionsEnabled: true,
-    namespace: 'SharedSignal/Metrics',
-    alarmResource: 'SharedSignalHealthCheckAlarm',
+    namespace: 'AWS/Lambda',
+    alarmResource: 'SharedSignalHealthCheckAlarmErrors',
     topicResource: 'CloudWatchAlarmTopicPagerDuty',
     subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
     topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
-    metricName: 'ErrorCount',
+    metricName: 'Errors',
     alarmDescription:
       'Alarm when the shared signal health check error exceeds 1 incident per 20 minutes.',
     topicDisplayName: 'cloudwatch-alarm-topic',
@@ -27,6 +27,38 @@ const testCases: AlarmTestCase[] = [
     evaluationPeriods: 1,
     threshold: 1,
     comparisonOperator: 'GreaterThanThreshold',
+    dimensions: [
+      {
+        Name: 'FunctionName',
+        Value: { Ref: 'SharedSignalHealthCheckFunction' },
+      },
+    ],
+  },
+  {
+    name: 'Shared Signal Health Check Failed Invocations',
+    alarmName: `shared-signal-health-check-failed-invocations-alarm`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    alarmResource: 'SharedSignalHealthCheckAlarmFailedInvocations',
+    topicResource: 'CloudWatchAlarmTopicPagerDuty',
+    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
+    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
+    metricName: 'Invocations',
+    alarmDescription:
+      'Alarm when the shared signal health check failed invocations exceed 1 incident per 20 minutes.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    statistic: 'Sum',
+    period: 1200,
+    evaluationPeriods: 1,
+    threshold: 0,
+    comparisonOperator: 'LessThanOrEqualToThreshold',
+    dimensions: [
+      {
+        Name: 'FunctionName',
+        Value: { Ref: 'SharedSignalHealthCheckFunction' },
+      },
+    ],
   },
 ];
 

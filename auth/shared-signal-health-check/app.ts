@@ -23,18 +23,19 @@ export const lambdaHandler = async (event: ScheduledEvent): Promise<void> => {
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
     switch (true) {
+      // re-throw known errors to ensure they are handled appropriately
       case error instanceof ConfigError:
         console.error(logMessages.CONFIG_ERROR, error);
-        break;
+        throw error;
       case error instanceof AuthError:
         console.error(logMessages.AUTH_ERROR, error);
-        break;
+        throw error;
       case error instanceof VerifyError:
         console.error(logMessages.VERIFY_ERROR, error);
-        break;
+        throw error;
       default:
         console.error(logMessages.ERROR_UNHANDLED, error);
-        break;
+        throw error;
     }
   }
 };
