@@ -23,8 +23,9 @@ const testCases: AlarmTestCase[] = [
       'Alarm when the shared signal health check error exceeds 1 incident per 20 minutes.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     statistic: 'Sum',
-    period: 1200,
-    evaluationPeriods: 1,
+    period: 600,
+    evaluationPeriods: 2,
+    datapointsToAlarm: 2,
     threshold: 1,
     comparisonOperator: 'GreaterThanThreshold',
     dimensions: [
@@ -49,8 +50,9 @@ const testCases: AlarmTestCase[] = [
       'Alarm when the shared signal health check failed invocations exceed 1 incident per 20 minutes.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     statistic: 'Sum',
-    period: 1200,
-    evaluationPeriods: 1,
+    period: 600,
+    evaluationPeriods: 2,
+    datapointsToAlarm: 2,
     threshold: 0,
     comparisonOperator: 'LessThanOrEqualToThreshold',
     dimensions: [
@@ -80,6 +82,7 @@ describe.each(testCases)(
     extendedStatistic,
     period,
     evaluationPeriods,
+    datapointsToAlarm,
     threshold,
     comparisonOperator,
   }) => {
@@ -214,6 +217,9 @@ describe.each(testCases)(
         extendedStatistic,
       );
       expect(cloudWatchAlarmUnderTest.Properties.Period).toEqual(period);
+      expect(cloudWatchAlarmUnderTest.Properties.DatapointsToAlarm).toEqual(
+        datapointsToAlarm,
+      );
       expect(cloudWatchAlarmUnderTest.Properties.EvaluationPeriods).toEqual(
         evaluationPeriods,
       );

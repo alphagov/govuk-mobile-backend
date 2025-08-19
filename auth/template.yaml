@@ -2154,8 +2154,9 @@ Resources:
         - Name: FunctionName
           Value: !Ref SharedSignalHealthCheckFunction
       Statistic: Sum
-      Period: 1200 # 20 minutes
-      EvaluationPeriods: 1
+      Period: 600 # 10 minutes
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
       Threshold: 1
       ComparisonOperator: GreaterThanThreshold
       AlarmActions:
@@ -2183,9 +2184,9 @@ Resources:
       MetricName: Invocations
       Namespace: AWS/Lambda
       Statistic: Sum
-      Period: 1200
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
+      Period: 600
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
       Threshold: 0
       ComparisonOperator: LessThanOrEqualToThreshold
       TreatMissingData: breaching # Treat missing data as breaching i.e. equivalent to no invocations in this case
