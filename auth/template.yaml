@@ -2139,6 +2139,7 @@ Resources:
 
 
   SharedSignalHealthCheckAlarmErrors:
+    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-errors-alarm
@@ -2170,6 +2171,7 @@ Resources:
           Value: Authentication
 
   SharedSignalHealthCheckAlarmFailedInvocations:
+    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties: 
       AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-failed-invocations-alarm
