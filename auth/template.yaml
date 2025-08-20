@@ -38,15 +38,6 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
-  AccountLevel:
-    Type: String
-    Description: |
-      Whether this is an account level deployment or not. If true, the template will create resources at the account level.
-    Default: 'True'
-    AllowedValues:
-      - 'True'
-      - 'False'
-
   TestRoleArn:
     Type: String
     Description: The ARN of the role that will used for integration tests
@@ -56,6 +47,14 @@ Parameters:
   SharedSignalsWhitelistedIpsParameter:
     Type: AWS::SSM::Parameter::Value<List<String>>
     Default: /govuk-app-config/shared-signal/ip-whitelist
+
+  IsEphemeralStack:
+    Type: String
+    Default: 'False'
+    Description: Indicates whether the stack is ephemeral. If set to 'True', the stack is considered ephemeral.
+    AllowedValues:
+      - 'True'
+      - 'False'
 
 Mappings:
   OneLogin:
@@ -116,6 +115,11 @@ Conditions:
     Fn::Not:
     - Condition: IsIntegratedEnvironment
 
+  IsEphemeralStack:
+    Fn::Equals:
+      - !Ref IsEphemeralStack
+      - 'True'
+
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -166,8 +170,6 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
-      LambdaConfig:
-        PostAuthentication: !GetAtt PostAuthenticationFunction.Arn
 
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
@@ -713,19 +715,8 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
-      DisplayName: !Join
-        - '-'
-        - - !Ref AWS::StackName
-          - cloudwatch-alarm-topic
-          - !Select
-            - 4
-            - !Split
-              - '-'
-              - !Select
-                - 2
-                - !Split
-                  - /
-                  - !Ref AWS::StackId
+      TopicName: !Sub '${AWS::StackName}-cloudwatch-alarm-topic'
+      DisplayName: !Sub '${AWS::StackName}-cloudwatch-alarm-topic'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -816,6 +807,7 @@ Resources:
     Type: AWS::Serverless::Function
     #checkov:skip=CKV2_GOVUKAPP_1:Ensure lambda function has a permissions boundary via an IAM role
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-pager-duty-test-endpoint'
       CodeUri: pager-duty-test-endpoint/
       Handler: app.lambdaHandler
       Tags:
@@ -885,60 +877,6 @@ Resources:
             Principal:
               Service: chatbot.amazonaws.com
             Action: sts:AssumeRole
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  PostAuthenticationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-post-authentication
-      CodeUri: post-authentication/
-      Handler: app.lambdaHandler
-      Role: !GetAtt PostAuthenticationFunctionIAMRole.Arn
-      Tags:
-        Product: GOV.UK
-        Environment: !Ref Environment
-        System: Authentication
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: es2020
-        SourceMap: false
-        EntryPoints:
-          - app.ts
-
-  PostAuthenticationFunctionIAMRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::StackName}-post-authentication-role
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: PostAuthenticationFunctionPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-post-authentication:*
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1668,14 +1606,6 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AttestationProxyApi}/*/*/*
 
-  PostAuthLambdaInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref PostAuthenticationFunction
-      Action: lambda:InvokeFunction
-      Principal: cognito-idp.amazonaws.com
-      SourceArn: !GetAtt CognitoUserPool.Arn
-
   CognitoResourceServer:
     Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolResourceServer
@@ -1738,10 +1668,51 @@ Resources:
             Identity:
               Header: Authorization
               ValidationExpression: Bearer [a-zA-Z0-9._-]+
+      EndpointConfiguration: REGIONAL
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+
+  SharedSignalsApiRecordSet:
+    Condition: IsNotProduction
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Sub '{{resolve:ssm:/dns/env-hosted-zone-id}}' 
+      Type: A
+      Name: !Sub "${SharedSignalDomainName}."
+      AliasTarget:
+        DNSName: !GetAtt SharedSignalDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt SharedSignalDomainName.RegionalHostedZoneId
+
+  SharedSignalDomainName:
+    Condition: IsNotProduction
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: !Sub '{{resolve:ssm:/certificates/domain-certificate}}'
+      DomainName: !If
+        - IsEphemeralStack
+        - !Sub ${AWS::StackName}.shared-signals.${Environment}.app-backend.service.gov.uk
+        - !Sub shared-signals.${Environment}.app-backend.service.gov.uk
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalBasePathMapping:
+    Condition: IsNotProduction
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref SharedSignalDomainName
+      RestApiId: !Ref SharedSignalApi
+      Stage: !Ref SharedSignalApi.Stage
 
   SharedSignalAccessLogGroup:
     Condition: IsNotProduction
@@ -1808,6 +1779,76 @@ Resources:
             Condition:
               ArnLike:
                 kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalApiGatewayAlarm4xxErrors:
+    Condition: IsNotProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-4xx-errors
+      AlarmDescription: !Sub |
+        Shared Signal Alarm detects a high rate of client-side errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 4XXError
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub ${AWS::StackName}-shared-signal
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalApiGatewayAlarm5xxErrors:
+    Condition: IsNotProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-5xx-errors
+      AlarmDescription: !Sub |
+        Shared Signal Alarm detects a high rate of server-side errors.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      ActionsEnabled: true
+      MetricName: 5XXError
+      Period: 60
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub ${AWS::StackName}-shared-signal
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+      - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1941,6 +1982,7 @@ Resources:
             - !FindInMap [SharedSignalsJwksUri, Environment, !Ref Environment]
             - !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json
           JWKS_CACHE_DURATION: 600000 # ten minutes in ms
+          ENABLE_SHARED_SIGNAL: !Sub '{{resolve:ssm:/${ConfigStackName}/feature-flags/shared-signal}}'
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -2132,6 +2174,74 @@ Resources:
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
         - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+
+  SharedSignalHealthCheckAlarmErrors:
+    Condition: IsNotProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-errors-alarm
+      AlarmDescription: !Sub |
+        Alarm when the shared signal health check error exceeds 1 incident per 20 minutes.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4620714004/Health+endpoint+failure
+      ActionsEnabled: true  
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalHealthCheckFunction
+      Statistic: Sum
+      Period: 600 # 10 minutes
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckAlarmFailedInvocations:
+    Condition: IsNotProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties: 
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-failed-invocations-alarm
+      AlarmDescription: !Sub |
+        Alarm when the shared signal health check failed invocations exceed 1 incident per 20 minutes.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4620714004/Health+endpoint+failure
+      ActionsEnabled: true  
+      MetricName: Invocations
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 600
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 0
+      ComparisonOperator: LessThanOrEqualToThreshold
+      TreatMissingData: breaching # Treat missing data as breaching i.e. equivalent to no invocations in this case
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalHealthCheckFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2360,7 +2470,6 @@ Resources:
                   - iam:GetRolePolicy
                 Resource:
                   - !GetAtt AuthProxyFunctionIAMRole.Arn
-                  - !GetAtt PostAuthenticationFunctionIAMRole.Arn
 
               - Effect: Allow
                 Action:
@@ -2373,9 +2482,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - lambda:GetFunction
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:GetFunctionConfiguration
                 Resource:
                   - !GetAtt AuthProxyFunction.Arn
-                  - !GetAtt PostAuthenticationFunction.Arn
+                  - !GetAtt SharedSignalReceiverFunction.Arn
 
               - Effect: Allow
                 Action:
@@ -2388,6 +2499,7 @@ Resources:
                   - logs:FilterLogEvents
                 Resource:
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check:*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-cognito-${AWS::StackName}:log-stream*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-attestation-${AWS::StackName}:log-stream*
                   - !GetAtt AttestationProxyApiAccessLogGroup.Arn
@@ -2432,6 +2544,12 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-testing-function:*'
+              
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt SharedSignalHealthCheckFunction.Arn
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2648,33 +2766,32 @@ Outputs:
   SharedSignalEndpoint:
     Condition: IsNotProduction
     Description: The endpoint for the Shared Signal API
-    Value: !Sub https://${SharedSignalApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+    Value: !Sub "https://${SharedSignalDomainName}"
 
   SharedSignalReceiverLogGroupName:
     Condition: IsNotProduction
     Description: The name of the Shared Signal Receiver Lambda function log group
     Value: !Sub /aws/lambda/${SharedSignalReceiverFunction}
 
+  SharedSignalReceiverFunctionName:
+    Condition: IsNotProduction
+    Description: The name of the Shared Signal Receiver Lambda function
+    Value: !Ref SharedSignalReceiverFunction  
+
   SharedSignalApiId:
     Condition: IsNotProduction
     Description: The ID of the Shared Signal API
     Value: !Ref SharedSignalApi
 
-  PostAuthenticationFunctionName:
-    Description: The name of the Post Authentication function
-    Value: !Ref PostAuthenticationFunction
+  SharedSignalApiGatewayAlarm4xxErrors:
+    Condition: IsNotProduction
+    Description: The name of the shared signal CloudWatch alarm for 4xx errors
+    Value: !Ref SharedSignalApiGatewayAlarm4xxErrors
 
-  PostAuthenticationFunctionIAMRoleName:
-    Description: The name of the Post Authentication Lambda function IAM role
-    Value: !Sub ${AWS::StackName}-post-authentication-role
-
-  PostAuthenticationFunctionIAMRolePolicyName:
-    Description: The name of the Post Authentication Lambda function IAM role policy name
-    Value: PostAuthenticationFunctionPolicy
-
-  PostAuthenticationFunctionInvokePermission:
-    Description: The name of the Post Authentication Invoke Permission
-    Value: !Ref PostAuthLambdaInvokePermission
+  SharedSignalApiGatewayAlarm5xxErrors:
+    Condition: IsNotProduction
+    Description: The name of the shared signal CloudWatch alarm for 5xx errors
+    Value: !Ref SharedSignalApiGatewayAlarm5xxErrors
 
   CustomDomain:
     Description: The custom domain for the Cognito User Pool
@@ -2781,3 +2898,13 @@ Outputs:
     Condition: IsNonIntegratedEnvironment
     Description: Shared signals mock transmitter api url
     Value: !Sub https://${MockSharedSignalsTransmitterApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+
+  SharedSignalHealthCheckFunctionName:
+    Condition: IsTestingEnvironment
+    Description: The name of the Health Check Lambda function
+    Value: !Ref SharedSignalHealthCheckFunction
+
+  SharedSignalHealthCheckFunctionLogGroupName:
+    Condition: IsTestingEnvironment
+    Description: The name of the Health Check Lambda function log group name
+    Value: !Sub /aws/lambda/${SharedSignalHealthCheckFunction}

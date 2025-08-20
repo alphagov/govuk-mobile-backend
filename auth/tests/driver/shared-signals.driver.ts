@@ -1,4 +1,4 @@
-import { SignJWT, importJWK, JWK, KeyLike } from 'jose';
+import { SignJWT, importJWK, KeyLike } from 'jose';
 import { testConfig } from '../common/config';
 import { getClientSecret } from '../common/secrets';
 
@@ -37,6 +37,7 @@ const getPrivateKey = async () => {
 
   return await importJWK(JSON.parse(privateKeyJwk), 'PS256');
 };
+
 export class SharedSignalsDriver {
   baseUrl: string;
   privateKey: KeyLike | Uint8Array<ArrayBufferLike>;

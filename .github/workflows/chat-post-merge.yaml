@@ -1,0 +1,70 @@
+name: Chat test, build and deploy
+run-name: Chat test, build and deploy to ${{ inputs.environment }}
+
+on:
+  workflow_call:
+    inputs:
+      environment: { required: true, type: string }
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./chat
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Set up SAM cli
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true # this caches installation but is only available on Linux x86-64 runners
+
+      - name: Set up AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.CHAT_GH_ACTIONS_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: SAM validate
+        working-directory: ./chat
+        run: sam validate --lint
+
+      - name: SAM build
+        run: sam build
+
+      - name: Deploy Chat SAM app
+        uses: govuk-one-login/devplatform-upload-action@v3.9.4
+        with:
+          artifact-bucket-name: ${{ vars.CHAT_ARTIFACT_BUCKET_NAME }} # Need to configure git environment for the new buckets
+          signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
+          working-directory: ./chat/.aws-sam/build
+
+      - name: Build, tag, and push testing images to Amazon ECR
+        uses: govuk-one-login/devplatform-upload-action-ecr@v1.4.0
+        with:
+          container-sign-kms-key-arn: ${{ vars.CHAT_CONTAINER_SIGN_KMS_KEY_ARN }}
+          ecr-repo-name: ${{ vars.CHAT_TEST_ECR_REPOSITORY_NAME }}
+          role-to-assume-arn: ${{ vars.CHAT_GH_ACTIONS_ROLE_ARN }}
+          build-and-push-image-only: true
+          push-latest-tag: true

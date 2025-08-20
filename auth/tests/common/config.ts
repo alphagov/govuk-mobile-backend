@@ -12,9 +12,6 @@ const getTestConfig = () => {
     'CFN_SharedSignalEndpoint',
     'CFN_SharedSignalReceiverLogGroupName',
     'CFN_SharedSignalApiId',
-    'CFN_PostAuthenticationFunctionName',
-    'CFN_PostAuthenticationFunctionIAMRoleName',
-    'CFN_PostAuthenticationFunctionIAMRolePolicyName',
     'CFN_CloudWatchAlarmSignUpThrottlesName', // pragma: allowlist-secret
     'CFN_CloudWatchAlarmSignInThrottlesName',
     'CFN_CloudWatchAlarmTokenRefreshThrottlesName',
@@ -25,7 +22,6 @@ const getTestConfig = () => {
     'CFN_SlackSupportChannelConfigurationARN',
     'CFN_CognitoSecretName',
     'CFN_SharedSignalClientId',
-    'CFN_PostAuthenticationFunctionName',
     'CFN_AWSAccountId',
     'CFN_AuthProxyId',
     'CFN_AuthProxyLogGroupName',
@@ -53,6 +49,11 @@ const getTestConfig = () => {
     'CFN_SharedSignalAccessLogGroupName',
     'CFN_DeployedEnvironment',
     'CFN_SharedSignalWAFLogGroupName',
+    'CFN_SharedSignalHealthCheckFunctionName',
+    'CFN_SharedSignalHealthCheckFunctionLogGroupName',
+    'CFN_SharedSignalReceiverFunctionName',
+    'CFN_SharedSignalApiGatewayAlarm4xxErrors',
+    'CFN_SharedSignalApiGatewayAlarm5xxErrors',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -81,11 +82,6 @@ const getTestConfig = () => {
     sharedSignalReceiverLogGroupName:
       process.env.CFN_SharedSignalReceiverLogGroupName!,
     sharedSignalApiId: process.env.CFN_SharedSignalApiId!,
-    postAuthenticationLambda: process.env.CFN_PostAuthenticationFunctionName!,
-    postAuthenticationFunctionIAMRoleName:
-      process.env.CFN_PostAuthenticationFunctionIAMRoleName!,
-    postAuthenticationFunctionIAMRolePolicyName:
-      process.env.CFN_PostAuthenticationFunctionIAMRolePolicyName!,
     authProxyUrl: process.env.CFN_AuthProxyUrl!,
     attestationLowCompletionAlarmName:
       process.env.CFN_AttestationLowCompletionAlarmName!,
@@ -112,8 +108,6 @@ const getTestConfig = () => {
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
     authProxyId: process.env.CFN_AuthProxyId!,
     environment: process.env.TEST_ENVIRONMENT,
-    postAuthenticationFunctionInvokePermission:
-      process.env.CFN_PostAuthenticationFunctionInvokePermission!,
     region: process.env.CFN_AWS_REGION || 'eu-west-2',
     awsAccountId: process.env.CFN_AWSAccountId!,
     stackName: process.env.CFN_StackName!,
@@ -122,6 +116,8 @@ const getTestConfig = () => {
     sharedSignalAccessLogGroupName:
       process.env.CFN_SharedSignalAccessLogGroupName!,
     userPoolProviderId: process.env.CFN_UserPoolProviderUrl!,
+    sharedSignalReceiverFunctionName:
+      process.env.CFN_SharedSignalReceiverFunctionName!,
     //WAF configurations
     cloudWatchWafRateLimitingAlarmName:
       process.env.CFN_CloudWatchWafRateLimitingAlarmName!,
@@ -138,6 +134,14 @@ const getTestConfig = () => {
     redirectUri: 'https://d84l1y8p4kdic.cloudfront.net',
     attestationEnabled: process.env.CFN_AttestationEnabled == 'true',
     sharedSignalWAFLogGroupName: process.env.CFN_SharedSignalWAFLogGroupName!,
+    sharedSignalHealthCheckFunctionName:
+      process.env.CFN_SharedSignalHealthCheckFunctionName!,
+    sharedSignalHealthCheckFunctionLogGroupName:
+      process.env.CFN_SharedSignalHealthCheckFunctionLogGroupName!,
+    sharedSignalApiGatewayAlarm4xxErrors:
+      process.env.CFN_SharedSignalApiGatewayAlarm4xxErrors!,
+    sharedSignalApiGatewayAlarm5xxErrors:
+      process.env.CFN_SharedSignalApiGatewayAlarm5xxErrors!,
   };
 };
 

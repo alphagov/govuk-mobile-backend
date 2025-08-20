@@ -100,12 +100,4 @@ describe('Set up the Cognito User Pool for GovUK app', () => {
       System: 'Authentication',
     });
   });
-
-  it('should have the correct LambdaConfig', () => {
-    expect(resourceUnderTest.Properties.LambdaConfig).toEqual({
-      PostAuthentication: {
-        'Fn::GetAtt': ['PostAuthenticationFunction', 'Arn'],
-      },
-    });
-  });
 });

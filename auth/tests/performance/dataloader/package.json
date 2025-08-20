@@ -1,0 +1,14 @@
+{
+  "name": "dataloader",
+  "version": "1.0.0",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.863.0",
+    "jose": "^6.0.12",
+    "uuid": "^11.1.0"
+  }
+}
