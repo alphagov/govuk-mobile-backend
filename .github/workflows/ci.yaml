@@ -83,7 +83,7 @@ jobs:
       - name: Lint (with JUnit output)
         run: |
           # ESLint with JUnit formatter
-          npx nx affected -t lint  --format=junit --output-file=reports/source/lint-results.xml
+          npx nx affected -t lint --quiet --format=junit --output-file=reports/source/lint-results.xml
 
       - name: Unit Test (with JUnit output)
         env:
