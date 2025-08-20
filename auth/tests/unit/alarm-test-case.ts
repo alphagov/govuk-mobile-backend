@@ -12,7 +12,7 @@ export type AlarmTestCase = {
   topicDisplayName: string;
   period: number;
   evaluationPeriods: number;
-  datapointsToAlarm: number;
+  datapointsToAlarm?: number;
   threshold: number;
   comparisonOperator: string;
   dimensions?: any[];
