@@ -95,7 +95,7 @@ jobs:
       - name: Checkov scan (with JUnit output)
         run: |
           # Checkov with JUnit XML output
-          npx nx affected -t checkov --skip-check CKV_AWS_73,CKV_AWS_115,CKV_AWS_116,CKV_AWS_117,CKV_AWS_120 --external-checks-dir ./.checkov --output junitxml --output-file-path reports/infrastructure
+          npx nx affected -t checkov --skip-check CKV_AWS_73,CKV_AWS_115,CKV_AWS_116,CKV_AWS_117,CKV_AWS_120 --external-checks-dir ./.checkov --output junitxml --output-file-path reports/infrastructure/checkov-results.xml
 
       - name: Coverage (with JUnit output)
         env:
