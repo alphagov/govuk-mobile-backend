@@ -46,6 +46,7 @@
     "axios-cookiejar-support": "^6.0.4",
     "cheerio": "^1.1.2",
     "dotenv": "^16.5.0",
+    "eslint-formatter-junit": "^8.40.0",
     "eslint-import-resolver-typescript": "^4.3.5",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-jsdoc": "^50.6.17",
