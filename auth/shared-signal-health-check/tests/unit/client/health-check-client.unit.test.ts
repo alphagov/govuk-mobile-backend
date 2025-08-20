@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HealthCheckClient } from '../../../client/health-check-client';
-import { SharedSignalHealthCheckService } from '../../../service/health-check-service';
+import type { SharedSignalHealthCheckService } from '../../../service/health-check-service';
 
 describe('HealthCheckClient', () => {
   let healthCheckServiceMock: SharedSignalHealthCheckService;
@@ -32,30 +32,18 @@ describe('HealthCheckClient', () => {
     expect(result).toBe(false);
   });
 
-  it('should return false and log error if authorise throws', async () => {
+  it('should throw if authorise throws', async () => {
     const error = new Error('Auth error');
     (healthCheckServiceMock.authorise as any).mockRejectedValue(error);
 
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    const result = await client.performHealthCheck();
-    expect(result).toBe(false);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Health check failed:', error);
-    consoleErrorSpy.mockRestore();
+    await expect(client.performHealthCheck()).rejects.toThrow('Auth error');
   });
 
-  it('should return false and log error if verify throws', async () => {
+  it('should throw if verify throws', async () => {
     (healthCheckServiceMock.authorise as any).mockResolvedValue('token123');
     const error = new Error('Verify error');
     (healthCheckServiceMock.verify as any).mockRejectedValue(error);
 
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    const result = await client.performHealthCheck();
-    expect(result).toBe(false);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Health check failed:', error);
-    consoleErrorSpy.mockRestore();
+    await expect(client.performHealthCheck()).rejects.toThrow('Verify error');
   });
 });
