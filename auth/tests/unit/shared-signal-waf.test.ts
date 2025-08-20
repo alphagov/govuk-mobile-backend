@@ -80,15 +80,7 @@ describe('Shared Signal WAF', () => {
 
     expect(throttlingRuleVisibilityConfig.CloudWatchMetricsEnabled).toBe(true);
     expect(throttlingRuleVisibilityConfig.MetricName).toEqual({
-      'Fn::Join': [
-        '-',
-        [
-          'SharedSignalWAFMetricRule',
-          {
-            'Fn::Sub': '${AWS::StackName}',
-          },
-        ],
-      ],
+      'Fn::Sub': '${AWS::StackName}-shared-signal-waf-throttle',
     });
     expect(throttlingRuleVisibilityConfig.SampledRequestsEnabled).toBe(true);
   });
