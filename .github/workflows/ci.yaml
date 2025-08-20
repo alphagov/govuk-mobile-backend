@@ -45,7 +45,7 @@ jobs:
 
       - name: Create report directories
         run: |
-          mkdir -p reports/source reports/infrastructure reports/linting
+          mkdir -p reports/source reports/infrastructure
 
       - name: Build
         run: npm run build
@@ -83,7 +83,7 @@ jobs:
       - name: Lint (with JUnit output)
         run: |
           # ESLint with JUnit formatter
-          npx nx affected -t lint --format=junit --output-file=reports/linting/lint-results.xml
+          npx nx affected -t lint  --format=junit --output-file=reports/source/lint-results.xml
 
       - name: Unit Test (with JUnit output)
         env:
