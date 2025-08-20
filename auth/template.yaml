@@ -2364,6 +2364,8 @@ Resources:
           Value: !Sub ${AWS::StackName}-shared-signal-waf
         - Name: Rule
           Value: !Sub ${AWS::StackName}-shared-signal-waf-throttle-rule-metric
+        - Name: Region
+          Value: !Sub ${AWS::Region}
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:

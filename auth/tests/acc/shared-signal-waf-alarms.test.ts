@@ -31,6 +31,7 @@ const testCases: AlarmTestCase[] = [
         Name: 'Rule',
         Value: `${testConfig.stackName}-shared-signal-waf-throttle-rule-metric`, //matching WAF throttling metric name
       },
+      { Name: 'Region', Value: testConfig.region }, // Region dimension for WAF
     ],
   },
 ];

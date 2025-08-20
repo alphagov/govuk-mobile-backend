@@ -38,6 +38,10 @@ const testCases: AlarmTestCase[] = [
           'Fn::Sub': '${AWS::StackName}-shared-signal-waf-throttle-rule-metric',
         },
       },
+      {
+        Name: 'Region',
+        Value: { 'Fn::Sub': '${AWS::Region}' },
+      },
     ],
   },
 ];
