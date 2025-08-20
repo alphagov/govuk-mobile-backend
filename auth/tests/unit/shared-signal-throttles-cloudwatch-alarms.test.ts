@@ -26,7 +26,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 6000,
     comparisonOperator: 'GreaterThanThreshold',
-    namespace: 'AWS/WAF',
+    namespace: 'AWS/WAFV2',
     dimensions: [
       {
         Name: 'WebACL',
@@ -34,7 +34,9 @@ const testCases: AlarmTestCase[] = [
       },
       {
         Name: 'Rule',
-        Value: { 'Fn::Sub': '${AWS::StackName}-shared-signal-waf-throttle' },
+        Value: {
+          'Fn::Sub': '${AWS::StackName}-shared-signal-waf-throttle-rule-metric',
+        },
       },
     ],
   },
@@ -52,7 +54,6 @@ describe.each(testCases)(
     slackChannelConfigurationResource,
     metricName,
     alarmDescription,
-    topicDisplayName,
     namespace,
     dimensions,
     statistic,

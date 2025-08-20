@@ -23,14 +23,14 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 6000,
     comparisonOperator: 'GreaterThanThreshold',
-    namespace: 'AWS/WAF',
-    statistic: 'Sum', // WAF metrics typically use Sum
+    namespace: 'AWS/WAFV2',
+    statistic: 'Sum',
     dimensions: [
-      { Name: 'WebACL', Value: `${testConfig.stackName}-shared-signal-waf` }, // Extract the WAF ID (format: "<waf-id>|<uuid>|<scope>")
+      { Name: 'WebACL', Value: `${testConfig.stackName}-shared-signal-waf` },
       {
         Name: 'Rule',
-        Value: `${testConfig.stackName}-shared-signal-waf-throttle`,
-      }, // Assuming a rule name for rate limiting
+        Value: `${testConfig.stackName}-shared-signal-waf-throttle-rule-metric`, //matching WAF throttling metric name
+      },
     ],
   },
 ];

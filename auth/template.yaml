@@ -2286,7 +2286,7 @@ Resources:
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: !Sub SharedSignalWAFMetric-${AWS::StackName}
+        MetricName: !Sub ${AWS::StackName}-SharedSignalWAFMetric
       Rules:
         - Name: BlockUntrustedIPs
           Priority: 0 # Set a low priority to ensure this rule is evaluated first
@@ -2317,7 +2317,7 @@ Resources:
           VisibilityConfig:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
-            MetricName: !Sub ${AWS::StackName}-shared-signal-waf-throttle
+            MetricName: !Sub ${AWS::StackName}-shared-signal-waf-throttle-rule-metric
         - Name: SharedSignalAWSManagedBadInputsRuleSet
           Priority: 2
           Statement:
@@ -2351,7 +2351,7 @@ Resources:
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4618518529/WAF+throttling+alarm
       MetricName: BlockedRequests
-      Namespace: AWS/WAF
+      Namespace: AWS/WAFV2
       ActionsEnabled: true
       Statistic: Sum
       Period: 60 # 1 minute period
@@ -2363,7 +2363,7 @@ Resources:
         - Name: WebACL
           Value: !Sub ${AWS::StackName}-shared-signal-waf
         - Name: Rule
-          Value: !Sub ${AWS::StackName}-shared-signal-waf-throttle 
+          Value: !Sub ${AWS::StackName}-shared-signal-waf-throttle-rule-metric
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
