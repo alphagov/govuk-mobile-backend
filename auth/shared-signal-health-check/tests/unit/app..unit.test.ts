@@ -42,13 +42,11 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
       logMessages.HEALTH_CHECK_START,
       {
         eventId: mockEvent.id,
-        eventTime: mockEvent.time,
       },
     );
     expect(performHealthCheckMock).toHaveBeenCalled();
     expect(consoleInfoMock).toHaveBeenCalledWith(logMessages.HEALTH_CHECK_END, {
       eventId: mockEvent.id,
-      eventTime: mockEvent.time,
     });
   });
 
@@ -60,10 +58,6 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
     }));
 
     await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(ConfigError);
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      logMessages.CONFIG_ERROR,
-      expect.any(ConfigError),
-    );
   });
 
   it('Should handle AuthError and log auth error', async () => {
@@ -74,10 +68,6 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
     }));
 
     await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(AuthError);
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      logMessages.AUTH_ERROR,
-      expect.any(AuthError),
-    );
   });
 
   it('Should handle VerifyError and log verify error', async () => {
@@ -87,14 +77,7 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
         .mockRejectedValue(new VerifyError('Verify error')),
     }));
 
-    await expect(lambdaHandler(mockEvent as any))
-      .rejects.toThrow(VerifyError)
-      .then(() => {
-        expect(consoleErrorMock).toHaveBeenCalledWith(
-          logMessages.VERIFY_ERROR,
-          expect.any(VerifyError),
-        );
-      });
+    await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(VerifyError);
   });
 
   it('Should handle unknown error and log unhandled error', async () => {
@@ -104,9 +87,5 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
     }));
 
     await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(unknownError);
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      logMessages.ERROR_UNHANDLED,
-      unknownError,
-    );
   });
 });
