@@ -8,14 +8,8 @@ export class HealthCheckClient {
   }
 
   public async performHealthCheck(): Promise<boolean> {
-    try {
-      let isVerified = false;
-      const token = await this.healthCheckService.authorise();
-      isVerified = await this.healthCheckService.verify(token);
-      return isVerified;
-    } catch (error) {
-      console.error('Health check failed:', error);
-      return false;
-    }
+    const token = await this.healthCheckService.authorise();
+    const isVerified = await this.healthCheckService.verify(token);
+    return isVerified;
   }
 }
