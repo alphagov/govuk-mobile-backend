@@ -22,75 +22,53 @@ export class SharedSignalHealthCheckService implements SharedSignalHealthCheck {
   }
 
   public async authorise(): Promise<string> {
-    try {
-      const secret = await getSecret(this.healthCheckSecretName);
-      if (secret === undefined) {
-        throw new AuthError(
-          `Failed to retrieve secret for ${this.healthCheckSecretName}`,
-        );
-      }
-      // prettier-ignore
-      if (typeof secret !== 'string') { //pragma: allowlist secret
-        throw new AuthError(
-          `Secret for ${this.healthCheckSecretName} is not a string`,
-        );
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const secretConfig: SecretsConfig = JSON.parse(secret) as SecretsConfig;
-
-      const axiosConfig: AxiosRequestConfig =
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-        this.constructAuthoriseAxiosRequestConfig(secretConfig);
-
-      const response = await axios<{ access_token: string }>(axiosConfig);
-
-      if (response.status !== StatusCodes.OK.valueOf()) {
-        throw new AuthError(
-          `Failed to authorise: ${response.status.toString()} ${
-            response.statusText
-          }`,
-        );
-      }
-
-      if (typeof response.data.access_token !== 'string') {
-        throw new AuthError('Access token not found in response');
-      }
-
-      return response.data.access_token;
-    } catch (error) {
+    const secret = await getSecret(this.healthCheckSecretName);
+    if (secret === undefined) {
       throw new AuthError(
-        `Failed to authorise: ${
-          error instanceof Error ? error.message : 'Unknown error'
+        `Failed to retrieve secret for ${this.healthCheckSecretName}`,
+      );
+    }
+    // prettier-ignore
+    if (typeof secret !== 'string') {   // pragma: allowlist secret
+      throw new AuthError(
+        `Secret for ${this.healthCheckSecretName} is not a string`,
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const secretConfig: SecretsConfig = JSON.parse(secret) as SecretsConfig;
+    const axiosConfig: AxiosRequestConfig =
+      this.constructAuthoriseAxiosRequestConfig(secretConfig);
+    const response = await axios<{ access_token: string }>(axiosConfig);
+
+    if (response.status !== StatusCodes.OK.valueOf()) {
+      throw new AuthError(
+        `Failed to authorise: ${response.status.toString()} ${
+          response.statusText
         }`,
       );
     }
+
+    if (typeof response.data.access_token !== 'string') {
+      throw new AuthError('Access token not found in response');
+    }
+
+    return response.data.access_token;
   }
 
   public async verify(token: string): Promise<boolean> {
-    try {
-      let isVerified = false;
-      const axiosConfig: AxiosRequestConfig =
-        this.constructVerifyAxiosRequestConfig(token);
-      const response = await axios(axiosConfig);
-      isVerified = response.status === StatusCodes.NO_CONTENT.valueOf();
-      if (!isVerified) {
-        throw new VerifyError(
-          `Failed to verify: ${response.status.toString()} ${
-            response.statusText
-          }`,
-        );
-      }
-
-      console.info('Token verification successful');
-      return isVerified;
-    } catch (error) {
+    const axiosConfig: AxiosRequestConfig =
+      this.constructVerifyAxiosRequestConfig(token);
+    const response = await axios(axiosConfig);
+    const isVerified = response.status === StatusCodes.NO_CONTENT.valueOf();
+    if (!isVerified) {
       throw new VerifyError(
-        `Failed to verify: ${
-          error instanceof Error ? error.message : 'Unknown error'
+        `Failed to verify: ${response.status.toString()} ${
+          response.statusText
         }`,
       );
     }
+    console.info('Token verification successful');
+    return isVerified;
   }
 
   private constructAuthoriseAxiosRequestConfig(

@@ -1,152 +1,121 @@
-import { describe, it, beforeEach, vi, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
-import { StatusCodes } from 'http-status-codes';
-import { SharedSignalHealthCheckService } from '../../../service/health-check-service';
 import { AuthError, VerifyError } from '../../../errors';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import { SharedSignalHealthCheckService } from '../../../service/health-check-service';
 
 vi.mock('axios');
 vi.mock('@aws-lambda-powertools/parameters/secrets');
 
-const TOKEN_URL = 'https://token.url';
-const VERIFY_URL = 'https://verify.url';
-const SECRET_NAME = 'secret-name'; //pragma: allowlist secret
+const healthCheckTokenUrl = 'https://token-url';
+const healthCheckVerifyUrl = 'https://verify-url';
+const healthCheckSecretName = 'secret-name'; // pragma: allowlist secret
 
 const secretsConfig = {
-  clientId: 'test-client-id',
-  clientSecret: 'test-client-secret', //pragma: allowlist secret
+  clientId: 'client-id',
+  clientSecret: 'client-secret', // pragma: allowlist secret
 };
 
-const secretString = JSON.stringify(secretsConfig);
-
-const service = new SharedSignalHealthCheckService(
-  TOKEN_URL,
-  VERIFY_URL,
-  SECRET_NAME,
-);
+const accessToken = 'access-token';
 
 describe('SharedSignalHealthCheckService', () => {
+  let service: SharedSignalHealthCheckService;
+
   beforeEach(() => {
+    service = new SharedSignalHealthCheckService(
+      healthCheckTokenUrl,
+      healthCheckVerifyUrl,
+      healthCheckSecretName,
+    );
     vi.clearAllMocks();
   });
 
   describe('authorise', () => {
-    it('should return access token on success', async () => {
-      (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-        secretString,
-      );
-      (axios as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-        status: StatusCodes.OK,
-        statusText: 'OK',
-        data: { access_token: 'token123' },
-      });
-
-      const token = await service.authorise();
-      expect(token).toBe('token123');
-      expect(getSecret).toHaveBeenCalledWith(SECRET_NAME);
-      expect(axios).toHaveBeenCalled();
-    });
-
     it('should throw AuthError if secret is undefined', async () => {
-      (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-        undefined,
-      );
-
+      (getSecret as any).mockResolvedValue(undefined);
       await expect(service.authorise()).rejects.toThrow(AuthError);
     });
 
-    it('should throw AuthError if response status is not OK', async () => {
-      (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-        secretString,
-      );
-      (axios as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-        status: StatusCodes.BAD_REQUEST,
+    it('should throw AuthError if secret is not a string', async () => {
+      (getSecret as any).mockResolvedValue({ not: 'a string' });
+      await expect(service.authorise()).rejects.toThrow(AuthError);
+    });
+
+    it('should throw AuthError if axios response status is not OK', async () => {
+      (getSecret as any).mockResolvedValue(JSON.stringify(secretsConfig));
+      (axios as any).mockResolvedValue({
+        status: 400,
         statusText: 'Bad Request',
         data: {},
       });
-
       await expect(service.authorise()).rejects.toThrow(AuthError);
     });
 
     it('should throw AuthError if access_token is missing', async () => {
-      (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-        secretString,
-      );
-      (axios as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-        status: StatusCodes.OK,
+      (getSecret as any).mockResolvedValue(JSON.stringify(secretsConfig));
+      (axios as any).mockResolvedValue({
+        status: 200,
         statusText: 'OK',
         data: {},
       });
-
       await expect(service.authorise()).rejects.toThrow(AuthError);
     });
 
-    it('should throw AuthError on axios error', async () => {
-      (getSecret as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-        secretString,
-      );
-      (axios as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Network error'),
-      );
-
-      await expect(service.authorise()).rejects.toThrow(AuthError);
+    it('should return access_token on success', async () => {
+      (getSecret as any).mockResolvedValue(JSON.stringify(secretsConfig));
+      (axios as any).mockResolvedValue({
+        status: 200,
+        statusText: 'OK',
+        data: { access_token: accessToken },
+      });
+      const token = await service.authorise();
+      expect(token).toBe(accessToken);
     });
   });
 
   describe('verify', () => {
-    it('should return true if status is NO_CONTENT', async () => {
-      (axios as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-        status: StatusCodes.NO_CONTENT,
+    it('should throw VerifyError if response status is not NO_CONTENT', async () => {
+      (axios as any).mockResolvedValue({
+        status: 400,
+        statusText: 'Bad Request',
+      });
+      await expect(service.verify('token')).rejects.toThrow(VerifyError);
+    });
+
+    it('should return true if response status is NO_CONTENT', async () => {
+      (axios as any).mockResolvedValue({
+        status: 204,
         statusText: 'No Content',
       });
-
-      const result = await service.verify('token123');
+      const result = await service.verify('token');
       expect(result).toBe(true);
-      expect(axios).toHaveBeenCalled();
-    });
-
-    it('should throw VerifyError if status is not NO_CONTENT', async () => {
-      (axios as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-        status: StatusCodes.UNAUTHORIZED,
-        statusText: 'Unauthorized',
-      });
-
-      await expect(service.verify('token123')).rejects.toThrow(VerifyError);
-    });
-
-    it('should throw VerifyError on axios error', async () => {
-      (axios as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Network error'),
-      );
-
-      await expect(service.verify('token123')).rejects.toThrow(VerifyError);
     });
   });
 
   describe('constructAuthoriseAxiosRequestConfig', () => {
-    it('should construct correct axios config', () => {
-      // @ts-expect-error: testing private method
-      const config =
-        service.constructAuthoriseAxiosRequestConfig(secretsConfig);
+    it('should construct correct AxiosRequestConfig', () => {
+      const config = (service as any).constructAuthoriseAxiosRequestConfig(
+        secretsConfig,
+      );
       expect(config.method).toBe('POST');
-      expect(config.url).toBe(TOKEN_URL);
+      expect(config.url).toBe(healthCheckTokenUrl);
       expect(config.headers['Content-Type']).toBe(
         'application/x-www-form-urlencoded',
       );
       expect(config.headers.Authorization).toMatch(/^Basic /);
-      expect(config.data.grant_type).toBe('client_credentials');
+      expect(config.data).toEqual({ grant_type: 'client_credentials' });
     });
   });
 
   describe('constructVerifyAxiosRequestConfig', () => {
-    it('should construct correct axios config', () => {
-      // @ts-expect-error: testing private method
-      const config = service.constructVerifyAxiosRequestConfig('token123');
+    it('should construct correct AxiosRequestConfig', () => {
+      const token = 'bearer-token';
+      const config = (service as any).constructVerifyAxiosRequestConfig(token);
       expect(config.method).toBe('POST');
-      expect(config.url).toBe(VERIFY_URL);
+      expect(config.url).toBe(healthCheckVerifyUrl);
       expect(config.headers['Content-Type']).toBe('application/json');
-      expect(config.headers.Authorization).toBe('Bearer token123');
-      expect(config.data.state).toBe('govuk-app-health-check');
+      expect(config.headers.Authorization).toBe(`Bearer ${token}`);
+      expect(config.data).toEqual({ state: 'govuk-app-health-check' });
     });
   });
 });
