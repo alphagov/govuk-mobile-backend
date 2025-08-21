@@ -66,6 +66,6 @@ jobs:
           container-sign-kms-key-arn: ${{ vars.CHAT_CONTAINER_SIGN_KMS_KEY_ARN }}
           ecr-repo-name: ${{ vars.CHAT_TEST_ECR_REPOSITORY_NAME }}
           role-to-assume-arn: ${{ vars.CHAT_GH_ACTIONS_ROLE_ARN }}
-          dockerfile: DockerfileChat
+          dockerfile: Dockerfile.chat
           build-and-push-image-only: true
           push-latest-tag: true
