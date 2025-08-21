@@ -66,6 +66,5 @@ jobs:
           container-sign-kms-key-arn: ${{ vars.CONTAINER_SIGN_KMS_KEY_ARN }}
           ecr-repo-name: ${{ vars.AUTH_TEST_ECR_REPOSITORY_NAME }}
           role-to-assume-arn: ${{ vars.GH_ACTIONS_ROLE_ARN }}
-          docker-build-path: ./auth
           build-and-push-image-only: true
           push-latest-tag: true
