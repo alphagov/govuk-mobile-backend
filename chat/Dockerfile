@@ -10,16 +10,16 @@ RUN yum -y update && \
 WORKDIR /tests
 
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json nx.json vitest.config.ts ./
-COPY auth ./auth
+COPY chat ./chat
 
-COPY ./run-tests.sh /run-tests.sh
+COPY ./chat/run-tests.sh /run-tests.sh
 # Fix line endings if necessary
 RUN sed -i 's/\r$//' /run-tests.sh
 
 RUN chmod +x /run-tests.sh
 
-RUN npm i
+RUN npm i --ignore-scripts
 
-RUN npm install -g nx
+RUN npm install -g nx --ignore-scripts
 
 ENTRYPOINT ["/run-tests.sh"]
