@@ -18,8 +18,8 @@ RUN sed -i 's/\r$//' /run-tests.sh
 
 RUN chmod +x /run-tests.sh
 
-RUN npm i
+RUN npm i --ignore-scripts
 
-RUN npm install -g nx
+RUN npm install -g nx --ignore-scripts
 
 ENTRYPOINT ["/run-tests.sh"]
