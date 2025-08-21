@@ -153,10 +153,10 @@ export class SharedSignalsDriver {
     return fetch(`${this.baseUrl}/receiver`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/secevent+jwt',
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify(payload),
+      body: payload,
     });
   }
 
