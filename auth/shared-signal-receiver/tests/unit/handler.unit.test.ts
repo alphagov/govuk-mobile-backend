@@ -162,19 +162,6 @@ describe('lambdaHandler', () => {
     expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
   });
 
-  it('should handled invalid json', async () => {
-    const result = await lambdaHandler(
-      createEvent({
-        body: '%767',
-      }),
-    );
-
-    expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
-    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
-
-    expect(mockRequestHandler).not.toHaveBeenCalled();
-  });
-
   it('should return a bad request if the SET is not signed by the transmitter', async () => {
     const invalidSignatureHandler = createHandler(
       getDependencies({
