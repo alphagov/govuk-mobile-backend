@@ -2286,7 +2286,7 @@ Resources:
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: !Sub SharedSignalWAFMetric-${AWS::StackName}
+        MetricName: !Sub ${AWS::StackName}-SharedSignalWAFMetric
       Rules:
         - Name: BlockUntrustedIPs
           Priority: 0 # Set a low priority to ensure this rule is evaluated first
@@ -2317,10 +2317,7 @@ Resources:
           VisibilityConfig:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
-            MetricName: !Join
-              - "-"
-              - - SharedSignalWAFMetricRule
-                - !Sub ${AWS::StackName}
+            MetricName: !Sub ${AWS::StackName}-shared-signal-waf-throttle-rule-metric
         - Name: SharedSignalAWSManagedBadInputsRuleSet
           Priority: 2
           Statement:
@@ -2335,7 +2332,7 @@ Resources:
             MetricName: !Join
               - "-"
               - - SharedSignalWAFBadInputsRule
-                - !Sub ${AWS::StackName}        
+                - !Sub ${AWS::StackName}
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2343,6 +2340,43 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication   
+  
+  SharedSignalWafThrottlingAlarm:
+    Condition: IsNotProduction
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-waf-throttling-alarm
+      AlarmDescription: !Sub |
+       Alarm for throttling requests to the Shared Signal WAF.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4618518529/WAF+throttling+alarm
+      MetricName: BlockedRequests
+      Namespace: AWS/WAFV2
+      ActionsEnabled: true
+      Statistic: Sum
+      Period: 60 # 1 minute period
+      EvaluationPeriods: 5
+      Threshold: 6000
+      DatapointsToAlarm: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: WebACL
+          Value: !Sub ${AWS::StackName}-shared-signal-waf
+        - Name: Rule
+          Value: !Sub ${AWS::StackName}-shared-signal-waf-throttle-rule-metric
+        - Name: Region
+          Value: !Sub ${AWS::Region}
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   SharedSignalWafLogGroup:
     Condition: IsNotProduction
@@ -2908,3 +2942,8 @@ Outputs:
     Condition: IsTestingEnvironment
     Description: The name of the Health Check Lambda function log group name
     Value: !Sub /aws/lambda/${SharedSignalHealthCheckFunction}
+
+  SharedSignalWafThrottlingAlarm:
+    Condition: IsNotProduction
+    Description: The name of the CloudWatch alarm for Shared Signal WAF throttling
+    Value: !Ref SharedSignalWafThrottlingAlarm

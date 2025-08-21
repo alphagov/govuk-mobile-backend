@@ -27,21 +27,9 @@ export const createHandler =
         );
       }
 
-      // eslint-disable-next-line @typescript-eslint/init-declarations
-      let jsonBody: object;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        jsonBody = JSON.parse(event.body);
-      } catch {
-        return generateResponse(
-          StatusCodes.BAD_REQUEST,
-          ReasonPhrases.BAD_REQUEST,
-        );
-      }
-
       const config = dependencies.getConfig();
       const payload = await dependencies.verifySETJwt({
-        jwt: jsonBody,
+        jwt: event.body,
         config,
       });
 
