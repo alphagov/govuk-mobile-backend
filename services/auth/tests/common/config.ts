@@ -54,6 +54,7 @@ const getTestConfig = () => {
     'CFN_SharedSignalReceiverFunctionName',
     'CFN_SharedSignalApiGatewayAlarm4xxErrors',
     'CFN_SharedSignalApiGatewayAlarm5xxErrors',
+    'CFN_SharedSignalWafThrottlingAlarm',
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -142,6 +143,8 @@ const getTestConfig = () => {
       process.env.CFN_SharedSignalApiGatewayAlarm4xxErrors!,
     sharedSignalApiGatewayAlarm5xxErrors:
       process.env.CFN_SharedSignalApiGatewayAlarm5xxErrors!,
+    sharedSignalWafThrottlingAlarm:
+      process.env.CFN_SharedSignalWafThrottlingAlarm!,
   };
 };
 

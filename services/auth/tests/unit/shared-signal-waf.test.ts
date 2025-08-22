@@ -18,7 +18,7 @@ describe('Shared Signal WAF', () => {
     const VisibilityConfig = sharedSignalWaf.Properties.VisibilityConfig;
     expect(VisibilityConfig.CloudWatchMetricsEnabled).toBe(true);
     expect(VisibilityConfig.MetricName).toEqual({
-      'Fn::Sub': 'SharedSignalWAFMetric-${AWS::StackName}',
+      'Fn::Sub': '${AWS::StackName}-SharedSignalWAFMetric',
     });
     expect(VisibilityConfig.SampledRequestsEnabled).toBe(true);
   });
@@ -80,15 +80,7 @@ describe('Shared Signal WAF', () => {
 
     expect(throttlingRuleVisibilityConfig.CloudWatchMetricsEnabled).toBe(true);
     expect(throttlingRuleVisibilityConfig.MetricName).toEqual({
-      'Fn::Join': [
-        '-',
-        [
-          'SharedSignalWAFMetricRule',
-          {
-            'Fn::Sub': '${AWS::StackName}',
-          },
-        ],
-      ],
+      'Fn::Sub': '${AWS::StackName}-shared-signal-waf-throttle-rule-metric',
     });
     expect(throttlingRuleVisibilityConfig.SampledRequestsEnabled).toBe(true);
   });
