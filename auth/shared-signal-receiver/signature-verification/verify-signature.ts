@@ -50,9 +50,6 @@ export const verifySETJwt = async ({
 
     return payload;
   } catch (error) {
-    if (error instanceof Error) {
-      throw new SignatureVerificationError(String(error));
-    }
-    throw error;
+    throw new SignatureVerificationError(String(error));
   }
 };

@@ -8,12 +8,15 @@ import { generateResponse } from '../response';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { isUserValid } from '../service/validation-service';
 import { logMessages } from '../log-messages';
+import { signalVerificationSchema } from '../schema/verification';
+import { handleSignalVerification } from './signal-verification-handler';
 
 interface Handler {
   schema: z.ZodType;
   /* eslint-disable @typescript-eslint/no-explicit-any */
   handler: (data: any) => Promise<APIGatewayProxyResult>;
   schemaName: string;
+  requiresUserValidation?: boolean;
 }
 
 const handlers: Handler[] = [
@@ -28,6 +31,13 @@ const handlers: Handler[] = [
     handler: handleAccountPurgedRequest,
     schemaName:
       'https://schemas.openid.net/secevent/risc/event-type/account-purged',
+  },
+  {
+    schema: signalVerificationSchema,
+    handler: handleSignalVerification,
+    schemaName:
+      'https://schemas.openid.net/secevent/sse/event-type/verification',
+    requiresUserValidation: false,
   },
 ];
 
@@ -51,12 +61,15 @@ export const requestHandler = async (
     );
   }
 
-  for (const { schema, handler, schemaName } of handlers) {
-    if (schema.safeParse(jsonBody).success) {
-      if (!(await isUserValid(jsonBody, schemaName))) {
-        return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+  for (const h of handlers) {
+    if (h.schema.safeParse(jsonBody).success) {
+      const shouldValidateUser = h.requiresUserValidation ?? true;
+      if (shouldValidateUser) {
+        if (!(await isUserValid(jsonBody, h.schemaName))) {
+          return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+        }
       }
-      return await handler(jsonBody);
+      return await h.handler(jsonBody);
     }
   }
 

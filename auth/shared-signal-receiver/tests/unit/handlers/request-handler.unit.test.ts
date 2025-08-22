@@ -270,4 +270,34 @@ describe('requestHandler', () => {
 
     errorSpy.mockRestore();
   });
+
+  it('should not validate user when requiresUserValidation is false', async () => {
+    const signalVerificationSchema =
+      'https://schemas.openid.net/secevent/sse/event-type/verification';
+
+    const input = {
+      iss: 'https://identity.example.com',
+      jti: '123e4567-e89b-12d3-a456-426614174000',
+      iat: 1721126400,
+      aud: 'https://service.example.gov.uk',
+      events: {
+        'https://schemas.openid.net/secevent/sse/event-type/verification': {
+          state: 'some-state-value',
+        },
+      },
+    };
+
+    (handleCredentialChangeRequest as any).mockReturnValue({
+      statusCode: StatusCodes.ACCEPTED,
+      body: ReasonPhrases.ACCEPTED,
+    });
+    const result = await requestHandler(input);
+    expect(handleCredentialChangeRequest).not.toHaveBeenCalled();
+    expect(result.statusCode).not.toBe(StatusCodes.BAD_REQUEST);
+    expect(isUserValidMock).not.toHaveBeenCalledWith(
+      input,
+      signalVerificationSchema,
+    );
+    isUserValidMock.mockReset();
+  });
 });
