@@ -22,7 +22,5 @@ export class SharedSignalsHealthCheckDriver {
       service: 'LambdaClient',
       action: 'InvokeCommand',
     });
-
-    console.log(response);
   }
 }

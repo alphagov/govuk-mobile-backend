@@ -14,6 +14,7 @@ interface FetchJwksInput {
   jwksUri: string;
   kid: string;
   cacheDurationMs: number;
+  eventAlgorithm: string;
   requestFn?: typeof sendHttpRequest;
   jwksResolver?: JWKSResolver | null;
 }
@@ -22,12 +23,13 @@ export const getJwks = async ({
   jwksUri,
   kid,
   cacheDurationMs,
+  eventAlgorithm,
   requestFn = sendHttpRequest,
   jwksResolver = cachedResolver,
 }: FetchJwksInput): Promise<CryptoKey> => {
   if (jwksResolver) {
     return jwksResolver({
-      alg: 'PS256',
+      alg: eventAlgorithm,
       kid,
     });
   } else {
@@ -42,7 +44,7 @@ export const getJwks = async ({
     });
 
     return cachedResolver({
-      alg: 'PS256',
+      alg: eventAlgorithm,
       kid,
     });
   }

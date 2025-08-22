@@ -18,7 +18,7 @@ describe('api gateway', () => {
     expect(body.message).toBe('Unauthorized');
   });
 
-  it('should return a 401 when an invalid Authorization token is provided', async () => {
+  it('should return a 403 when an invalid Authorization token is provided', async () => {
     const response = await fetch(
       `${testConfig.chatApiGatewayUrl}/conversation`,
       {
@@ -30,9 +30,9 @@ describe('api gateway', () => {
       },
     );
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(403);
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(403);
     const body = await response.json();
     expect(body.message).toBe('Unauthorized');
   });

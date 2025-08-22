@@ -108,7 +108,7 @@ function runScenario(event) {
     'Content-Type': 'application/json',
   };
 
-  const res = http.post(env.receiverUrl, JSON.stringify(event), {
+  const res = http.post(env.receiverUrl, event, {
     headers,
   });
 

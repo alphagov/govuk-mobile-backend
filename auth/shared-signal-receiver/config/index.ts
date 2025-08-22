@@ -5,6 +5,7 @@ const schema = zod.object({
   audience: zod.string(),
   issuer: zod.string(),
   cacheDurationMs: zod.coerce.number(),
+  eventAlgorithm: zod.string().default('RS256'),
 });
 
 export type Config = zod.infer<typeof schema>;
@@ -15,5 +16,6 @@ export const getConfig = (): Config => {
     audience: process.env['SHARED_SIGNALS_AUDIENCE'],
     issuer: process.env['SHARED_SIGNALS_ISSUER'],
     cacheDurationMs: process.env['JWKS_CACHE_DURATION'],
+    eventAlgorithm: process.env['EVENT_ALGORITHM'],
   });
 };
