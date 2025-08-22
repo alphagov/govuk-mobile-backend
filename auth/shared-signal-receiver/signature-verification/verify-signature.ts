@@ -9,6 +9,7 @@ export interface SharedSignalsConfig {
   issuer: string;
   jwksUri: string;
   cacheDurationMs: number;
+  eventAlgorithm: string;
 }
 
 export interface VerifySetJwtInput {
@@ -41,7 +42,7 @@ export const verifySETJwt = async ({
     const { payload } = await jwtVerify(jwt, keys, {
       audience: config.audience,
       issuer: config.issuer,
-      algorithms: ['PS256'],
+      algorithms: [config.eventAlgorithm],
       typ: 'secevent+jwt',
     });
 
