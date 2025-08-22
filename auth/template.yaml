@@ -399,13 +399,15 @@ Resources:
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - JWTTokens
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
             Operation:
               Audit:
                 FindingsDestination: {}
-          - Sid: redact-policy
+          - Sid: masking-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - JWTTokens
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
             Operation:
               Deidentify:
                 MaskConfig: {}
@@ -1145,12 +1147,16 @@ Resources:
           - Sid: audit-policy
             DataIdentifier:
               - JWTTokens
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
             Operation:
               Audit:
                 FindingsDestination: {}
-          - Sid: redact-policy
+          - Sid: masking-policy
             DataIdentifier:
               - JWTTokens
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
             Operation:
               Deidentify:
                 MaskConfig: {}
@@ -1234,9 +1240,28 @@ Resources:
   AttestationProxyApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/attestation-proxy-api-${AWS::StackName}
+      LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-attestation-proxy-api
       KmsKeyId: !GetAtt AttestationProxyApiAccessLogGroupKMSKey.Arn
       RetentionInDays: 30
+      DataProtectionPolicy:
+        Name: AttestationProxyApiAccessLogGroupProtectionPolicy
+        Description: Protect basic types of sensitive data
+        Version: "2021-06-01"
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+            Operation:
+              Deidentify:
+                MaskConfig: {} # marks sensitive data with asterisks
       Tags:
         - Key: Product
           Value: GOV.UK
