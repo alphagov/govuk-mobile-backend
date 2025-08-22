@@ -135,4 +135,11 @@ describe('adminGlobalSignOut', () => {
       'Unhandled cognito exception',
     );
   });
+
+  it('throws an exception when no user pool id is set', async () => {
+    delete process.env['USER_POOL_ID'];
+    await expect(() => adminGlobalSignOut(userName)).rejects.toThrow(
+      'USER_POOL_ID environment variable is not set',
+    );
+  });
 });

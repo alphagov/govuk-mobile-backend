@@ -1,6 +1,7 @@
 import { SignJWT, importJWK, KeyLike } from 'jose';
 import { testConfig } from '../common/config';
 import { getClientSecret } from '../common/secrets';
+import { v4 } from 'uuid';
 
 export interface generateJWTPayload {
   jti: string;
@@ -137,6 +138,23 @@ export class SharedSignalsDriver {
                 uri: userId,
               },
             },
+        },
+      },
+      accessToken,
+    );
+  }
+
+  public sendSignalVerificationSignal({
+    accessToken,
+  }: {
+    accessToken: string;
+  }) {
+    return this._sendRequest(
+      {
+        events: {
+          'https://schemas.openid.net/secevent/sse/event-type/verification': {
+            state: v4(),
+          },
         },
       },
       accessToken,
