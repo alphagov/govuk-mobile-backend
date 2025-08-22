@@ -626,6 +626,7 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 0.05
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: ApiName
           Value: !Ref AttestationProxyApi
@@ -664,6 +665,7 @@ Resources:
       DatapointsToAlarm: 3
       Threshold: 0.05
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: ApiName
           Value: !Ref AttestationProxyApi
@@ -696,6 +698,8 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 2500
       ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      EvaluateLowSampleCountPercentile: ignore
       Dimensions:
         - Name: ApiName
           Value: !Ref AttestationProxyApi
@@ -1071,6 +1075,7 @@ Resources:
       Threshold: 300
       DatapointsToAlarm: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: WebACL
           Value: !Join
@@ -1805,6 +1810,7 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 0.05
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: ApiName
           Value: !Sub ${AWS::StackName}-shared-signal
@@ -1840,6 +1846,7 @@ Resources:
       DatapointsToAlarm: 3
       Threshold: 0.05
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: ApiName
           Value: !Sub ${AWS::StackName}-shared-signal
@@ -2359,6 +2366,7 @@ Resources:
       Threshold: 6000
       DatapointsToAlarm: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: WebACL
           Value: !Sub ${AWS::StackName}-shared-signal-waf
