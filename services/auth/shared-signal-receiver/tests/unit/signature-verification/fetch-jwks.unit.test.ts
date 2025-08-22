@@ -26,10 +26,10 @@ const mockJwks = {
 describe('fetchJwks', () => {
   const jwksUri = 'https://example.com/jwks.json';
   const cacheDurationMs = 11 * 60 * 1000;
+  const eventAlgorithm = 'RS256';
   describe('Given a valid JWKS endpoint', () => {
     afterEach(() => {
       vi.useRealTimers();
-      // vi.resetAllMocks();
     });
 
     describe('And the resolver function has not been cached', () => {
@@ -52,6 +52,7 @@ describe('fetchJwks', () => {
             cacheDurationMs,
             requestFn: mockFetch,
             kid: validKeyId,
+            eventAlgorithm,
           });
         });
 
@@ -65,6 +66,7 @@ describe('fetchJwks', () => {
             cacheDurationMs,
             requestFn: mockFetch,
             kid: validKeyId,
+            eventAlgorithm,
           });
           expect(mockFetch).toHaveBeenCalledOnce();
         });
@@ -94,6 +96,7 @@ describe('fetchJwks', () => {
             cacheDurationMs,
             requestFn: mockFetch,
             kid: 'unknown',
+            eventAlgorithm,
           }),
         ).rejects.toThrowError(
           'no applicable key found in the JSON Web Key Set',
@@ -123,6 +126,7 @@ describe('fetchJwks', () => {
             requestFn: mockFetch,
             kid: validKeyId,
             jwksResolver: null,
+            eventAlgorithm,
           });
 
           vi.setSystemTime(Date.now());
@@ -133,10 +137,32 @@ describe('fetchJwks', () => {
             cacheDurationMs,
             requestFn: mockFetch,
             kid: validKeyId,
+            eventAlgorithm,
           });
           expect(mockFetch).toHaveBeenCalledTimes(2);
         });
       });
+    });
+
+    it('The algorithm should be configurable', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue(null),
+        },
+        json: async () => mockJwks,
+      } as unknown as Response);
+
+      await expect(
+        getJwks({
+          jwksUri,
+          cacheDurationMs,
+          requestFn: mockFetch,
+          kid: validKeyId,
+          eventAlgorithm: 'PS256',
+        }),
+      ).resolves.toBeDefined();
     });
   });
 
@@ -156,6 +182,7 @@ describe('fetchJwks', () => {
             requestFn: mockFetch,
             kid: 'unknown',
             jwksResolver: null,
+            eventAlgorithm,
           }),
         ).rejects.toThrowError(
           'Expected 200 OK from the JSON Web Key Set HTTP response',
