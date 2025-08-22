@@ -2008,7 +2008,7 @@ Resources:
           USER_POOL_ID: !Ref CognitoUserPool
           REGION: !Ref AWS::Region
           SHARED_SIGNALS_ISSUER: https://ssf.account.gov.uk/
-          SHARED_SIGNALS_AUDIENCE: !Sub "{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}.auth.${AWS::Region}.amazoncognito.com"
+          SHARED_SIGNALS_AUDIENCE: !Ref SharedSignalDomainName
           JWKS_URI: !If 
             - IsIntegratedEnvironment
             - !FindInMap [SharedSignalsJwksUri, Environment, !Ref Environment]

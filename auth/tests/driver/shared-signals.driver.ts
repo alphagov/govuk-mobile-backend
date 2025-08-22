@@ -47,7 +47,7 @@ export class SharedSignalsDriver {
     this.baseUrl = baseUrl;
     this.claims = {
       alg: 'RS256',
-      aud: testConfig.cognitoUrl,
+      aud: this.baseUrl.split('//')[1],
       typ: 'secevent+jwt',
       iss: 'https://ssf.account.gov.uk/',
       // set in config repo

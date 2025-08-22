@@ -60,5 +60,6 @@ export const requestHandler = async (
     }
   }
 
+  console.error(logMessages.ERROR_UNKNOWN_SIGNAL);
   return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
 };
