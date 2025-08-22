@@ -17,7 +17,7 @@ export interface generateJWTPayload {
 }
 
 const sampleVerificationEvent = {
-  alg: 'PS256',
+  alg: 'RS256',
   audience: 'https://aud.example.com',
   issuer: 'https://issuer.example.com',
   jti: '123456',
@@ -36,15 +36,19 @@ const sampleVerificationEvent = {
 };
 
 describe('verify-signature', async () => {
-  const { publicKey, privateKey } = await generateKeyPair('PS256', {
-    extractable: true,
-  });
+  const { publicKey, privateKey } = await generateKeyPair(
+    sampleVerificationEvent.alg,
+    {
+      extractable: true,
+    },
+  );
 
   const sharedSignalsConfig = {
     jwksUri: 'https://foobar.com',
     audience: sampleVerificationEvent.audience,
     issuer: sampleVerificationEvent.issuer,
     cacheDurationMs: 10 * 60 * 1000,
+    eventAlgorithm: sampleVerificationEvent.alg,
   };
 
   const mockFetchJwks = async (): Promise<KeyLike> => publicKey;
@@ -88,7 +92,9 @@ describe('verify-signature', async () => {
   });
 
   it('should verify the signature of the SET', async () => {
-    const { publicKey: newPublicKey } = await generateKeyPair('PS256');
+    const { publicKey: newPublicKey } = await generateKeyPair(
+      sampleVerificationEvent.alg,
+    );
     const jwt = await signEventPayload(sampleVerificationEvent);
 
     const mockFetchJwksAlternate = async (): Promise<KeyLike> => newPublicKey;
