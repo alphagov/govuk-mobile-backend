@@ -10,6 +10,7 @@ RUN yum -y update && \
 WORKDIR /tests
 
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json nx.json vitest.config.ts ./
+COPY ./scripts ./scripts
 COPY ./services/auth ./auth
 
 COPY ./services/auth/run-tests.sh /run-tests.sh
