@@ -4,10 +4,10 @@
   "files": [],
   "references": [
     {
-      "path": "./auth"
+      "path": "./services/auth"
     },
     {
-      "path": "./chat"
+      "path": "./services/chat"
     }
   ]
 }

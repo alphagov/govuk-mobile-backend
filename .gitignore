@@ -156,6 +156,9 @@ report/
 # sam build
 .aws-sam
 
+#ESBuild output
+.build
+
 #intelliJ files
 .idea
 reports
@@ -178,3 +181,5 @@ service-account.json
 
 # Checkov files
 checkov.xml
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
