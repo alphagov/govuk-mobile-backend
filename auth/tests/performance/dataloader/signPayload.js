@@ -1,7 +1,7 @@
 import { SignJWT, importJWK } from 'jose';
 
 const getPrivateKey = async (privateKeyJwk) => {
-  return await importJWK(privateKeyJwk, 'PS256');
+  return await importJWK(privateKeyJwk, 'RS256');
 };
 
 export const signEventPayload = async ({

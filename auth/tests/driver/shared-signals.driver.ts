@@ -35,7 +35,7 @@ const getPrivateKey = async () => {
     `/${testConfig.configStackName}/shared-signal/mock/pk`,
   );
 
-  return await importJWK(JSON.parse(privateKeyJwk), 'PS256');
+  return await importJWK(JSON.parse(privateKeyJwk), 'RS256');
 };
 
 export class SharedSignalsDriver {
@@ -46,12 +46,12 @@ export class SharedSignalsDriver {
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
     this.claims = {
-      alg: 'PS256',
+      alg: 'RS256',
       aud: testConfig.cognitoUrl,
       typ: 'secevent+jwt',
       iss: 'https://ssf.account.gov.uk/',
       // set in config repo
-      kid: '0005cc89-76f5-4efe-8a3b-4be67159f419',
+      kid: '2d6c5f6c-3409-49bb-a3f4-834a94e03c34',
     };
   }
 

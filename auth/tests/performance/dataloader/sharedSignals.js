@@ -42,7 +42,7 @@ const createEvents = async (eventType, credentialType) => {
         iss: 'https://ssf.account.gov.uk/',
         aud: process.env.AUDIENCE, // audience
         jti: uuid.v4(),
-        alg: 'PS256',
+        alg: 'RS256',
         exp: Math.floor(Date.now() / 1000) + 3600, // expiration in seconds
         iat: Math.floor(Date.now() / 1000), // issued at
         kid: publicKey.kid,

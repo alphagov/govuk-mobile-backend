@@ -21,9 +21,14 @@ describe('Config', () => {
         jwksUri: 'foo',
         audience: 'foo',
         issuer: 'foo',
+        eventAlgorithm: 'RS256', // should use default
         // should coerce to number
         cacheDurationMs: 600000,
       });
+    });
+
+    it('Should set the algorithm to RS256 as default', () => {
+      expect(config.eventAlgorithm).toBe('RS256');
     });
   });
 
