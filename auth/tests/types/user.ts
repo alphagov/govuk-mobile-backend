@@ -28,3 +28,8 @@ export interface ExchangeTokenInput {
 export interface RefreshTokenResponse {
   access_token: string;
 }
+
+export interface RevokeTokenResponse {
+  status: number;
+  statusText?: string;
+}
