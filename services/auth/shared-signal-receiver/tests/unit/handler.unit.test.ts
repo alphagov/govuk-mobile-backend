@@ -208,4 +208,13 @@ describe('lambdaHandler', () => {
 
     expect(mockRequestHandler).not.toHaveBeenCalled();
   });
+
+  it('should return a bad request if the body is missing', async () => {
+    const result = await lambdaHandler(createEvent({ body: undefined }));
+
+    expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
+    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
+
+    expect(mockRequestHandler).not.toHaveBeenCalled();
+  });
 });
