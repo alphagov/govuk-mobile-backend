@@ -4,6 +4,7 @@ import { testConfig } from '../common/config';
 import { v4 as uuidv4 } from 'uuid';
 import axios, { AxiosError } from 'axios';
 import { SharedSignalsDriver } from '../driver/shared-signals.driver';
+import { createUserAndReturnCognitoUserId } from './tasks/createUserAndReturnCognitoUserId';
 
 describe('shared-signal authentication', async () => {
   const clientCredentialsDriver = new ClientCredentialsDriver(

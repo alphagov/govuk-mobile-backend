@@ -58,6 +58,7 @@ export const SUPPORTED_AWS_SDK_COMMANDS: {
     AdminCreateUserCommand: AdminCreateUserCommand,
     AdminDeleteUserCommand: AdminDeleteUserCommand,
     AdminGetUserCommand: AdminGetUserCommand,
+    ListUsersCommand: ListUsersCommand,
   },
   CloudWatchLogsClient: {
     DescribeLogGroupsCommand: DescribeLogGroupsCommand,
