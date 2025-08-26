@@ -1,6 +1,7 @@
 import { SignJWT, importJWK, KeyLike } from 'jose';
 import { testConfig } from '../common/config';
 import { getClientSecret } from '../common/secrets';
+import { v4 } from 'uuid';
 
 export interface generateJWTPayload {
   jti: string;
@@ -47,7 +48,7 @@ export class SharedSignalsDriver {
     this.baseUrl = baseUrl;
     this.claims = {
       alg: 'RS256',
-      aud: testConfig.cognitoUrl,
+      aud: this.baseUrl.split('//')[1],
       typ: 'secevent+jwt',
       iss: 'https://ssf.account.gov.uk/',
       // set in config repo
@@ -137,6 +138,23 @@ export class SharedSignalsDriver {
                 uri: userId,
               },
             },
+        },
+      },
+      accessToken,
+    );
+  }
+
+  public sendSignalVerificationSignal({
+    accessToken,
+  }: {
+    accessToken: string;
+  }) {
+    return this._sendRequest(
+      {
+        events: {
+          'https://schemas.openid.net/secevent/sse/event-type/verification': {
+            state: v4(),
+          },
         },
       },
       accessToken,

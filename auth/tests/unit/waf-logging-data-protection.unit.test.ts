@@ -35,9 +35,30 @@ describe.each([
         .CustomDataIdentifier[0];
     const tokenRegex = new RegExp(customTokenDataIdentifier.Regex);
 
-    it.each(policies)('should redact jwt tokens', (policy) => {
-      expect(policy.DataIdentifier.includes(customTokenDataIdentifier.Name));
+    it('should have audit policy present', () => {
+      const auditPolicy = policies.find((p) => p.Sid === 'audit-policy');
+      expect(auditPolicy).toBeDefined();
     });
+
+    it('should masking policy present', () => {
+      const maskingPolicy = policies.find((p) => p.Sid === 'masking-policy');
+      expect(maskingPolicy).toBeDefined();
+    });
+
+    it.each(policies)(
+      'should have masking policy for JWT, IP address and Email',
+      (policy) => {
+        expect(policy.DataIdentifier).toHaveLength(3);
+        expect(policy.DataIdentifier.includes(customTokenDataIdentifier.Name));
+        expect(policy.DataIdentifier).toContain(
+          'arn:aws:dataprotection::aws:data-identifier/EmailAddress',
+        );
+        expect(policy.DataIdentifier).toContain(
+          'arn:aws:dataprotection::aws:data-identifier/IpAddress',
+        );
+        expect(policy.DataIdentifier).toContain('JWTTokens');
+      },
+    );
 
     it('should match valid JWT tokens', () => {
       const validTokens = [
@@ -69,6 +90,14 @@ describe.each([
       unmatchedFields.forEach((token) => {
         expect(tokenRegex.test(token)).toBe(false);
       });
+    });
+
+    it('should have correct tags', () => {
+      expect(logGroup.Properties.Tags).toEqual([
+        { Key: 'Product', Value: 'GOV.UK' },
+        { Key: 'Environment', Value: { Ref: 'Environment' } },
+        { Key: 'System', Value: 'Authentication' },
+      ]);
     });
   });
 });
