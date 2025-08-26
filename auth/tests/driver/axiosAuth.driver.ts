@@ -1,12 +1,12 @@
 import querystring from 'querystring';
 import pkceChallenge from 'pkce-challenge';
-import { expect } from 'vitest';
 import { AuthDriver } from './auth.driver';
 import {
   ExchangeTokenInput,
   LoginUserInput,
   LoginUserResponse,
   RefreshTokenResponse,
+  RevokeTokenResponse,
   TokenExchangeResponse,
 } from '../types/user';
 import { TOTP } from 'totp-generator';
@@ -197,5 +197,28 @@ export class AxiosAuthDriver implements AuthDriver {
       .then((data) => ({
         access_token: data.access_token,
       }));
+  }
+
+  async revokeToken(refreshToken: string): Promise<RevokeTokenResponse> {
+    return await fetch(`${this.proxyUrl}oauth2/revoke`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: querystring.stringify({
+        refresh_token: refreshToken,
+        client_id: this.clientId,
+      }),
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error(
+          `Failed to revoke refresh token: ${response.statusText}`,
+        );
+      }
+      return {
+        status: response.status,
+        statusText: response.statusText,
+      };
+    });
   }
 }
