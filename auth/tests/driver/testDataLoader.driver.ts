@@ -44,4 +44,14 @@ export class TestDataLoader {
 
     return this.parseParameterAsUser(user.SecretString);
   }
+
+  public async getSharedSignalsUser() {
+    const user = await this.client.send(
+      new GetSecretValueCommand({
+        SecretId: `/${this.stackName}/test-data/shared-signals-user`,
+      }),
+    );
+
+    return this.parseParameterAsUser(user.SecretString);
+  }
 }

@@ -12,6 +12,7 @@ import type { AdminDeleteUserCommandOutput } from '@aws-sdk/client-cognito-ident
 import { StatusCodes } from 'http-status-codes';
 import { cognitoClient } from './client';
 import { CognitoError } from '../errors';
+import { toCognitoUsername } from '../common/toCognitoUsername';
 
 export const adminDeleteUser = async (userName: string): Promise<boolean> => {
   const userPoolId = process.env['USER_POOL_ID'];
@@ -22,7 +23,7 @@ export const adminDeleteUser = async (userName: string): Promise<boolean> => {
 
     const input = {
       UserPoolId: userPoolId,
-      Username: userName,
+      Username: toCognitoUsername(userName),
     };
     const command = new AdminDeleteUserCommand(input);
     const response: AdminDeleteUserCommandOutput = await cognitoClient.send(
