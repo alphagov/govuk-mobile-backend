@@ -2532,7 +2532,6 @@ Resources:
               - Effect: Allow
                 Action:
                   - cognito-idp:RevokeToken
-                  - cognito-idp:AdminUserGlobalSignOut
                   - cognito-idp:DescribeUserPoolClient
                 Resource: !GetAtt CognitoUserPool.Arn
               - Effect: Allow

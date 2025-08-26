@@ -5,8 +5,6 @@ import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-
 import * as cognitoModule from '../../../revoke-token/cognito';
 import * as revokeModule from '../../../revoke-token/revoke-refresh-token';
 
-vi.mock('../../../m2m-authorizer/service/secrets-service');
-vi.mock('aws-jwt-verify');
 vi.mock('@aws-sdk/client-cognito-identity-provider');
 vi.mock('../../../revoke-token/cognito');
 vi.mock('../../../revoke-token/revoke-refresh-token');
