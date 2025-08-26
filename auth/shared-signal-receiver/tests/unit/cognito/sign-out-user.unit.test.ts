@@ -55,7 +55,7 @@ describe('adminGlobalSignOut', () => {
     expect(sendMock).toHaveBeenCalledOnce();
     expect(AdminUserGlobalSignOutCommand).toHaveBeenCalledWith({
       UserPoolId: process.env['USER_POOL_ID'],
-      Username: userName,
+      Username: `onelogin_${userName}`,
     });
   });
 
@@ -134,6 +134,16 @@ describe('adminGlobalSignOut', () => {
     await expect(() => adminGlobalSignOut(userName)).rejects.toThrow(
       'Unhandled cognito exception',
     );
+  });
+
+  it('should prefix username with onelogin_', async () => {
+    sendMock.mockResolvedValue({ $metadata: { httpStatusCode: 200 } });
+
+    await adminGlobalSignOut(userName);
+    expect(AdminUserGlobalSignOutCommand).toHaveBeenCalledWith({
+      UserPoolId: process.env['USER_POOL_ID'],
+      Username: `onelogin_${userName}`,
+    });
   });
 
   it('throws an exception when no user pool id is set', async () => {

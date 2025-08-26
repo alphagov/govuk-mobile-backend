@@ -12,6 +12,7 @@ import type { AdminUserGlobalSignOutCommandOutput } from '@aws-sdk/client-cognit
 import { CognitoError } from '../errors';
 import { StatusCodes } from 'http-status-codes';
 import { cognitoClient } from './client';
+import { toCognitoUsername } from '../common/toCognitoUsername';
 
 export const adminGlobalSignOut = async (
   userName: string,
@@ -24,7 +25,7 @@ export const adminGlobalSignOut = async (
 
     const input = {
       UserPoolId: userPoolId,
-      Username: userName,
+      Username: toCognitoUsername(userName),
     };
     const command = new AdminUserGlobalSignOutCommand(input);
     const response: AdminUserGlobalSignOutCommandOutput =

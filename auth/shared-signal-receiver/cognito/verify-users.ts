@@ -3,6 +3,7 @@ import {
   UserNotFoundException,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { cognitoClient } from './client';
+import { toCognitoUsername } from '../common/toCognitoUsername';
 
 export const verifyUsername = async (username: string): Promise<boolean> => {
   try {
@@ -10,7 +11,7 @@ export const verifyUsername = async (username: string): Promise<boolean> => {
 
     const getUserCommand = new AdminGetUserCommand({
       UserPoolId: poolId,
-      Username: username,
+      Username: toCognitoUsername(username),
     });
 
     await cognitoClient.send(getUserCommand);

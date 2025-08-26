@@ -2215,7 +2215,6 @@ Resources:
         - Key: System
           Value: Authentication
 
-
   SharedSignalHealthCheckAlarmErrors:
     Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
@@ -2498,7 +2497,118 @@ Resources:
       LogDestinationConfigs:
         - !GetAtt SharedSignalWafLogGroup.Arn
       ResourceArn: !GetAtt SharedSignalWAF.Arn
-      
+    
+  RevokeRefreshTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-revoke-refresh-token"
+      Description: Revokes a Cognito Refresh Token.
+      Handler: app.lambdaHandler
+      CodeUri: revoke-token/
+      Role: !GetAtt RevokeRefreshTokenFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt RevokeRefreshTokenFunctionKMSKey.Arn
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref CognitoUserPool
+          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+      Events:
+        RevokePost:
+          Type: Api
+          Properties:
+            Path: /oauth2/revoke
+            Method: POST
+            RestApiId: !Ref AttestationProxyApi
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication      
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        SourceMap: false
+        EntryPoints:
+          - app.ts  
+
+  RevokeRefreshTokenFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-revoke-refresh-token-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: RevokeRefreshTokenFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/cognito/client-secret-*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain
+              - Effect: Allow
+                Action:
+                  - cognito-idp:RevokeToken
+                  - cognito-idp:DescribeUserPoolClient
+                Resource: !GetAtt CognitoUserPool.Arn
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-revoke-refresh-token:*
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  RevokeRefreshTokenFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting revoke token secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+            Resource:
+              - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+         
   ############################
   # Acceptance Testing Resources
   ############################
