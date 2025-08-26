@@ -5,7 +5,6 @@ import {
   UserNotFoundException,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { cognitoClient } from '../../../cognito/client';
-import { CognitoError } from '../../../errors';
 
 vi.mock('../../../cognito/client', () => ({
   cognitoClient: {
@@ -67,6 +66,13 @@ describe('verifyUserExists', () => {
     await verifyUsername(input);
     const command = (cognitoClient.send as any).mock.calls[0][0];
     expect(command.input.UserPoolId).toBe(USER_POOL_ID);
-    expect(command.input.Username).toBe(input);
+    expect(command.input.Username.includes(input)).toBeTruthy();
+  });
+
+  it('should prefix username with onelogin_', async () => {
+    (cognitoClient.send as any).mockResolvedValueOnce({});
+    await verifyUsername(input);
+    const command = (cognitoClient.send as any).mock.calls[0][0];
+    expect(command.input.Username).toBe(`onelogin_${input}`);
   });
 });

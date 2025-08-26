@@ -55,7 +55,7 @@ describe('adminDeleteUser', () => {
     expect(sendMock).toHaveBeenCalledOnce();
     expect(AdminDeleteUserCommand).toHaveBeenCalledWith({
       UserPoolId: process.env['USER_POOL_ID'],
-      Username: userName,
+      Username: `onelogin_${userName}`,
     });
   });
 
@@ -134,6 +134,16 @@ describe('adminDeleteUser', () => {
     await expect(() => adminDeleteUser(userName)).rejects.toThrow(
       'Unhandled cognito exception',
     );
+  });
+
+  it('should prefix username with onelogin_', async () => {
+    sendMock.mockResolvedValue({ $metadata: { httpStatusCode: 200 } });
+
+    await adminDeleteUser(userName);
+    expect(AdminDeleteUserCommand).toHaveBeenCalledWith({
+      UserPoolId: process.env['USER_POOL_ID'],
+      Username: `onelogin_${userName}`,
+    });
   });
 
   it('throws an exception when no user pool id is set', async () => {

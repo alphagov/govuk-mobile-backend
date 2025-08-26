@@ -63,6 +63,7 @@ export class AxiosAuthDriver implements AuthDriver {
   }
 
   async loginAndGetCode(input: LoginUserInput): Promise<LoginUserResponse> {
+    this.clearCookies();
     const { code_verifier, code_challenge } = await pkceChallenge();
     const authorizeEndpoint =
       `${this.authUrl}/oauth2/authorize?` +
