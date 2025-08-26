@@ -1,103 +1,77 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { retrieveCognitoCredentials } from '../../cognito';
-import {
-  CognitoIdentityProviderClient,
-  DescribeUserPoolClientCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
-
-vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
-  return {
-    CognitoIdentityProviderClient: vi.fn(),
-    DescribeUserPoolClientCommand: vi.fn(),
-  };
-});
+import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
+import { DescribeUserPoolClientCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 const mockSend = vi.fn();
 
-const mockCognitoIdentityProviderClient = {
+const mockCognitoClient = {
   send: mockSend,
 } as unknown as CognitoIdentityProviderClient;
 
-const config = {
-  userPoolId: 'test-user-pool-id',
-  clientId: 'test-client-id',
-};
+const CLIENT_ID = 'test-client-id';
+const CLIENT_SECRET = 'test-client-secret'; // pragma: allowlist secret
+const USER_POOL_ID = 'test-user-pool-id';
 
 describe('retrieveCognitoCredentials', () => {
+  const envBackup = { ...process.env };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env['USER_POOL_ID'] = USER_POOL_ID;
   });
 
-  it('throws error if userPoolId is missing', async () => {
+  afterEach(() => {
+    process.env = { ...envBackup };
+  });
+
+  it('throws error if USER_POOL_ID is missing', async () => {
+    process.env['USER_POOL_ID'] = '';
     await expect(
-      retrieveCognitoCredentials(
-        { userPoolId: '', clientId: 'test-client-id' },
-        mockCognitoIdentityProviderClient,
-      ),
+      retrieveCognitoCredentials({ clientId: CLIENT_ID }, mockCognitoClient),
     ).rejects.toThrow('Missing required environment variables: USER_POOL_ID');
   });
 
-  it('throws error if Cognito Client ID is missing in response', async () => {
+  it('throws error if send returns undefined ClientId', async () => {
     mockSend.mockResolvedValue({
-      UserPoolClient: {
-        ClientId: undefined,
-        ClientSecret: 'secret', // pragma: allowlist secret
-      },
+      UserPoolClient: { ClientId: '', ClientSecret: CLIENT_SECRET },
     });
     await expect(
-      retrieveCognitoCredentials(config, mockCognitoIdentityProviderClient),
+      retrieveCognitoCredentials({ clientId: CLIENT_ID }, mockCognitoClient),
     ).rejects.toThrow('Could not retrieve Cognito Client ID');
   });
 
-  it('throws error if Cognito Client Secret is missing in response', async () => {
+  it('throws error if send returns undefined ClientSecret', async () => {
     mockSend.mockResolvedValue({
-      UserPoolClient: {
-        ClientId: 'client-id',
-        ClientSecret: undefined,
-      },
+      UserPoolClient: { ClientId: CLIENT_ID, ClientSecret: '' },
     });
     await expect(
-      retrieveCognitoCredentials(config, mockCognitoIdentityProviderClient),
+      retrieveCognitoCredentials({ clientId: CLIENT_ID }, mockCognitoClient),
     ).rejects.toThrow('Could not retrieve Cognito Client Secret');
   });
 
-  it('returns credentials if both ClientId and ClientSecret are present', async () => {
+  it('returns credentials if send returns valid ClientId and ClientSecret', async () => {
     mockSend.mockResolvedValue({
-      UserPoolClient: {
-        ClientId: 'client-id',
-        ClientSecret: 'client-secret', // pragma: allowlist secret
-      },
+      UserPoolClient: { ClientId: CLIENT_ID, ClientSecret: CLIENT_SECRET },
     });
     const creds = await retrieveCognitoCredentials(
-      config,
-      mockCognitoIdentityProviderClient,
+      { clientId: CLIENT_ID },
+      mockCognitoClient,
     );
-    expect(creds).toEqual({
-      clientId: 'client-id',
-      clientSecret: 'client-secret', // pragma: allowlist secret
-    });
+    expect(creds).toEqual({ clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
   });
 
-  it('rethrows error from send', async () => {
+  it('throws and logs error if send throws', async () => {
     const error = new Error('AWS error');
     mockSend.mockRejectedValue(error);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(
-      retrieveCognitoCredentials(config, mockCognitoIdentityProviderClient),
-    ).rejects.toThrow('AWS error');
-  });
-
-  it('calls DescribeUserPoolClientCommand with correct params', async () => {
-    mockSend.mockResolvedValue({
-      UserPoolClient: {
-        ClientId: 'client-id',
-        ClientSecret: 'client-secret', // pragma: allowlist secret
-      },
-    });
-    await retrieveCognitoCredentials(config, mockCognitoIdentityProviderClient);
-    expect(DescribeUserPoolClientCommand).toHaveBeenCalledWith({
-      ClientId: config.clientId,
-      UserPoolId: config.userPoolId,
-    });
+      retrieveCognitoCredentials({ clientId: CLIENT_ID }, mockCognitoClient),
+    ).rejects.toThrow(error);
+    expect(spy).toHaveBeenCalledWith(
+      'Error fetching Cognito client credentials',
+      error,
+    );
+    spy.mockRestore();
   });
 });

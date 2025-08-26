@@ -2556,7 +2556,7 @@ Resources:
   RevokeRefreshTokenFunctionKMSKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: KMS key for encrypting auth proxy secrets
+      Description: KMS key for encrypting revoke token secrets
       EnableKeyRotation: true
       KeyPolicy:
         Version: '2012-10-17'
@@ -2568,7 +2568,7 @@ Resources:
               - kms:*
             Resource:
               - '*'
-          - Effect: Allows
+          - Effect: Allow
             Principal:
               Service: !Sub lambda.amazonaws.com
             Action:
@@ -2582,6 +2582,7 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
         - Key: System
+          Value: Authentication
          
   ############################
   # Acceptance Testing Resources
