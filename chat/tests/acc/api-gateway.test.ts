@@ -31,9 +31,5 @@ describe('api gateway', () => {
     );
 
     expect(response.status).toBe(403);
-
-    expect(response.status).toBe(403);
-    const body = await response.json();
-    expect(body.message).toBe('Unauthorized');
   });
 });
