@@ -51,7 +51,7 @@ jobs:
         run: npm run build:affected
 
       - name: SAM validate (with JUnit output)
-        run: npx nx run validate:all #Aware this is not affected here, avoids script overwriting results.
+        run: npm run validate:all #Aware this is not affected here, avoids script overwriting results.
 
       - name: Lint (with JUnit output)
         run: |
