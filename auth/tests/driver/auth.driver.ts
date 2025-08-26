@@ -3,6 +3,7 @@ import {
   LoginUserInput,
   LoginUserResponse,
   RefreshTokenResponse,
+  RevokeTokenResponse,
   TokenExchangeResponse,
 } from '../types/user';
 
@@ -15,4 +16,5 @@ export interface AuthDriver {
     refreshToken: string,
     attestationToken: string,
   ): Promise<RefreshTokenResponse>;
+  revokeToken(refreshToken: string): Promise<RevokeTokenResponse>;
 }
