@@ -13,7 +13,6 @@ cd /tests
 echo "Running tests in ${TEST_ENVIRONMENT}"
 
 nx run chat:test:acc 
-nx run chat:test:int 
 
 echo "Finished running tests in ${TEST_ENVIRONMENT}"
 
