@@ -51,7 +51,6 @@ jobs:
         run: npm run build:affected
 
       - name: SAM validate (with JUnit output)
-        working-directory: ./auth
         run: npx nx run validate:all #Aware this is not affected here, avoids script overwriting results.
 
       - name: Lint (with JUnit output)
