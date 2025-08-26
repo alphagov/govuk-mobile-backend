@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, Mock } from 'vitest';
+import { describe, it, expect, vi, beforeAll, Mock, beforeEach } from 'vitest';
 import { handleCredentialChangeRequest } from '../../../handlers/credential-change-handler';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { adminGlobalSignOut } from '../../../cognito/sign-out-user';
@@ -7,27 +7,32 @@ import {
   SignalBuilder,
 } from '../../helpers/signal';
 import { logMessages } from '../../../log-messages';
-import { beforeEach } from 'node:test';
 
 vi.mock('../../../cognito/sign-out-user', () => ({
   adminGlobalSignOut: vi.fn(),
 }));
 
 describe('handleCredentialChangeRequest', () => {
-  const consoleErrorMock = vi.spyOn(console, 'error');
-
   const credentialChangeEvent = new CredentialChangeEventBuilder();
   const signalBuilder = new SignalBuilder(credentialChangeEvent);
 
-  (adminGlobalSignOut as Mock).mockResolvedValue(true);
-
   beforeEach(() => {
     vi.resetAllMocks();
+    (adminGlobalSignOut as Mock).mockResolvedValue(true);
   });
 
   it('should revoke all the tokens for a given user', async () => {
+    // (adminGlobalSignOut as Mock).mockResolvedValue(true);
     const signal = signalBuilder.build();
-    await expect(handleCredentialChangeRequest(signal)).resolves.not.toThrow();
+    await expect(handleCredentialChangeRequest(signal)).resolves.toEqual({
+      body: JSON.stringify({
+        message: ReasonPhrases.ACCEPTED,
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      statusCode: StatusCodes.ACCEPTED,
+    });
 
     expect(adminGlobalSignOut).toHaveBeenCalled();
   });
@@ -93,7 +98,10 @@ describe('handleCredentialChangeRequest', () => {
   describe('when the signout operation fails', () => {
     let response;
     const signal = signalBuilder.build();
-    beforeAll(async () => {
+    let consoleErrorMock;
+
+    beforeEach(async () => {
+      consoleErrorMock = vi.spyOn(console, 'error');
       (adminGlobalSignOut as Mock).mockResolvedValue(false);
       response = await handleCredentialChangeRequest(signal);
     });

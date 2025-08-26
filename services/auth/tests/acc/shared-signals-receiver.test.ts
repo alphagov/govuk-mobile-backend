@@ -141,6 +141,15 @@ describe('shared-signal-receiver', () => {
       expect(response.ok).toBe(true);
       expect(response.status).toBe(202);
     });
+
+    it('sends a signal verification signal with a valid user and receives a 202 response', async () => {
+      const response = await sharedSignalsDriver.sendSignalVerificationSignal({
+        accessToken,
+      });
+
+      expect(response.ok).toBe(true);
+      expect(response.status).toBe(202);
+    });
   });
 
   describe('Given a shared signal event signed by an unknown private key', async () => {

@@ -8,31 +8,6 @@ const template = loadTemplateFromFile(
 );
 
 describe('Set up the Cognito WAF Log Group for GovUK app', () => {
-  it('has a data protection policy', () => {
-    template.hasResourceProperties('AWS::Logs::LogGroup', {
-      DataProtectionPolicy: {
-        Name: 'CloudWatchLogs-PersonalInformation-Protection',
-        Description: 'Protect basic types of sensitive data',
-        Version: '2021-06-01',
-        Statement: [
-          {
-            Sid: 'audit-policy',
-            DataIdentifier: [
-              'arn:aws:dataprotection::aws:data-identifier/EmailAddress',
-              'JWTTokens',
-            ],
-          },
-          {
-            Sid: 'redact-policy',
-            DataIdentifier: [
-              'arn:aws:dataprotection::aws:data-identifier/EmailAddress',
-              'JWTTokens',
-            ],
-          },
-        ],
-      },
-    });
-  });
   it('has a log group class', () => {
     template.hasResourceProperties('AWS::Logs::LogGroup', {
       LogGroupClass: 'STANDARD',

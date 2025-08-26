@@ -232,4 +232,72 @@ describe('requestHandler', () => {
       'Shared signal feature is disabled',
     );
   });
+
+  it('should return BAD_REQUEST 400 response when schema is unknown', async () => {
+    isUserValidMock.mockResolvedValue(true);
+
+    const input = {
+      iss: 'https://identity.example.com',
+      jti: '123e4567-e89b-12d3-a456-426614174000',
+      iat: 1721126400,
+      aud: 'https://service.example.gov.uk',
+      events: {
+        'https://schemas.openid.net/secevent/caep/event-type/unknown-event': {
+          change_type: 'update',
+          credential_type: 'password',
+          subject: {
+            uri: 'urn:example:account:1234567890',
+            format: 'urn:example:format:account-id',
+          },
+        },
+        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
+          {
+            email: 'foo@bar.com',
+          },
+      },
+    };
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = await requestHandler(input);
+    expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
+    expect(result.body).toBe(
+      JSON.stringify({
+        message: ReasonPhrases.BAD_REQUEST,
+      }),
+    );
+    expect(errorSpy).toHaveBeenCalledWith(logMessages.ERROR_UNKNOWN_SIGNAL);
+    expect(isUserValidMock).not.toHaveBeenCalled();
+    isUserValidMock.mockReset();
+
+    errorSpy.mockRestore();
+  });
+
+  it('should not validate user when requiresUserValidation is false', async () => {
+    const signalVerificationSchema =
+      'https://schemas.openid.net/secevent/sse/event-type/verification';
+
+    const input = {
+      iss: 'https://identity.example.com',
+      jti: '123e4567-e89b-12d3-a456-426614174000',
+      iat: 1721126400,
+      aud: 'https://service.example.gov.uk',
+      events: {
+        'https://schemas.openid.net/secevent/sse/event-type/verification': {
+          state: 'some-state-value',
+        },
+      },
+    };
+
+    (handleCredentialChangeRequest as any).mockReturnValue({
+      statusCode: StatusCodes.ACCEPTED,
+      body: ReasonPhrases.ACCEPTED,
+    });
+    const result = await requestHandler(input);
+    expect(handleCredentialChangeRequest).not.toHaveBeenCalled();
+    expect(result.statusCode).not.toBe(StatusCodes.BAD_REQUEST);
+    expect(isUserValidMock).not.toHaveBeenCalledWith(
+      input,
+      signalVerificationSchema,
+    );
+    isUserValidMock.mockReset();
+  });
 });
