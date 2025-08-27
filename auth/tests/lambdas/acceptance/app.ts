@@ -4,7 +4,6 @@ import {
 } from './clients';
 
 export const lambdaHandler = async (event: any): Promise<any> => {
-  console.log(event);
   const { service, action, command, region } = event;
 
   // 1. Input Validation
