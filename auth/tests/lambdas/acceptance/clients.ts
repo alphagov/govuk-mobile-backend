@@ -43,8 +43,6 @@ export const SUPPORTED_AWS_SDK_CLIENTS: { [key: string]: any } = {
   ChatbotClient: ChatbotClient,
   CloudWatchClient: CloudWatchClient,
   SecretsManagerClient: SecretsManagerClient,
-  // "LambdaClient": LambdaClient, not supported
-  // "IAMClient": IAMClient, not supported
   APIGatewayClient: APIGatewayClient,
   LambdaClient: LambdaClient,
 };
@@ -56,7 +54,6 @@ export const SUPPORTED_AWS_SDK_COMMANDS: {
   [clientName: string]: { [commandName: string]: any };
 } = {
   CognitoIdentityProviderClient: {
-    // "DescribeUserPoolCommand": DescribeUserPoolCommand, not supported
     DescribeUserPoolClientCommand: DescribeUserPoolClientCommand,
     AdminCreateUserCommand: AdminCreateUserCommand,
     AdminDeleteUserCommand: AdminDeleteUserCommand,
@@ -75,7 +72,6 @@ export const SUPPORTED_AWS_SDK_COMMANDS: {
   },
   CloudWatchClient: {
     DescribeAlarmsCommand: DescribeAlarmsCommand,
-    // "SetAlarmStateCommand": SetAlarmStateCommand, not supported
     DescribeAlarmHistoryCommand: DescribeAlarmHistoryCommand,
   },
   SecretsManagerClient: {
