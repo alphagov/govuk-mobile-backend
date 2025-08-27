@@ -34,7 +34,11 @@ describe('Check the deployed Shared Signal Access log group', async () => {
     assert.isNotEmpty(logGroup.kmsKeyId);
   });
   it('has a retention period of 30 days', () => {
-    const expectedRetentionPeriod = 30;
-    assert.equal(logGroup.retentionInDays, expectedRetentionPeriod);
+    const nonProdRetentionPeriod = 30;
+    const expectedRetentionPeriodForProd = 30; //change to 365 once logs are cleared
+    const isNonProductionEnvironment = testConfig.environment !== 'production';
+    isNonProductionEnvironment
+      ? assert.equal(logGroup.retentionInDays, nonProdRetentionPeriod)
+      : assert.equal(logGroup.retentionInDays, expectedRetentionPeriodForProd);
   });
 });
