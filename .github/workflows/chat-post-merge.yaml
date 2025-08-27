@@ -19,7 +19,6 @@ permissions:
 defaults:
   run:
     shell: bash
-    working-directory: ./services/chat
 
 jobs:
   deploy:
@@ -46,19 +45,27 @@ jobs:
           role-to-assume: ${{ vars.CHAT_GH_ACTIONS_ROLE_ARN }}
           aws-region: eu-west-2
 
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
       - name: SAM validate
-        working-directory: ./chat
-        run: sam validate --lint
+        run: 'npx nx run chat:sam:validate'
 
       - name: SAM build
-        run: sam build
+        run: 'npx nx run chat:build'
 
       - name: Deploy Chat SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
           artifact-bucket-name: ${{ vars.CHAT_ARTIFACT_BUCKET_NAME }} # Need to configure git environment for the new buckets
           signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
-          working-directory: ./chat/.aws-sam/build
+          working-directory: ./services/chat/.aws-sam/build
 
       - name: Build, tag, and push testing images to Amazon ECR
         uses: govuk-one-login/devplatform-upload-action-ecr@v1.4.0

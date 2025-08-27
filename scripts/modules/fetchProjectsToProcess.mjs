@@ -2,7 +2,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { execSync } from 'child_process';
 
-export default function fetchProjectsToProcess() {
+export default function fetchProjectsToProcess(...args) {
   //Fetch command line arguments -- projects: affected or all, and process into array of projects to build
   const argv = yargs(hideBin(process.argv)).parse();
   let projects = argv.projects;
@@ -15,15 +15,17 @@ export default function fetchProjectsToProcess() {
     );
   }
 
+  let commandString = ['nx show projects', ...args].join(' ');
   if (projects === 'affected') {
-    toProcess = execSync('nx show projects --affected')
+    commandString += ' --affected';
+    toProcess = execSync(commandString)
       .toString('utf-8')
       .replace('\n', ',')
       .trim()
       .split(',');
     logMessage = `Processing affected projects: ${toProcess}`;
   } else if (projects === 'all') {
-    toProcess = execSync('nx show projects')
+    toProcess = execSync(commandString)
       .toString('utf-8')
       .replace('\n', ',')
       .trim()

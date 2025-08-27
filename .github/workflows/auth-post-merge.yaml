@@ -19,7 +19,6 @@ permissions:
 defaults:
   run:
     shell: bash
-    working-directory: ./services/auth
 
 jobs:
   deploy:
@@ -35,14 +34,6 @@ jobs:
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Set Up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install Dependencies
-        run: npm ci
-
       - name: Set up SAM cli
         uses: aws-actions/setup-sam@v2
         with:
@@ -54,11 +45,20 @@ jobs:
           role-to-assume: ${{ vars.GH_ACTIONS_ROLE_ARN }}
           aws-region: eu-west-2
 
-      - name: SAM validate
-        run: nx run auth:sam:validate
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: 'npm'
 
-      - name: Build Auth
-        run: nx run auth:build
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: SAM validate
+        run: 'npx nx run auth:sam:validate'
+
+      - name: SAM build
+        run: 'npx nx run auth:build'
 
       - name: Deploy Auth SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4

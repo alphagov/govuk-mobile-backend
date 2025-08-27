@@ -6,13 +6,13 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node ./scripts/build.js --projects=chat"
+        "command": "node ./scripts/samBuild.js --projects=chat"
       }
     },
     "sam:validate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node ./scripts/validate --projects=chat"
+        "command": "node ./scripts/samValidate --projects=chat"
       }
     },
     "lint": {

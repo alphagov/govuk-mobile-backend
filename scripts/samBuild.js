@@ -1,12 +1,12 @@
 /* ES Build script to compile lambdas into a dist folder. */
 
-import { readFileSync } from 'fs';
+import { readFileSync, readFileSync, readFileSync } from 'fs';
 import { yamlParse } from 'yaml-cfn';
 import * as esbuild from 'esbuild';
 import { execSync } from 'child_process';
 import fetchProjectsToProcess from './modules/fetchProjectsToProcess.mjs';
 
-let projects = fetchProjectsToProcess();
+let projects = fetchProjectsToProcess('--type app');
 
 projects.forEach((project) => {
   console.log(

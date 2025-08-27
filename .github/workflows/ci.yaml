@@ -48,10 +48,10 @@ jobs:
           mkdir -p reports/source reports/infrastructure
 
       - name: Build
-        run: npm run build:affected
+        run: npm run sam:build:affected
 
       - name: SAM validate (with JUnit output)
-        run: npm run validate:all #Aware this is not affected here, avoids script overwriting results.
+        run: npm run sam:validate:all #Aware this is not affected here, avoids script overwriting results.
 
       - name: Lint (with JUnit output)
         run: |
