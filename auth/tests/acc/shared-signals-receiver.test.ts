@@ -1,9 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ClientCredentialsDriver } from '../driver/client-credentials.driver';
 import { testConfig } from '../common/config';
-import { CognitoUserDriver } from '../driver/cognito-user.driver';
 import { v4 as uuidv4 } from 'uuid';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
 import { SharedSignalsDriver } from '../driver/shared-signals.driver';
 import { generateKeyPair } from 'jose';
 import {
@@ -16,11 +14,6 @@ import { createUserAndReturnCognitoUserId } from './tasks/createUserAndReturnCog
 describe(
   'shared-signal-receiver',
   () => {
-    const lambdaDriver = new TestLambdaDriver();
-    const cognitoUserDriver = new CognitoUserDriver(
-      testConfig.userPoolId,
-      lambdaDriver,
-    );
     const clientCredentialsDriver = new ClientCredentialsDriver(
       `/${testConfig.configStackName}/shared-signal/secrets-config`,
       testConfig.cognitoUrl,
