@@ -6,13 +6,20 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node ./scripts/build.js --projects=auth"
+        "command": "node ./scripts/samBuild.js --projects=auth"
       }
     },
     "sam:validate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node ./scripts/samValidate --projects=auth"
+        "command": "node ./scripts/samValidate.js --projects=auth"
+      }
+    },
+    "sam:deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node ./scripts/samDeploy.js --projects=auth"
       }
     },
     "lint": {

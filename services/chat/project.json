@@ -15,6 +15,13 @@
         "command": "node ./scripts/samValidate --projects=chat"
       }
     },
+    "sam:deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node ./scripts/samDeploy.js --projects=chat"
+      }
+    },
     "lint": {
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
