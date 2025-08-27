@@ -37,6 +37,13 @@ const testCases: LambdaTestCase[] = [
     handler: 'app.lambdaHandler',
     role: 'SharedSignalReceiverFunctionIAMRole',
   },
+  {
+    resourceName: 'RevokeRefreshTokenFunction',
+    functionName: 'revoke-refresh-token',
+    codeUri: 'revoke-token/',
+    handler: 'app.lambdaHandler',
+    role: 'RevokeRefreshTokenFunctionIAMRole',
+  },
 ];
 
 describe.each(testCases)(
