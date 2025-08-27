@@ -1,24 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { ClientCredentialsDriver } from '../driver/client-credentials.driver';
 import { testConfig } from '../common/config';
-import { CognitoUserDriver } from '../driver/cognito-user.driver';
 import { v4 as uuidv4 } from 'uuid';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
 import axios, { AxiosError } from 'axios';
 import { SharedSignalsDriver } from '../driver/shared-signals.driver';
+import { createUserAndReturnCognitoUserId } from './tasks/createUserAndReturnCognitoUserId';
 
 describe('shared-signal authentication', async () => {
-  const lambdaDriver = new TestLambdaDriver();
-  const cognitoUserDriver = new CognitoUserDriver(
-    testConfig.userPoolId,
-    lambdaDriver,
-  );
   const clientCredentialsDriver = new ClientCredentialsDriver(
     `/${testConfig.configStackName}/shared-signal/secrets-config`,
     testConfig.cognitoUrl,
   );
-  const passwordUpdateUserId = uuidv4();
-  const passwordUpdateUserName = `${passwordUpdateUserId}@test.com`;
 
   const sharedSignalsDriver = new SharedSignalsDriver(
     testConfig.sharedSignalEndpoint,
@@ -59,15 +51,8 @@ describe('shared-signal authentication', async () => {
   it('should allow authenticated requests', async () => {
     const accessToken = await clientCredentialsDriver.getAccessToken();
 
-    const cognitoUserId =
-      await cognitoUserDriver.createCognitoUserAndReturnUserName(
-        passwordUpdateUserName,
-      );
-
-    const response = await sharedSignalsDriver.sendPasswordSignal({
+    const response = await sharedSignalsDriver.sendSignalVerificationSignal({
       accessToken,
-      email: passwordUpdateUserName,
-      userId: cognitoUserId,
     });
 
     expect(response.ok).toBe(true);

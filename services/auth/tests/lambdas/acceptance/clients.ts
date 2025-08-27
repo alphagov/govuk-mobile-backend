@@ -18,7 +18,6 @@ import {
   AdminGetUserCommand,
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
-  DescribeUserPoolCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { GetTopicAttributesCommand, SNSClient } from '@aws-sdk/client-sns';
 import {
