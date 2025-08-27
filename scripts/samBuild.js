@@ -1,6 +1,6 @@
 /* ES Build script to compile lambdas into a dist folder. */
 
-import { readFileSync, readFileSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { yamlParse } from 'yaml-cfn';
 import * as esbuild from 'esbuild';
 import { execSync } from 'child_process';
