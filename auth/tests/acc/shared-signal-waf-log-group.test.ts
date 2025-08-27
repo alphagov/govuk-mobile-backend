@@ -38,7 +38,7 @@ describe('Check the deployed Shared Signal WAF log group', async () => {
     assert.include(logGroup.logGroupName, `aws-waf-logs-shared-signal`);
   });
 
-  it('has a retention period of 30 days', () => {
+  it('has a correct retention period in days', () => {
     const nonProdRetentionPeriod = 30;
     const expectedRetentionPeriodForProd = 30; //change to 365 once logs are cleared
     const isNonProductionEnvironment = testConfig.environment !== 'production';
