@@ -33,7 +33,7 @@ Parameters:
   AuthStackName:
     Type: String
     Description: Stack Name for Auth Stack
-    Default: govuk-mobile-backend
+    Default: govuk-app-backend
   
 
 Conditions:

@@ -64,7 +64,9 @@ describe('Set up the Cognito User Pool for GovUK app', () => {
   });
 
   it('should have deletion protection enabled', () => {
-    expect(resourceUnderTest.Properties.DeletionProtection).toEqual('ACTIVE');
+    expect(resourceUnderTest.Properties.DeletionProtection).toEqual({
+      'Fn::If': ['IsEphemeralStack', 'INACTIVE', 'ACTIVE'],
+    });
   });
 
   it('should have email as username attribute', () => {
