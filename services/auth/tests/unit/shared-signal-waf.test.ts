@@ -157,7 +157,9 @@ describe('Shared Signal WAF logging', () => {
   });
 
   it('has a retention policy of 30 days', () => {
-    expect(wafLogGroup.Properties.RetentionInDays).toEqual(30);
+    expect(wafLogGroup.Properties.RetentionInDays).toEqual({
+      'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+    });
   });
 
   it('has the required tags', () => {
