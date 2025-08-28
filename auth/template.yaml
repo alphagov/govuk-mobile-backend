@@ -1825,7 +1825,7 @@ Resources:
       AlarmDescription: !Sub |
         Shared Signal Alarm detects a high rate of client-side errors.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/API+Gateway+alarms
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -1861,7 +1861,7 @@ Resources:
       AlarmDescription: !Sub |
         Shared Signal Alarm detects a high rate of server-side errors.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/DRAFT+Shared+Signal+API+Gateway+alarms
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/API+Gateway+alarms
       Namespace: AWS/ApiGateway
       Statistic: Average
       ActionsEnabled: true
@@ -2223,7 +2223,7 @@ Resources:
       AlarmDescription: !Sub |
         Alarm when the shared signal health check error exceeds 1 incident per 20 minutes.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4620714004/Health+endpoint+failure
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4620714004/Health+endpoint+failure+alarm
       ActionsEnabled: true  
       Namespace: AWS/Lambda
       MetricName: Errors
