@@ -1,10 +1,3 @@
-class MissingAttestationTokenError extends Error {
-  public constructor(message: string) {
-    super(message);
-    this.name = 'MissingAttestationTokenError';
-  }
-}
-
 class UnknownAppError extends Error {
   public constructor(message: string) {
     super(message);
@@ -34,7 +27,6 @@ class ConfigError extends Error {
 }
 
 export {
-  MissingAttestationTokenError,
   UnknownAppError,
   FailedToFetchSecretError,
   JwksFetchError,

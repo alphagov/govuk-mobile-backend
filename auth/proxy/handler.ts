@@ -1,4 +1,7 @@
-import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
+import type {
+  APIGatewayEvent,
+  APIGatewayProxyStructuredResultV2,
+} from 'aws-lambda';
 import { FailedToFetchSecretError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
@@ -7,6 +10,7 @@ import { sanitizeHeaders } from './sanitize-headers';
 import { ZodError } from 'zod/v4';
 import { validateRequestBodyOrThrow } from './validation/body';
 import { logMessages } from './log-messages';
+import { StatusCodes } from 'http-status-codes';
 
 const generateErrorResponse = ({
   statusCode,
@@ -14,7 +18,7 @@ const generateErrorResponse = ({
 }: {
   statusCode: number;
   message: string;
-}): APIGatewayProxyResultV2 => ({
+}): APIGatewayProxyStructuredResultV2 => ({
   statusCode,
   headers: { 'Content-Type': 'application/x-amz-json-1.1' },
   body: JSON.stringify({ message }),
@@ -22,7 +26,9 @@ const generateErrorResponse = ({
 
 export const createHandler =
   (dependencies: Dependencies) =>
-  async (event: APIGatewayEvent): Promise<APIGatewayProxyResultV2> => {
+  async (
+    event: APIGatewayEvent,
+  ): Promise<APIGatewayProxyStructuredResultV2> => {
     try {
       console.log(logMessages.ATTESTATION_STARTED);
 
@@ -68,6 +74,17 @@ export const createHandler =
         parsedUrl: config.cognitoUrl,
         clientSecret: await getClientSecret(),
       });
+
+      if (
+        response.statusCode != null &&
+        response.statusCode >= StatusCodes.BAD_REQUEST.valueOf()
+      ) {
+        console.log(
+          logMessages.COGNITO_STATUS_CODE,
+          response.statusCode,
+          response.body,
+        );
+      }
 
       console.log(logMessages.ATTESTATION_COMPLETED);
 

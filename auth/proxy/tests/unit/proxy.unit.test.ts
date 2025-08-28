@@ -12,7 +12,10 @@ vi.mock('https', () => {
         if (event === 'data') cb('mock response');
         if (event === 'end') cb();
       },
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        'array-header': ['header1', 'header2'],
+      },
       statusCode: 200,
     };
 
