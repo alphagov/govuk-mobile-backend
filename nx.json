@@ -16,6 +16,9 @@
     "build": {
       "cache": true
     },
+    "sam:validate": {
+      "cache": false
+    },
     "test:unit": {
       "cache": true
     },

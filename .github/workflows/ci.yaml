@@ -48,37 +48,10 @@ jobs:
           mkdir -p reports/source reports/infrastructure
 
       - name: Build
-        run: npm run build
+        run: npm run sam:build:affected
 
       - name: SAM validate (with JUnit output)
-        working-directory: ./auth
-        run: |
-          # Capture SAM output and create JUnit XML
-          if sam validate --lint 2>&1 | tee ../reports/infrastructure/sam-output.txt; then
-            # Success - create passing JUnit XML
-            cat > ../reports/infrastructure/sam-results.xml << EOF
-            <?xml version="1.0" encoding="UTF-8"?>
-            <testsuites name="SAM Validate">
-              <testsuite name="CloudFormation Templates" tests="1" failures="0" errors="0" skipped="0" time="1">
-                <testcase name="Template Validation" classname="SAM.CloudFormation"/>
-              </testsuite>
-            </testsuites>
-          EOF
-          else
-            # Failure - create failing JUnit XML with error details
-            error_msg=$(cat ../reports/infrastructure/sam-output.txt | tail -5 | tr '\n' ' ' | sed 's/"/\&quot;/g')
-            cat > ../reports/infrastructure/sam-results.xml <<- EOF
-            <?xml version="1.0" encoding="UTF-8"?>
-            <testsuites name="SAM Validate">
-              <testsuite name="CloudFormation Templates" tests="1" failures="1" errors="0" skipped="0" time="1">
-                <testcase name="Template Validation" classname="SAM.CloudFormation">
-                  <failure message="SAM validation failed">$error_msg</failure>
-                </testcase>
-              </testsuite>
-            </testsuites>
-          EOF
-            exit 1
-          fi
+        run: npm run sam:validate:all #Aware this is not affected here, avoids script overwriting results.
 
       - name: Lint (with JUnit output)
         run: |
