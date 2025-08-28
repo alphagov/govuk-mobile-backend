@@ -33,8 +33,12 @@ describe('Check the deployed WAF log group', async () => {
   it('has an associated KMS key', () => {
     assert.isNotEmpty(logGroup.kmsKeyId);
   });
-  it('has a retention period of 30 days', () => {
+  it('has a correct retention period', () => {
     const expectedRetentionPeriod = 30;
-    assert.equal(logGroup.retentionInDays, expectedRetentionPeriod);
+    const expectedRetentionPeriodForProd = 30; //change to 365 once logs are cleared
+    const isNonProductionEnvironment = testConfig.environment !== 'production';
+    isNonProductionEnvironment
+      ? assert.equal(logGroup.retentionInDays, expectedRetentionPeriod)
+      : assert.equal(logGroup.retentionInDays, expectedRetentionPeriodForProd);
   });
 });

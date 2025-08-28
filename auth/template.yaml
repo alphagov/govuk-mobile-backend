@@ -414,7 +414,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub aws-waf-logs-cognito-${AWS::StackName}
       KmsKeyId: !GetAtt CognitoWAFLogGroupKMSKey.Arn
-      RetentionInDays: 30
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1134,7 +1134,7 @@ Resources:
       # log stream must start with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-attestation-${AWS::StackName}
       KmsKeyId: !GetAtt AuthProxyWAFLogGroupKMSKey.Arn
-      RetentionInDays: 30
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -1242,7 +1242,7 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-attestation-proxy-api
       KmsKeyId: !GetAtt AttestationProxyApiAccessLogGroupKMSKey.Arn
-      RetentionInDays: 30
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
       DataProtectionPolicy:
         Name: AttestationProxyApiAccessLogGroupProtectionPolicy
         Description: Protect basic types of sensitive data
@@ -1751,7 +1751,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-shared-signal
       KmsKeyId: !GetAtt SharedSignalAccessLogGroupKMSKey.Arn
-      RetentionInDays: 30
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -2419,7 +2419,7 @@ Resources:
       # must starts with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-shared-signal-${AWS::StackName}
       KmsKeyId: !GetAtt SharedSignalWafLogGroupKMSKey.Arn
-      RetentionInDays: 30
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
