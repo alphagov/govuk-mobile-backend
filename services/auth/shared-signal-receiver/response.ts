@@ -1,7 +1,7 @@
 import type { APIGatewayProxyResult } from 'aws-lambda';
 
 interface ErrorResponse {
-  errorCode: string | null;
+  errorCode: string;
   errorDescription: string;
 }
 
