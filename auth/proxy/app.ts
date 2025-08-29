@@ -1,4 +1,5 @@
-import type { APIGatewayProxyResultV2 } from 'aws-lambda';
+/* v8 ignore start */
+import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import type { FeatureFlags } from './feature-flags';
 import { FEATURE_FLAGS } from './feature-flags';
 import type { AttestationUseCase } from './attestation';
@@ -25,7 +26,7 @@ const dependencies: Dependencies = {
 export const lambdaHandler = createHandler(dependencies);
 
 export interface Dependencies {
-  proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>;
+  proxy: (input: ProxyInput) => Promise<APIGatewayProxyStructuredResultV2>;
   attestationUseCase: AttestationUseCase;
   featureFlags: FeatureFlags;
   getClientSecret: () => Promise<string>;

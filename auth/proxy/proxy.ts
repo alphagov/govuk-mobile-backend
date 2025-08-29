@@ -1,6 +1,6 @@
 import https from 'https';
 import querystring from 'querystring';
-import type { APIGatewayProxyResultV2 } from 'aws-lambda';
+import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import type { SanitizedRequestHeaders } from './sanitize-headers';
 import type { RequestBody } from './validation/body';
 
@@ -11,7 +11,7 @@ import type { RequestBody } from './validation/body';
  * @param body - The request body as a string, or undefined if not applicable.
  * @param headers - The HTTP headers to send with the request.
  * @param method - The HTTP method to use (default is 'GET').
- * @returns A promise that resolves to an APIGatewayProxyResultV2 containing the response.
+ * @returns A promise that resolves to an <APIGatewayProxyStructuredResultV2> containing the response.
  */
 async function _proxyRequest(
   hostname: string,
@@ -19,7 +19,7 @@ async function _proxyRequest(
   body: string | undefined,
   headers: SanitizedRequestHeaders,
   method = 'GET',
-): Promise<APIGatewayProxyResultV2> {
+): Promise<APIGatewayProxyStructuredResultV2> {
   // eslint-disable-next-line promise/avoid-new
   return new Promise((resolve, reject) => {
     const req = https.request(
@@ -72,7 +72,7 @@ export const proxy = async ({
   body,
   sanitizedHeaders,
   clientSecret,
-}: ProxyInput): Promise<APIGatewayProxyResultV2> => {
+}: ProxyInput): Promise<APIGatewayProxyStructuredResultV2> => {
   const encodedBodyWithClientSecret = querystring.stringify({
     ...body,
     client_secret: clientSecret,

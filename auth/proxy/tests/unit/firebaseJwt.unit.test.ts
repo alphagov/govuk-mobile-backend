@@ -48,6 +48,8 @@ vi.mock('jsonwebtoken', async (importOriginal) => {
         });
       } else if (token === 'expired-token') {
         callback(new JsonWebTokenError('Token expired'));
+      } else if (token === 'not-jwt') {
+        callback(null, 'jwtstring');
       } else {
         callback(new JsonWebTokenError('Invalid token'));
       }
@@ -207,6 +209,17 @@ describe('firebaseJwt', () => {
     ).rejects.toThrow(JsonWebTokenError);
   });
 
+  it('should throw an error if the token is not a jwt payload', async () => {
+    await expect(
+      validateFirebaseJWT({
+        token: 'not-jwt',
+        configValues: configValues,
+      }),
+    ).rejects.toThrow(
+      new JsonWebTokenError('Payload is not a valid JWT payload'),
+    );
+  });
+
   it('should throw an error if the token is expired', async () => {
     await expect(
       validateFirebaseJWT({
@@ -235,9 +248,19 @@ describe('firebaseJwt', () => {
   });
 
   it('should throw an error if audience is invalid', async () => {
+    (decode as Mock).mockReturnValueOnce({
+      sub: 'mocked-app-id',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      header: {
+        kid: 'mocked-kid',
+        alg: 'RS256',
+        typ: 'JWT',
+      },
+    });
+
     await expect(
       validateFirebaseJWT({
-        token: 'invalid-audience',
+        token: 'invalid audience',
         configValues: configValues,
       }),
     ).rejects.toThrow(JsonWebTokenError);
@@ -247,6 +270,7 @@ describe('firebaseJwt', () => {
     'key1|/usr/bin/uname',
     '../../../../../../dev/null',
     "SELECT key FROM keys WHERE key='key1'",
+    {},
   ])('should throw an error if kid contains harmful content', async (kid) => {
     (decode as Mock).mockReturnValueOnce({
       sub: 'mocked-app-id',

@@ -33,6 +33,10 @@ describe('parseSecret', () => {
       }),
       `FailedToFetchSecretError: client_secret is empty`,
     ],
+    [
+      JSON.stringify('client_secret'),
+      `FailedToFetchSecretError: Secret format is incorrect`,
+    ],
   ])('should handle invalid inputs', (invalidSecret: any, message: string) => {
     expect(() => parseSecret(invalidSecret)).toThrow(
       new FailedToFetchSecretError(message),
