@@ -1,15 +1,16 @@
 import { getConfig } from '../../config';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { ConfigError } from '../../errors';
-import { SSMService } from '../../service/ssm-service';
 
-vi.mock('../../service/ssm-service', () => {
+const getParameterMock = vi.fn().mockResolvedValue('custom-domain');
+
+vi.mock('@aws-lambda-powertools/parameters/ssm', async (importOriginal) => {
+  const originalModule = await importOriginal<
+    typeof import('@aws-lambda-powertools/parameters/ssm')
+  >();
   return {
-    SSMService: vi.fn().mockImplementation(() => {
-      return {
-        getParameterValue: vi.fn().mockResolvedValue('custom-domain'),
-      };
-    }),
+    ...originalModule,
+    getParameter: vi.fn(() => getParameterMock()),
   };
 });
 
@@ -32,8 +33,6 @@ describe('getConfig', () => {
   });
 
   it('should return the required environment variables', async () => {
-    new SSMService(region); // Ensure SSMService is instantiated
-
     const response = await getConfig();
 
     expect(response.firebaseAndroidAppId).toBeDefined();
@@ -62,8 +61,6 @@ describe('getConfig', () => {
     const originalEnv = { ...process.env };
     delete process.env[key];
 
-    new SSMService(region); // Ensure SSMService is instantiated
-
     await expect(getConfig()).rejects.toThrow(new ConfigError(message));
 
     process.env = originalEnv;
@@ -76,8 +73,6 @@ describe('getConfig', () => {
       const originalEnv = { ...process.env };
       process.env['COGNITO_URL'] = url;
 
-      new SSMService(region); // Ensure SSMService is instantiated
-
       await expect(getConfig()).rejects.toThrow(
         new ConfigError(expectedMessage),
       );
@@ -85,4 +80,11 @@ describe('getConfig', () => {
       process.env = originalEnv;
     },
   );
+
+  it('should throw an error if the domain ssm parameter is empty', async () => {
+    getParameterMock.mockResolvedValue(undefined);
+    await expect(getConfig()).rejects.toThrow(
+      new ConfigError(`No parameter for value: custom-domain-ssm-name`),
+    );
+  });
 });
