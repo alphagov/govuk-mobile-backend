@@ -1,25 +1,32 @@
 import { ConfigError } from './errors';
 import dotenv from 'dotenv';
-import { SSMService } from './service/ssm-service';
+import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 
 dotenv.config();
 
-const region = process.env['REGION'] ?? 'eu-west-2';
-
-const ssmServiceObject: SSMService = new SSMService(region);
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers
+const sixtyMinutes = 60 * 60 * 1000;
 
 /**
  * Validates the Cognito URL against the expected format based on the region and domain name.
  * Throws a ConfigError if the URL does not match the expected format.
  * @param configName The name of the SSM parameter that contains the custom domain configuration.
  * @param cognitoUrl The Cognito URL to validate.
+ * @param region AWS region.
  * @returns URL The validated Cognito URL as a URL object.
  */
 const validateCognitoUrl = async (
   configName: string,
   cognitoUrl: string,
+  region: string,
 ): Promise<URL> => {
-  const domainName = await ssmServiceObject.getParameterValue(configName);
+  const domainName = await getParameter(configName, {
+    maxAge: sixtyMinutes,
+  });
+
+  if (domainName == null) {
+    throw new ConfigError(`No parameter for value: ${configName}`);
+  }
 
   const expectedDomain = `https://${domainName}.auth.${region}.amazoncognito.com`;
 
@@ -71,6 +78,7 @@ export async function getConfig(): Promise<AppConfig> {
   const sanitizedUrl = await validateCognitoUrl(
     customDomainConfigName,
     cognitoUrl,
+    awsRegion,
   );
 
   if (projectId == null) {

@@ -12,8 +12,9 @@
     "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify"
   },
   "dependencies": {
+    "@aws-lambda-powertools/parameters": "^2.25.2",
     "@aws-sdk/client-secrets-manager": "^3.808.0",
-    "@aws-sdk/client-ssm": "^3.825.0",
+    "@aws-sdk/client-ssm": "^3.876.0",
     "dotenv": "^16.5.0",
     "esbuild": "^0.25.0",
     "jsonwebtoken": "^9.0.2",
