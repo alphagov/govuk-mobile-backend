@@ -309,7 +309,7 @@ describe('Chat API Gateway Deployment', () => {
   };
 
   const resource = template.findResources('AWS::ApiGateway::Deployment');
-  resourceUnderTest = resource['ChatApiGatewayDeployment'] as any;
+  resourceUnderTest = resource['ChatApiGatewayDeployment20250828'] as any;
 
   it('should have a IsNotProduction condition', () => {
     expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
@@ -351,7 +351,7 @@ describe('Chat API Gateway Stage', () => {
   });
   it('should have a deployment ID that matches the Chat API Gateway Deployment', () => {
     expect(resourceUnderTest.Properties.DeploymentId).toEqual({
-      Ref: 'ChatApiGatewayDeployment',
+      Ref: 'ChatApiGatewayDeployment20250828',
     });
   });
   it('should have access log settings with a specific format', () => {
