@@ -1,4 +1,8 @@
-import { SignatureVerificationError } from '../errors';
+import {
+  SignatureVerificationError,
+  InvalidRequestError,
+  InvalidKeyError,
+} from '../errors';
 import { logMessages } from '../log-messages';
 import { getJwks } from './fetch-jwks';
 import type { JWTPayload } from 'jose';
@@ -25,13 +29,17 @@ export const verifySETJwt = async ({
 }: VerifySetJwtInput): Promise<JWTPayload> => {
   try {
     if (typeof jwt !== 'string') {
-      throw new TypeError('Invalid jwt type');
+      const message =
+        "The request body cannot be parsed as a SET, or the Event Payload within the SET does not conform to the event's definition";
+      throw new InvalidRequestError(message);
     }
 
     const decodedHeaders = decodeProtectedHeader(jwt);
 
     if (decodedHeaders.kid == null) {
-      throw new TypeError('JWT is missing the "kid" header');
+      const message =
+        'One or more keys used to encrypt or sign the SET is invalid or otherwise unacceptable to the SET Recipient (expired, revoked, failed certificate validation, etc.).';
+      throw new InvalidKeyError(message);
     }
 
     const keys = await fetchJwks({
@@ -50,6 +58,13 @@ export const verifySETJwt = async ({
 
     return payload;
   } catch (error) {
-    throw new SignatureVerificationError(String(error));
+    // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
+    switch (true) {
+      case error instanceof InvalidRequestError:
+      case error instanceof InvalidKeyError:
+        throw error;
+      default:
+        throw new SignatureVerificationError(String(error));
+    }
   }
 };
