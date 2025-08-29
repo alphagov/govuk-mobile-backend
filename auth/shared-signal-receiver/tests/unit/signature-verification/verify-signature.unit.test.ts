@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { generateKeyPair, JWTPayload, KeyLike, SignJWT } from 'jose';
 import { verifySETJwt } from '../../../signature-verification/verify-signature';
-import { SignatureVerificationError } from '../../../errors';
+import {
+  InvalidKeyError,
+  InvalidRequestError,
+  SignatureVerificationError,
+} from '../../../errors';
 
 export interface generateJWTPayload {
   issuer: string;
@@ -179,21 +183,23 @@ describe('verify-signature', async () => {
     });
     const mockFetchJwks = vi.fn().mockResolvedValue(publicKey);
 
+    const message =
+      'One or more keys used to encrypt or sign the SET is invalid or otherwise unacceptable to the SET Recipient (expired, revoked, failed certificate validation, etc.).';
+
     await expect(
       verifySETJwt({
         jwt,
         config: sharedSignalsConfig,
         fetchJwks: mockFetchJwks,
       }),
-    ).rejects.toThrowError(
-      new SignatureVerificationError(
-        `TypeError: JWT is missing the "kid" header`,
-      ),
-    );
+    ).rejects.toThrowError(new InvalidKeyError(message));
   });
 
   it('should throw if jwt is undefined', async () => {
     const mockFetchJwks = vi.fn().mockResolvedValue(publicKey);
+
+    const message =
+      "The request body cannot be parsed as a SET, or the Event Payload within the SET does not conform to the event's definition";
 
     await expect(
       verifySETJwt({
@@ -201,9 +207,7 @@ describe('verify-signature', async () => {
         config: sharedSignalsConfig,
         fetchJwks: mockFetchJwks,
       }),
-    ).rejects.toThrowError(
-      new SignatureVerificationError(`TypeError: Invalid jwt type`),
-    );
+    ).rejects.toThrowError(new InvalidRequestError(message));
   });
 
   it('should throw if jwt cant be decoded', async () => {

@@ -1,9 +1,14 @@
 import type { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
 import { ZodError } from 'zod';
 import { logMessages } from './log-messages';
-import { generateResponse } from './response';
+import { generateErrorResponse, generateResponse } from './response';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
-import { CognitoError, SignatureVerificationError } from './errors';
+import {
+  CognitoError,
+  SignatureVerificationError,
+  InvalidRequestError,
+  InvalidKeyError,
+} from './errors';
 import type { Dependencies } from './app';
 
 /**
@@ -54,11 +59,13 @@ export const createHandler =
             ReasonPhrases.INTERNAL_SERVER_ERROR,
           );
         case error instanceof SignatureVerificationError:
+        case error instanceof InvalidRequestError:
+        case error instanceof InvalidKeyError:
           console.error(logMessages.SET_TOKEN_VERIFICATION_ERROR, error);
-          return generateResponse(
-            StatusCodes.BAD_REQUEST,
-            ReasonPhrases.BAD_REQUEST,
-          );
+          return generateErrorResponse(StatusCodes.BAD_REQUEST, {
+            errorCode: error.name,
+            errorDescription: error.message,
+          });
         default:
           console.error(logMessages.ERROR_UNHANDLED_INTERNAL, error);
           return generateResponse(

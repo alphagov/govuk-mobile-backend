@@ -174,9 +174,13 @@ describe('lambdaHandler', () => {
     );
 
     const result = await invalidSignatureHandler(createEvent());
+    const expectedResponse = {
+      err: 'signature_verification_error',
+      description: 'Invalid token',
+    };
 
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
-    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
+    expect(JSON.parse(result.body)).toEqual(expectedResponse);
 
     expect(mockRequestHandler).not.toHaveBeenCalled();
   });
