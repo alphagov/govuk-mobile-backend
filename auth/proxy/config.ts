@@ -1,6 +1,7 @@
 import { ConfigError } from './errors';
 import dotenv from 'dotenv';
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
+import zod from 'zod/v4';
 
 dotenv.config();
 
@@ -37,72 +38,52 @@ const validateCognitoUrl = async (
   return new URL(cognitoUrl);
 };
 
+const schema = zod.object({
+  firebaseIosAppId: zod.string(),
+  firebaseAndroidAppId: zod.string(),
+  cognitoUrl: zod.string(),
+  projectId: zod.string(),
+  audience: zod.string(),
+  customDomainConfigName: zod.string(),
+  awsRegion: zod.string(),
+  cognitoSecretName: zod.string(),
+});
+
+type SchemaConfig = zod.infer<typeof schema>;
+
+export type AppConfig = Omit<SchemaConfig, 'cognitoUrl'> & {
+  cognitoUrl: URL;
+};
+
 /**
  * Retrieves the application configuration from environment variables.
  * Validates the required variables and returns an object containing the configuration.
  * @returns AppConfig The application configuration object.
  */
 export async function getConfig(): Promise<AppConfig> {
-  const firebaseIosAppId = process.env['FIREBASE_IOS_APP_ID'];
-  const firebaseAndroidAppId = process.env['FIREBASE_ANDROID_APP_ID'];
-  const cognitoUrl = process.env['COGNITO_URL'];
-  const projectId = process.env['FIREBASE_PROJECT_ID'];
-  const audience = process.env['FIREBASE_AUDIENCE'];
-  const customDomainConfigName = process.env['COGNITO_CUSTOM_DOMAIN_SSM_NAME'];
-  const awsRegion = process.env['REGION'];
+  const { data, error } = await schema.safeParseAsync({
+    firebaseIosAppId: process.env['FIREBASE_IOS_APP_ID'],
+    firebaseAndroidAppId: process.env['FIREBASE_ANDROID_APP_ID'],
+    cognitoUrl: process.env['COGNITO_URL'],
+    projectId: process.env['FIREBASE_PROJECT_ID'],
+    audience: process.env['FIREBASE_AUDIENCE'],
+    customDomainConfigName: process.env['COGNITO_CUSTOM_DOMAIN_SSM_NAME'],
+    awsRegion: process.env['REGION'],
+    cognitoSecretName: process.env['COGNITO_SECRET_NAME'],
+  });
 
-  if (firebaseIosAppId == null) {
-    throw new ConfigError(
-      'FIREBASE_IOS_APP_ID environment variable is required',
-    );
-  }
-
-  if (firebaseAndroidAppId == null) {
-    throw new ConfigError(
-      'FIREBASE_ANDROID_APP_ID environment variable is required',
-    );
-  }
-
-  if (cognitoUrl == null) {
-    throw new ConfigError('COGNITO_URL environment variable is required');
-  }
-
-  if (customDomainConfigName == null) {
-    throw new ConfigError('custom domain config name is required');
-  }
-
-  if (awsRegion == null) {
-    throw new ConfigError('REGION environment variable is required');
+  if (error) {
+    throw new ConfigError(zod.prettifyError(error));
   }
 
   const sanitizedUrl = await validateCognitoUrl(
-    customDomainConfigName,
-    cognitoUrl,
-    awsRegion,
+    data.customDomainConfigName,
+    data.cognitoUrl,
+    data.awsRegion,
   );
 
-  if (projectId == null) {
-    throw new ConfigError(
-      'FIREBASE_PROJECT_ID environment variable is required',
-    );
-  }
-  if (audience == null) {
-    throw new ConfigError('FIREBASE_AUDIENCE environment variable is required');
-  }
-
   return {
-    firebaseIosAppId,
-    firebaseAndroidAppId,
+    ...data,
     cognitoUrl: sanitizedUrl,
-    projectId,
-    audience,
   };
-}
-
-export interface AppConfig {
-  firebaseIosAppId: string;
-  firebaseAndroidAppId: string;
-  cognitoUrl: URL;
-  projectId: string;
-  audience: string;
 }
