@@ -1,5 +1,5 @@
 import { getConfig } from '../../config';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { ConfigError } from '../../errors';
 
 const getParameterMock = vi.fn().mockResolvedValue('custom-domain');
@@ -19,7 +19,7 @@ describe('getConfig', () => {
   const region = 'eu-west-2';
   const constructValidCognitoUrl = `https://${customDomain}.auth.${region}.amazoncognito.com`;
 
-  beforeAll(() => {
+  beforeEach(() => {
     process.env = {
       ...process.env,
       FIREBASE_IOS_APP_ID: 'someval',
@@ -29,6 +29,7 @@ describe('getConfig', () => {
       FIREBASE_AUDIENCE: 'someval',
       REGION: region,
       COGNITO_CUSTOM_DOMAIN_SSM_NAME: 'custom-domain-ssm-name',
+      COGNITO_SECRET_NAME: 'super-safe', // pragma: allowlist-secret
     };
   });
 
@@ -43,20 +44,39 @@ describe('getConfig', () => {
   it.each([
     [
       'FIREBASE_IOS_APP_ID',
-      'FIREBASE_IOS_APP_ID environment variable is required',
+      `✖ Invalid input: expected string, received undefined
+  → at firebaseIosAppId`,
     ],
     [
       'FIREBASE_ANDROID_APP_ID',
-      'FIREBASE_ANDROID_APP_ID environment variable is required',
+      `✖ Invalid input: expected string, received undefined
+  → at firebaseAndroidAppId`,
     ],
-    ['COGNITO_URL', 'COGNITO_URL environment variable is required'],
+    [
+      'COGNITO_URL',
+      `✖ Invalid input: expected string, received undefined
+  → at cognitoUrl`,
+    ],
     [
       'FIREBASE_PROJECT_ID',
-      'FIREBASE_PROJECT_ID environment variable is required',
+      `✖ Invalid input: expected string, received undefined
+  → at projectId`,
     ],
-    ['FIREBASE_AUDIENCE', 'FIREBASE_AUDIENCE environment variable is required'],
-    ['COGNITO_CUSTOM_DOMAIN_SSM_NAME', 'custom domain config name is required'],
-    ['REGION', 'REGION environment variable is required'],
+    [
+      'FIREBASE_AUDIENCE',
+      `✖ Invalid input: expected string, received undefined
+  → at audience`,
+    ],
+    [
+      'COGNITO_CUSTOM_DOMAIN_SSM_NAME',
+      `✖ Invalid input: expected string, received undefined
+  → at customDomainConfigName`,
+    ],
+    [
+      'REGION',
+      `✖ Invalid input: expected string, received undefined
+  → at awsRegion`,
+    ],
   ])('should throw if variables are undefined', async (key, message) => {
     const originalEnv = { ...process.env };
     delete process.env[key];

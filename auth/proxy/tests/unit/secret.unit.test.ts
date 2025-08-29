@@ -1,75 +1,103 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { getClientSecret } from '../../secret';
-import { SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import { FailedToFetchSecretError } from '../../errors';
+
+vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
+  const originalModule = await importOriginal<
+    typeof import('@aws-lambda-powertools/parameters/secrets')
+  >();
+  return {
+    ...originalModule,
+    getSecret: vi.fn().mockResolvedValue(
+      JSON.stringify({
+        client_secret: 'mock-client-secret', // pragma: allowlist-secret
+      }),
+    ),
+  };
+});
 
 describe('secret', () => {
-  const mockClient = {
-    send: vi.fn().mockResolvedValue({
-      SecretString: JSON.stringify({
-        client_secret: 'mock-client-secret', // pragma: allowlist secret
-      }),
-    }),
-  } as unknown as SecretsManagerClient;
-
+  const secretName = 'foo'; // pragma: allowlist-secret
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.COGNITO_SECRET_NAME = 'mock-secret-name'; // pragma: allowlist secret
-  });
-
-  it('should throw error if secret name is not provided', async () => {
-    process.env.COGNITO_SECRET_NAME = '';
-
-    await expect(getClientSecret(mockClient)).rejects.toThrow(
-      'Secret name is not provided',
-    );
   });
 
   it('should fetch client secret from AWS Secrets Manager', async () => {
-    await expect(getClientSecret(mockClient, null)).resolves.toEqual(
+    await expect(getClientSecret(secretName)).resolves.toEqual(
       'mock-client-secret',
     );
   });
 
   it('should use cached client secret', async () => {
-    await getClientSecret(mockClient, null);
-    await getClientSecret(mockClient);
+    await getClientSecret(secretName);
 
-    expect(mockClient.send).toHaveBeenCalledTimes(1);
+    expect(getSecret).toHaveBeenCalledWith('foo', {
+      maxAge: 60 * 60 * 1000,
+    });
   });
 
   it('should throw error if secret is empty', async () => {
-    const emptySecret = {
-      send: vi.fn().mockResolvedValue({
-        SecretString: '',
+    (getSecret as Mock).mockResolvedValue(
+      JSON.stringify({
+        foo: 'bar',
       }),
-    } as unknown as SecretsManagerClient;
+    );
 
-    await expect(getClientSecret(emptySecret, null)).rejects.toThrow(
-      'FailedToFetchSecretError: Secret does not contain client_secret',
+    await expect(getClientSecret(secretName)).rejects.toThrow(
+      new FailedToFetchSecretError('client_secret is not a string'),
     );
   });
 
   it('should throw error if client_secret is empty', async () => {
-    const emptyClientSecret = {
-      send: vi.fn().mockResolvedValue({
-        SecretString: JSON.stringify({
-          client_secret: '',
-        }),
+    (getSecret as Mock).mockResolvedValue(
+      JSON.stringify({
+        client_secret: '',
       }),
-    } as unknown as SecretsManagerClient;
+    );
 
-    await expect(getClientSecret(emptyClientSecret, null)).rejects.toThrow(
-      'FailedToFetchSecretError: client_secret is empty',
+    await expect(getClientSecret(secretName)).rejects.toThrow(
+      new FailedToFetchSecretError('client_secret is empty'),
     );
   });
 
-  it('should throw error if fetching secret fails', async () => {
-    const unknownError = {
-      send: vi.fn().mockRejectedValue(new Error('Failed to fetch secret')),
-    } as unknown as SecretsManagerClient;
+  it('should wrap errors in a secrets error', async () => {
+    (getSecret as Mock).mockRejectedValue(new Error('network error'));
 
-    await expect(getClientSecret(unknownError, null)).rejects.toThrow(
-      'Failed to fetch secret',
+    await expect(getClientSecret(secretName)).rejects.toThrow(
+      FailedToFetchSecretError,
     );
   });
+
+  it.each([
+    [
+      '{"client_secret": "user1", "password":}', // pragma: allowlist-secret
+      `Unexpected token '}', ..."password":}" is not valid JSON`,
+    ], // pragma: allowlist-secret
+    ['', `Unexpected end of JSON input`],
+    [null, `Secret is not correct type.`],
+    [undefined, `Secret is not correct type.`],
+    [{}, `Secret is not correct type.`],
+    [[], `Secret is not correct type.`],
+    [
+      JSON.stringify({
+        client_secret: false,
+      }),
+      `client_secret is not a string`,
+    ],
+    [
+      JSON.stringify({
+        client_secret: '',
+      }),
+      `client_secret is empty`,
+    ],
+  ])(
+    'should handle invalid inputs',
+    async (invalidSecret: any, message: string) => {
+      (getSecret as Mock).mockResolvedValue(invalidSecret);
+      await expect(getClientSecret(invalidSecret)).rejects.toThrow(
+        new FailedToFetchSecretError(message),
+      );
+    },
+  );
 });
