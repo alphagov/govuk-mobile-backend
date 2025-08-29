@@ -45,19 +45,8 @@ describe('secret', () => {
     );
 
     await expect(getClientSecret(secretName)).rejects.toThrow(
-      new FailedToFetchSecretError('client_secret is not a string'),
-    );
-  });
-
-  it('should throw error if client_secret is empty', async () => {
-    (getSecret as Mock).mockResolvedValue(
-      JSON.stringify({
-        client_secret: '',
-      }),
-    );
-
-    await expect(getClientSecret(secretName)).rejects.toThrow(
-      new FailedToFetchSecretError('client_secret is empty'),
+      new FailedToFetchSecretError(`✖ Invalid input: expected string, received undefined
+  → at client_secret`),
     );
   });
 
@@ -83,13 +72,15 @@ describe('secret', () => {
       JSON.stringify({
         client_secret: false,
       }),
-      `client_secret is not a string`,
+      `✖ Invalid input: expected string, received boolean
+  → at client_secret`,
     ],
     [
       JSON.stringify({
         client_secret: '',
       }),
-      `client_secret is empty`,
+      `✖ Too small: expected string to have >=1 characters
+  → at client_secret`,
     ],
   ])(
     'should handle invalid inputs',
