@@ -15,10 +15,12 @@
     "clean": "rm -rf debug && rm -rf dist"
   },
   "dependencies": {
+    "@aws-lambda-powertools/parameters": "^2.25.2",
     "@aws-sdk/client-secrets-manager": "^3.312.0",
     "aws-jwt-verify": "^5.1.0",
+    "aws-lambda": "^1.0.0",
     "esbuild": "^0.25.0",
-    "aws-lambda": "^1.0.0"
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.92",
