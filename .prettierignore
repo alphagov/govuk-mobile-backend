@@ -17,4 +17,5 @@ dist
 build
 .build/
 .nx
-scripts/
+scripts/*.js
+scripts/*.mjs

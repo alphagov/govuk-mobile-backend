@@ -23,6 +23,18 @@ export default defineConfig({
       },
       {
         test: {
+          include: ['scripts/**/*.test.ts'],
+          name: 'scripts',
+          environment: 'node',
+          // allow for extremely long running tests (Deploy script testing)
+          testTimeout: 600000,
+          //Move to single thread to avoid parallel running script files
+          pool: 'threads',
+          poolOptions: { threads: { singleThread: true } },
+        },
+      },
+      {
+        test: {
           include: ['**/tests/int/**/*.test.ts'],
           name: 'int',
           environment: 'node',
