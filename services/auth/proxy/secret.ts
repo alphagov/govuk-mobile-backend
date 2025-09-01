@@ -1,35 +1,40 @@
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} from '@aws-sdk/client-secrets-manager';
 import { FailedToFetchSecretError } from './errors';
-import { parseSecret } from './parse-secret';
+import { logMessages } from './log-messages';
+import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import zod, { ZodError } from 'zod/v4';
 
-let cachedClientSecret: string | null = null;
+const secretSchema = zod.object({
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  client_secret: zod.string().min(1),
+});
 
-export const getClientSecret = async (
-  client: SecretsManagerClient = new SecretsManagerClient({
-    region: 'eu-west-2',
-  }),
-  cachedClientSecretOverride: string | null = cachedClientSecret,
-): Promise<string> => {
-  if (cachedClientSecretOverride != null) {
-    console.log('Using cached client secret');
-    return cachedClientSecretOverride;
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers
+const sixtyMinutes = 60 * 60 * 1000; // maximum lifetime of a lambda container
+
+export const getClientSecret = async (secretName: string): Promise<string> => {
+  try {
+    const secret = await getSecret(secretName, {
+      maxAge: sixtyMinutes,
+    });
+
+    // prettier-ignore
+    if (typeof secret !== 'string') { // pragma: allowlist-secret
+      throw new FailedToFetchSecretError('Secret is not correct type.');
+    }
+
+    const secretStringParsed = JSON.parse(secret) as unknown;
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    const { client_secret } = await secretSchema.parseAsync(secretStringParsed);
+
+    console.log(logMessages.SECRETS_FETCH_COMPLETE);
+
+    return client_secret;
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new FailedToFetchSecretError(zod.prettifyError(error));
+    }
+    throw new FailedToFetchSecretError(
+      error instanceof Error ? error.message : String(error),
+    );
   }
-  const secretName = process.env['COGNITO_SECRET_NAME'];
-
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  if (!secretName) {
-    throw new FailedToFetchSecretError('Secret name is not provided');
-  }
-
-  const command = new GetSecretValueCommand({ SecretId: secretName });
-  const response = await client.send(command);
-
-  cachedClientSecret = parseSecret(response.SecretString);
-
-  console.log('Fetched client secret');
-
-  return cachedClientSecret;
 };

@@ -28,6 +28,6 @@ export interface Dependencies {
   proxy: (input: ProxyInput) => Promise<APIGatewayProxyResultV2>;
   attestationUseCase: AttestationUseCase;
   featureFlags: FeatureFlags;
-  getClientSecret: () => Promise<string>;
+  getClientSecret: (secretName: string) => Promise<string>;
   getConfig: () => Promise<AppConfig>;
 }

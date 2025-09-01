@@ -1,11 +1,11 @@
-import { expect, describe, it, afterAll, beforeEach, vi } from 'vitest';
+import { expect, describe, it, afterAll, beforeEach, vi, Mock } from 'vitest';
 import { APIGatewayTokenAuthorizerEvent } from 'aws-lambda';
 import { lambdaHandler } from '../../app';
-import { SecretsService } from '../../service/secrets-service';
+import * as secrets from '../../secret';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
-vi.mock('../../../m2m-authorizer/service/secrets-service');
 vi.mock('aws-jwt-verify');
+vi.mock('../../secret');
 
 describe('Unit test for shared signal authorizer lambdaHandler', () => {
   const consoleMock = vi
@@ -27,8 +27,14 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
     delete process.env.SHARED_SIGNAL_CLIENT_SECRET_NAME;
   });
 
+  const event: APIGatewayTokenAuthorizerEvent = {
+    type: 'TOKEN',
+    authorizationToken: 'Bearer mockToken',
+    methodArn: 'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
+  };
+
   it('Should return Allow policy for valid token', async () => {
-    const secretsServiceSpy = vi.spyOn(SecretsService.prototype, 'getSecret');
+    const secretsServiceSpy = vi.spyOn(secrets, 'getSecretObject');
     const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<
       typeof CognitoJwtVerifier
     >;
@@ -42,13 +48,6 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
     mockJwtVerifier.create.mockReturnValue({
       verify: vi.fn().mockResolvedValue({ sub: 'mockUserId' }),
     });
-
-    const event: APIGatewayTokenAuthorizerEvent = {
-      type: 'TOKEN',
-      authorizationToken: 'Bearer mockToken',
-      methodArn:
-        'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
-    };
 
     const result = await lambdaHandler(event);
 
@@ -100,7 +99,7 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
   });
 
   it('Should throw Unauthorized error for token validation failure', async () => {
-    const mockSecretsService = vi.spyOn(SecretsService.prototype, 'getSecret');
+    const mockSecretsService = vi.spyOn(secrets, 'getSecretObject');
     const mockJwtVerifier = CognitoJwtVerifier as vi.Mocked<
       typeof CognitoJwtVerifier
     >;
@@ -126,11 +125,7 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
   });
 
   it('Should throw error if secret retrieval fails', async () => {
-    const mockSecretsService = SecretsService as vi.MockedClass<
-      typeof SecretsService
-    >;
-
-    mockSecretsService.prototype.getSecret.mockRejectedValue(
+    (secrets.getSecretObject as Mock).mockRejectedValue(
       new Error('Secrets Manager error'),
     );
 

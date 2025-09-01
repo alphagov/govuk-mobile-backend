@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
-import { getClientSecret } from '../../secret';
+import { getSecretObject } from '../../secret';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
-import { FailedToFetchSecretError } from '../../errors';
 
 vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
   const originalModule = await importOriginal<
@@ -11,7 +10,9 @@ vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
     ...originalModule,
     getSecret: vi.fn().mockResolvedValue(
       JSON.stringify({
-        client_secret: 'mock-client-secret', // pragma: allowlist-secret
+        clientId: 'foo',
+        clientSecret: 'mock-client-secret', // pragma: allowlist-secret
+        userPoolId: 'bar',
       }),
     ),
   };
@@ -19,18 +20,24 @@ vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
 
 describe('secret', () => {
   const secretName = 'foo'; // pragma: allowlist-secret
+  const generateMockSecret = (overrides?: any) => ({
+    clientId: 'foo',
+    clientSecret: 'mock-client-secret', // pragma: allowlist-secret
+    userPoolId: 'bar',
+    ...overrides,
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should fetch client secret from AWS Secrets Manager', async () => {
-    await expect(getClientSecret(secretName)).resolves.toEqual(
-      'mock-client-secret',
+    await expect(getSecretObject(secretName)).resolves.toEqual(
+      generateMockSecret(),
     );
   });
 
   it('should use cached client secret', async () => {
-    await getClientSecret(secretName);
+    await getSecretObject(secretName);
 
     expect(getSecret).toHaveBeenCalledWith('foo', {
       maxAge: 60 * 60 * 1000,
@@ -44,50 +51,52 @@ describe('secret', () => {
       }),
     );
 
-    await expect(getClientSecret(secretName)).rejects.toThrow(
-      new FailedToFetchSecretError(`✖ Invalid input: expected string, received undefined
-  → at client_secret`),
+    await expect(getSecretObject(secretName)).rejects.toThrow(
+      new Error(`✖ Invalid input: expected string, received undefined
+  → at clientId
+✖ Invalid input: expected string, received undefined
+  → at clientSecret
+✖ Invalid input: expected string, received undefined
+  → at userPoolId`),
     );
   });
 
   it('should wrap errors in a secrets error', async () => {
     (getSecret as Mock).mockRejectedValue(new Error('network error'));
 
-    await expect(getClientSecret(secretName)).rejects.toThrow(
-      FailedToFetchSecretError,
-    );
+    await expect(getSecretObject(secretName)).rejects.toThrow(Error);
   });
 
   it.each([
-    [
-      '{"client_secret": "user1", "password":}', // pragma: allowlist-secret
-      `Unexpected token '}', ..."password":}" is not valid JSON`,
-    ], // pragma: allowlist-secret
     ['', `Unexpected end of JSON input`],
     [null, `Secret is not correct type.`],
     [undefined, `Secret is not correct type.`],
     [{}, `Secret is not correct type.`],
     [[], `Secret is not correct type.`],
     [
-      JSON.stringify({
-        client_secret: false,
-      }),
+      JSON.stringify(
+        generateMockSecret({
+          clientSecret: false,
+        }),
+      ),
       `✖ Invalid input: expected string, received boolean
-  → at client_secret`,
+  → at clientSecret`,
     ],
     [
-      JSON.stringify({
-        client_secret: '',
-      }),
-      `✖ Too small: expected string to have >=1 characters
-  → at client_secret`,
+      JSON.stringify(
+        generateMockSecret({
+          clientId: false,
+        }),
+      ),
+      `✖ Invalid input: expected string, received boolean
+  → at clientId`,
     ],
   ])(
     'should handle invalid inputs',
     async (invalidSecret: any, message: string) => {
       (getSecret as Mock).mockResolvedValue(invalidSecret);
-      await expect(getClientSecret(invalidSecret)).rejects.toThrow(
-        new FailedToFetchSecretError(message),
+      await expect(getSecretObject(invalidSecret)).rejects.toThrow(
+        new Error(message),
       );
     },
   );

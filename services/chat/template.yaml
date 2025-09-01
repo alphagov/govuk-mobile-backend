@@ -204,7 +204,7 @@ Resources:
         - Key: System
           Value: Chat
 
-  ChatApiGatewayDeployment:
+  ChatApiGatewayDeployment20250828:
     Condition: IsNotProduction
     Type: AWS::ApiGateway::Deployment
     DependsOn: ChatApiGatewayMethod
@@ -217,7 +217,7 @@ Resources:
     Properties:
       StageName: !Ref Environment
       RestApiId: !Ref ChatApiGateway
-      DeploymentId: !Ref ChatApiGatewayDeployment
+      DeploymentId: !Ref ChatApiGatewayDeployment20250828
       AccessLogSetting:
         DestinationArn: !GetAtt ChatApiGatewayAccessLogGroup.Arn
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","authorizeError":"$context.authorize.error","authorizeLatency":"$context.authorize.latency","authorizeStatus":"$context.authorize.status","authorizerIntegrationLatency":"$context.authorizer.integrationLatency","authorizerIntegrationStatus":"$context.authorizer.integrationStatus","authorizerLatency":"$context.authorizer.latency","authorizerRequestId":"$context.authorizer.requestId","authorizerStatus":"$context.authorizer.status"}'
@@ -599,7 +599,7 @@ Outputs:
   ChatApiGatewayDeploymentId:
     Condition: IsNotProduction
     Description: The ID of the Chat API Gateway deployment
-    Value: !Ref ChatApiGatewayDeployment
+    Value: !Ref ChatApiGatewayDeployment20250828
 
   ChatApiGatewayAuthorizerId:
     Condition: IsNotProduction
