@@ -1542,6 +1542,11 @@ Resources:
           COGNITO_SECRET_NAME: !Sub /${ConfigStackName}/cognito/client-secret
           REGION: !Ref AWS::Region
           COGNITO_CUSTOM_DOMAIN_SSM_NAME: !Sub /${ConfigStackName}/cognito/custom-domain
+          POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-auth-proxy
+          POWERTOOLS_LOGGER_LOG_EVENT: !If
+          - IsNonIntegratedEnvironment
+          - "True"
+          - "False"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment

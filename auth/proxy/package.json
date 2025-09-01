@@ -12,6 +12,7 @@
     "build:debug": "esbuild --bundle app.ts --outfile=debug/app.js --sourcemap --platform=node --target=node22 --minify"
   },
   "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.25.2",
     "@aws-lambda-powertools/parameters": "^2.25.2",
     "@aws-sdk/client-secrets-manager": "^3.808.0",
     "@aws-sdk/client-ssm": "^3.876.0",

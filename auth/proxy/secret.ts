@@ -2,6 +2,7 @@ import { FailedToFetchSecretError } from './errors';
 import { logMessages } from './log-messages';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 import zod, { ZodError } from 'zod/v4';
+import { logger } from './logger';
 
 const secretSchema = zod.object({
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
@@ -26,7 +27,7 @@ export const getClientSecret = async (secretName: string): Promise<string> => {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { client_secret } = await secretSchema.parseAsync(secretStringParsed);
 
-    console.log(logMessages.SECRETS_FETCH_COMPLETE);
+    logger.info(logMessages.SECRETS_FETCH_COMPLETE);
 
     return client_secret;
   } catch (error) {

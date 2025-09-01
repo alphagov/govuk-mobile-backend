@@ -1,4 +1,8 @@
-import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
+import type {
+  APIGatewayEvent,
+  APIGatewayProxyResultV2,
+  Context,
+} from 'aws-lambda';
 import { FailedToFetchSecretError, UnknownAppError } from './errors';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import type { Dependencies } from './app';
@@ -7,6 +11,7 @@ import { sanitizeHeaders } from './sanitize-headers';
 import { ZodError } from 'zod/v4';
 import { validateRequestBodyOrThrow } from './validation/body';
 import { logMessages } from './log-messages';
+import { logger } from './logger';
 
 const generateErrorResponse = ({
   statusCode,
@@ -22,9 +27,15 @@ const generateErrorResponse = ({
 
 export const createHandler =
   (dependencies: Dependencies) =>
-  async (event: APIGatewayEvent): Promise<APIGatewayProxyResultV2> => {
+  async (
+    event: APIGatewayEvent,
+    context: Context,
+  ): Promise<APIGatewayProxyResultV2> => {
     try {
-      console.log(logMessages.ATTESTATION_STARTED);
+      logger.addContext(context);
+      logger.logEventIfEnabled(event);
+      logger.setCorrelationId(event.requestContext.requestId);
+      logger.info(logMessages.ATTESTATION_STARTED);
 
       const {
         proxy,
@@ -69,60 +80,59 @@ export const createHandler =
         clientSecret: await getClientSecret(config.cognitoSecretName),
       });
 
-      console.log(logMessages.ATTESTATION_COMPLETED);
+      logger.info(logMessages.ATTESTATION_COMPLETED);
 
       return response;
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
       switch (true) {
         case error instanceof ZodError:
-          console.error(
-            logMessages.ERROR_VALIDATION_ZOD,
-            error.message,
-            error.issues,
-          );
+          logger.error(logMessages.ERROR_VALIDATION_ZOD, {
+            error: {
+              message: error.message,
+              issues: error.issues,
+            },
+          });
           return generateErrorResponse({
             statusCode: 400,
             message: 'Invalid Request',
           });
         case error instanceof TokenExpiredError:
-          console.error(
-            logMessages.ERROR_ATTESTATION_TOKEN_EXPIRED,
-            error.message,
-          );
+          logger.error(logMessages.ERROR_ATTESTATION_TOKEN_EXPIRED, {
+            error,
+          });
           return generateErrorResponse({
             statusCode: 401,
             message: 'Attestation token has expired',
           });
         case error instanceof JsonWebTokenError:
-          console.error(
-            logMessages.ERROR_ATTESTATION_JWT_INVALID,
-            error.message,
-          );
+          logger.error(logMessages.ERROR_ATTESTATION_JWT_INVALID, {
+            error,
+          });
           return generateErrorResponse({
             statusCode: 401,
             message: 'Attestation token is invalid',
           });
         case error instanceof UnknownAppError:
-          console.error(
-            logMessages.ERROR_ATTESTATION_APP_UNKNOWN,
-            error.message,
-          );
+          logger.error(logMessages.ERROR_ATTESTATION_APP_UNKNOWN, {
+            error,
+          });
           return generateErrorResponse({
             statusCode: 401,
             message: 'Unknown app associated with attestation token',
           });
         case error instanceof FailedToFetchSecretError:
-          console.error(
-            logMessages.ERROR_CONFIG_SECRET_FETCH_FAILED,
-            error.message,
-          );
+          logger.error(logMessages.ERROR_CONFIG_SECRET_FETCH_FAILED, {
+            error,
+          });
           return generateErrorResponse({
             statusCode: 500,
             message: 'Internal server error, server missing key dependencies',
           });
         default:
-          console.error(logMessages.ERROR_UNHANDLED_INTERNAL, error); // Catch-all for unexpected errors
+          logger.error(logMessages.ERROR_UNHANDLED_INTERNAL, {
+            error,
+          }); // Catch-all for unexpected errors
           return generateErrorResponse({
             statusCode: 500,
             message: 'Internal server error',
