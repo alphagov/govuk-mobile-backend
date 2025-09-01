@@ -9,6 +9,7 @@ import {
 
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import type { RevokeTokenInput } from './types';
+import { logger } from './logger';
 
 export const revokeRefreshToken = async (
   input: RevokeTokenInput,
@@ -19,14 +20,15 @@ export const revokeRefreshToken = async (
   try {
     await cognitoIdentityServiceProvider.send(command);
 
-    console.log('Refresh token revoked successfully.');
+    logger.info('Refresh token revoked successfully.');
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: 'Refresh token revoked successfully.' }),
     };
   } catch (error) {
-    console.error('Error revoking token:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    logger.error('Error revoking token:', error as Error);
 
     let errorMessage = 'Failed to revoke token.';
 

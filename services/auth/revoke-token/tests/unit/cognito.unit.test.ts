@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { retrieveCognitoCredentials } from '../../cognito';
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
-import { DescribeUserPoolClientCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { logger } from '../../logger';
 
 const mockSend = vi.fn();
 
@@ -64,7 +64,7 @@ describe('retrieveCognitoCredentials', () => {
   it('throws and logs error if send throws', async () => {
     const error = new Error('AWS error');
     mockSend.mockRejectedValue(error);
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const spy = vi.spyOn(logger, 'error').mockImplementation(() => {});
     await expect(
       retrieveCognitoCredentials({ clientId: CLIENT_ID }, mockCognitoClient),
     ).rejects.toThrow(error);

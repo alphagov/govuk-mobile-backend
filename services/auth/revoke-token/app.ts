@@ -1,9 +1,14 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import type {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context,
+} from 'aws-lambda';
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import querystring from 'querystring';
 import type { CognitoCredentials, RevokeTokenInput } from './types';
 import { revokeRefreshToken } from './revoke-refresh-token';
 import { retrieveCognitoCredentials } from './cognito';
+import { logger } from './logger';
 
 /**
  *
@@ -20,8 +25,11 @@ const cognitoIdentityServiceProvider: CognitoIdentityProviderClient =
 
 export const lambdaHandler = async (
   event: APIGatewayProxyEvent,
+  context: Context,
 ): Promise<APIGatewayProxyResult> => {
-  console.log('Revoke token request received', event);
+  logger.addContext(context);
+  logger.logEventIfEnabled(event);
+  logger.setCorrelationId(event.requestContext.requestId);
 
   if (event.body == null || event.body === '') {
     return {
