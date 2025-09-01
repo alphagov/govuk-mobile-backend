@@ -1,6 +1,6 @@
 import { lambdaHandler } from '../../app';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { APIGatewayProxyEvent } from 'aws-lambda';
+import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import * as cognitoModule from '../../../revoke-token/cognito';
 import * as revokeModule from '../../../revoke-token/revoke-refresh-token';
@@ -15,6 +15,18 @@ describe('lambdaHandler - revoke-token', () => {
   const mockRevokeRefreshToken =
     revokeModule.revokeRefreshToken as unknown as vi.Mock;
 
+  const mockContext = {
+    awsRequestId: 'foobar',
+  } as Context;
+
+  const createMockEvent = (overrides?: any): APIGatewayProxyEvent => ({
+    body: 'refresh_token=testRefreshToken&client_id=testClientId&refresh_token=testRefreshToken2',
+    requestContext: {
+      requestId: 'foo',
+    },
+    ...overrides,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -24,33 +36,29 @@ describe('lambdaHandler - revoke-token', () => {
   });
 
   it('returns 400 if body is missing', async () => {
-    const event = { body: null } as APIGatewayProxyEvent;
-    const result = await lambdaHandler(event);
+    const event = createMockEvent({ body: null });
+    const result = await lambdaHandler(event, mockContext);
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Missing request body');
   });
 
   it('returns 400 if body is empty string', async () => {
-    const event = { body: '' } as APIGatewayProxyEvent;
-    const result = await lambdaHandler(event);
+    const event = createMockEvent({ body: '' });
+    const result = await lambdaHandler(event, mockContext);
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Missing request body');
   });
 
   it('returns 400 if refresh_token is missing', async () => {
-    const event = {
-      body: 'client_id=testClientId',
-    } as APIGatewayProxyEvent;
-    const result = await lambdaHandler(event);
+    const event = createMockEvent({ body: 'client_id=testClientId' });
+    const result = await lambdaHandler(event, mockContext);
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Missing refresh token');
   });
 
   it('returns 400 if client_id is missing', async () => {
-    const event = {
-      body: 'refresh_token=testRefreshToken',
-    } as APIGatewayProxyEvent;
-    const result = await lambdaHandler(event);
+    const event = createMockEvent({ body: 'refresh_token=testRefreshToken' });
+    const result = await lambdaHandler(event, mockContext);
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Missing client ID');
   });
@@ -66,11 +74,9 @@ describe('lambdaHandler - revoke-token', () => {
       body: JSON.stringify({ message: 'Success' }),
     });
 
-    const event = {
-      body: 'refresh_token=testRefreshToken&client_id=testClientId&refresh_token=testRefreshToken2',
-    } as APIGatewayProxyEvent;
+    const event = createMockEvent();
 
-    const result = await lambdaHandler(event);
+    const result = await lambdaHandler(event, mockContext);
 
     expect(mockRetrieveCognitoCredentials).toHaveBeenCalledWith(
       { clientId: 'testClientId' },
@@ -99,11 +105,11 @@ describe('lambdaHandler - revoke-token', () => {
       body: JSON.stringify({ message: 'Token revoked' }),
     });
 
-    const event = {
+    const event = createMockEvent({
       body: 'refresh_token=validRefreshToken&client_id=validClientId',
-    } as APIGatewayProxyEvent;
+    });
 
-    const result = await lambdaHandler(event);
+    const result = await lambdaHandler(event, mockContext);
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body).message).toBe('Token revoked');

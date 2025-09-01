@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { DescribeUserPoolClientCommand } from '@aws-sdk/client-cognito-identity-provider';
 import type { CognitoCredentials } from './types';
+import { logger } from './logger';
 
 let cachedClientSecret: CognitoCredentials | null = null;
 
@@ -12,7 +13,7 @@ export const retrieveCognitoCredentials = async (
   cachedClientSecretOverride: CognitoCredentials | null = null,
 ): Promise<CognitoCredentials> => {
   if (cachedClientSecretOverride != null) {
-    console.log('Using cached client secret');
+    logger.info('Using cached client secret');
     return cachedClientSecretOverride;
   }
   const userPoolId = process.env['USER_POOL_ID'];
@@ -42,7 +43,8 @@ export const retrieveCognitoCredentials = async (
     cachedClientSecret = { clientId, clientSecret };
     return cachedClientSecret;
   } catch (error) {
-    console.error('Error fetching Cognito client credentials', error);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    logger.error('Error fetching Cognito client credentials', error as Error);
     throw error; // Re-throw to be handled by caller.
   }
 };
