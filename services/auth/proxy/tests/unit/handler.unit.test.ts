@@ -3,11 +3,13 @@ import { createHandler } from '../../handler'; // Adjust path as needed
 import type {
   APIGatewayProxyEvent,
   APIGatewayProxyStructuredResultV2,
+  Context,
 } from 'aws-lambda';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { FailedToFetchSecretError, UnknownAppError } from '../../errors';
 import querystring from 'querystring';
 import { logMessages } from '../../log-messages';
+import { logger } from '../../logger';
 
 const createMockEvent = (
   overrides: Partial<APIGatewayProxyEvent> = {},
@@ -56,6 +58,10 @@ describe('lambdaHandler', () => {
     headers: { 'content-type': 'application/json' },
     body: 'mock response',
   });
+
+  const mockContext = {
+    awsRequestId: 'foobar',
+  } as Context;
 
   const mockDependencies = {
     attestationUseCase: {
@@ -117,8 +123,8 @@ describe('lambdaHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
-    consoleErrorSpy = vi.spyOn(console, 'error');
-    consoleSpy = vi.spyOn(console, 'log');
+    consoleErrorSpy = vi.spyOn(logger, 'error');
+    consoleSpy = vi.spyOn(logger, 'info');
   });
 
   afterEach(() => {
@@ -131,6 +137,7 @@ describe('lambdaHandler', () => {
       createMockEvent({
         path: '/dev/oauth2/authorize',
       }),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(404);
@@ -140,6 +147,7 @@ describe('lambdaHandler', () => {
   it('proxies a valid POST /token request', async () => {
     const response = (await lambdaHandler(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(200);
@@ -149,6 +157,7 @@ describe('lambdaHandler', () => {
   it('proxied requests have host stripped to avoid certificate name errors', async () => {
     (await lambdaHandler(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(mockProxy.mock.calls[0][0].sanitizedHeaders['host']).toBeUndefined();
@@ -157,6 +166,7 @@ describe('lambdaHandler', () => {
   it('proxied requests headers are lowercased', async () => {
     (await lambdaHandler(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
     const headerKeys = Object.keys(mockProxy.mock.calls[0][0].sanitizedHeaders);
     const hasUppercaseKeys = headerKeys.some((k) => /[A-Z]/.test(k));
@@ -167,6 +177,7 @@ describe('lambdaHandler', () => {
   it('should not perform an attestation check if the feature flag is enabled', async () => {
     (await disableAttestationEvent(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
     expect(
       mockDependencies.attestationUseCase.validateAttestationHeaderOrThrow,
@@ -176,6 +187,7 @@ describe('lambdaHandler', () => {
   it('returns 500 on proxy error', async () => {
     const response = (await proxy500Event(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(500);
@@ -235,6 +247,7 @@ describe('lambdaHandler', () => {
     async (handler, expectedResponse) => {
       const response = (await handler(
         createMockEvent(),
+        mockContext,
       )) as APIGatewayProxyStructuredResultV2;
 
       expect(response.statusCode).toBe(expectedResponse.statusCode);
@@ -247,6 +260,7 @@ describe('lambdaHandler', () => {
   it('returns 500 on catch-all errors', async () => {
     const response = (await uncaughtExceptionEvent(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(500);
@@ -258,6 +272,7 @@ describe('lambdaHandler', () => {
   it('should return an internal server error if no client secret is found', async () => {
     const response = (await unableToGetClientSecret(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(500);
@@ -269,6 +284,7 @@ describe('lambdaHandler', () => {
   it('should set path name to oauth token endpoint', async () => {
     (await lambdaHandler(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(mockProxy.mock.calls[0][0].path).toBe('/oauth2/token');
@@ -279,6 +295,7 @@ describe('lambdaHandler', () => {
       createMockEvent({
         body: undefined,
       }),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(400);
@@ -315,6 +332,7 @@ describe('lambdaHandler', () => {
             ...headers,
           },
         }),
+        mockContext,
       )) as APIGatewayProxyStructuredResultV2;
 
       expect(response.statusCode).toBe(expectedResponse.status);
@@ -333,6 +351,7 @@ describe('lambdaHandler', () => {
       createMockEvent({
         body,
       }),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(400);
@@ -376,19 +395,21 @@ describe('lambdaHandler', () => {
   ])(
     'attestation errors should have a consistent log prefix to enable log filtering',
     async (handler) => {
-      (await handler(createMockEvent())) as APIGatewayProxyStructuredResultV2;
+      (await handler(
+        createMockEvent(),
+        mockContext,
+      )) as APIGatewayProxyStructuredResultV2;
 
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('ERROR_ATTESTATION_'),
-        expect.any(String), // The error message
-      );
+      const errorMessage = consoleErrorSpy.mock.calls[0][0];
+      expect(errorMessage).contains('ERROR_ATTESTATION_');
     },
   );
 
   it('should add a attestation start and end log message', async () => {
     (await lambdaHandler(
       createMockEvent(),
+      mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(consoleSpy).toHaveBeenCalledTimes(2);

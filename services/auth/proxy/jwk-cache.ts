@@ -1,6 +1,8 @@
 /* eslint-disable importPlugin/group-exports */
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import { JwksFetchError } from './errors';
+import { logMessages } from './log-messages';
+import { logger } from './logger';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const JWKS_URI = 'https://firebaseappcheck.googleapis.com/v1/jwks';
@@ -33,20 +35,20 @@ interface Jwks {
   keys: Key[];
 }
 
-// eslint-disable-next-line importPlugin/group-exports
 export const getJwks = async (): Promise<Jwks> => {
   const now = Date.now();
 
   // Check if cachedJwks exists and is still fresh based on its maxAge
   if (cachedJwks && now < cachedJwks.expiresInMillis) {
-    console.log('Returning JWKS from cache (still fresh).');
+    logger.info(logMessages.JWKS_FETCHING_FROM_CACHE);
     return cachedJwks.jwks;
   }
 
   const response = await fetch(JWKS_URI);
 
   if (!response.ok) {
-    console.error(
+    logger.error(
+      logMessages.JWKS_FETCHING_FAILED,
       `Failed to fetch JWKS: ${String(response.status)} ${response.statusText}`,
     );
     throw new JwksFetchError('Failed to fetch JWKS');
@@ -75,9 +77,7 @@ export const getJwks = async (): Promise<Jwks> => {
     expiresInMillis: expiry,
   };
 
-  console.log(
-    'Fetching fresh JWKS (cache expired or not present)...new cache generated',
-  );
+  logger.info(logMessages.JWKS_FETCHING_FRESH_KEYS);
 
   return cachedJwks.jwks;
 };
