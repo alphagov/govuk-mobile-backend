@@ -5,6 +5,8 @@ import jwkToPem from 'jwk-to-pem';
 import { UnknownAppError } from './errors';
 import type { AppConfig } from './config';
 import { getJwks } from './jwk-cache';
+import { logger } from './logger';
+import { logMessages } from './log-messages';
 
 const alg = 'RS256';
 
@@ -153,5 +155,5 @@ export const validateFirebaseJWT = async (
     throw new JsonWebTokenError('Invalid "aud" claim in the JWT payload');
   }
 
-  console.log('Attestation token is valid');
+  logger.info(logMessages.ATTESTATION_TOKEN_VALID);
 };
