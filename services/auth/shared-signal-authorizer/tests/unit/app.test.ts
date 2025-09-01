@@ -1,23 +1,28 @@
 import { expect, describe, it, afterAll, beforeEach, vi, Mock } from 'vitest';
-import { APIGatewayTokenAuthorizerEvent } from 'aws-lambda';
+import { APIGatewayTokenAuthorizerEvent, Context } from 'aws-lambda';
 import { lambdaHandler } from '../../app';
 import * as secrets from '../../secret';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import { logger } from '../../logger';
 
 vi.mock('aws-jwt-verify');
 vi.mock('../../secret');
 
 describe('Unit test for shared signal authorizer lambdaHandler', () => {
-  const consoleMock = vi
-    .spyOn(console, 'log')
+  const loggerMock = vi
+    .spyOn(logger, 'info')
     .mockImplementation(() => undefined);
-  const consoleErrorMock = vi
-    .spyOn(console, 'error')
+  const loggerErrorMock = vi
+    .spyOn(logger, 'error')
     .mockImplementation(() => undefined);
 
+  const mockContext = {
+    awsRequestId: 'foobar',
+  } as Context;
+
   beforeEach(() => {
-    consoleMock.mockReset();
-    consoleErrorMock.mockReset();
+    loggerMock.mockReset();
+    loggerErrorMock.mockReset();
     vi.clearAllMocks();
     process.env.SHARED_SIGNAL_CLIENT_SECRET_NAME = 'secretsName'; //pragma: allowlist secret
   });
@@ -49,7 +54,7 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
       verify: vi.fn().mockResolvedValue({ sub: 'mockUserId' }),
     });
 
-    const result = await lambdaHandler(event);
+    const result = await lambdaHandler(event, mockContext);
 
     expect(result).toEqual({
       principalId: 'mockUserId',
@@ -74,11 +79,11 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
         'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
-    await expect(lambdaHandler(event)).rejects.toThrow(
+    await expect(lambdaHandler(event, mockContext)).rejects.toThrow(
       'Unauthorized - Token not supplied',
     );
 
-    expect(consoleErrorMock).toHaveBeenCalledWith(
+    expect(loggerErrorMock).toHaveBeenCalledWith(
       'Authorization header missing',
     );
   });
@@ -91,9 +96,11 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
         'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
-    await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
+    await expect(lambdaHandler(event, mockContext)).rejects.toThrow(
+      'Unauthorized',
+    );
 
-    expect(consoleErrorMock).toHaveBeenCalledWith(
+    expect(loggerErrorMock).toHaveBeenCalledWith(
       'Token format invalid: Not a Bearer token',
     );
   });
@@ -121,7 +128,9 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
         'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
-    await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
+    await expect(lambdaHandler(event, mockContext)).rejects.toThrow(
+      'Unauthorized',
+    );
   });
 
   it('Should throw error if secret retrieval fails', async () => {
@@ -136,6 +145,8 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
         'arn:aws:execute-api:region:accountId:apiId/stage/GET/resource',
     };
 
-    await expect(lambdaHandler(event)).rejects.toThrow('Unauthorized');
+    await expect(lambdaHandler(event, mockContext)).rejects.toThrow(
+      'Unauthorized',
+    );
   });
 });
