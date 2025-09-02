@@ -4,22 +4,27 @@ import { HealthCheckClient } from '../../../shared-signal-health-check/client/he
 import { lambdaHandler } from '../../app';
 import { AuthError, ConfigError, VerifyError } from '../../errors';
 import { logMessages } from '../../log-messages';
+import { logger } from '../../logger';
+import type { Context } from 'aws-lambda';
 
 vi.mock('../../../shared-signal-health-check/client/health-check-client');
 vi.mock('../../../shared-signal-health-check/init');
 
 describe('Unit test for shared signal health check lambdaHandler', () => {
-  let consoleInfoMock: vi.SpyInstance;
-  let consoleErrorMock: vi.SpyInstance;
+  let loggerInfoMock: vi.SpyInstance;
+  let loggerErrorMock: vi.SpyInstance;
 
   const mockEvent = {
     id: 'test-event-id',
     time: '2024-06-01T00:00:00Z',
   };
+  const mockContext = {
+    awsRequestId: 'test-aws-request-id',
+  } as Context;
 
   beforeEach(() => {
-    consoleErrorMock = vi.spyOn(console, 'error');
-    consoleInfoMock = vi.spyOn(console, 'info');
+    loggerInfoMock = vi.spyOn(logger, 'info');
+    loggerErrorMock = vi.spyOn(logger, 'error');
     vi.clearAllMocks();
     vi.resetModules();
     (initialiseHealthCheckService as unknown as vi.Mock).mockReturnValue({});
@@ -36,16 +41,16 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
       performHealthCheck: performHealthCheckMock,
     }));
 
-    await lambdaHandler(mockEvent as any);
+    await lambdaHandler(mockEvent as any, mockContext);
 
-    expect(consoleInfoMock).toHaveBeenCalledWith(
+    expect(loggerInfoMock).toHaveBeenCalledWith(
       logMessages.HEALTH_CHECK_START,
       {
         eventId: mockEvent.id,
       },
     );
     expect(performHealthCheckMock).toHaveBeenCalled();
-    expect(consoleInfoMock).toHaveBeenCalledWith(logMessages.HEALTH_CHECK_END, {
+    expect(loggerInfoMock).toHaveBeenCalledWith(logMessages.HEALTH_CHECK_END, {
       eventId: mockEvent.id,
     });
   });
@@ -57,7 +62,9 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
         .mockRejectedValue(new ConfigError('Config error')),
     }));
 
-    await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(ConfigError);
+    await expect(lambdaHandler(mockEvent as any, mockContext)).rejects.toThrow(
+      ConfigError,
+    );
   });
 
   it('Should handle AuthError and log auth error', async () => {
@@ -67,7 +74,9 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
         .mockRejectedValue(new AuthError('Auth error')),
     }));
 
-    await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(AuthError);
+    await expect(lambdaHandler(mockEvent as any, mockContext)).rejects.toThrow(
+      AuthError,
+    );
   });
 
   it('Should handle VerifyError and log verify error', async () => {
@@ -77,7 +86,9 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
         .mockRejectedValue(new VerifyError('Verify error')),
     }));
 
-    await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(VerifyError);
+    await expect(lambdaHandler(mockEvent as any, mockContext)).rejects.toThrow(
+      VerifyError,
+    );
   });
 
   it('Should handle unknown error and log unhandled error', async () => {
@@ -86,6 +97,8 @@ describe('Unit test for shared signal health check lambdaHandler', () => {
       performHealthCheck: vi.fn().mockRejectedValue(unknownError),
     }));
 
-    await expect(lambdaHandler(mockEvent as any)).rejects.toThrow(unknownError);
+    await expect(lambdaHandler(mockEvent as any, mockContext)).rejects.toThrow(
+      unknownError,
+    );
   });
 });

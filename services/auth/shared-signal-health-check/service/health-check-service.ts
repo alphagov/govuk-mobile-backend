@@ -5,6 +5,7 @@ import type { SharedSignalHealthCheck } from '../interface/health-check';
 import { AuthError, VerifyError } from '../errors';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 import type { SecretsConfig } from '../interface/secret-config';
+import { logger } from '../logger';
 
 export class SharedSignalHealthCheckService implements SharedSignalHealthCheck {
   private readonly healthCheckTokenUrl: string;
@@ -67,7 +68,7 @@ export class SharedSignalHealthCheckService implements SharedSignalHealthCheck {
         }`,
       );
     }
-    console.info('Token verification successful');
+    logger.info('Token verification successful');
     return isVerified;
   }
 
