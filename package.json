@@ -14,7 +14,7 @@
     "sam:build:all": "node ./scripts/samBuild.js --projects=all",
     "sam:validate:affected": "node ./scripts/samValidate.js --projects=affected",
     "sam:validate:all": "node ./scripts/samValidate.js --projects=all",
-    "sam:deploy:affected": "npm run sam:build:affected && ./scripts/samDeploy.js --projects=affected",
+    "sam:deploy:affected": "npm run sam:build:affected && node ./scripts/samDeploy.js --projects=affected",
     "sam:deploy:all": "npm run sam:build:affected && node ./scripts/samDeploy.js --projects=all",
     "commit": "cz commit",
     "format": "prettier --write .",

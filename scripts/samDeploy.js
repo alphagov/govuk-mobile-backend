@@ -23,6 +23,7 @@ const parameters = {
     ...(process.env.PERMISSION_BOUNDARY_ARN ? {PermissionBoundary: process.env.PERMISSION_BOUNDARY_ARN} : {}),
     ...(process.env.CONFIG_STACK_NAME ? {ConfigStackName: process.env.CONFIG_STACK_NAME} : {}),
     ...(process.env.TEST_ROLE_ARN ? {TestRoleArn: process.env.TEST_ROLE_ARN} : {}),
+    ...(process.env.IS_EPHEMERAL_STACK ? {IsEphemeralStack: process.env.IS_EPHEMERAL_STACK} : {}),
 }
 let overrideArgs = [];
 Object.keys(parameters).forEach(parameter => {
@@ -50,7 +51,7 @@ projects.forEach(project => {
             `===============  Finished Deploy for project: ${project}  ===============`,
         );
     } catch (error) {
-        console.error(error.stdout.tostring());
+        console.error(error);
         console.error(
             `===============  Failed Deploying project: ${project}  ===============`,
         );

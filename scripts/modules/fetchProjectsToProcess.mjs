@@ -11,7 +11,7 @@ export default function fetchProjectsToProcess(...args) {
   let logMessage;
   if (!projects) {
     throw Error(
-      "Missing argument 'projects': Should be a string seperated list of Nx projects OR specifically the value 'affected' or 'all",
+      "Missing argument 'projects': Should be a string separated list of Nx projects OR specifically the value 'affected' or 'all",
     );
   }
 

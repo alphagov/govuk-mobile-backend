@@ -8,7 +8,7 @@ const rootDirectory = path.dirname(fileURLToPath(import.meta.url)).split('/').sl
 const xmlDirectory = rootDirectory.concat('/reports', '/infrastructure');
 const xmlFilePath = xmlDirectory.concat('/sam-results.xml');
 
-let projects = fetchProjectsToProcess('--type app');
+const projects = fetchProjectsToProcess('--type app');
 
 let xmlOutput = '<?xml version="1.0" encoding="UTF-8"?>\n<testsuites name="SAM Validate">\n';
 projects.forEach((project) => {

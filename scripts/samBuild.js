@@ -24,7 +24,7 @@ projects.forEach((project) => {
   // We will use globals as a fallback, ensuring it exists
   const globalFunction = Globals?.Function ?? {};
 
-  const servelessFunctionEntries = Object.values(Resources)
+  const serverlessFunctionEntries = Object.values(Resources)
     .filter((resource) => resource.Type === 'AWS::Serverless::Function')
     .filter((resource) =>
       (resource.Properties?.Runtime ?? globalFunction.Runtime).startsWith(
@@ -32,8 +32,8 @@ projects.forEach((project) => {
       ),
     )
     .map((resource) => {
-      let fileName = resource.Properties.Handler.split('.')[0]; //Removes the function name from the handler
-      let filePath = resource.Properties.CodeUri.split('/').splice(1).join('/'); //Removes the .build output destination
+      const fileName = resource.Properties.Handler.split('.')[0]; //Removes the function name from the handler
+      const filePath = resource.Properties.CodeUri.split('/').splice(1).join('/'); //Removes the .build output destination
       return {
         entryPoint: [projectPath, filePath, fileName].join('/').concat('.ts'),
         outputPath: [projectPath, '.build', filePath, fileName]
@@ -42,8 +42,8 @@ projects.forEach((project) => {
       };
     });
 
-  servelessFunctionEntries.forEach(async (lambda) => {
-    let esbuildSettings = {
+  serverlessFunctionEntries.forEach(async (lambda) => {
+    const esbuildSettings = {
       entryPoints: [lambda.entryPoint],
       outfile: lambda.outputPath,
       bundle: true,

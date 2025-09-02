@@ -120,10 +120,6 @@ Conditions:
       - !Ref IsEphemeralStack
       - 'True'
 
-  IsNotEphemeralStack:
-    Fn::Not:
-      - Condition: IsEphemeralStack
-
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -475,7 +471,6 @@ Resources:
           Value: Authentication
 
   CognitoUserPoolDomain:
-    Condition: IsNotEphemeralStack
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -2926,7 +2921,6 @@ Outputs:
     Value: !Ref SharedSignalApiGatewayAlarm5xxErrors
 
   CustomDomain:
-    Condition: IsNotEphemeralStack
     Description: The custom domain for the Cognito User Pool
     Value: !Ref CognitoUserPoolDomain
 
