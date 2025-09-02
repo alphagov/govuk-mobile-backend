@@ -171,8 +171,12 @@ In order to then deploy we can simply use our Nx commands of:
 
 ```sh
 nx affected -t sam:deploy //This deploys all stacks affected by changes
+nx run-many -t sam:deploy //This deploys all stacks
 nx run <project>:sam:deploy //This would deploy a specific stack
-npm run sam:deploy:all //This deploys all stacks
+
+//Alternatively
+npm run sam:deploy:all
+npm run sam:deploy:affected
 ```
 
 ### Testing the build & deploy scripts
