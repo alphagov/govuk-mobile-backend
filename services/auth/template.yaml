@@ -2113,6 +2113,11 @@ Resources:
           HEALTH_CHECK_TOKEN_URL: !Sub '{{resolve:ssm:/${ConfigStackName}/shared-signal/health-check-token-url}}'
           HEALTH_CHECK_VERIFY_URL: !Sub '{{resolve:ssm:/${ConfigStackName}/shared-signal/health-check-verify-url}}'
           HEALTH_CHECK_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/health-check-secrets
+          POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-auth-proxy
+          POWERTOOLS_LOGGER_LOG_EVENT: !If
+          - IsNonIntegratedEnvironment
+          - "True"
+          - "False"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
