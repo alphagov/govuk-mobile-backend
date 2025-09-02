@@ -16,16 +16,17 @@ vi.mock('../../../cognito/sign-out-user', () => ({
 
 import { adminDeleteUser } from '../../../cognito/delete-user';
 import { adminGlobalSignOut } from '../../../cognito/sign-out-user';
+import { logger } from '../../../logger';
 
 describe('handleAccountPurgedRequest', () => {
   const region = 'eu-west-2';
 
-  const consoleInfoMock = vi
-    .spyOn(console, 'info')
+  const loggerInfoMock = vi
+    .spyOn(logger, 'info')
     .mockImplementation(() => undefined);
 
-  const consoleErrorMock = vi
-    .spyOn(console, 'error')
+  const loggerErrorMock = vi
+    .spyOn(logger, 'error')
     .mockImplementation(() => undefined);
 
   beforeAll(() => {
@@ -35,13 +36,13 @@ describe('handleAccountPurgedRequest', () => {
       REGION: region,
     };
     vi.clearAllMocks();
-    consoleInfoMock.mockReset();
-    consoleErrorMock.mockReset();
+    loggerInfoMock.mockReset();
+    loggerErrorMock.mockReset();
   });
 
   afterAll(() => {
-    consoleInfoMock.mockRestore();
-    consoleErrorMock.mockRestore();
+    loggerInfoMock.mockRestore();
+    loggerErrorMock.mockRestore();
   });
 
   it('returns ACCEPTED for account purged events and logs success info message', async () => {
@@ -64,13 +65,13 @@ describe('handleAccountPurgedRequest', () => {
     } as AccountPurgedRequest;
 
     const response = await handleAccountPurgedRequest(input);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
+    expect(loggerInfoMock).toHaveBeenCalledWith(
       'CorrelationId: ',
       'unique-jti-12345',
     );
     expect(adminGlobalSignOut).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(adminDeleteUser).toHaveBeenCalledWith('urn:example:uri:12345');
-    expect(consoleInfoMock).toHaveBeenCalledWith(
+    expect(loggerInfoMock).toHaveBeenCalledWith(
       'SIGNAL_SUCCESS_ACCOUNT_PURGE',
       {
         userId: 'urn:example:uri:12345',
@@ -108,19 +109,16 @@ describe('handleAccountPurgedRequest', () => {
     } as AccountPurgedRequest;
 
     const response = await handleAccountPurgedRequest(input);
-    expect(consoleInfoMock).toHaveBeenCalledWith(
+    expect(loggerInfoMock).toHaveBeenCalledWith(
       'CorrelationId: ',
       'unique-jti-12345',
     );
     expect(adminGlobalSignOut).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(adminDeleteUser).toHaveBeenCalledWith('urn:example:uri:12345');
-    expect(consoleErrorMock).toHaveBeenCalledWith(
-      'SIGNAL_ERROR_ACCOUNT_PURGE',
-      {
-        userId: 'urn:example:uri:12345',
-        correlationId: input.jti,
-      },
-    );
+    expect(loggerErrorMock).toHaveBeenCalledWith('SIGNAL_ERROR_ACCOUNT_PURGE', {
+      userId: 'urn:example:uri:12345',
+      correlationId: input.jti,
+    });
     expect(response).toEqual({
       body: JSON.stringify({
         message: ReasonPhrases.INTERNAL_SERVER_ERROR,

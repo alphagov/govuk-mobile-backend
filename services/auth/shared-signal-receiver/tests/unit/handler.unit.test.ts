@@ -4,8 +4,8 @@ import { ZodError } from 'zod';
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 import * as responseModule from '../../response';
 import { CognitoError, SignatureVerificationError } from '../../errors';
-import type { APIGatewayProxyEvent } from 'aws-lambda';
-import { Dependencies } from '../../app';
+import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import type { Dependencies } from '../../app';
 
 // Mock the AWS SDK Client
 vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
@@ -18,6 +18,10 @@ vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
     CognitoIdentityProviderClient: vi.fn(),
   };
 });
+
+const mockContext = {
+  awsRequestId: 'foobar',
+} as Context;
 
 // Create a dummy event
 const createEvent = (overrides?: any): APIGatewayProxyEvent =>
@@ -117,7 +121,7 @@ describe('lambdaHandler', () => {
 
     mockRequestHandler.mockResolvedValue(mockResponse);
 
-    const result = await lambdaHandler(createEvent());
+    const result = await lambdaHandler(createEvent(), mockContext);
 
     expect(mockRequestHandler).toHaveBeenCalled();
     expect(result).toEqual(mockResponse);
@@ -127,7 +131,7 @@ describe('lambdaHandler', () => {
     const zodError = new ZodError([]);
     mockRequestHandler.mockRejectedValue(zodError);
 
-    const result = await lambdaHandler(createEvent());
+    const result = await lambdaHandler(createEvent(), mockContext);
 
     expect(mockGenerateResponse).toHaveBeenCalledWith(
       StatusCodes.BAD_REQUEST,
@@ -140,7 +144,7 @@ describe('lambdaHandler', () => {
     const cognitoError = new CognitoError('Cognito failed');
     mockRequestHandler.mockRejectedValue(cognitoError);
 
-    const result = await lambdaHandler(createEvent());
+    const result = await lambdaHandler(createEvent(), mockContext);
 
     expect(mockGenerateResponse).toHaveBeenCalledWith(
       StatusCodes.INTERNAL_SERVER_ERROR,
@@ -153,7 +157,7 @@ describe('lambdaHandler', () => {
     const unknownError = new Error('Something went wrong');
     mockRequestHandler.mockRejectedValue(unknownError);
 
-    const result = await lambdaHandler(createEvent());
+    const result = await lambdaHandler(createEvent(), mockContext);
 
     expect(mockGenerateResponse).toHaveBeenCalledWith(
       StatusCodes.INTERNAL_SERVER_ERROR,
@@ -173,7 +177,7 @@ describe('lambdaHandler', () => {
       }),
     );
 
-    const result = await invalidSignatureHandler(createEvent());
+    const result = await invalidSignatureHandler(createEvent(), mockContext);
     const expectedResponse = {
       err: 'signature_verification_error',
       description: 'Invalid token',
@@ -186,7 +190,10 @@ describe('lambdaHandler', () => {
   });
 
   it('should return a bad request if the body is missing', async () => {
-    const result = await lambdaHandler(createEvent({ body: undefined }));
+    const result = await lambdaHandler(
+      createEvent({ body: undefined }),
+      mockContext,
+    );
 
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
     expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);

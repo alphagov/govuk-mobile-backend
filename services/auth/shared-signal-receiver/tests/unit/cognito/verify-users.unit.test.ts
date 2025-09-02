@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { verifyUsername } from '../../../cognito/verify-users';
 import {
   AdminGetUserCommand,
   UserNotFoundException,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { cognitoClient } from '../../../cognito/client';
+import { logger } from '../../../logger';
 
 vi.mock('../../../cognito/client', () => ({
   cognitoClient: {
@@ -12,8 +13,8 @@ vi.mock('../../../cognito/client', () => ({
   },
 }));
 
-const consoleErrorMock = vi
-  .spyOn(console, 'error')
+const loggerErrorMock = vi
+  .spyOn(logger, 'error')
   .mockImplementation(() => undefined);
 
 const USER_POOL_ID = 'test-pool-id';
@@ -24,6 +25,12 @@ describe('verifyUserExists', () => {
   beforeEach(() => {
     process.env['USER_POOL_ID'] = USER_POOL_ID;
     vi.clearAllMocks();
+    loggerErrorMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    loggerErrorMock.mockReset();
   });
 
   it('returns true when user exists', async () => {
@@ -40,7 +47,7 @@ describe('verifyUserExists', () => {
       new UserNotFoundException({ $metadata: {}, message: 'User not found' }),
     );
     const result = await verifyUsername(input);
-    expect(consoleErrorMock).toHaveBeenCalledWith(
+    expect(loggerErrorMock).toHaveBeenCalledWith(
       'User not found',
       expect.any(UserNotFoundException),
     );

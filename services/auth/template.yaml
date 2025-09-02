@@ -2000,6 +2000,11 @@ Resources:
           JWKS_CACHE_DURATION: 600000 # ten minutes in ms
           ENABLE_SHARED_SIGNAL: !Sub '{{resolve:ssm:/${ConfigStackName}/feature-flags/shared-signal}}'
           EVENT_ALGORITHM: RS256
+          POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-shared-signal-receiver
+          POWERTOOLS_LOGGER_LOG_EVENT: !If
+          - IsNonIntegratedEnvironment
+          - "True"
+          - "False"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
