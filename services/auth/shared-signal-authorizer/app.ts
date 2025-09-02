@@ -1,9 +1,11 @@
 import type {
   APIGatewayTokenAuthorizerEvent,
   APIGatewayAuthorizerResult,
+  Context,
 } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { getSecretObject } from './secret';
+import { logger } from './logger';
 
 const generatePolicy = (
   principalId: string,
@@ -58,12 +60,16 @@ const validateAndReturnSubject = async (token: string): Promise<string> => {
 
 export const lambdaHandler = async (
   event: APIGatewayTokenAuthorizerEvent,
+  context: Context,
 ): Promise<APIGatewayAuthorizerResult> => {
+  logger.addContext(context);
+  logger.logEventIfEnabled(event);
+
   //APIGatewayAuthorizerResult
   let token = event.authorizationToken; // The token is passed in the Authorization header
 
   if (!token) {
-    console.error('Authorization header missing');
+    logger.error('Authorization header missing');
     throw new Error('Unauthorized - Token not supplied'); // This will result in a 401 response from API Gateway
   }
 
@@ -71,7 +77,7 @@ export const lambdaHandler = async (
     const seven = 7; // Length of "Bearer "
     token = token.substring(seven);
   } else {
-    console.error('Token format invalid: Not a Bearer token');
+    logger.error('Token format invalid: Not a Bearer token');
     throw new Error('Unauthorized');
   }
 
@@ -80,7 +86,8 @@ export const lambdaHandler = async (
 
     return generatePolicy(subject, 'Allow', event.methodArn);
   } catch (error) {
-    console.error('Token verification failed:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    logger.error('Token verification failed:', error as Error);
     // Throwing an error here also results in a 401 Unauthorized response from API Gateway
     throw new Error('Unauthorized');
   }

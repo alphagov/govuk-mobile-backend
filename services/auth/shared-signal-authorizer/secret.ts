@@ -2,6 +2,7 @@
 import { logMessages } from './log-messages';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 import zod, { ZodError } from 'zod';
+import { logger } from './logger';
 
 const schema = zod.object({
   clientId: zod.string().min(1),
@@ -30,7 +31,7 @@ export const getSecretObject = async (
 
     const secretsObject = await schema.parseAsync(secretStringParsed);
 
-    console.log(logMessages.SECRETS_FETCH_COMPLETE);
+    logger.info(logMessages.SECRETS_FETCH_COMPLETE);
 
     return secretsObject;
   } catch (error) {
