@@ -34,27 +34,18 @@ describe('Given the Sam Deploy script is called', () => {
   });
 
   it.each(scriptParameters)(
-    'When the project argument provided is projects=$projects',
-    async ({ projects, nxCommand }) => {
+    'When the Nx scope provided is $nxScope',
+    async ({ nxCommand, npmSuffix }) => {
       //Work out which files are being built
       let projectsBeingDeployed: string[];
-      if (nxCommand) {
-        projectsBeingDeployed = execSync(nxCommand)
-          .toString('utf-8')
-          .replace('\n', ',')
-          .trim()
-          .split(',');
-      } else {
-        projectsBeingDeployed = projects.split(',');
-      }
-
-      //Build necessary projects
-      execSync(`node ./scripts/samBuild.js --projects=${projects}`, {
-        stdio: 'ignore',
-      });
+      projectsBeingDeployed = execSync(nxCommand)
+        .toString('utf-8')
+        .replace('\n', ',')
+        .trim()
+        .split(',');
 
       //Run Deploy Script
-      execSync(`node ./scripts/samDeploy.js --projects=${projects}`, {
+      execSync(`npm run sam:deploy:${npmSuffix}`, {
         stdio: 'ignore',
       });
 

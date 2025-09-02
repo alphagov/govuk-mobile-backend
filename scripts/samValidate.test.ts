@@ -1,7 +1,6 @@
 import { execSync } from 'child_process';
 import { existsSync, rmSync } from 'fs';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { scriptParameters } from './test-utils/parameters';
 
 const reportDirectoryPath = 'reports';
 const reportFilePath = reportDirectoryPath.concat(
@@ -14,7 +13,11 @@ describe('Given the Sam Validate script is called', () => {
     rmSync(reportDirectoryPath, { recursive: true, force: true });
   });
 
-  it.each(scriptParameters)(
+  it.each([
+    { projects: 'all' },
+    { projects: 'affected' },
+    { projects: 'chat,auth' },
+  ])(
     'When the project argument provided is projects=$projects',
     ({ projects }) => {
       //Run script, verify report output

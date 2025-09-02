@@ -3,23 +3,23 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "targets": {
-    "build": {
+    "sam:build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node ./scripts/samBuild.js --projects=chat"
+        "command": "node ./scripts/samBuild.js --project=chat"
+      }
+    },
+    "sam:deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sam:build"],
+      "options": {
+        "command": "node ./scripts/samDeploy.js --project=chat"
       }
     },
     "sam:validate": {
       "executor": "nx:run-commands",
       "options": {
         "command": "node ./scripts/samValidate --projects=chat"
-      }
-    },
-    "sam:deploy": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["build"],
-      "options": {
-        "command": "node ./scripts/samDeploy.js --projects=chat"
       }
     },
     "lint": {

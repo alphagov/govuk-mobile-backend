@@ -1,11 +1,16 @@
 import { execSync } from "child_process";
 import { config } from "dotenv";
-import fetchProjectsToProcess from "./modules/fetchProjectsToProcess.mjs";
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 //Assuming only local deployment for now -- CI rework to be done
 config({path:'./env/local.env'});
 
-let projects = fetchProjectsToProcess('--type app');
+const argv = yargs(hideBin(process.argv)).parse();
+const project = argv.project;
+if (!project) {
+    throw new Error('No project argument provided')
+}
 
 const userPrefix = process.env.USER_PREFIX;
 if (!userPrefix) {
@@ -33,27 +38,18 @@ Object.keys(parameters).forEach(parameter => {
 //Forcing Ephemeral stack, working on assumption we're only supporting local deployment from this script right now. As CI/CD flow improvements are next step.
 const overrideArgsString = [...overrideArgs, 'IsEphemeralStack="True"'].join(' ');
 
-projects.forEach(project => {
-    console.log(
-        `===============  Begining Deploy for project: ${project}  ===============`,
-    );
+console.log(
+    `===============  Begining Deploy for project: ${project}  ===============`,
+);
 
-    //Get template file path & declare stack name
-    const servicesPrefix = 'services';
-    const projectPath = [servicesPrefix, project].join('/');
-    const samTemplateFile = [projectPath, '.aws-sam', 'build', 'template.yaml'].join('/');
-    const stackName = [userPrefix, project].join('-');
+//Get template file path & declare stack name
+const servicesPrefix = 'services';
+const projectPath = [servicesPrefix, project].join('/');
+const samTemplateFile = [projectPath, '.aws-sam', 'build', 'template.yaml'].join('/');
+const stackName = [userPrefix, project].join('-');
 
-    //TODO: Work on parralel deployments where multiple stacks exists
-    try {
-        execSync(`sam deploy --capabilities CAPABILITY_NAMED_IAM --stack-name ${stackName} --s3-bucket ${s3BucketName} --s3-prefix ${stackName} --template-file ${samTemplateFile} --parameter-overrides ${overrideArgsString} --no-fail-on-empty-changeset`, {stdio: 'inherit'});
-        console.log(
-            `===============  Finished Deploy for project: ${project}  ===============`,
-        );
-    } catch (error) {
-        console.error(error);
-        console.error(
-            `===============  Failed Deploying project: ${project}  ===============`,
-        );
-    }
-}) 
+//TODO: Work on parralel deployments where multiple stacks exists
+execSync(`sam deploy --capabilities CAPABILITY_NAMED_IAM --stack-name ${stackName} --s3-bucket ${s3BucketName} --s3-prefix ${stackName} --template-file ${samTemplateFile} --parameter-overrides ${overrideArgsString} --no-fail-on-empty-changeset`, {stdio: 'inherit'});
+console.log(
+    `===============  Finished Deploy for project: ${project}  ===============`,
+);

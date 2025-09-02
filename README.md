@@ -183,7 +183,7 @@ Some tests have been written to verify the functionality of the validate/build/d
 - Installation of Nx `npm install -g nx`
 - Instalation of all dependences `npm install`
 
-The tests for the validation script verifies the output of the XML report of the validation results. For the build script verify the creation of the SAM build folders & final template.yaml file. And finally for the deploy script call out to cloudformation after execution to verify the creation of all expected stacks from the command. All 3 are set up to verify that targetting all projects, only affected or name specifics will function. They do not run in parallel as the scripts frequently act on files within the folder structure, and have been set up to clean the structure before each test run.
+The tests for the validation script verifies the output of the XML report of the validation results. For the build script verify the creation of the SAM build folders & final template.yaml file. And finally for the deploy script call out to cloudformation after execution to verify the creation of all expected stacks from the command. All 3 are set up to verify that targetting all projects or only affected will function. They do not run in parallel as the scripts frequently act on files within the folder structure, and have been set up to clean the structure before each test run.
 
 In order to run these tests we have an npm script:
 `npm run test:scripts`

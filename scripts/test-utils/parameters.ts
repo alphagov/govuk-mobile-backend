@@ -1,5 +1,8 @@
 export const scriptParameters = [
-  { projects: 'all', nxCommand: 'nx show projects' },
-  { projects: 'affected', nxCommand: 'nx show projects --affected' },
-  { projects: 'chat,auth', nxCommand: undefined },
+  { nxScope: 'run-many', nxCommand: 'nx show projects', npmSuffix: 'all' },
+  {
+    nxScope: 'affected',
+    nxCommand: 'nx show projects --affected',
+    npmSuffix: 'affected',
+  },
 ];

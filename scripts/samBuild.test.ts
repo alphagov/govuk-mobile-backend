@@ -27,23 +27,18 @@ describe('Given the Sam Build script is called', () => {
   });
 
   it.each(scriptParameters)(
-    'When the project argument provided is projects=$projects',
-    ({ projects, nxCommand }) => {
+    'When the Nx scope provided is $nxScope',
+    ({ nxCommand, npmSuffix }) => {
       //Work out which files are being built
-      let filePathsToCheck: string[];
-      if (nxCommand) {
-        filePathsToCheck = execSync(nxCommand)
-          .toString('utf-8')
-          .replace('\n', ',')
-          .trim()
-          .split(',')
-          .map(pathBuilder);
-      } else {
-        filePathsToCheck = projects.split(',').map(pathBuilder);
-      }
+      const filePathsToCheck = execSync(nxCommand)
+        .toString('utf-8')
+        .replace('\n', ',')
+        .trim()
+        .split(',')
+        .map(pathBuilder);
 
       //Run script, verify expected files are built
-      execSync(`node ./scripts/samBuild.js --projects=${projects}`, {
+      execSync(`npm run sam:build:${npmSuffix}`, {
         stdio: 'ignore',
       });
       filePathsToCheck.forEach((path) => {
