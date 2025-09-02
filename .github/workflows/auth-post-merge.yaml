@@ -58,7 +58,7 @@ jobs:
         run: 'npx nx run auth:sam:validate'
 
       - name: SAM build
-        run: 'npx nx run auth:build'
+        run: 'npx nx run auth:sam:build'
 
       - name: Deploy Auth SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
