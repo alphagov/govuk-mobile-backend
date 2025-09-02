@@ -18,19 +18,23 @@ const dirBuilder = (project: string) => {
   return [`services/${project}/.aws-sam`, `services/${project}/.build`];
 };
 
+const cleanUp = () => {
+  //Removing all pre-built files
+  const directories = execSync(`nx show projects`)
+    .toString('utf-8')
+    .replace('\n', ',')
+    .trim()
+    .split(',')
+    .map(dirBuilder)
+    .flat();
+  directories.forEach((directory) => {
+    rmSync(directory, { recursive: true, force: true });
+  });
+};
+
 describe('Given the Sam Deploy script is called', () => {
   beforeAll(() => {
-    //Removing all pre-built files
-    const directories = execSync(`nx show projects`)
-      .toString('utf-8')
-      .replace('\n', ',')
-      .trim()
-      .split(',')
-      .map(dirBuilder)
-      .flat();
-    directories.forEach((directory) => {
-      rmSync(directory, { recursive: true, force: true });
-    });
+    cleanUp();
   });
 
   it.each(scriptParameters)(

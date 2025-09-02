@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { existsSync, rmSync } from 'fs';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { scriptParameters } from './test-utils/parameters';
 
 const pathBuilder = (project: string) => {
@@ -11,19 +11,23 @@ const dirBuilder = (project: string) => {
   return [`services/${project}/.aws-sam`, `services/${project}/.build`];
 };
 
+const cleanUp = () => {
+  //Removing all pre-built files
+  const directories = execSync(`nx show projects`)
+    .toString('utf-8')
+    .replace('\n', ',')
+    .trim()
+    .split(',')
+    .map(dirBuilder)
+    .flat();
+  directories.forEach((directory) => {
+    rmSync(directory, { recursive: true, force: true });
+  });
+};
+
 describe('Given the Sam Build script is called', () => {
   beforeEach(() => {
-    //Removing all pre-built files
-    const directories = execSync(`nx show projects`)
-      .toString('utf-8')
-      .replace('\n', ',')
-      .trim()
-      .split(',')
-      .map(dirBuilder)
-      .flat();
-    directories.forEach((directory) => {
-      rmSync(directory, { recursive: true, force: true });
-    });
+    cleanUp();
   });
 
   it.each(scriptParameters)(
@@ -46,4 +50,8 @@ describe('Given the Sam Build script is called', () => {
       });
     },
   );
+
+  afterAll(() => {
+    cleanUp();
+  });
 });
