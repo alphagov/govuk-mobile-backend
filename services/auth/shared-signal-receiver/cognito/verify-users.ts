@@ -4,6 +4,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { cognitoClient } from './client';
 import { toCognitoUsername } from '../common/toCognitoUsername';
+import { logger } from '../logger';
 
 export const verifyUsername = async (username: string): Promise<boolean> => {
   try {
@@ -18,7 +19,7 @@ export const verifyUsername = async (username: string): Promise<boolean> => {
     return true;
   } catch (error) {
     if (error instanceof UserNotFoundException) {
-      console.error('User not found', error);
+      logger.error('User not found', error);
       return false;
     }
     // bubble up any other errors

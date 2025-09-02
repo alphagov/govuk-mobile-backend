@@ -1,4 +1,8 @@
-import type { APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
+import type {
+  APIGatewayProxyResult,
+  APIGatewayProxyEvent,
+  Context,
+} from 'aws-lambda';
 import { ZodError } from 'zod';
 import { logMessages } from './log-messages';
 import { generateErrorResponse, generateResponse } from './response';
@@ -10,6 +14,7 @@ import {
   InvalidKeyError,
 } from './errors';
 import type { Dependencies } from './app';
+import { logger } from './logger';
 
 /**
  *
@@ -22,8 +27,14 @@ import type { Dependencies } from './app';
  */
 export const createHandler =
   (dependencies: Dependencies) =>
-  async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    console.log(logMessages.SIGNAL_RECEIVER_CALLED);
+  async (
+    event: APIGatewayProxyEvent,
+    context: Context,
+  ): Promise<APIGatewayProxyResult> => {
+    logger.logEventIfEnabled(event);
+    logger.setCorrelationId(event.requestContext.requestId);
+    logger.addContext(context);
+    logger.info(logMessages.SIGNAL_RECEIVER_CALLED);
     try {
       if (event.body == undefined || event.body === '') {
         return generateResponse(
@@ -43,17 +54,18 @@ export const createHandler =
       // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
       switch (true) {
         case error instanceof ZodError:
-          console.error(
-            logMessages.ERROR_VALIDATION_ZOD,
-            error.message,
-            error.issues,
-          );
+          logger.error(logMessages.ERROR_VALIDATION_ZOD, {
+            error: {
+              message: error.message,
+              issues: error.issues,
+            },
+          });
           return generateResponse(
             StatusCodes.BAD_REQUEST,
             ReasonPhrases.BAD_REQUEST,
           );
         case error instanceof CognitoError:
-          console.error(logMessages.ERROR_COGNITO, error);
+          logger.error(logMessages.ERROR_COGNITO, { error });
           return generateResponse(
             StatusCodes.INTERNAL_SERVER_ERROR,
             ReasonPhrases.INTERNAL_SERVER_ERROR,
@@ -61,13 +73,13 @@ export const createHandler =
         case error instanceof SignatureVerificationError:
         case error instanceof InvalidRequestError:
         case error instanceof InvalidKeyError:
-          console.error(logMessages.SET_TOKEN_VERIFICATION_ERROR, error);
+          logger.error(logMessages.SET_TOKEN_VERIFICATION_ERROR, { error });
           return generateErrorResponse(StatusCodes.BAD_REQUEST, {
             errorCode: error.name,
             errorDescription: error.message,
           });
         default:
-          console.error(logMessages.ERROR_UNHANDLED_INTERNAL, error);
+          logger.error(logMessages.ERROR_UNHANDLED_INTERNAL, { error });
           return generateResponse(
             StatusCodes.INTERNAL_SERVER_ERROR,
             ReasonPhrases.INTERNAL_SERVER_ERROR,

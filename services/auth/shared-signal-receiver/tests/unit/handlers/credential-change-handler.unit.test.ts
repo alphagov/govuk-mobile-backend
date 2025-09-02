@@ -7,6 +7,7 @@ import {
   SignalBuilder,
 } from '../../helpers/signal';
 import { logMessages } from '../../../log-messages';
+import { logger } from '../../../logger';
 
 vi.mock('../../../cognito/sign-out-user', () => ({
   adminGlobalSignOut: vi.fn(),
@@ -45,14 +46,14 @@ describe('handleCredentialChangeRequest', () => {
       credentialType: 'email',
     },
   ])('should log the specific credential type', async ({ credentialType }) => {
-    const consoleInfoMock = vi.spyOn(console, 'info');
+    const loggerInfoMock = vi.spyOn(logger, 'info');
     credentialChangeEvent.withCredentialType(credentialType);
 
     const signal = signalBuilder.build();
 
     await handleCredentialChangeRequest(signal);
 
-    expect(consoleInfoMock).toHaveBeenNthCalledWith(
+    expect(loggerInfoMock).toHaveBeenNthCalledWith(
       2,
       logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE,
       {
@@ -98,10 +99,12 @@ describe('handleCredentialChangeRequest', () => {
   describe('when the signout operation fails', () => {
     let response;
     const signal = signalBuilder.build();
-    let consoleErrorMock;
+    let loggerErrorMock = vi
+      .spyOn(logger, 'error')
+      .mockImplementation(() => undefined);
 
     beforeEach(async () => {
-      consoleErrorMock = vi.spyOn(console, 'error');
+      loggerErrorMock.mockReset();
       (adminGlobalSignOut as Mock).mockResolvedValue(false);
       response = await handleCredentialChangeRequest(signal);
     });
@@ -119,7 +122,7 @@ describe('handleCredentialChangeRequest', () => {
     });
 
     it('should produce an error log with the correlation id', async () => {
-      expect(consoleErrorMock).toHaveBeenCalledWith(
+      expect(loggerErrorMock).toHaveBeenCalledWith(
         logMessages.SIGNAL_ERROR_CREDENTIAL_CHANGE,
         {
           userId: 'urn:example:account:1234567890',

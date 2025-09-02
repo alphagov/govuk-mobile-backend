@@ -7,6 +7,7 @@ import { logMessages } from '../log-messages';
 import { getJwks } from './fetch-jwks';
 import type { JWTPayload } from 'jose';
 import { decodeProtectedHeader, jwtVerify } from 'jose';
+import { logger } from '../logger';
 
 export interface SharedSignalsConfig {
   audience: string;
@@ -54,7 +55,7 @@ export const verifySETJwt = async ({
       typ: 'secevent+jwt',
     });
 
-    console.log(logMessages.SET_TOKEN_VERIFIED);
+    logger.info(logMessages.SET_TOKEN_VERIFIED);
 
     return payload;
   } catch (error) {

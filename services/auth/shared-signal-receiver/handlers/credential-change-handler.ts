@@ -5,6 +5,7 @@ import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 import { adminGlobalSignOut } from '../cognito/sign-out-user';
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import { logMessages } from '../log-messages';
+import { logger } from '../logger';
 
 export type CredentialChangeRequest = z.infer<typeof credentialChangeSchema>;
 
@@ -12,7 +13,7 @@ export const handleCredentialChangeRequest = async (
   credentialChangeRequest: CredentialChangeRequest,
 ): Promise<APIGatewayProxyResult> => {
   const correlationId = credentialChangeRequest.jti;
-  console.info('CorrelationId: ', correlationId);
+  logger.info('CorrelationId: ', correlationId);
 
   const events =
     credentialChangeRequest.events[
@@ -22,7 +23,7 @@ export const handleCredentialChangeRequest = async (
   const isUserSignedOut = await adminGlobalSignOut(userId);
 
   if (!isUserSignedOut) {
-    console.error(logMessages.SIGNAL_ERROR_CREDENTIAL_CHANGE, {
+    logger.error(logMessages.SIGNAL_ERROR_CREDENTIAL_CHANGE, {
       userId,
       correlationId,
       changeType: events.change_type,
@@ -33,7 +34,7 @@ export const handleCredentialChangeRequest = async (
     );
   }
 
-  console.info(logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE, {
+  logger.info(logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE, {
     userId,
     correlationId,
     credentialType: events.credential_type,

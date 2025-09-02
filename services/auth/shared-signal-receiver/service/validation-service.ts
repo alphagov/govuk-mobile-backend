@@ -5,6 +5,7 @@
 
 import { verifyUsername } from '../cognito/verify-users';
 import { logMessages } from '../log-messages';
+import { logger } from '../logger';
 
 const isUserValid = async (
   incomingRequest: any,
@@ -22,7 +23,7 @@ const isUserValid = async (
   const isValid = await verifyUsername(username);
 
   if (!isValid) {
-    console.warn(logMessages.SIGNAL_WARN_USER_NOT_FOUND, {
+    logger.warn(logMessages.SIGNAL_WARN_USER_NOT_FOUND, {
       userId: username,
       correlationId: jti,
     });

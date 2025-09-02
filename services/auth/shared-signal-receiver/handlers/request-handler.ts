@@ -10,6 +10,7 @@ import { isUserValid } from '../service/validation-service';
 import { logMessages } from '../log-messages';
 import { signalVerificationSchema } from '../schema/verification';
 import { handleSignalVerification } from './signal-verification-handler';
+import { logger } from '../logger';
 
 interface Handler {
   schema: z.ZodType;
@@ -51,7 +52,7 @@ export const requestHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   const isDisabled = process.env['ENABLE_SHARED_SIGNAL'] !== 'true';
   if (isDisabled) {
-    console.error(
+    logger.error(
       logMessages.SIGNAL_DISABLED,
       'Shared signal feature is disabled',
     );
@@ -73,6 +74,6 @@ export const requestHandler = async (
     }
   }
 
-  console.error(logMessages.ERROR_UNKNOWN_SIGNAL);
+  logger.error(logMessages.ERROR_UNKNOWN_SIGNAL);
   return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
 };

@@ -6,6 +6,7 @@ import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { CognitoError } from '../../../errors';
 import { logMessages } from '../../../log-messages';
 import { isUserValid } from '../../../service/validation-service';
+import { logger } from '../../../logger';
 
 // Mocks
 vi.mock('../../../parser', () => ({
@@ -208,7 +209,7 @@ describe('requestHandler', () => {
 
   it('should return SERVICE_UNAVAILABLE when SHARED_SIGNAL is disabled', async () => {
     process.env.ENABLE_SHARED_SIGNAL = 'false'; // Disable shared signal feature
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     const input = {
       iss: 'https://issuer.example.com',
@@ -256,7 +257,7 @@ describe('requestHandler', () => {
           },
       },
     };
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
     const result = await requestHandler(input);
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
     expect(result.body).toBe(
