@@ -20,7 +20,6 @@
     "target": "ES2022",
     "resolveJsonModule": true,
     "declaration": false,
-    // "noEmit": true,
     "preserveConstEnums": true,
     "sourceMap": false,
     "forceConsistentCasingInFileNames": true,
