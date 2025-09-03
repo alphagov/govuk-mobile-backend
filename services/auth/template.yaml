@@ -72,6 +72,15 @@ Mappings:
       staging: '...'
       integration: https://ssf-transmitter.transaction.integration.account.gov.uk/jwks.json
       production: https://shared-signals-transmitter.transaction.account.gov.uk/jwks.json
+  
+  RequestTimeoutInMillis:
+    Environment:
+      local: "3000"
+      build: "3000"
+      dev: "3000"
+      staging: "3000"
+      integration: "3000"
+      production: "3000"    
 
 Conditions:
   UseCodeSigning: !Not
@@ -1537,6 +1546,7 @@ Resources:
           COGNITO_SECRET_NAME: !Sub /${ConfigStackName}/cognito/client-secret
           REGION: !Ref AWS::Region
           COGNITO_CUSTOM_DOMAIN_SSM_NAME: !Sub /${ConfigStackName}/cognito/custom-domain
+          PROXY_TIMEOUT_MS: !FindInMap [RequestTimeoutInMillis, Environment, !Ref Environment]
           POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-auth-proxy
           POWERTOOLS_LOGGER_LOG_EVENT: !If
           - IsNonIntegratedEnvironment
@@ -2118,6 +2128,7 @@ Resources:
           - IsNonIntegratedEnvironment
           - "True"
           - "False"
+          HEALTH_CHECK_TIMEOUT_MS: !FindInMap [RequestTimeoutInMillis, Environment, !Ref Environment]
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment

@@ -52,6 +52,14 @@ export default defineConfig({
           testTimeout: 120000,
         },
       },
+      // {
+      //   test: {
+      //     include: ['auth/proxy/tests/unit/**/*.test.ts'],
+      //     name: 'timeoutUnitTest',
+      //     environment: 'node',
+      //     testTimeout: 120000,
+      //   },
+      // }
     ],
     // Common test configurations
     globals: true,

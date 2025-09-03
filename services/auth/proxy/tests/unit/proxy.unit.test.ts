@@ -48,6 +48,7 @@ const createMockInput = (overrides: Partial<ProxyInput> = {}): ProxyInput => ({
 describe('proxy', () => {
   beforeEach(() => {
     process.env.COGNITO_URL = 'https://mock.auth.region.amazoncognito.com';
+    process.env.PROXY_TIMEOUT_MS = '3000';
   });
 
   it('proxies a valid GET /authorize request', async () => {
