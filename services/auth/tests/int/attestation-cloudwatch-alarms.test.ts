@@ -12,6 +12,7 @@ const alarmsToTest = [
   testConfig.cloudWatchAlarmAuthProxy4xxErrors,
   testConfig.cloudWatchAlarmAuthProxy5xxErrors,
   testConfig.cloudWatchAlarmAuthProxyLatencyErrors,
+  testConfig.cloudWatchAlarmRevokeToken4xxErrors,
   testConfig.authProxyWAFAlarm,
 ];
 
