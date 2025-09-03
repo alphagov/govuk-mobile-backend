@@ -1564,7 +1564,7 @@ Resources:
       KmsKeyArn: !GetAtt AuthProxyFunctionKMSKey.Arn
       Environment:
         Variables:
-          ENABLE_ATTESTATION: !Sub '{{resolve:ssm:/${ConfigStackName}/feature-flags/attestation}}'
+          CONFIG_STACK_NAME: !Ref ConfigStackName
           COGNITO_URL: !Join
             - ''
             - - https://

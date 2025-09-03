@@ -69,7 +69,7 @@ describe('lambdaHandler', () => {
     },
     proxy: mockProxy,
     featureFlags: {
-      ATTESTATION: true,
+      ATTESTATION: vi.fn().mockReturnValue(true),
     },
     getClientSecret: vi.fn(),
     getConfig: vi.fn().mockReturnValue({
@@ -95,7 +95,9 @@ describe('lambdaHandler', () => {
   const disableAttestationEvent = createHandler(
     createMockDependencies({
       featureFlags: {
-        ATTESTATION: false,
+        ATTESTATION: vi.fn(() => {
+          return false;
+        }),
       },
     }),
   );
