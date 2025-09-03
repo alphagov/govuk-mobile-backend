@@ -17,10 +17,6 @@ describe('Chat API Gateway WAF Log Group', () => {
   const resource = template.findResources('AWS::Logs::LogGroup');
   resourceUnderTest = resource['ChatApiGatewayWafLogGroup'] as any;
 
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
-
   it('should have a log group name', () => {
     expect(resourceUnderTest.Properties.LogGroupName).toEqual({
       'Fn::Sub': 'aws-waf-logs-chat-proxy-${AWS::StackName}',

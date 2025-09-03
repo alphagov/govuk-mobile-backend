@@ -16,10 +16,6 @@ describe('Chat API Gateway', () => {
   const resource = template.findResources('AWS::ApiGateway::RestApi');
   resourceUnderTest = resource['ChatApiGateway'] as any;
 
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
-
   it('should have a name that includes the stack name', () => {
     expect(resourceUnderTest.Properties.Name).toEqual({
       'Fn::Sub': '${AWS::StackName}-chat-proxy',
@@ -54,10 +50,6 @@ describe('Chat API Gateway Resource', () => {
   const resource = template.findResources('AWS::ApiGateway::Resource');
   resourceUnderTest = resource['ChatApiGatewayResource'] as any;
 
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
-
   it('should have a parent resource', () => {
     expect(resourceUnderTest.Properties.ParentId).toEqual({
       'Fn::GetAtt': ['ChatApiGateway', 'RootResourceId'],
@@ -84,10 +76,6 @@ describe('Chat API Gateway Method', () => {
 
   const resource = template.findResources('AWS::ApiGateway::Method');
   resourceUnderTest = resource['ChatApiGatewayMethod'] as any;
-
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
 
   it('should have a method that allows ANY HTTP method', () => {
     expect(resourceUnderTest.Properties.HttpMethod).toEqual('ANY');
@@ -158,10 +146,6 @@ describe('Chat API Gateway Authorizer', () => {
   const resource = template.findResources('AWS::ApiGateway::Authorizer');
   resourceUnderTest = resource['ChatApiGatewayAuthorizer'] as any;
 
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
-
   it('should have a name that includes the stack name', () => {
     expect(resourceUnderTest.Properties.Name).toEqual({
       'Fn::Sub': '${AWS::StackName}-chat-proxy-authorizer',
@@ -203,10 +187,6 @@ describe('Chat API Gateway Access Log Group', () => {
   const resource = template.findResources('AWS::Logs::LogGroup');
   resourceUnderTest = resource['ChatApiGatewayAccessLogGroup'] as any;
 
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
-
   it('should have a log group name that includes the stack name', () => {
     expect(resourceUnderTest.Properties.LogGroupName).toEqual({
       'Fn::Sub': '/aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs',
@@ -247,10 +227,6 @@ describe('Chat API Gateway Access Log Group KMS Key', () => {
 
   const resource = template.findResources('AWS::KMS::Key');
   resourceUnderTest = resource['ChatApiGatewayAccessLogGroupKMSKey'] as any;
-
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
 
   it('should have a description', () => {
     expect(resourceUnderTest.Properties.Description).toEqual(
@@ -311,10 +287,6 @@ describe('Chat API Gateway Deployment', () => {
   const resource = template.findResources('AWS::ApiGateway::Deployment');
   resourceUnderTest = resource['ChatApiGatewayDeployment20250828'] as any;
 
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
-
   it('should have a REST API ID that matches the Chat API Gateway', () => {
     expect(resourceUnderTest.Properties.RestApiId).toEqual({
       Ref: 'ChatApiGateway',
@@ -334,10 +306,6 @@ describe('Chat API Gateway Stage', () => {
 
   const resource = template.findResources('AWS::ApiGateway::Stage');
   resourceUnderTest = resource['ChatApiGatewayStage'] as any;
-
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
 
   it('should have a stage name that matches the Environment', () => {
     expect(resourceUnderTest.Properties.StageName).toEqual({

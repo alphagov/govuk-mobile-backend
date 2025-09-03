@@ -90,7 +90,6 @@ Globals:
 
 Resources:
   ChatApiGateway:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Sub ${AWS::StackName}-chat-proxy
@@ -104,7 +103,6 @@ Resources:
           Value: Chat
 
   ChatApiGatewayResource:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::Resource
     Properties:
       ParentId: !GetAtt ChatApiGateway.RootResourceId
@@ -112,7 +110,6 @@ Resources:
       RestApiId: !Ref ChatApiGateway
 
   ChatApiGatewayMethod:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::Method
     Properties:
       HttpMethod: ANY
@@ -135,7 +132,6 @@ Resources:
         PassthroughBehavior: WHEN_NO_MATCH
 
   ChatApiGatewayAuthorizer:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::Authorizer
     Properties:
       Name: !Sub ${AWS::StackName}-chat-proxy-authorizer
@@ -146,7 +142,6 @@ Resources:
       AuthorizerResultTtlInSeconds: 300
 
   ChatApiGatewayAccessLogGroup:
-    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs
@@ -180,7 +175,6 @@ Resources:
           Value: Chat
 
   ChatApiGatewayAccessLogGroupKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting the Chat API Gateway Access Log Group
@@ -218,14 +212,12 @@ Resources:
           Value: Chat
 
   ChatApiGatewayDeployment20250828:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::Deployment
     DependsOn: ChatApiGatewayMethod
     Properties:
       RestApiId: !Ref ChatApiGateway
 
   ChatApiGatewayStage:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::Stage
     Properties:
       StageName: !Ref Environment
@@ -236,7 +228,6 @@ Resources:
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","authorizeError":"$context.authorize.error","authorizeLatency":"$context.authorize.latency","authorizeStatus":"$context.authorize.status","authorizerIntegrationLatency":"$context.authorizer.integrationLatency","authorizerIntegrationStatus":"$context.authorizer.integrationStatus","authorizerLatency":"$context.authorizer.latency","authorizerRequestId":"$context.authorizer.requestId","authorizerStatus":"$context.authorizer.status"}'
   
   ChatApiGatewayWaf:
-    Condition: IsNotProduction
     Type: AWS::WAFv2::WebACL
     Properties:
       Name: !Sub ${AWS::StackName}-waf-chat-proxy
@@ -284,14 +275,13 @@ Resources:
           Value: Chat
 
   ChatApiGatewayWafAssociation:
-    Condition: IsNotProduction
+    
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ChatApiGateway}/stages/${ChatApiGatewayStage}
       WebACLArn: !GetAtt ChatApiGatewayWaf.Arn
 
   ChatApiGatewayWafLogGroup:
-    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
@@ -329,7 +319,6 @@ Resources:
           Value: Chat
 
   ChatApiGatewayWafLogGroupKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting the Chat API Gateway WAF Log Group
@@ -367,7 +356,6 @@ Resources:
           Value: Chat
 
   ChatAuthorizerFunction:
-    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-chat-proxy-authorizer
@@ -391,7 +379,6 @@ Resources:
         System: Chat
 
   ChatAuthorizerInvokePermission:
-    Condition: IsNotProduction
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref ChatAuthorizerFunction
@@ -400,7 +387,6 @@ Resources:
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ChatApiGateway}/*
 
   ChatAuthorizerFunctionIAMRole:
-    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::StackName}-chat-proxy-authorizer-role
@@ -439,7 +425,6 @@ Resources:
           Value: Chat
 
   ChatAuthorizerFunctionKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting Chat authorizer secrets
@@ -472,7 +457,6 @@ Resources:
 
 
   CloudwatchAlarmChatProxy4xxErrors:
-    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-chat-proxy-4xx-errors
@@ -507,7 +491,6 @@ Resources:
           Value: Chat
 
   CloudwatchAlarmChatProxy5xxErrors:
-    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-chat-proxy-5xx-errors
@@ -595,76 +578,61 @@ Outputs:
     Value: !Ref AWS::StackName
 
   ChatApiGatewayUrl:
-    Condition: IsNotProduction
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${ChatApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
 
   ChatApiGatewayId:
-    Condition: IsNotProduction
     Description: The ID of the Chat API Gateway
     Value: !Ref ChatApiGateway
 
   ChatApiGatewayResourceId:
-    Condition: IsNotProduction
     Description: The ID of the Chat API Gateway resource
     Value: !Ref ChatApiGatewayResource
 
   ChatApiGatewayMethodId:
-    Condition: IsNotProduction
     Description: The ID of the Chat API Gateway method
     Value: !Ref ChatApiGatewayMethod
 
   ChatApiGatewayDeploymentId:
-    Condition: IsNotProduction
     Description: The ID of the Chat API Gateway deployment
     Value: !Ref ChatApiGatewayDeployment20250828
 
   ChatApiGatewayAuthorizerId:
-    Condition: IsNotProduction
     Description: The ID of the Chat API Gateway authorizer
     Value: !Ref ChatApiGatewayAuthorizer
 
   ChatApiGatewayAccessLogGroupArn:
-    Condition: IsNotProduction
     Description: The ARN of the Chat API Gateway access log group
     Value: !GetAtt ChatApiGatewayAccessLogGroup.Arn
 
   ChatApiGatewayAccessLogGroupName:
-    Condition: IsNotProduction
     Description: The name of the Chat API Gateway access log group
     Value: !Ref ChatApiGatewayAccessLogGroup
 
   ChatApiGatewayAccessLogGroupKMSKeyArn:
-    Condition: IsNotProduction
     Description: The ARN of the Chat API Gateway access log group KMS key
     Value: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
 
   ChatApiGatewayStageName:
-    Condition: IsNotProduction
     Description: The name of the Chat API Gateway stage
     Value: !Ref ChatApiGatewayStage
 
   ChatAuthorizerFunctionName:
-    Condition: IsNotProduction
     Description: The name of the Chat authorizer Lambda function
     Value: !Ref ChatAuthorizerFunction
 
   ChatAuthorizerInvokePermissionId:
-    Condition: IsNotProduction
     Description: The ID of the permission allowing API Gateway to invoke the Chat authorizer function
     Value: !Ref ChatAuthorizerInvokePermission
 
   ChatAuthorizerFunctionIAMRoleName:
-    Condition: IsNotProduction
     Description: The name of the IAM role for the Chat authorizer function
     Value: !Sub ${AWS::StackName}-chat-proxy-authorizer-role
 
   ChatAuthorizerFunctionIAMRolePolicyName:
-    Condition: IsNotProduction
     Description: The name of the policy attached to the Chat authorizer function IAM role
     Value: ChatAuthorizerFunctionPolicy
 
   ChatAuthorizerFunctionKMSKeyArn:
-    Condition: IsNotProduction
     Description: The ARN of the KMS key used by the Chat authorizer function
     Value: !GetAtt ChatAuthorizerFunctionKMSKey.Arn

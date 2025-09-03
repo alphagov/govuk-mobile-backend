@@ -16,10 +16,6 @@ describe('Chat API Gateway WAF', () => {
   const resource = template.findResources('AWS::WAFv2::WebACL');
   resourceUnderTest = resource['ChatApiGatewayWaf'] as any;
 
-  it('should have a IsNotProduction condition', () => {
-    expect(resourceUnderTest.Condition).toEqual('IsNotProduction');
-  });
-
   it('should have a description', () => {
     expect(resourceUnderTest.Properties.Description).toEqual(
       'WAF for the GOV.UK Mobile Backend Chat Proxy',
