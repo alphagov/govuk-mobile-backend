@@ -45,6 +45,7 @@ export const createHandler =
         getConfig,
       } = dependencies;
       const config = await getConfig();
+      const isAttestationEnabled = await featureFlags.ATTESTATION();
 
       const { headers, body, httpMethod, path } = event;
 
@@ -60,10 +61,10 @@ export const createHandler =
 
       const sanitizedHeaders = await sanitizeHeaders(
         headers,
-        featureFlags.ATTESTATION,
+        isAttestationEnabled,
       );
 
-      if (featureFlags.ATTESTATION) {
+      if (isAttestationEnabled) {
         await attestationUseCase.validateAttestationHeaderOrThrow(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
           sanitizedHeaders as SanitizedRequestHeadersWithAttestation,
