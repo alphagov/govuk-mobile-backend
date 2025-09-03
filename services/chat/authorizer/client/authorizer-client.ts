@@ -9,6 +9,7 @@ import type { CognitoAccessTokenPayload } from 'aws-jwt-verify/jwt-model';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 import { ConfigError } from '../errors';
 import type { SecretsConfig } from '../types';
+import { logger } from '../logger';
 
 export class AuthorizerClient {
   public region = process.env['REGION'] ?? 'eu-west-2';
@@ -28,7 +29,7 @@ export class AuthorizerClient {
     const authHeader = this.event.headers?.['Authorization'];
 
     if (authHeader === undefined || authHeader.trim() === '') {
-      console.error("Authorization header 'Authorization' is missing or empty");
+      logger.error("Authorization header 'Authorization' is missing or empty");
       return AuthorizerClient.getAuthorizerResult(
         'unknown',
         'Deny',
@@ -39,7 +40,7 @@ export class AuthorizerClient {
     const [, token] = authHeader.split(' ');
 
     if (token === undefined || token.trim() === '') {
-      console.error(
+      logger.error(
         "Authorization header 'Authorization' does not contain a token",
       );
       return AuthorizerClient.getAuthorizerResult(
@@ -118,7 +119,8 @@ export class AuthorizerClient {
       );
       return payload;
     } catch (err) {
-      console.error('Token not valid', err);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      logger.error('Token not valid', err as Error);
       return undefined;
     }
   }

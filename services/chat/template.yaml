@@ -52,6 +52,19 @@ Conditions:
       - !Ref Environment
       - production
 
+  IsIntegratedEnvironment:
+    Fn::Or:
+      - Fn::Equals:
+          - !Ref Environment
+          - 'production'
+      - Fn::Equals:
+          - !Ref Environment
+          - 'integration'
+
+  IsNonIntegratedEnvironment:
+    Fn::Not:
+    - Condition: IsIntegratedEnvironment
+
 Mappings:
   OneLogin:
     Environment:
@@ -367,6 +380,11 @@ Resources:
           CHAT_SECRET_NAME: !Sub /${ConfigStackName}/chat/secrets
           REGION: !Ref AWS::Region
           OIDC_ISSUER: !FindInMap [OneLogin, Environment, !Ref Environment]
+          POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-chat-proxy-authorizer
+          POWERTOOLS_LOGGER_LOG_EVENT: !If
+          - IsNonIntegratedEnvironment
+          - "True"
+          - "False"
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
