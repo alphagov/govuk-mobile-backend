@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { _clearCachedJwks, getJwks, _returnCachedJwks } from '../../jwk-cache';
+import { AbortError } from 'node-fetch';
+import { logger } from '../../logger';
+import { logMessages } from '../../log-messages';
 
 const mockJwks = {
   keys: [
@@ -129,5 +132,21 @@ describe('getJwks', () => {
     });
 
     await expect(getJwks()).rejects.toThrow('Jwks response is not valid Jwks');
+  });
+
+  it('With abort fetch error', async () => {
+    const spyLogger = vi.spyOn(logger, 'error');
+    spyLogger.mockImplementation(() => {
+      // Mock implementation to suppress logging during tests
+    });
+    fetchSpy.mockRejectedValue(new AbortError('Fetch aborted'));
+
+    await expect(getJwks()).rejects.toThrow('Failed to fetch JWKS');
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(spyLogger).toHaveBeenCalledExactlyOnceWith(
+      logMessages.JWKS_FETCHING_FAILED,
+      'Error fetching JWKS: Fetch aborted',
+    );
   });
 });

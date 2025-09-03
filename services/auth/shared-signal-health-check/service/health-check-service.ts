@@ -92,6 +92,7 @@ export class SharedSignalHealthCheckService implements SharedSignalHealthCheck {
       url: this.healthCheckTokenUrl,
       data,
       headers,
+      timeout: this.getTimeoutInMillis(),
     };
 
     return config;
@@ -114,8 +115,17 @@ export class SharedSignalHealthCheckService implements SharedSignalHealthCheck {
       url: this.healthCheckVerifyUrl,
       data,
       headers,
+      timeout: this.getTimeoutInMillis(),
     };
 
     return config;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private getTimeoutInMillis(): number {
+    return process.env['HEALTH_CHECK_TIMEOUT_MS'] != null
+      ? Number(process.env['HEALTH_CHECK_TIMEOUT_MS'])
+      : // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+        3000;
   }
 }

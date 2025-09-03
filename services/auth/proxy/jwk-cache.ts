@@ -37,6 +37,10 @@ interface Jwks {
 
 export const getJwks = async (): Promise<Jwks> => {
   const now = Date.now();
+  const timeoutInMillis =
+    process.env['PROXY_TIMEOUT_MS'] != null
+      ? parseInt(process.env['PROXY_TIMEOUT_MS'], 10)
+      : 3000;
 
   // Check if cachedJwks exists and is still fresh based on its maxAge
   if (cachedJwks && now < cachedJwks.expiresInMillis) {
@@ -44,7 +48,27 @@ export const getJwks = async (): Promise<Jwks> => {
     return cachedJwks.jwks;
   }
 
-  const response = await fetch(JWKS_URI);
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => {
+    abortController.abort();
+  }, timeoutInMillis);
+
+  let response = undefined;
+  try {
+    response = await fetch(JWKS_URI, {
+      signal: abortController.signal,
+    });
+  } catch (error) {
+    logger.error(
+      logMessages.JWKS_FETCHING_FAILED,
+      `Error fetching JWKS: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    throw new JwksFetchError('Failed to fetch JWKS');
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     logger.error(
