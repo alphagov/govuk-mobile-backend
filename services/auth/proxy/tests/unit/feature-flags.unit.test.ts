@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FEATURE_FLAGS } from '../../feature-flags';
 import { afterEach } from 'node:test';
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
-import { V } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js';
 
 const mockConfigStackName = 'test-ssm';
 
