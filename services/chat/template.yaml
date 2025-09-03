@@ -47,11 +47,6 @@ Conditions:
       - !Ref PermissionsBoundary
       - none
 
-  IsNotProduction: !Not
-    - !Equals
-      - !Ref Environment
-      - production
-
   IsIntegratedEnvironment:
     Fn::Or:
       - Fn::Equals:
