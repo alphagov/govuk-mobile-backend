@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { loadTemplateFromFile } from '../common/template';
-import { testConfig } from '../common/config';
 import path from 'path';
 import { AlarmTestCase } from './alarm-test-case';
 
@@ -76,6 +75,32 @@ const testCases: AlarmTestCase[] = [
     threshold: 2500,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [{ Name: 'ApiName', Value: { Ref: 'AttestationProxyApi' } }],
+  },
+  {
+    name: '4xx',
+    alarmName: `revoke-refresh-token-4xx-errors`,
+    actionsEnabled: true,
+    namespace: 'AWS/ApiGateway',
+    alarmResource: 'CloudwatchAlarmRevokeToken4xxErrors',
+    topicResource: 'CloudWatchAlarmTopicPagerDuty',
+    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
+    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
+    metricName: '4XXError',
+    alarmDescription: 'Alarm detects a high rate of client-side errors.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    statistic: 'Average',
+    period: 60,
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    threshold: 0.05,
+    comparisonOperator: 'GreaterThanThreshold',
+    dimensions: [
+      { Name: 'ApiName', Value: { Ref: 'AttestationProxyApi' } },
+      { Name: 'Resource', Value: '/oauth2/revoke' },
+      { Name: 'Stage', Value: { Ref: 'Environment' } },
+      { Name: 'Method', Value: 'POST' },
+    ],
   },
 ];
 

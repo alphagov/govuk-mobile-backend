@@ -19,6 +19,7 @@ const getTestConfig = () => {
     'CFN_CloudwatchAlarmAuthProxy4xxErrors',
     'CFN_CloudwatchAlarmAuthProxy5xxErrors',
     'CFN_CloudwatchAlarmAuthProxyLatencyErrors',
+    'CFN_CloudwatchAlarmRevokeToken4xxErrors',
     'CFN_SlackSupportChannelConfigurationARN',
     'CFN_CognitoSecretName',
     'CFN_SharedSignalClientId',
@@ -106,6 +107,8 @@ const getTestConfig = () => {
       process.env.CFN_CloudwatchAlarmAuthProxy5xxErrors!,
     cloudWatchAlarmAuthProxyLatencyErrors:
       process.env.CFN_CloudwatchAlarmAuthProxyLatencyErrors!,
+    cloudWatchAlarmRevokeToken4xxErrors:
+      process.env.CFN_CloudwatchAlarmRevokeToken4xxErrors!,
     cognitoSecretName: process.env.CFN_CognitoSecretName!,
     authProxyId: process.env.CFN_AuthProxyId!,
     environment: process.env.TEST_ENVIRONMENT,
