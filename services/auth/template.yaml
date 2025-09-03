@@ -1610,7 +1610,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - ssm:GetParameter
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain
+                Resource: 
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/feature-flags/attestation
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup

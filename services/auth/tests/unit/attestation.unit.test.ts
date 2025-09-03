@@ -90,10 +90,16 @@ describe('auth proxy function iam role', () => {
             expect.objectContaining({
               Action: ['ssm:GetParameter'],
               Effect: 'Allow',
-              Resource: {
-                'Fn::Sub':
-                  'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain',
-              },
+              Resource: [
+                {
+                  'Fn::Sub':
+                    'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/cognito/custom-domain',
+                },
+                {
+                  'Fn::Sub':
+                    'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/feature-flags/attestation',
+                },
+              ],
             }),
           ]),
         }),
