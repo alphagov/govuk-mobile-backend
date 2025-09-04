@@ -1,8 +1,6 @@
-/* eslint-disable importPlugin/group-exports */
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 
-// errors.ts
-export class AppError extends Error {
+class AppError extends Error {
   public constructor(
     message: string,
     public readonly options: {
@@ -27,7 +25,7 @@ export class AppError extends Error {
   }
 }
 
-export class InvalidParameterError extends AppError {
+class InvalidParameterError extends AppError {
   public constructor(publicMessage = 'Invalid request', details?: unknown) {
     super('Validation failed', {
       statusCode: StatusCodes.BAD_REQUEST,
@@ -38,7 +36,7 @@ export class InvalidParameterError extends AppError {
   }
 }
 
-export class NotAuthorizedError extends AppError {
+class NotAuthorizedError extends AppError {
   public constructor(publicMessage = 'Not authorized') {
     super('Not authorized', {
       statusCode: StatusCodes.UNAUTHORIZED,
@@ -48,7 +46,7 @@ export class NotAuthorizedError extends AppError {
   }
 }
 
-export class TooManyRequestsError extends AppError {
+class TooManyRequestsError extends AppError {
   public constructor(cause: unknown) {
     super('Too many requests', {
       statusCode: StatusCodes.TOO_MANY_REQUESTS,
@@ -58,3 +56,10 @@ export class TooManyRequestsError extends AppError {
     });
   }
 }
+
+export {
+  AppError,
+  InvalidParameterError,
+  NotAuthorizedError,
+  TooManyRequestsError,
+};

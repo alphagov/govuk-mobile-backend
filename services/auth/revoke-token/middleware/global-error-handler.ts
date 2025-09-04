@@ -8,13 +8,15 @@ export const errorMiddleware = (): MiddlewareObj => ({
   onError: (request: Request): void => {
     const { error } = request;
 
-    if (error) {
-      logger.error('Error in revoke-token', error);
+    if (!error) {
+      return;
     }
+
+    logger.error('Error in revoke-token', error);
 
     if (
       error instanceof ParseError ||
-      error?.name === 'UnsupportedMediaTypeError'
+      error.name === 'UnsupportedMediaTypeError'
     ) {
       request.response = {
         statusCode: StatusCodes.BAD_REQUEST,
