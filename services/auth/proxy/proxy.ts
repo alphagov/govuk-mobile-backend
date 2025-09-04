@@ -20,6 +20,8 @@ async function _proxyRequest(
   headers: SanitizedRequestHeaders,
   method = 'GET',
 ): Promise<APIGatewayProxyResultV2> {
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  const proxyTimeoutMs = process.env['PROXY_TIMEOUT_MS'] ?? '3000';
   // eslint-disable-next-line promise/avoid-new
   return new Promise((resolve, reject) => {
     const req = https.request(
@@ -28,6 +30,7 @@ async function _proxyRequest(
         path,
         method,
         headers,
+        timeout: Number(proxyTimeoutMs),
       },
       (res) => {
         let data = '';

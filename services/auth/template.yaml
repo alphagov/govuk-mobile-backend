@@ -73,6 +73,15 @@ Mappings:
       integration: https://ssf-transmitter.transaction.integration.account.gov.uk/jwks.json
       production: https://shared-signals-transmitter.transaction.account.gov.uk/jwks.json
 
+  RequestTimeoutInMillis:
+    Environment:
+      local: "5000"
+      build: "5000"
+      dev: "5000"
+      staging: "5000"
+      integration: "5000"
+      production: "5000"
+
 Conditions:
   UseCodeSigning: !Not
     - !Equals
@@ -1582,6 +1591,7 @@ Resources:
           - IsNonIntegratedEnvironment
           - "True"
           - "False"
+          PROXY_TIMEOUT_MS: !FindInMap [RequestTimeoutInMillis, Environment, !Ref Environment]
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -2161,6 +2171,7 @@ Resources:
           - IsNonIntegratedEnvironment
           - "True"
           - "False"
+          HEALTH_CHECK_TIMEOUT_MS: !FindInMap [RequestTimeoutInMillis, Environment, !Ref Environment]
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment

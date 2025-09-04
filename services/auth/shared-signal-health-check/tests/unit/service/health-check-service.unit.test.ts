@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  beforeAll,
+  afterAll,
+} from 'vitest';
 import axios from 'axios';
 import { AuthError, VerifyError } from '../../../errors';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
@@ -93,6 +101,13 @@ describe('SharedSignalHealthCheckService', () => {
   });
 
   describe('constructAuthoriseAxiosRequestConfig', () => {
+    beforeAll(() => {
+      vi.clearAllMocks();
+      vi.stubEnv('HEALTH_CHECK_TIMEOUT_MS', '1000');
+    });
+    afterAll(() => {
+      vi.unstubAllEnvs();
+    });
     it('should construct correct AxiosRequestConfig', () => {
       const config = (service as any).constructAuthoriseAxiosRequestConfig(
         secretsConfig,
@@ -104,10 +119,18 @@ describe('SharedSignalHealthCheckService', () => {
       );
       expect(config.headers.Authorization).toMatch(/^Basic /);
       expect(config.data).toEqual({ grant_type: 'client_credentials' });
+      expect(config.timeout).toBe(1000);
     });
   });
 
   describe('constructVerifyAxiosRequestConfig', () => {
+    beforeAll(() => {
+      vi.clearAllMocks();
+      vi.stubEnv('HEALTH_CHECK_TIMEOUT_MS', '1000');
+    });
+    afterAll(() => {
+      vi.unstubAllEnvs();
+    });
     it('should construct correct AxiosRequestConfig', () => {
       const token = 'bearer-token';
       const config = (service as any).constructVerifyAxiosRequestConfig(token);
@@ -116,6 +139,7 @@ describe('SharedSignalHealthCheckService', () => {
       expect(config.headers['Content-Type']).toBe('application/json');
       expect(config.headers.Authorization).toBe(`Bearer ${token}`);
       expect(config.data).toEqual({ state: 'govuk-app-health-check' });
+      expect(config.timeout).toBe(1000);
     });
   });
 });
