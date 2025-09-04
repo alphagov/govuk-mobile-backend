@@ -75,12 +75,12 @@ Mappings:
 
   RequestTimeoutInMillis:
     Environment:
-      local: "3000"
-      build: "3000"
-      dev: "3000"
-      staging: "3000"
-      integration: "3000"
-      production: "3000"        
+      local: "5000"
+      build: "5000"
+      dev: "5000"
+      staging: "5000"
+      integration: "5000"
+      production: "5000"
 
 Conditions:
   UseCodeSigning: !Not

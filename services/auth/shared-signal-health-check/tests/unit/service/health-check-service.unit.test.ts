@@ -103,10 +103,10 @@ describe('SharedSignalHealthCheckService', () => {
   describe('constructAuthoriseAxiosRequestConfig', () => {
     beforeAll(() => {
       vi.clearAllMocks();
-      process.env['HEALTH_CHECK_TIMEOUT_MS'] = '5000';
+      vi.stubEnv('HEALTH_CHECK_TIMEOUT_MS', '1000');
     });
     afterAll(() => {
-      delete process.env['HEALTH_CHECK_TIMEOUT_MS'];
+      vi.unstubAllEnvs();
     });
     it('should construct correct AxiosRequestConfig', () => {
       const config = (service as any).constructAuthoriseAxiosRequestConfig(
@@ -119,17 +119,17 @@ describe('SharedSignalHealthCheckService', () => {
       );
       expect(config.headers.Authorization).toMatch(/^Basic /);
       expect(config.data).toEqual({ grant_type: 'client_credentials' });
-      expect(config.timeout).toBe(5000);
+      expect(config.timeout).toBe(1000);
     });
   });
 
   describe('constructVerifyAxiosRequestConfig', () => {
     beforeAll(() => {
       vi.clearAllMocks();
-      process.env['HEALTH_CHECK_TIMEOUT_MS'] = '5000';
+      vi.stubEnv('HEALTH_CHECK_TIMEOUT_MS', '1000');
     });
     afterAll(() => {
-      delete process.env['HEALTH_CHECK_TIMEOUT_MS'];
+      vi.unstubAllEnvs();
     });
     it('should construct correct AxiosRequestConfig', () => {
       const token = 'bearer-token';
@@ -139,7 +139,7 @@ describe('SharedSignalHealthCheckService', () => {
       expect(config.headers['Content-Type']).toBe('application/json');
       expect(config.headers.Authorization).toBe(`Bearer ${token}`);
       expect(config.data).toEqual({ state: 'govuk-app-health-check' });
-      expect(config.timeout).toBe(5000);
+      expect(config.timeout).toBe(1000);
     });
   });
 });
