@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
-import type { APIGatewayProxyResult } from 'aws-lambda';
 import { revokeRefreshToken } from '../../revoke-refresh-token';
 import type { RevokeTokenInput } from '../../types';
 
@@ -12,6 +11,12 @@ import {
   TooManyRequestsException,
   RevokeTokenCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import {
+  AppError,
+  InvalidParameterError,
+  NotAuthorizedError,
+  TooManyRequestsError,
+} from '../../errors';
 
 const mockSend = vi.fn();
 
@@ -35,49 +40,63 @@ describe('revokeRefreshToken', () => {
     const result = await revokeRefreshToken(input, mockCognitoClient);
     expect(mockSend).toHaveBeenCalledWith(expect.any(RevokeTokenCommand));
     expect(result.statusCode).toBe(200);
-    expect(result.body).toContain('Refresh token revoked successfully.');
+    expect(JSON.parse(result.body)).toEqual({ message: 'OK' });
   });
 
   it('should handle InvalidParameterException', async () => {
-    mockSend.mockRejectedValueOnce(new InvalidParameterException({}));
-    const result = await revokeRefreshToken(input, mockCognitoClient);
-    expect(result.statusCode).toBe(500);
-    expect(JSON.parse(result.body).message).toContain('Invalid parameters');
+    mockSend.mockRejectedValueOnce(
+      new InvalidParameterException({
+        message: 'Internal error details - invalid parameter',
+        $metadata: {},
+      }),
+    );
+    await expect(revokeRefreshToken(input, mockCognitoClient)).rejects.toThrow(
+      InvalidParameterError,
+    );
   });
 
   it('should handle NotAuthorizedException', async () => {
-    mockSend.mockRejectedValueOnce(new NotAuthorizedException({}));
-    const result = await revokeRefreshToken(input, mockCognitoClient);
-    expect(result.statusCode).toBe(500);
-    expect(JSON.parse(result.body).message).toContain('Not authorized');
+    mockSend.mockRejectedValueOnce(
+      new NotAuthorizedException({
+        message: 'Internal error details - not authorized',
+        $metadata: {},
+      }),
+    );
+    await expect(revokeRefreshToken(input, mockCognitoClient)).rejects.toThrow(
+      NotAuthorizedError,
+    );
   });
 
   it('should handle TooManyRequestsException', async () => {
-    mockSend.mockRejectedValueOnce(new TooManyRequestsException({}));
-    const result = await revokeRefreshToken(input, mockCognitoClient);
-    expect(result.statusCode).toBe(500);
-    expect(JSON.parse(result.body).message).toContain('Too many requests');
+    mockSend.mockRejectedValueOnce(
+      new TooManyRequestsException({
+        message: 'Internal error details - too many requests',
+        $metadata: {},
+      }),
+    );
+    await expect(revokeRefreshToken(input, mockCognitoClient)).rejects.toThrow(
+      TooManyRequestsError,
+    );
   });
 
   it('should handle InternalErrorException', async () => {
     mockSend.mockRejectedValueOnce(new InternalErrorException({}));
-    const result = await revokeRefreshToken(input, mockCognitoClient);
-    expect(result.statusCode).toBe(500);
-    expect(JSON.parse(result.body).message).toContain('internal error');
+    await expect(revokeRefreshToken(input, mockCognitoClient)).rejects.toThrow(
+      AppError,
+    );
   });
 
   it('should handle unknown error', async () => {
     mockSend.mockRejectedValueOnce(new Error('Unknown error'));
-    const result = await revokeRefreshToken(input, mockCognitoClient);
-    expect(result.statusCode).toBe(500);
-    expect(JSON.parse(result.body).message).toBe('Failed to revoke token.');
-    expect(JSON.parse(result.body).errorDetails).toBe('Unknown error');
+    await expect(revokeRefreshToken(input, mockCognitoClient)).rejects.toThrow(
+      AppError,
+    );
   });
 
   it('should handle non-Error unknown error', async () => {
     mockSend.mockRejectedValueOnce('some string error');
-    const result = await revokeRefreshToken(input, mockCognitoClient);
-    expect(result.statusCode).toBe(500);
-    expect(JSON.parse(result.body).errorDetails).toBe('some string error');
+    await expect(revokeRefreshToken(input, mockCognitoClient)).rejects.toThrow(
+      AppError,
+    );
   });
 });

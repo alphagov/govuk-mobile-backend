@@ -1,90 +1,58 @@
-import type {
-  APIGatewayProxyEvent,
-  APIGatewayProxyResult,
-  Context,
-} from 'aws-lambda';
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
-import querystring from 'querystring';
 import type { CognitoCredentials, RevokeTokenInput } from './types';
 import { revokeRefreshToken } from './revoke-refresh-token';
 import { retrieveCognitoCredentials } from './cognito';
 import { logger } from './logger';
+import middy from '@middy/core';
+import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
+import { parser } from '@aws-lambda-powertools/parser/middleware';
+import { z } from 'zod';
+import { errorMiddleware } from './middleware/global-error-handler';
+import httpUrlEncodeBodyParser from '@middy/http-urlencode-body-parser';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
 
-/**
- *
- * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
- * @param event - API Gateway Lambda Proxy Input Format
- *
- * Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
- * @returns object - API Gateway Lambda Proxy Output Format
- */
 const cognitoIdentityServiceProvider: CognitoIdentityProviderClient =
   new CognitoIdentityProviderClient({
     region: 'eu-west-2',
   });
 
-export const lambdaHandler = async (
-  event: APIGatewayProxyEvent,
-  context: Context,
-): Promise<APIGatewayProxyResult> => {
-  logger.addContext(context);
-  logger.logEventIfEnabled(event);
-  logger.setCorrelationId(event.requestContext.requestId);
+const schema = z.object({
+  body: z.object({
+    refresh_token: z.string(),
+    client_id: z.string(),
+  }),
+});
 
-  if (event.body == null || event.body === '') {
-    return {
-      statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'Missing request body',
-      }),
+export const lambdaHandler = middy()
+  .use(
+    injectLambdaContext(logger, {
+      correlationIdPath: 'requestContext.requestId',
+    }),
+  )
+  // #1 parses urlencoded body
+  .use(httpUrlEncodeBodyParser())
+  .use(parser({ schema }))
+  .use(errorMiddleware())
+  .handler(async (event: APIGatewayProxyEvent & z.infer<typeof schema>) => {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    const { refresh_token, client_id } = event.body;
+
+    const clientCredentials: CognitoCredentials =
+      await retrieveCognitoCredentials(
+        {
+          clientId: client_id,
+        },
+        cognitoIdentityServiceProvider,
+      );
+
+    const revokeInput: RevokeTokenInput = {
+      Token: refresh_token,
+      ClientId: clientCredentials.clientId,
+      ClientSecret: clientCredentials.clientSecret,
     };
-  }
-  const body = querystring.parse(event.body);
-  let refreshToken = body['refresh_token'];
-  let clientId = body['client_id'];
 
-  if (Array.isArray(clientId)) {
-    [clientId] = clientId;
-  }
-
-  if (Array.isArray(refreshToken)) {
-    [refreshToken] = refreshToken;
-  }
-
-  if (refreshToken === undefined || refreshToken == '') {
-    return {
-      statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'Missing refresh token',
-      }),
-    };
-  }
-
-  if (clientId === undefined || clientId == '') {
-    return {
-      statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'Missing client ID',
-      }),
-    };
-  }
-
-  const clientCredentials: CognitoCredentials =
-    await retrieveCognitoCredentials(
-      {
-        clientId: clientId,
-      },
+    return await revokeRefreshToken(
+      revokeInput,
       cognitoIdentityServiceProvider,
     );
-
-  const revokeInput: RevokeTokenInput = {
-    Token: refreshToken,
-    ClientId: clientCredentials.clientId,
-    ClientSecret: clientCredentials.clientSecret,
-  };
-
-  return await revokeRefreshToken(revokeInput, cognitoIdentityServiceProvider);
-};
+  });

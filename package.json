@@ -22,6 +22,7 @@
   },
   "private": true,
   "dependencies": {
+    "@aws-lambda-powertools/jmespath": "^2.25.2",
     "@aws-lambda-powertools/logger": "^2.25.2",
     "@aws-lambda-powertools/parameters": "^2.25.2",
     "@aws-lambda-powertools/parser": "^2.25.2",
