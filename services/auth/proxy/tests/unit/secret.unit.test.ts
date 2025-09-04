@@ -45,8 +45,11 @@ describe('secret', () => {
     );
 
     await expect(getClientSecret(secretName)).rejects.toThrow(
-      new FailedToFetchSecretError(`✖ Invalid input: expected string, received undefined
-  → at client_secret`),
+      new FailedToFetchSecretError(
+        'Failed to fetch secret',
+        `✖ Invalid input: expected string, received undefined
+  → at client_secret`,
+      ),
     );
   });
 
@@ -87,7 +90,7 @@ describe('secret', () => {
     async (invalidSecret: any, message: string) => {
       (getSecret as Mock).mockResolvedValue(invalidSecret);
       await expect(getClientSecret(invalidSecret)).rejects.toThrow(
-        new FailedToFetchSecretError(message),
+        new FailedToFetchSecretError('Failed to fetch secret', message),
       );
     },
   );

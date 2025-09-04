@@ -32,9 +32,13 @@ export const getClientSecret = async (secretName: string): Promise<string> => {
     return client_secret;
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new FailedToFetchSecretError(zod.prettifyError(error));
+      throw new FailedToFetchSecretError(
+        'Failed to fetch secret',
+        zod.prettifyError(error),
+      );
     }
     throw new FailedToFetchSecretError(
+      'Failed to fetch secret',
       error instanceof Error ? error.message : String(error),
     );
   }

@@ -75,7 +75,7 @@ export const getJwks = async (): Promise<Jwks> => {
       logMessages.JWKS_FETCHING_FAILED,
       `Failed to fetch JWKS: ${String(response.status)} ${response.statusText}`,
     );
-    throw new JwksFetchError('Failed to fetch JWKS');
+    throw new JwksFetchError('Failed to fetch JWKS', response.statusText);
   }
 
   const jwksResponse = await response.json();

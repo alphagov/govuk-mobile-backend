@@ -123,7 +123,7 @@ describe.skipIf(!testConfig.attestationEnabled)('app attestation', () => {
         scope: 'email openid',
       },
     ],
-    // missing contet-type header
+    // missing content-type header
     [
       {
         'X-Attestation-Token': 'valid-attestation-token',
@@ -131,34 +131,6 @@ describe.skipIf(!testConfig.attestationEnabled)('app attestation', () => {
       {
         grant_type: 'authorization_code',
         client_id: testConfig.clientId,
-        code: 'valid-code',
-        redirect_uri: 'https://example.com/callback',
-        code_verifier: 'valid-code-verifier',
-        scope: 'email openid',
-      },
-    ],
-    // missing grant-type
-    [
-      {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Attestation-Token': 'valid-attestation-token',
-      },
-      {
-        client_id: testConfig.clientId,
-        code: 'valid-code',
-        redirect_uri: 'https://example.com/callback',
-        code_verifier: 'valid-code-verifier',
-        scope: 'email openid',
-      },
-    ],
-    // missing client id
-    [
-      {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Attestation-Token': 'valid-attestation-token',
-      },
-      {
-        grant_type: 'authorization_code',
         code: 'valid-code',
         redirect_uri: 'https://example.com/callback',
         code_verifier: 'valid-code-verifier',
@@ -169,6 +141,32 @@ describe.skipIf(!testConfig.attestationEnabled)('app attestation', () => {
     const response = await fetch(`${testConfig.authProxyUrl}oauth2/token`, {
       method: 'POST',
       headers,
+      body: querystring.stringify(body),
+    });
+
+    expect(response.status).toEqual(400);
+    expect(response.statusText).toContain('Bad Request');
+  });
+
+  it.each([
+    {
+      grant_type: 'authorization_code',
+      client_id: testConfig.clientId,
+      code: 'valid-code',
+      redirect_uri: 'https://example.com/callback',
+      code_verifier: 'valid-code-verifier',
+      scope: 'email openid',
+    },
+  ])('should reject bad token input', async (body) => {
+    const { token: attestationToken } = await attestationDriver.getToken(
+      testConfig.firebaseIosAppId,
+    );
+    const response = await fetch(`${testConfig.authProxyUrl}oauth2/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Attestation-Token': attestationToken,
+      },
       body: querystring.stringify(body),
     });
 

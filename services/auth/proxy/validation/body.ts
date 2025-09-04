@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
-import { z, ZodError } from 'zod/v4';
-import querystring from 'querystring';
+import { z } from 'zod/v4';
 
 const clientId = z
   .string()
@@ -43,28 +42,9 @@ const refreshTokenSchema = z.object({
   client_id: clientId,
 });
 
-const grantUnionSchema = z.discriminatedUnion('grant_type', [
+export const grantUnionSchema = z.discriminatedUnion('grant_type', [
   authorizationCodeSchema,
   refreshTokenSchema,
 ]);
 
 export type RequestBody = z.infer<typeof grantUnionSchema>;
-
-export const validateRequestBodyOrThrow = async (
-  body: unknown,
-): Promise<RequestBody> => {
-  if (body == null || body === '' || typeof body !== 'string') {
-    throw new ZodError([
-      {
-        code: 'invalid_value',
-        values: ['body'],
-        path: ['body'],
-        message: 'Invalid input: body is undefined',
-        input: body,
-      },
-    ]);
-  }
-
-  const parsedBody = querystring.parse(body);
-  return grantUnionSchema.parseAsync(parsedBody);
-};
