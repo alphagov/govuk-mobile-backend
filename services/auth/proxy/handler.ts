@@ -1,82 +1,58 @@
-import type {
-  APIGatewayEvent,
-  APIGatewayProxyResultV2,
-  Context,
-} from 'aws-lambda';
-import { FailedToFetchSecretError, UnknownAppError } from './errors';
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import type { APIGatewayEvent, APIGatewayProxyResultV2 } from 'aws-lambda';
 import type { Dependencies } from './app';
-import type { SanitizedRequestHeadersWithAttestation } from './sanitize-headers';
-import { sanitizeHeaders } from './sanitize-headers';
-import { ZodError } from 'zod/v4';
-import { validateRequestBodyOrThrow } from './validation/body';
+import type { RequestBody } from './validation/body';
+import { grantUnionSchema } from './validation/body';
 import { logMessages } from './log-messages';
 import { logger } from './logger';
+import type { MiddyfiedHandler } from '@middy/core';
+import middy from '@middy/core';
+import { errorMiddleware } from './middleware/global-error-handler';
+import { attestationMiddleware } from './middleware/attestation';
+import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
+import { parser } from '@aws-lambda-powertools/parser/middleware';
+import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes/api-gateway';
+import { sanitizeHeadersMiddleware } from './middleware/sanitize-headers';
+import { featureFlagsMiddleware } from './middleware/feature-flags';
+import httpUrlEncodeBodyParser from '@middy/http-urlencode-body-parser';
+import type { SanitizedRequestHeaders } from './sanitize-headers';
+import type { SanitizeHeadersContext } from './middleware/sanitize-headers';
 
-const generateErrorResponse = ({
-  statusCode,
-  message,
-}: {
-  statusCode: number;
-  message: string;
-}): APIGatewayProxyResultV2 => ({
-  statusCode,
-  headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-  body: JSON.stringify({ message }),
-});
+type AppContext = SanitizeHeadersContext & {
+  sanitizedHeaders: SanitizedRequestHeaders;
+  isAttestationEnabled: boolean;
+};
 
-export const createHandler =
-  (dependencies: Dependencies) =>
-  async (
-    event: APIGatewayEvent,
-    context: Context,
-  ): Promise<APIGatewayProxyResultV2> => {
-    try {
-      logger.addContext(context);
-      logger.logEventIfEnabled(event);
-      logger.setCorrelationId(event.requestContext.requestId);
+export const createHandler = (
+  dependencies: Dependencies,
+): MiddyfiedHandler<
+  APIGatewayEvent,
+  APIGatewayProxyResultV2,
+  Error,
+  AppContext
+> =>
+  middy<APIGatewayEvent, APIGatewayProxyResultV2, Error, AppContext>()
+    .use(
+      injectLambdaContext(logger, {
+        correlationIdPath: 'requestContext.requestId',
+      }),
+    )
+    .use(httpUrlEncodeBodyParser())
+    .use(featureFlagsMiddleware(dependencies))
+    .use(sanitizeHeadersMiddleware)
+    .use(attestationMiddleware(dependencies))
+    .use(parser({ schema: grantUnionSchema, envelope: ApiGatewayEnvelope }))
+    .use(errorMiddleware())
+    .handler(async (event: RequestBody, context: AppContext) => {
       logger.info(logMessages.ATTESTATION_STARTED);
 
-      const {
-        proxy,
-        attestationUseCase,
-        featureFlags,
-        getClientSecret,
-        getConfig,
-      } = dependencies;
+      const { proxy, getClientSecret, getConfig } = dependencies;
       const config = await getConfig();
-      const isAttestationEnabled = await featureFlags.ATTESTATION();
-
-      const { headers, body, httpMethod, path } = event;
-
-      // only accept requests to the token endpoint
-      if (!path.includes('/oauth2/token') || httpMethod !== 'POST') {
-        return generateErrorResponse({
-          statusCode: 404,
-          message: 'Not Found',
-        });
-      }
-
-      const validatedBody = await validateRequestBodyOrThrow(body);
-
-      const sanitizedHeaders = await sanitizeHeaders(
-        headers,
-        isAttestationEnabled,
-      );
-
-      if (isAttestationEnabled) {
-        await attestationUseCase.validateAttestationHeaderOrThrow(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-          sanitizedHeaders as SanitizedRequestHeadersWithAttestation,
-          config,
-        );
-      }
 
       const response = await proxy({
-        method: httpMethod,
+        method: 'POST',
         path: '/oauth2/token',
-        body: validatedBody,
-        sanitizedHeaders,
+        body: event,
+        sanitizedHeaders: context.sanitizedHeaders,
         parsedUrl: config.cognitoUrl,
         clientSecret: await getClientSecret(config.cognitoSecretName),
       });
@@ -84,60 +60,4 @@ export const createHandler =
       logger.info(logMessages.ATTESTATION_COMPLETED);
 
       return response;
-    } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
-      switch (true) {
-        case error instanceof ZodError:
-          logger.error(logMessages.ERROR_VALIDATION_ZOD, {
-            error: {
-              message: error.message,
-              issues: error.issues,
-            },
-          });
-          return generateErrorResponse({
-            statusCode: 400,
-            message: 'Invalid Request',
-          });
-        case error instanceof TokenExpiredError:
-          logger.error(logMessages.ERROR_ATTESTATION_TOKEN_EXPIRED, {
-            error,
-          });
-          return generateErrorResponse({
-            statusCode: 401,
-            message: 'Attestation token has expired',
-          });
-        case error instanceof JsonWebTokenError:
-          logger.error(logMessages.ERROR_ATTESTATION_JWT_INVALID, {
-            error,
-          });
-          return generateErrorResponse({
-            statusCode: 401,
-            message: 'Attestation token is invalid',
-          });
-        case error instanceof UnknownAppError:
-          logger.error(logMessages.ERROR_ATTESTATION_APP_UNKNOWN, {
-            error,
-          });
-          return generateErrorResponse({
-            statusCode: 401,
-            message: 'Unknown app associated with attestation token',
-          });
-        case error instanceof FailedToFetchSecretError:
-          logger.error(logMessages.ERROR_CONFIG_SECRET_FETCH_FAILED, {
-            error,
-          });
-          return generateErrorResponse({
-            statusCode: 500,
-            message: 'Internal server error, server missing key dependencies',
-          });
-        default:
-          logger.error(logMessages.ERROR_UNHANDLED_INTERNAL, {
-            error,
-          }); // Catch-all for unexpected errors
-          return generateErrorResponse({
-            statusCode: 500,
-            message: 'Internal server error',
-          });
-      }
-    }
-  };
+    });

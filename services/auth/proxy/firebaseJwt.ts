@@ -1,8 +1,8 @@
 import type { JwtPayload } from 'jsonwebtoken';
-import { verify, decode, JsonWebTokenError } from 'jsonwebtoken';
+import { verify, decode } from 'jsonwebtoken';
 import type { JWK } from 'jwk-to-pem';
 import jwkToPem from 'jwk-to-pem';
-import { UnknownAppError } from './errors';
+import { JwtError, UnknownAppError } from './errors';
 import type { AppConfig } from './config';
 import { getJwks } from './jwk-cache';
 import { logger } from './logger';
@@ -14,7 +14,10 @@ const getSigningKey = async (kid: string): Promise<string> => {
   const jwks = await getJwks();
   const signingKey = jwks.keys.find((key) => key.kid === kid);
   if (!signingKey) {
-    throw new JsonWebTokenError(`No matching key found for kid "${kid}"`);
+    throw new JwtError(
+      'No matching key found for kid',
+      `No matching key found for kid "${kid}"`,
+    );
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   return jwkToPem(signingKey as JWK);
@@ -91,21 +94,27 @@ export const validateFirebaseJWT = async (
   const decodedTokenHeader = decode(values.token, { complete: true })?.header;
 
   if (decodedTokenHeader?.kid == null) {
-    throw new JsonWebTokenError('JWT is missing the "kid" header');
+    throw new JwtError(
+      'JWT is missing the "kid" header',
+      'kid header is missing',
+    );
   }
 
   if (!isKidFormatSafe(decodedTokenHeader.kid)) {
-    throw new JsonWebTokenError('"kid" header is in unsafe format');
+    throw new JwtError(
+      '"kid" header is in unsafe format',
+      `"kid" header is in unsafe format "${decodedTokenHeader.kid}"`,
+    );
   }
 
   if (!isAlgorithmValid(decodedTokenHeader.alg)) {
-    throw new JsonWebTokenError(
+    throw new JwtError(
       `Invalid algorithm "${decodedTokenHeader.alg}" in JWT header`,
     );
   }
 
   if (decodedTokenHeader.typ !== 'JWT') {
-    throw new JsonWebTokenError(
+    throw new JwtError(
       'JWT is missing the "typ" header or has an invalid type',
     );
   }
@@ -133,7 +142,7 @@ export const validateFirebaseJWT = async (
   const decodedPayload = await verifyPromise;
 
   if (!isJwtPayload(decodedPayload)) {
-    throw new JsonWebTokenError('Payload is not a valid JWT payload');
+    throw new JwtError('Payload is not a valid JWT payload');
   }
 
   if (
@@ -142,17 +151,15 @@ export const validateFirebaseJWT = async (
       values.configValues.firebaseIosAppId,
     ])
   ) {
-    throw new UnknownAppError(
-      'App ID mismatch, please check subject claim includes a known app in firebase.',
-    );
+    throw new UnknownAppError('Unknown app associated with attestation token');
   }
 
   if (!hasValidIss(decodedPayload, values.configValues.projectId)) {
-    throw new JsonWebTokenError('Invalid "iss" claim in the JWT payload');
+    throw new JwtError('Invalid "iss" claim in the JWT payload');
   }
 
   if (!hasValidAud(decodedPayload, values.configValues)) {
-    throw new JsonWebTokenError('Invalid "aud" claim in the JWT payload');
+    throw new JwtError('Invalid "aud" claim in the JWT payload');
   }
 
   logger.info(logMessages.ATTESTATION_TOKEN_VALID);

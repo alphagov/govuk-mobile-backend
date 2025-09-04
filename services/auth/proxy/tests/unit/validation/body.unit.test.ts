@@ -1,10 +1,5 @@
-import { describe } from 'node:test';
-import querystring from 'querystring';
-import { expect, it } from 'vitest';
-import {
-  RequestBody,
-  validateRequestBodyOrThrow,
-} from '../../../validation/body';
+import { expect, it, describe } from 'vitest';
+import { RequestBody, grantUnionSchema } from '../../../validation/body';
 import { ZodError } from 'zod/v4';
 
 describe('validation', () => {
@@ -28,20 +23,15 @@ describe('validation', () => {
   it.each([getValidAuthorizationGrantBody(), getValidRefreshGrantBody()])(
     'should perform validation based on the grant type in the request',
     async (body) => {
-      await expect(
-        validateRequestBodyOrThrow(querystring.stringify(body)),
-      ).resolves.toEqual(body);
+      await expect(grantUnionSchema.parseAsync(body)).resolves.toEqual(body);
     },
   );
 
   it.each([undefined, null, ''])(
     'should throw an error if body is missing',
     async (body) => {
-      await expect(validateRequestBodyOrThrow(body)).rejects.toThrowError(
-        expect.objectContaining({
-          name: 'ZodError',
-          message: expect.stringContaining('Invalid input: body is undefined'),
-        }),
+      await expect(grantUnionSchema.parseAsync(body)).rejects.toThrowError(
+        ZodError,
       );
     },
   );
@@ -54,9 +44,7 @@ describe('validation', () => {
       malicious_content: 'foobar',
     }),
   ])('should ignore extra fields', async (body) => {
-    const result = await validateRequestBodyOrThrow(
-      querystring.stringify(body),
-    );
+    const result = await grantUnionSchema.parseAsync(body);
     expect(result).not.toHaveProperty('malicious_content');
   });
 
@@ -76,12 +64,10 @@ describe('validation', () => {
     'should throw an error if grant type is not known grant type',
     async (grantType, body) => {
       await expect(
-        validateRequestBodyOrThrow(
-          querystring.stringify({
-            ...body,
-            grant_type: grantType,
-          }),
-        ),
+        grantUnionSchema.parseAsync({
+          ...body,
+          grant_type: grantType,
+        }),
       ).rejects.toThrowError(ZodError);
     },
   );
@@ -89,33 +75,29 @@ describe('validation', () => {
   it('should throw an exception if body is not valid query string', async () => {
     // Not a query string: object
     await expect(
-      validateRequestBodyOrThrow({ foo: 'bar' } as any),
+      grantUnionSchema.parseAsync({ foo: 'bar' } as any),
     ).rejects.toThrowError(ZodError);
 
     // Not a query string: array
     await expect(
-      validateRequestBodyOrThrow(['foo=bar'] as any),
+      grantUnionSchema.parseAsync(['foo=bar'] as any),
     ).rejects.toThrowError(ZodError);
 
     // Not a query string: malformed string
     await expect(
-      validateRequestBodyOrThrow('not-a-query-string'),
+      grantUnionSchema.parseAsync('not-a-query-string'),
     ).rejects.toThrowError(ZodError);
 
     // Not a query string: random string
     await expect(
-      validateRequestBodyOrThrow('foo=bar&baz'),
+      grantUnionSchema.parseAsync('foo=bar&baz'),
     ).rejects.toThrowError(ZodError);
   });
 
   describe('authorization grant type', () => {
     it('should allow valid body', async () => {
-      const stringifiedBody = querystring.stringify(
-        getValidAuthorizationGrantBody(),
-      );
-      await expect(
-        validateRequestBodyOrThrow(stringifiedBody),
-      ).resolves.toEqual(querystring.parse(stringifiedBody));
+      const body = getValidAuthorizationGrantBody();
+      await expect(grantUnionSchema.parseAsync(body)).resolves.toEqual(body);
     });
 
     it.each(['grant_type', 'client_id', 'redirect_uri', 'code', 'scope'])(
@@ -126,9 +108,9 @@ describe('validation', () => {
         };
         delete bodyCopy[field];
 
-        await expect(
-          validateRequestBodyOrThrow(querystring.stringify(bodyCopy)),
-        ).rejects.toThrow(ZodError);
+        await expect(grantUnionSchema.parseAsync(bodyCopy)).rejects.toThrow(
+          ZodError,
+        );
       },
     );
 
@@ -136,12 +118,10 @@ describe('validation', () => {
       'should throw an error if client id is wrong length',
       async (clientId) => {
         await expect(
-          validateRequestBodyOrThrow(
-            querystring.stringify(
-              getValidAuthorizationGrantBody({
-                client_id: clientId,
-              }),
-            ),
+          grantUnionSchema.parseAsync(
+            getValidAuthorizationGrantBody({
+              client_id: clientId,
+            }),
           ),
         ).rejects.toThrowError(ZodError);
       },
@@ -151,12 +131,10 @@ describe('validation', () => {
       'should throw an error if redirect_uri is too long',
       async (redirectUri) => {
         await expect(
-          validateRequestBodyOrThrow(
-            querystring.stringify(
-              getValidAuthorizationGrantBody({
-                redirect_uri: redirectUri,
-              }),
-            ),
+          grantUnionSchema.parseAsync(
+            getValidAuthorizationGrantBody({
+              redirect_uri: redirectUri,
+            }),
           ),
         ).rejects.toThrow(ZodError);
       },
@@ -166,12 +144,10 @@ describe('validation', () => {
       'should throw an error if authorization code is wrong length',
       async (code) => {
         await expect(
-          validateRequestBodyOrThrow(
-            querystring.stringify(
-              getValidAuthorizationGrantBody({
-                code,
-              }),
-            ),
+          grantUnionSchema.parseAsync(
+            getValidAuthorizationGrantBody({
+              code,
+            }),
           ),
         ).rejects.toThrow(ZodError);
       },
@@ -181,12 +157,10 @@ describe('validation', () => {
       'should throw an error if code verifier is wrong length',
       async (codeVerifier) => {
         await expect(
-          validateRequestBodyOrThrow(
-            querystring.stringify(
-              getValidAuthorizationGrantBody({
-                code_verifier: codeVerifier,
-              }),
-            ),
+          grantUnionSchema.parseAsync(
+            getValidAuthorizationGrantBody({
+              code_verifier: codeVerifier,
+            }),
           ),
         ).rejects.toThrow(ZodError);
       },
@@ -194,13 +168,6 @@ describe('validation', () => {
   });
 
   describe('refresh token grant type', () => {
-    it('should allow valid body', async () => {
-      const stringifiedBody = querystring.stringify(getValidRefreshGrantBody());
-      await expect(
-        validateRequestBodyOrThrow(stringifiedBody),
-      ).resolves.toEqual(querystring.parse(stringifiedBody));
-    });
-
     it.each(['grant_type', 'client_id', 'refresh_token'])(
       'should throw an error if required field %s is missing',
       async (field) => {
@@ -209,9 +176,9 @@ describe('validation', () => {
         };
         delete bodyCopy[field];
 
-        await expect(
-          validateRequestBodyOrThrow(querystring.stringify(bodyCopy)),
-        ).rejects.toThrow(ZodError);
+        await expect(grantUnionSchema.parseAsync(bodyCopy)).rejects.toThrow(
+          ZodError,
+        );
       },
     );
 
@@ -219,12 +186,10 @@ describe('validation', () => {
       'should throw an error if client id is wrong length',
       async (clientId) => {
         await expect(
-          validateRequestBodyOrThrow(
-            querystring.stringify(
-              getValidRefreshGrantBody({
-                client_id: clientId,
-              }),
-            ),
+          grantUnionSchema.parseAsync(
+            getValidRefreshGrantBody({
+              client_id: clientId,
+            }),
           ),
         ).rejects.toThrowError(ZodError);
       },
@@ -232,12 +197,10 @@ describe('validation', () => {
 
     it('should throw an error if refresh_token is too short', async () => {
       await expect(
-        validateRequestBodyOrThrow(
-          querystring.stringify(
-            getValidRefreshGrantBody({
-              refresh_token: '',
-            }),
-          ),
+        grantUnionSchema.parseAsync(
+          getValidRefreshGrantBody({
+            refresh_token: '',
+          }),
         ),
       ).rejects.toThrow(ZodError);
     });

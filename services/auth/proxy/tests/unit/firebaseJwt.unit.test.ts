@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { validateFirebaseJWT } from '../../firebaseJwt';
-import { JsonWebTokenError, decode } from 'jsonwebtoken';
-import { UnknownAppError } from '../../errors';
+import { decode } from 'jsonwebtoken';
+import { UnknownAppError, JwtError } from '../../errors';
 import { AppConfig } from '../../config';
 
 const configValues: AppConfig = {
@@ -47,9 +47,9 @@ vi.mock('jsonwebtoken', async (importOriginal) => {
           aud: ['invalid-audience'],
         });
       } else if (token === 'expired-token') {
-        callback(new JsonWebTokenError('Token expired'));
+        callback(new JwtError('Token expired'));
       } else {
-        callback(new JsonWebTokenError('Invalid token'));
+        callback(new JwtError('Invalid token'));
       }
     }),
     decode: vi.fn().mockReturnValue({
@@ -61,10 +61,10 @@ vi.mock('jsonwebtoken', async (importOriginal) => {
         typ: 'JWT',
       },
     }),
-    JsonWebTokenError: class extends Error {
+    JwtError: class extends Error {
       constructor(message: string) {
         super(message);
-        this.name = 'JsonWebTokenError';
+        this.name = 'JwtError';
       }
     },
   };
@@ -129,7 +129,7 @@ describe('firebaseJwt', () => {
         token: 'valid-token',
         configValues,
       }),
-    ).rejects.toThrow(JsonWebTokenError);
+    ).rejects.toThrow(JwtError);
   });
 
   it('should throw an error when typ is not JWT ', async () => {
@@ -148,7 +148,7 @@ describe('firebaseJwt', () => {
         token: 'valid-token',
         configValues,
       }),
-    ).rejects.toThrow(JsonWebTokenError);
+    ).rejects.toThrow(JwtError);
   });
 
   it('should return void for a valid token', async () => {
@@ -174,7 +174,7 @@ describe('firebaseJwt', () => {
         token: 'valid-token',
         configValues,
       }),
-    ).rejects.toThrow(JsonWebTokenError);
+    ).rejects.toThrow(JwtError);
   });
 
   it.each(['HS256', 'HS384', 'HS512', 'None'])(
@@ -194,7 +194,7 @@ describe('firebaseJwt', () => {
           token: 'valid-token',
           configValues,
         }),
-      ).rejects.toThrow(JsonWebTokenError);
+      ).rejects.toThrow(JwtError);
     },
   );
 
@@ -204,7 +204,7 @@ describe('firebaseJwt', () => {
         token: 'invalid-token',
         configValues: configValues,
       }),
-    ).rejects.toThrow(JsonWebTokenError);
+    ).rejects.toThrow(JwtError);
   });
 
   it('should throw an error if the token is expired', async () => {
@@ -213,7 +213,7 @@ describe('firebaseJwt', () => {
         token: 'expired-token',
         configValues: configValues,
       }),
-    ).rejects.toThrow(JsonWebTokenError);
+    ).rejects.toThrow(JwtError);
   });
 
   it('should throw an error if the app ID is not known', async () => {
@@ -231,7 +231,7 @@ describe('firebaseJwt', () => {
         token: 'invalid-issuer',
         configValues: configValues,
       }),
-    ).rejects.toThrow(JsonWebTokenError);
+    ).rejects.toThrow(JwtError);
   });
 
   it('should throw an error if audience is invalid', async () => {
@@ -240,7 +240,7 @@ describe('firebaseJwt', () => {
         token: 'invalid-audience',
         configValues: configValues,
       }),
-    ).rejects.toThrow(JsonWebTokenError);
+    ).rejects.toThrow(JwtError);
   });
 
   it.each([
@@ -264,7 +264,10 @@ describe('firebaseJwt', () => {
         configValues: configValues,
       }),
     ).rejects.toThrow(
-      new JsonWebTokenError(`"kid" header is in unsafe format`),
+      new JwtError(
+        '"kid" header is in unsafe format',
+        `"kid" header is in unsafe format "${kid}"`,
+      ),
     );
   });
 
@@ -287,7 +290,10 @@ describe('firebaseJwt', () => {
           configValues: configValues,
         }),
       ).rejects.toThrow(
-        new JsonWebTokenError(`No matching key found for kid "${kid}"`),
+        new JwtError(
+          'No matching key found for kid',
+          `No matching key found for kid "${kid}"`,
+        ),
       );
     },
   );

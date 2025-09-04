@@ -5,31 +5,64 @@ import type {
   APIGatewayProxyStructuredResultV2,
   Context,
 } from 'aws-lambda';
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { FailedToFetchSecretError, UnknownAppError } from '../../errors';
-import querystring from 'querystring';
+import { TokenExpiredError } from 'jsonwebtoken';
+import {
+  FailedToFetchSecretError,
+  JwtError,
+  UnknownAppError,
+} from '../../errors';
 import { logMessages } from '../../log-messages';
 import { logger } from '../../logger';
+import querystring from 'querystring';
+import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 const createMockEvent = (
   overrides: Partial<APIGatewayProxyEvent> = {},
 ): APIGatewayProxyEvent => ({
   path: '/dev/oauth2/token',
   headers: {
-    'content-type': 'application/x-www-form-urlencoded',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
     'X-Attestation-Token': 'test-token',
   },
   requestContext: {
-    accountId: '',
-    apiId: '',
-    domainName: '',
+    path: '/dev/oauth2/token',
+    identity: {
+      sourceIp: '127.0.0.1',
+      accessKey: '',
+      accountId: '',
+      apiKey: '',
+      apiKeyId: '',
+      caller: '',
+      clientCert: {
+        clientCertPem: '',
+        serialNumber: '',
+        subjectDN: '',
+        issuerDN: '',
+        validity: { notAfter: '', notBefore: '' },
+      },
+      cognitoAuthenticationProvider: '',
+      cognitoAuthenticationType: '',
+      cognitoIdentityId: '',
+      cognitoIdentityPoolId: '',
+      principalOrgId: '',
+      user: '',
+      userAgent: '',
+      userArn: '',
+    },
+    protocol: 'HTTP/1.1',
+    accountId: '123456789012',
+    apiId: '1234',
+    domainName: 'foo',
     domainPrefix: '',
-    requestId: '',
+    requestId: 'c6af9ac6-7b61-11e6-9a41-93e8deadbeef',
     routeKey: 'POST /token',
-    stage: '',
-    time: '',
-    timeEpoch: 0,
-  } as any,
+    requestTime: '12/Jun/2025:15:00:06 +0000',
+    stage: 'dev',
+    requestTimeEpoch: 1749740406669,
+    resourcePath: '/dev/oauth2/token',
+    httpMethod: 'POST',
+    resourceId: '123456',
+  },
   body: querystring.stringify({
     grant_type: 'authorization_code',
     client_id: 'jsfalkgjojn',
@@ -115,7 +148,7 @@ describe('lambdaHandler', () => {
   const unableToGetClientSecret = createHandler(
     createMockDependencies({
       getClientSecret: vi.fn(() => {
-        throw new FailedToFetchSecretError('Unable to get client secret');
+        throw new FailedToFetchSecretError();
       }),
     }),
   );
@@ -132,18 +165,6 @@ describe('lambdaHandler', () => {
   afterEach(() => {
     consoleErrorSpy.mockRestore();
     consoleSpy.mockRestore();
-  });
-
-  it('rejects all requests to non-token endpoint', async () => {
-    const response = (await lambdaHandler(
-      createMockEvent({
-        path: '/dev/oauth2/authorize',
-      }),
-      mockContext,
-    )) as APIGatewayProxyStructuredResultV2;
-
-    expect(response.statusCode).toBe(404);
-    expect(JSON.parse(response.body)).toEqual({ message: 'Not Found' });
   });
 
   it('proxies a valid POST /token request', async () => {
@@ -192,9 +213,9 @@ describe('lambdaHandler', () => {
       mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
-    expect(response.statusCode).toBe(500);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
     expect(JSON.parse(response.body as string)).toEqual({
-      message: 'Internal server error',
+      message: ReasonPhrases.INTERNAL_SERVER_ERROR,
     });
   });
 
@@ -204,7 +225,7 @@ describe('lambdaHandler', () => {
         createMockDependencies({
           attestationUseCase: {
             validateAttestationHeaderOrThrow: vi.fn(() => {
-              throw new JsonWebTokenError('err');
+              throw new JwtError('Attestation token is invalid');
             }),
           },
         }),
@@ -219,7 +240,7 @@ describe('lambdaHandler', () => {
         createMockDependencies({
           attestationUseCase: {
             validateAttestationHeaderOrThrow: vi.fn(() => {
-              throw new UnknownAppError('err');
+              throw new UnknownAppError();
             }),
           },
         }),
@@ -265,9 +286,9 @@ describe('lambdaHandler', () => {
       mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
-    expect(response.statusCode).toBe(500);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
     expect(JSON.parse(response.body as string)).toEqual({
-      message: 'Internal server error',
+      message: ReasonPhrases.INTERNAL_SERVER_ERROR,
     });
   });
 
@@ -277,7 +298,7 @@ describe('lambdaHandler', () => {
       mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
-    expect(response.statusCode).toBe(500);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
     expect(JSON.parse(response.body as string)).toEqual({
       message: 'Internal server error, server missing key dependencies',
     });
@@ -295,13 +316,13 @@ describe('lambdaHandler', () => {
   it('should throw an error if the request body is undefined', async () => {
     const response = (await lambdaHandler(
       createMockEvent({
-        body: undefined,
+        body: '',
       }),
       mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body)).toEqual({ message: 'Invalid Request' });
+    expect(JSON.parse(response.body)).toEqual({ message: 'Bad Request' });
   });
 
   it.each([
@@ -311,17 +332,17 @@ describe('lambdaHandler', () => {
       },
       {
         status: 400,
-        body: { message: 'Invalid Request' },
+        body: { message: 'Bad Request' },
       },
     ],
     [
       {
         'x-attestation-token': 'valid',
-        'content-type': 'text/javascript;',
+        'Content-Type': 'text/javascript;',
       },
       {
         status: 400,
-        body: { message: 'Invalid Request' },
+        body: { message: 'Bad Request' },
       },
     ],
   ])(
@@ -330,7 +351,8 @@ describe('lambdaHandler', () => {
       const response = (await lambdaHandler(
         createMockEvent({
           headers: {
-            ...createMockEvent().headers,
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'x-attestation-token': 'test-token',
             ...headers,
           },
         }),
@@ -342,69 +364,18 @@ describe('lambdaHandler', () => {
     },
   );
 
-  it.each([
-    '',
-    undefined,
-    querystring.stringify({
-      missing_all_fields: true,
-    }),
-  ])('should throw an error if the request body is invalid', async (body) => {
-    const response = (await lambdaHandler(
-      createMockEvent({
-        body,
-      }),
-      mockContext,
-    )) as APIGatewayProxyStructuredResultV2;
-
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body)).toEqual({ message: 'Invalid Request' });
-  });
-
-  it.each([
-    [
-      createHandler(
-        createMockDependencies({
-          attestationUseCase: {
-            validateAttestationHeaderOrThrow: vi.fn(() => {
-              throw new JsonWebTokenError('err');
-            }),
-          },
+  it.each(['', 'missing_all_fields=true'])(
+    'should throw an error if the request body is invalid',
+    async (body) => {
+      const response = (await lambdaHandler(
+        createMockEvent({
+          body,
         }),
-      ),
-    ],
-    [
-      createHandler(
-        createMockDependencies({
-          attestationUseCase: {
-            validateAttestationHeaderOrThrow: vi.fn(() => {
-              throw new UnknownAppError('err');
-            }),
-          },
-        }),
-      ),
-    ],
-    [
-      createHandler(
-        createMockDependencies({
-          attestationUseCase: {
-            validateAttestationHeaderOrThrow: vi.fn(() => {
-              throw new TokenExpiredError('err', new Date());
-            }),
-          },
-        }),
-      ),
-    ],
-  ])(
-    'attestation errors should have a consistent log prefix to enable log filtering',
-    async (handler) => {
-      (await handler(
-        createMockEvent(),
         mockContext,
       )) as APIGatewayProxyStructuredResultV2;
 
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-      const errorMessage = consoleErrorSpy.mock.calls[0][0];
-      expect(errorMessage).contains('ERROR_ATTESTATION_');
+      expect(response.statusCode).toBe(400);
+      expect(JSON.parse(response.body)).toEqual({ message: 'Bad Request' });
     },
   );
 
