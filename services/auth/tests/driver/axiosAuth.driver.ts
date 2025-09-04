@@ -200,11 +200,15 @@ export class AxiosAuthDriver implements AuthDriver {
       }));
   }
 
-  async revokeToken(refreshToken: string): Promise<RevokeTokenResponse> {
+  async revokeToken(
+    refreshToken: string,
+    headers?: Record<string, string>,
+  ): Promise<RevokeTokenResponse> {
     return await fetch(`${this.proxyUrl}oauth2/revoke`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        ...headers,
       },
       body: querystring.stringify({
         refresh_token: refreshToken,

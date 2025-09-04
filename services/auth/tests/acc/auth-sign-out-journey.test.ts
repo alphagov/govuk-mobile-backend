@@ -47,4 +47,26 @@ describe('auth sign out journey', () => {
       authDriver.refreshAccessToken(refresh_token!, attestationToken),
     ).rejects.toThrow();
   });
+
+  it.each([
+    {
+      refreshToken: '',
+      statusCode: 400,
+      statusText: 'Bad Request',
+    },
+    {
+      refreshToken: 'invalid-refresh-token',
+      statusCode: 400,
+      statusText: 'Bad Request',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  ])('should reject the request if the input is invalid', async (body) => {
+    await expect(
+      authDriver.revokeToken(body.refreshToken, body.headers),
+    ).rejects.toThrow(
+      new Error(`Failed to revoke refresh token: ${body.statusText}`),
+    );
+  });
 });

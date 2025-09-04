@@ -1,6 +1,5 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import {
-  InternalErrorException,
   InvalidParameterException,
   NotAuthorizedException,
   TooManyRequestsException,
@@ -10,6 +9,13 @@ import {
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import type { RevokeTokenInput } from './types';
 import { logger } from './logger';
+import {
+  AppError,
+  InvalidParameterError,
+  NotAuthorizedError,
+  TooManyRequestsError,
+} from './errors';
+import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 
 export const revokeRefreshToken = async (
   input: RevokeTokenInput,
@@ -22,35 +28,31 @@ export const revokeRefreshToken = async (
 
     logger.info('Refresh token revoked successfully.');
     return {
-      statusCode: 200,
+      statusCode: StatusCodes.OK,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Refresh token revoked successfully.' }),
+      body: JSON.stringify({ message: ReasonPhrases.OK }),
     };
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    logger.error('Error revoking token:', error as Error);
-
-    let errorMessage = 'Failed to revoke token.';
-
     if (error instanceof InvalidParameterException) {
-      errorMessage =
-        'Invalid parameters provided to Cognito (e.g., token format or client ID).';
+      throw new InvalidParameterError(
+        'Invalid parameters provided to Cognito (e.g., token format or client ID).',
+        error,
+      );
     } else if (error instanceof NotAuthorizedException) {
-      errorMessage =
-        'Not authorized to revoke this token (e.g., wrong client secret, token already revoked, or client ID mismatch).';
+      throw new NotAuthorizedError(
+        'Not authorized to revoke this token (e.g., wrong client secret, token already revoked, or client ID mismatch).',
+      );
     } else if (error instanceof TooManyRequestsException) {
-      errorMessage = 'Too many requests to Cognito. Please try again later.';
-    } else if (error instanceof InternalErrorException) {
-      errorMessage = 'An internal error occurred in Cognito. Please try again.';
+      throw new TooManyRequestsError(
+        'Too many requests to Cognito. Please try again later.',
+      );
+    } else {
+      throw new AppError(ReasonPhrases.INTERNAL_SERVER_ERROR, {
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        code: ReasonPhrases.INTERNAL_SERVER_ERROR,
+        publicMessage: ReasonPhrases.INTERNAL_SERVER_ERROR,
+        cause: error,
+      });
     }
-
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: errorMessage,
-        errorDetails: error instanceof Error ? error.message : String(error),
-      }),
-    };
   }
 };
