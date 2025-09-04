@@ -27,7 +27,6 @@ export const lambdaHandler = middy()
   .use(
     injectLambdaContext(logger, {
       correlationIdPath: 'requestContext.requestId',
-      logEvent: true,
     }),
   )
   // #1 parses urlencoded body
