@@ -1,11 +1,16 @@
 import type {
   APIGatewayTokenAuthorizerEvent,
   APIGatewayAuthorizerResult,
-  Context,
 } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { getSecretObject } from './secret';
 import { logger } from './logger';
+import middy from '@middy/core';
+import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
+import { parser } from '@aws-lambda-powertools/parser/middleware';
+import { APIGatewayTokenAuthorizerEventSchema } from '@aws-lambda-powertools/parser/schemas/api-gateway';
+import type { z } from 'zod';
+import { errorMiddleware } from './middleware/global-error-handler';
 
 const generatePolicy = (
   principalId: string,
@@ -58,37 +63,41 @@ const validateAndReturnSubject = async (token: string): Promise<string> => {
   }
 };
 
-export const lambdaHandler = async (
-  event: APIGatewayTokenAuthorizerEvent,
-  context: Context,
-): Promise<APIGatewayAuthorizerResult> => {
-  logger.addContext(context);
-  logger.logEventIfEnabled(event);
+export const lambdaHandler = middy<
+  z.infer<typeof APIGatewayTokenAuthorizerEventSchema>,
+  APIGatewayAuthorizerResult
+>()
+  .use(
+    injectLambdaContext(logger, {
+      correlationIdPath: 'requestContext.requestId',
+    }),
+  )
+  .use(parser({ schema: APIGatewayTokenAuthorizerEventSchema }))
+  .use(errorMiddleware())
+  .handler(
+    async (
+      event: APIGatewayTokenAuthorizerEvent,
+    ): Promise<APIGatewayAuthorizerResult> => {
+      //APIGatewayAuthorizerResult
+      let token = event.authorizationToken; // The token is passed in the Authorization header
 
-  //APIGatewayAuthorizerResult
-  let token = event.authorizationToken; // The token is passed in the Authorization header
+      if (token.startsWith('Bearer ')) {
+        const seven = 7; // Length of "Bearer "
+        token = token.substring(seven);
+      } else {
+        logger.error('Token format invalid: Not a Bearer token');
+        throw new Error('Unauthorized');
+      }
 
-  if (!token) {
-    logger.error('Authorization header missing');
-    throw new Error('Unauthorized - Token not supplied'); // This will result in a 401 response from API Gateway
-  }
+      try {
+        const subject = await validateAndReturnSubject(token);
 
-  if (token.startsWith('Bearer ')) {
-    const seven = 7; // Length of "Bearer "
-    token = token.substring(seven);
-  } else {
-    logger.error('Token format invalid: Not a Bearer token');
-    throw new Error('Unauthorized');
-  }
-
-  try {
-    const subject = await validateAndReturnSubject(token);
-
-    return generatePolicy(subject, 'Allow', event.methodArn);
-  } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    logger.error('Token verification failed:', error as Error);
-    // Throwing an error here also results in a 401 Unauthorized response from API Gateway
-    throw new Error('Unauthorized');
-  }
-};
+        return generatePolicy(subject, 'Allow', event.methodArn);
+      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+        logger.error('Token verification failed:', error as Error);
+        // Throwing an error here also results in a 401 Unauthorized response from API Gateway
+        throw new Error('Unauthorized');
+      }
+    },
+  );
