@@ -18,17 +18,22 @@ const generateResponse = (
   };
 };
 
+interface SETErrorResponse {
+  status: number;
+  errorCode: string;
+  errorDescription: string;
+}
+
 const generateSETErrorResponse = (
   // error response for SET (Security Event Token)
-  status: number,
-  error: ErrorResponse,
+  { status, errorCode, errorDescription }: SETErrorResponse,
 ): APIGatewayProxyResult => {
   return {
     statusCode: status,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      err: error.errorCode,
-      description: error.errorDescription,
+      err: errorCode,
+      description: errorDescription,
     }),
   };
 };

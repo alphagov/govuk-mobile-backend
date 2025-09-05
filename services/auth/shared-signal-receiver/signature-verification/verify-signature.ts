@@ -30,17 +30,15 @@ export const verifySETJwt = async ({
 }: VerifySetJwtInput): Promise<JWTPayload> => {
   try {
     if (typeof jwt !== 'string') {
-      const message =
-        "The request body cannot be parsed as a SET, or the Event Payload within the SET does not conform to the event's definition";
-      throw new InvalidRequestError(message);
+      throw new InvalidRequestError(`The jwt is not a string`);
     }
 
     const decodedHeaders = decodeProtectedHeader(jwt);
 
     if (decodedHeaders.kid == null) {
-      const message =
-        'One or more keys used to encrypt or sign the SET is invalid or otherwise unacceptable to the SET Recipient (expired, revoked, failed certificate validation, etc.).';
-      throw new InvalidKeyError(message);
+      throw new InvalidKeyError(
+        'One or more keys used to encrypt or sign the SET is invalid or otherwise unacceptable to the SET Recipient (expired, revoked, failed certificate validation, etc.).',
+      );
     }
 
     const keys = await fetchJwks({

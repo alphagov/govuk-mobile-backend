@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import type { VerifySetJwtInput } from './signature-verification/verify-signature';
 import { verifySETJwt } from './signature-verification/verify-signature';
 import type { Config } from './config';

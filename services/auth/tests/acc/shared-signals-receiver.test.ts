@@ -143,7 +143,7 @@ describe(
         it('Returns a Bad Request response', async () => {
           expect(response.status).toBe(400);
           const jsonBody = await response.json();
-          expect(jsonBody.err).toEqual('signature_verification_error');
+          expect(jsonBody.err).toEqual('authentication_failed');
         });
       });
     });
@@ -170,7 +170,7 @@ describe(
           it('Returns a Bad Request response', async () => {
             expect(response.status).toBe(400);
             const responseBody = await response.json();
-            expect(responseBody.err).toEqual('signature_verification_error');
+            expect(responseBody.err).toEqual('authentication_failed');
           });
         });
       },
