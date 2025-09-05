@@ -198,8 +198,7 @@ describe('verify-signature', async () => {
   it('should throw if jwt is undefined', async () => {
     const mockFetchJwks = vi.fn().mockResolvedValue(publicKey);
 
-    const message =
-      "The request body cannot be parsed as a SET, or the Event Payload within the SET does not conform to the event's definition";
+    const message = 'The jwt is not a string';
 
     await expect(
       verifySETJwt({

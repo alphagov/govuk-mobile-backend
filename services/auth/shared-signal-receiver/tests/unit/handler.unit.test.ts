@@ -2,10 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHandler } from '../../handler';
 import { ZodError } from 'zod';
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
-import * as responseModule from '../../response';
-import { CognitoError, SignatureVerificationError } from '../../errors';
+import {
+  CognitoError,
+  setTokenErrorCodes,
+  setTokenErrorDescriptions,
+  SignatureVerificationError,
+} from '../../errors';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 import type { Dependencies } from '../../app';
+import { CredentialChangeEventBuilder, SignalBuilder } from '../helpers/signal';
+import { signEventPayload } from '../helpers/sign-jwt';
+import { generateKeyPair } from 'jose';
+import { DecodedSetContext } from '../../middleware/decode-set';
 
 // Mock the AWS SDK Client
 vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
@@ -19,34 +27,37 @@ vi.mock('@aws-sdk/client-cognito-identity-provider', async () => {
   };
 });
 
+const credentialChangeEvent = new CredentialChangeEventBuilder();
+const signalBuilder = new SignalBuilder(credentialChangeEvent);
+
+const { publicKey, privateKey } = await generateKeyPair('RS256', {
+  extractable: true,
+});
+
+const signal = signalBuilder.build();
+
 const mockContext = {
   awsRequestId: 'foobar',
-} as Context;
+  decodedJwt: {
+    ...signal,
+    issuer: 'https://identity.example.com',
+    audience: 'https://service.example.gov.uk',
+    payload: signal,
+    alg: 'RS256',
+  },
+} as DecodedSetContext;
 
 // Create a dummy event
-const createEvent = (overrides?: any): APIGatewayProxyEvent =>
+const createEvent = async (overrides?: any): Promise<APIGatewayProxyEvent> =>
   ({
-    httpMethod: 'post',
-    body: JSON.stringify({
-      iss: 'https://identity.example.com',
-      jti: '123e4567-e89b-12d3-a456-426614174000',
-      iat: 1721126400,
-      aud: 'https://service.example.gov.uk',
-      events: {
-        'https://schemas.openid.net/secevent/caep/event-type/credential-change':
-          {
-            change_type: 'update',
-            credential_type: 'password',
-            subject: {
-              uri: 'urn:example:account:1234567890',
-              format: 'urn:example:format:account-id',
-            },
-          },
-        'https://vocab.account.gov.uk/secevent/v1/credentialChange/eventInformation':
-          {
-            email: 'user@example.com',
-          },
-      },
+    httpMethod: 'POST',
+    body: await signEventPayload({
+      ...signal,
+      issuer: 'https://identity.example.com',
+      audience: 'https://service.example.gov.uk',
+      payload: signal,
+      alg: 'RS256',
+      pk: privateKey,
     }),
     headers: {},
     isBase64Encoded: false,
@@ -58,8 +69,7 @@ const createEvent = (overrides?: any): APIGatewayProxyEvent =>
     requestContext: {
       accountId: '123456789012',
       apiId: '1234',
-      authorizer: {},
-      httpMethod: 'get',
+      httpMethod: 'POST',
       identity: {
         accessKey: '',
         accountId: '',
@@ -78,7 +88,7 @@ const createEvent = (overrides?: any): APIGatewayProxyEvent =>
         cognitoIdentityId: '',
         cognitoIdentityPoolId: '',
         principalOrgId: '',
-        sourceIp: '',
+        sourceIp: '127.0.0.1',
         user: '',
         userAgent: '',
         userArn: '',
@@ -86,6 +96,7 @@ const createEvent = (overrides?: any): APIGatewayProxyEvent =>
       path: '/receiver',
       protocol: 'HTTP/1.1',
       requestId: 'c6af9ac6-7b61-11e6-9a41-93e8deadbeef',
+      requestTime: '12/Jun/2025:15:00:06 +0000',
       requestTimeEpoch: 1428582896000,
       resourceId: '123456',
       resourcePath: '/receiver',
@@ -98,11 +109,10 @@ const createEvent = (overrides?: any): APIGatewayProxyEvent =>
 
 describe('lambdaHandler', () => {
   const mockRequestHandler = vi.fn();
-  const mockGenerateResponse = vi.spyOn(responseModule, 'generateResponse');
 
   const getDependencies = (overrides?: any): Dependencies => ({
     getConfig: vi.fn(),
-    verifySETJwt: vi.fn(),
+    verifySETJwt: vi.fn().mockResolvedValue({}),
     requestHandler: mockRequestHandler,
     ...overrides,
   });
@@ -121,7 +131,7 @@ describe('lambdaHandler', () => {
 
     mockRequestHandler.mockResolvedValue(mockResponse);
 
-    const result = await lambdaHandler(createEvent(), mockContext);
+    const result = await lambdaHandler(await createEvent(), mockContext);
 
     expect(mockRequestHandler).toHaveBeenCalled();
     expect(result).toEqual(mockResponse);
@@ -131,39 +141,34 @@ describe('lambdaHandler', () => {
     const zodError = new ZodError([]);
     mockRequestHandler.mockRejectedValue(zodError);
 
-    const result = await lambdaHandler(createEvent(), mockContext);
+    const result = await lambdaHandler(await createEvent(), mockContext);
 
-    expect(mockGenerateResponse).toHaveBeenCalledWith(
-      StatusCodes.BAD_REQUEST,
-      ReasonPhrases.BAD_REQUEST,
-    );
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
+    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
   });
 
   it('should return INTERNAL_SERVER_ERROR when CognitoError is thrown', async () => {
     const cognitoError = new CognitoError('Cognito failed');
     mockRequestHandler.mockRejectedValue(cognitoError);
 
-    const result = await lambdaHandler(createEvent(), mockContext);
+    const result = await lambdaHandler(await createEvent(), mockContext);
 
-    expect(mockGenerateResponse).toHaveBeenCalledWith(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      ReasonPhrases.INTERNAL_SERVER_ERROR,
-    );
     expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(result.body).err).toBe(
+      setTokenErrorCodes.INTERNAL_SERVER_ERROR,
+    );
   });
 
   it('should return INTERNAL_SERVER_ERROR for unknown error', async () => {
     const unknownError = new Error('Something went wrong');
     mockRequestHandler.mockRejectedValue(unknownError);
 
-    const result = await lambdaHandler(createEvent(), mockContext);
+    const result = await lambdaHandler(await createEvent(), mockContext);
 
-    expect(mockGenerateResponse).toHaveBeenCalledWith(
-      StatusCodes.INTERNAL_SERVER_ERROR,
+    expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(result.body).message).toBe(
       ReasonPhrases.INTERNAL_SERVER_ERROR,
     );
-    expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
   });
 
   it('should return a bad request if the SET is not signed by the transmitter', async () => {
@@ -177,21 +182,24 @@ describe('lambdaHandler', () => {
       }),
     );
 
-    const result = await invalidSignatureHandler(createEvent(), mockContext);
-    const expectedResponse = {
-      err: 'signature_verification_error',
-      description: 'Invalid token',
-    };
+    const result = await invalidSignatureHandler(
+      await createEvent(),
+      mockContext,
+    );
 
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
-    expect(JSON.parse(result.body)).toEqual(expectedResponse);
+    expect(JSON.parse(result.body)).toEqual({
+      err: setTokenErrorCodes.AUTHENTICATION_FAILED,
+      description:
+        setTokenErrorDescriptions[setTokenErrorCodes.AUTHENTICATION_FAILED],
+    });
 
     expect(mockRequestHandler).not.toHaveBeenCalled();
   });
 
   it('should return a bad request if the body is missing', async () => {
     const result = await lambdaHandler(
-      createEvent({ body: undefined }),
+      await createEvent({ body: undefined }),
       mockContext,
     );
 
