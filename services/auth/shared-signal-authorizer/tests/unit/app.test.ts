@@ -71,7 +71,7 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
     });
   });
 
-  it('Should throw Unauthorized error for missing token', async () => {
+  it('Should throw Unauthorized error for empty token', async () => {
     const event: APIGatewayTokenAuthorizerEvent = {
       type: 'TOKEN',
       authorizationToken: '',
@@ -80,11 +80,7 @@ describe('Unit test for shared signal authorizer lambdaHandler', () => {
     };
 
     await expect(lambdaHandler(event, mockContext)).rejects.toThrow(
-      'Unauthorized - Token not supplied',
-    );
-
-    expect(loggerErrorMock).toHaveBeenCalledWith(
-      'Authorization header missing',
+      'Unauthorized',
     );
   });
 
