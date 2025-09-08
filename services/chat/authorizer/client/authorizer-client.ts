@@ -1,162 +1,69 @@
-import type {
-  APIGatewayRequestAuthorizerEvent,
-  APIGatewayAuthorizerResult,
-  StatementEffect,
-} from 'aws-lambda';
-
+import type { APIGatewayAuthorizerResult, StatementEffect } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import type { CognitoAccessTokenPayload } from 'aws-jwt-verify/jwt-model';
-import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
-import { ConfigError } from '../errors';
 import type { SecretsConfig } from '../types';
 import { logger } from '../logger';
+import { getAuthorizerResult } from './getAuthorizerResult';
 
-export class AuthorizerClient {
-  public region = process.env['REGION'] ?? 'eu-west-2';
-  public event: APIGatewayRequestAuthorizerEvent;
+/**
+ * Retrieves the Cognito token payload from the JWT.
+ * @param authHeader The authorization header containing the JWT.
+ * @param userPoolId The Cognito User Pool ID.
+ * @param clientId The Cognito Client ID.
+ * @returns The Cognito token payload.
+ */
+const getCognitoTokenPayloadFromJwt = async (
+  authHeader: string,
+  userPoolId: string,
+  clientId: string,
+): Promise<CognitoAccessTokenPayload | undefined> => {
+  const verifier = CognitoJwtVerifier.create({
+    userPoolId: userPoolId,
+    tokenUse: 'access',
+    clientId: clientId,
+  });
 
-  public constructor(event: APIGatewayRequestAuthorizerEvent) {
-    this.event = event;
+  try {
+    const payload: CognitoAccessTokenPayload = await verifier.verify(
+      authHeader,
+    );
+    return payload;
+  } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    logger.error('Token not valid', err as Error);
+    return undefined;
+  }
+};
+
+/**
+ * Authorizes the request by verifying the JWT token and returning an authorizer result.
+ * @param authHeader The authorization header containing the JWT token.
+ * @param secrets The secrets configuration object.
+ * @returns The authorizer result.
+ */
+export const authorizerResult = async (
+  authHeader: string,
+  secrets: SecretsConfig,
+): Promise<APIGatewayAuthorizerResult> => {
+  const { clientId, userPoolId, bearerToken } = secrets;
+
+  const [, token] = authHeader.split(' ');
+
+  if (token === undefined || token.trim() === '') {
+    logger.error(
+      "Authorization header 'Authorization' does not contain a token",
+    );
+    return getAuthorizerResult('unknown', 'Deny', bearerToken);
   }
 
-  /**
-   * Authorizes the request by verifying the JWT token and returning an authorizer result.
-   * @returns The authorizer result.
-   */
-  public async authorizerResult(): Promise<APIGatewayAuthorizerResult> {
-    const secrets = await AuthorizerClient.getChatSecrets();
-    const { clientId, userPoolId, bearerToken } = secrets;
-    const authHeader = this.event.headers?.['Authorization'];
+  const cognitoTokenPayload = await getCognitoTokenPayloadFromJwt(
+    token,
+    userPoolId,
+    clientId,
+  );
 
-    if (authHeader === undefined || authHeader.trim() === '') {
-      logger.error("Authorization header 'Authorization' is missing or empty");
-      return AuthorizerClient.getAuthorizerResult(
-        'unknown',
-        'Deny',
-        bearerToken,
-      );
-    }
+  const effect: StatementEffect = cognitoTokenPayload ? 'Allow' : 'Deny';
+  const userId = cognitoTokenPayload?.sub ?? 'unknown';
 
-    const [, token] = authHeader.split(' ');
-
-    if (token === undefined || token.trim() === '') {
-      logger.error(
-        "Authorization header 'Authorization' does not contain a token",
-      );
-      return AuthorizerClient.getAuthorizerResult(
-        'unknown',
-        'Deny',
-        bearerToken,
-      );
-    }
-
-    const cognitoTokenPayload =
-      await AuthorizerClient.getCognitoTokenPayloadFromJwt(
-        token,
-        userPoolId,
-        clientId,
-      );
-
-    const effect: StatementEffect = cognitoTokenPayload ? 'Allow' : 'Deny';
-    const userId = cognitoTokenPayload?.sub ?? 'unknown';
-
-    return AuthorizerClient.getAuthorizerResult(userId, effect, bearerToken);
-  }
-
-  /**
-   * Constructs the authorizer result based on the Cognito token payload and effect.
-   * @param cognitoTokenPayload The Cognito token payload.
-   * @param userId
-   * @param effect The effect of the authorization (Allow or Deny).
-   * @param bearerToken The bearer token to include in the context.
-   * @returns The authorizer result.
-   */
-  public static getAuthorizerResult(
-    userId: string,
-    effect: StatementEffect,
-    bearerToken: string,
-  ): APIGatewayAuthorizerResult | PromiseLike<APIGatewayAuthorizerResult> {
-    return {
-      principalId: userId,
-      policyDocument: {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Action: 'execute-api:Invoke',
-            Effect: effect,
-            Resource: '*',
-          },
-        ],
-      },
-      context: {
-        bearerToken: `Bearer ${bearerToken}`, // pragma: allowlist secret
-        'Govuk-Chat-End-User-Id': userId,
-      },
-    };
-  }
-
-  /**
-   * Retrieves the Cognito token payload from the JWT.
-   * @param authHeader The authorization header containing the JWT.
-   * @param userPoolId The Cognito User Pool ID.
-   * @param clientId The Cognito Client ID.
-   * @returns The Cognito token payload.
-   */
-  public static async getCognitoTokenPayloadFromJwt(
-    authHeader: string,
-    userPoolId: string,
-    clientId: string,
-  ): Promise<CognitoAccessTokenPayload | undefined> {
-    const verifier = CognitoJwtVerifier.create({
-      userPoolId: userPoolId,
-      tokenUse: 'access',
-      clientId: clientId,
-    });
-
-    try {
-      const payload: CognitoAccessTokenPayload = await verifier.verify(
-        authHeader,
-      );
-      return payload;
-    } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      logger.error('Token not valid', err as Error);
-      return undefined;
-    }
-  }
-
-  /**
-   * Retrieves chat secrets from AWS Secrets Manager.
-   * @returns The secrets configuration object.
-   */
-  public static async getChatSecrets(): Promise<SecretsConfig> {
-    try {
-      const secretName = process.env['CHAT_SECRET_NAME'];
-      if (secretName === undefined || secretName === '') {
-        throw new ConfigError(
-          'Environment variable "CHAT_SECRET_NAME" is not set',
-        );
-      }
-      const secret = await getSecret(secretName);
-      if (secret === undefined) {
-        throw new ConfigError(`Failed to retrieve secret for ${secretName}`);
-      }
-      // prettier-ignore
-      if (typeof secret !== 'string') { //pragma: allowlist secret
-        throw new ConfigError(
-          `Secret for ${secretName} is not a string`,
-        );
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const secretConfig: SecretsConfig = JSON.parse(secret) as SecretsConfig;
-      return secretConfig;
-    } catch (error) {
-      throw new ConfigError(
-        `Failed to retrieve chat secrets: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      );
-    }
-  }
-}
+  return getAuthorizerResult(userId, effect, bearerToken);
+};
