@@ -30,23 +30,23 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@b3498302c5c423fa896b97a26bb183df735d08f8 # v4.3.0
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Set up SAM cli
-        uses: aws-actions/setup-sam@v2
+        uses: aws-actions/setup-sam@f664fad9e12492edfc187a31f575537dfbb0ff63 # v2
         with:
           use-installer: true # this caches installation but is only available on Linux x86-64 runners
 
       - name: Set up AWS creds
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1v4
         with:
           role-to-assume: ${{ vars.CHAT_GH_ACTIONS_ROLE_ARN }}
           aws-region: eu-west-2
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
         with:
           node-version: 22
           cache: 'npm'
