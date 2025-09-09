@@ -1,3 +1,4 @@
+import { time } from 'console';
 import { RetryConfig, sendHttpRequest } from '../../http/http-service';
 import { describe, beforeEach, expect, afterEach, it, vi } from 'vitest';
 
@@ -327,35 +328,51 @@ describe('sendHttpRequest', () => {
   });
 });
 
-describe.skip('Given timeout is configured', () => {
+describe('Given timeout is configured', () => {
+  const abortControllerMock = vi.fn();
+  const abortControllerSpy = vi.fn(() => ({
+    signal: new EventTarget(), // A simple mock signal
+    abort: abortControllerMock,
+  }));
+  const clearTimeout = vi.fn();
+
   beforeEach(async () => {
     mockFetch = vi.spyOn(global, 'fetch').mockImplementation(() =>
       Promise.resolve({
-        status: 503,
+        status: 416,
         text: () => Promise.resolve('mock_error_string'),
       } as Response),
     );
 
-    vi.spyOn(global, 'AbortController').mockImplementation(() => {
-      return {
-        signal: new AbortSignal(),
-        abort: vi.fn(),
-      };
-    });
-    result = await sendHttpRequest(url, getHttpRequest(), {
-      timeout: 100,
-    });
+    vi.stubGlobal('AbortController', abortControllerSpy as any);
+    vi.useFakeTimers();
+    vi.stubGlobal('clearTimeout', clearTimeout);
   });
-  it('Sends a http request using the correct parameters', async () => {
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  it('Sends a http request using the correct parameters with timeout invoked', async () => {
+    const retryConfig: RetryConfig = {
+      timeout: 100,
+    };
+
+    result = await sendHttpRequest(url, getHttpRequest(), retryConfig);
+
+    vi.advanceTimersByTime(1000);
     expect(mockFetch).toHaveBeenCalledWith(
       url,
       expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify(getHttpRequest().body),
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-        }),
+        method: 'GET',
+        body: '{"mock":"request"}',
+        headers: {},
       }),
     );
+    expect(result.status).toEqual(416); //timeout status code
+    expect(abortControllerSpy).toHaveBeenCalledTimes(1);
+    expect(clearTimeout).toHaveBeenCalledWith(retryConfig?.timeout); //clear timeout is invoked
   });
 });
