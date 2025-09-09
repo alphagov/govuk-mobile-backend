@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import { clear } from 'console';
-
 /**
  * Waits for the specified number of milliseconds before resolving.
  * @param delayMillis The number of milliseconds to wait before resolving.
@@ -43,6 +41,12 @@ interface RetryConfig {
   retryableStatusCodes?: number[];
   timeout?: number;
 }
+
+const clearTimeout = (timeout: number | undefined): void => {
+  if (timeout !== undefined) {
+    global.clearTimeout(timeout);
+  }
+};
 
 const sendHttpRequest = async (
   url: string,
