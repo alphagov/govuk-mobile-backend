@@ -3,6 +3,8 @@
 import { JwksFetchError } from './errors';
 import { logMessages } from './log-messages';
 import { logger } from './logger';
+import { sendHttpRequest } from '../http/http-service';
+import type { RetryConfig } from '../http/http-service';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const JWKS_URI = 'https://firebaseappcheck.googleapis.com/v1/jwks';
@@ -40,24 +42,20 @@ export const getJwks = async (): Promise<Jwks> => {
   const timeoutInMillis =
     process.env['PROXY_TIMEOUT_MS'] != null
       ? parseInt(process.env['PROXY_TIMEOUT_MS'], 10)
-      : 3000;
+      : 5000;
 
   // Check if cachedJwks exists and is still fresh based on its maxAge
   if (cachedJwks && now < cachedJwks.expiresInMillis) {
     logger.info(logMessages.JWKS_FETCHING_FROM_CACHE);
     return cachedJwks.jwks;
   }
-
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => {
-    abortController.abort();
-  }, timeoutInMillis);
+  const retryConfig: RetryConfig = {
+    timeout: timeoutInMillis,
+  };
 
   let response = undefined;
   try {
-    response = await fetch(JWKS_URI, {
-      signal: abortController.signal,
-    });
+    response = await sendHttpRequest(JWKS_URI, { method: 'GET' }, retryConfig);
   } catch (error) {
     logger.error(
       logMessages.JWKS_FETCHING_FAILED,
@@ -66,8 +64,6 @@ export const getJwks = async (): Promise<Jwks> => {
       }`,
     );
     throw new JwksFetchError('Failed to fetch JWKS');
-  } finally {
-    clearTimeout(timeout);
   }
 
   if (!response.ok) {

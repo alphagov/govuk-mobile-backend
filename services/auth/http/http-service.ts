@@ -77,10 +77,7 @@ const sendHttpRequest = async (
         setTimeout(() => {
           controller.abort();
         }, retryConfig.timeout);
-        response = await fetchingMechanism(url, {
-          ...httpRequest,
-          signal: controller.signal,
-        });
+        response = await fetchingMechanism(url, httpRequest);
       } else {
         response = await fetchingMechanism(url, httpRequest);
       }

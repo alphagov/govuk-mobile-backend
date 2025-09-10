@@ -1,4 +1,3 @@
-import { time } from 'console';
 import { RetryConfig, sendHttpRequest } from '../../http/http-service';
 import { describe, beforeEach, expect, afterEach, it, vi } from 'vitest';
 

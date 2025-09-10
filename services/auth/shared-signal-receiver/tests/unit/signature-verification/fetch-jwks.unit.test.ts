@@ -27,9 +27,13 @@ describe('fetchJwks', () => {
   const jwksUri = 'https://example.com/jwks.json';
   const cacheDurationMs = 11 * 60 * 1000;
   const eventAlgorithm = 'RS256';
+
+  beforeAll(() => vi.resetAllMocks());
+
   describe('Given a valid JWKS endpoint', () => {
     afterEach(() => {
       vi.useRealTimers();
+      vi.resetAllMocks;
     });
 
     describe('And the resolver function has not been cached', () => {
@@ -187,7 +191,34 @@ describe('fetchJwks', () => {
         ).rejects.toThrowError(
           'Expected 200 OK from the JSON Web Key Set HTTP response',
         );
+        expect(mockFetch).toHaveBeenCalledOnce();
       });
     },
   );
+});
+
+describe('When fetch fails due to timeout', () => {
+  const jwksUri = 'https://example.com/jwks.json';
+  const cacheDurationMs = 11 * 60 * 1000;
+  const eventAlgorithm = 'RS256';
+  let mockFetch = vi.fn();
+
+  beforeEach(async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Request timed out'));
+    process.env['SHARED_SIGNAL_TIMEOUT'] = '100'; // 100 ms
+  });
+
+  afterEach(() => vi.resetAllMocks());
+
+  it('Throws an exception on timeout', async () => {
+    await expect(
+      getJwks({
+        jwksUri,
+        cacheDurationMs,
+        requestFn: mockFetch,
+        kid: validKeyId,
+        eventAlgorithm,
+      }),
+    ).rejects.toThrowError();
+  });
 });
