@@ -39,10 +39,10 @@ interface RetryConfig {
   maxAttempts?: number;
   baseDelayMillis?: number;
   retryableStatusCodes?: number[];
-  timeout?: number;
+  timeoutInMs?: number;
 }
 
-const clearTimeout = (timeout: number | undefined): void => {
+const clearTimeout = (timeout: NodeJS.Timeout | undefined): void => {
   if (timeout !== undefined) {
     global.clearTimeout(timeout);
   }
@@ -69,18 +69,17 @@ const sendHttpRequest = async (
     const retryableStatusCodes =
       retryConfig?.retryableStatusCodes ?? DEFAULT_RETRYABLE_STATUS_CODES;
 
+    const timeoutInMs = retryConfig?.timeoutInMs ?? 5000;
+
+    let timeoutId: NodeJS.Timeout | undefined = undefined;
     try {
       let response = undefined;
-      if (retryConfig?.timeout != null) {
-        const controller = new AbortController();
-        httpRequest.signal = controller.signal;
-        setTimeout(() => {
-          controller.abort();
-        }, retryConfig.timeout);
-        response = await fetchingMechanism(url, httpRequest);
-      } else {
-        response = await fetchingMechanism(url, httpRequest);
-      }
+      const controller = new AbortController();
+      httpRequest.signal = controller.signal;
+      timeoutId = setTimeout(() => {
+        controller.abort();
+      }, timeoutInMs);
+      response = await fetchingMechanism(url, httpRequest);
 
       if (
         retryableStatusCodes.includes(response.status) &&
@@ -95,7 +94,7 @@ const sendHttpRequest = async (
 
       return response;
     } catch (error) {
-      clearTimeout(retryConfig?.timeout);
+      clearTimeout(timeoutId);
       if (attempt < maxAttempts) {
         return await retryWithExponentialBackoffAndFullJitter(
           request,
@@ -106,7 +105,7 @@ const sendHttpRequest = async (
 
       throw error;
     } finally {
-      clearTimeout(retryConfig?.timeout);
+      clearTimeout(timeoutId);
     }
   }
 

@@ -50,7 +50,7 @@ export const getJwks = async (): Promise<Jwks> => {
     return cachedJwks.jwks;
   }
   const retryConfig: RetryConfig = {
-    timeout: timeoutInMillis,
+    timeoutInMs: timeoutInMillis,
   };
 
   let response = undefined;

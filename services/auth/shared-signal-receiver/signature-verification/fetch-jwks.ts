@@ -30,7 +30,7 @@ export const getJwks = async ({
 }: FetchJwksInput): Promise<CryptoKey> => {
   const timeout = process.env['SHARED_SIGNAL_TIMEOUT'] ?? '5000'; // default to 5 seconds
   const retryConfig: RetryConfig = {
-    timeout: Number(timeout),
+    timeoutInMs: Number(timeout),
   };
   if (jwksResolver) {
     return jwksResolver({
