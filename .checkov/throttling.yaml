@@ -1,0 +1,43 @@
+metadata:
+  id: 'CKV2_GOVUKAPP_2'
+  name: 'Ensure throttling is enabled for both API Gateway and WAF'
+  category: 'NETWORKING'
+  severity: 'HIGH'
+
+scope:
+  provider: aws
+
+definition:
+  and:
+    # --- API Gateway Stage ---
+    - or:
+        - resource_types:
+            - 'AWS::ApiGateway::Stage'
+          cond_type: attribute
+          attribute: 'Properties.MethodSettings.*.ThrottlingRateLimit'
+          operator: exists
+
+        - resource_types:
+            - 'AWS::ApiGateway::Stage'
+          cond_type: attribute
+          attribute: 'Properties.MethodSettings.*.ThrottlingBurstLimit'
+          operator: exists
+
+        - resource_types:
+            - 'AWS::ApiGatewayV2::Stage'
+          cond_type: attribute
+          attribute: 'Properties.DefaultRouteSettings.ThrottlingRateLimit'
+          operator: exists
+
+        - resource_types:
+            - 'AWS::ApiGatewayV2::Stage'
+          cond_type: attribute
+          attribute: 'Properties.DefaultRouteSettings.ThrottlingBurstLimit'
+          operator: exists
+
+    # --- WAF WebACL ---
+    - resource_types:
+        - 'AWS::WAFv2::WebACL'
+      cond_type: attribute
+      attribute: 'Properties.Rules.*.Statement.RateBasedStatement'
+      operator: exists
