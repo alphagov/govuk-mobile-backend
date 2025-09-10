@@ -2530,20 +2530,6 @@ Resources:
         - !GetAtt SharedSignalWafLogGroup.Arn
       ResourceArn: !GetAtt SharedSignalWAF.Arn
 
-  ShieldProtection:
-    Condition: IsNotProduction
-    Type: AWS::Shield::Protection
-    Properties:
-      Name: !Sub ${AWS::StackName}-shared-signal-shield-protection
-      ResourceArn: !Sub arn:aws:route53:::hostedzone/{{resolve:ssm:/dns/env-hosted-zone-id}}
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-    
   RevokeRefreshTokenFunction:
     Type: AWS::Serverless::Function
     Properties:
