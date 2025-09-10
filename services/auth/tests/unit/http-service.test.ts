@@ -65,7 +65,7 @@ describe('sendHttpRequest', () => {
       vi.useFakeTimers();
       vi.stubGlobal('clearTimeout', clearTimeout);
       vi.stubGlobal('setTimeout', mockSetTimeout);
-      
+
       result = await sendHttpRequest(url, getHttpRequest(), getRetryConfig());
     });
 
@@ -81,10 +81,8 @@ describe('sendHttpRequest', () => {
   });
 
   describe('Given the request encounters a network error', () => {
-    
     describe('When request succeeds within configured max attempts', () => {
       beforeEach(async () => {
-        
         vi.stubGlobal('AbortController', abortControllerSpy as any);
         vi.useFakeTimers();
         vi.stubGlobal('clearTimeout', clearTimeout);
@@ -378,7 +376,7 @@ describe.skip('Given timeout is configured', () => {
 
   it('Sends a http request using the correct parameters with timeout invoked', async () => {
     const retryConfig: RetryConfig = {
-      timeoutMs: 100,
+      timeoutInMs: 100,
     };
 
     result = await sendHttpRequest(url, getHttpRequest(), retryConfig);
@@ -392,8 +390,8 @@ describe.skip('Given timeout is configured', () => {
         headers: {},
       }),
     );
-    expect(result.status).toEqual(416); //timeout status code
+    expect(result.status).toEqual(408); //timeout status code
     expect(abortControllerSpy).toHaveBeenCalledTimes(1);
-    expect(clearTimeout).toHaveBeenCalledWith(retryConfig?.timeoutMs); //clear timeout is invoked
+    expect(clearTimeout).toHaveBeenCalledWith(retryConfig?.timeoutInMs); //clear timeout is invoked
   });
 });
