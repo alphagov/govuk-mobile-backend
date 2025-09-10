@@ -19,3 +19,6 @@ build
 .nx
 scripts/*.js
 scripts/*.mjs
+
+/.nx/cache
+/.nx/workspace-data

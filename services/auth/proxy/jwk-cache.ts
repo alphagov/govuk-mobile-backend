@@ -18,7 +18,7 @@ interface Key {
 
 interface JwksCache {
   jwks: Jwks;
-  expiresInMillis: number;
+  expiresInMillis: number; //realistically expiresAt is a better var name
 }
 
 const isJwks = (responseJson: unknown): responseJson is Jwks => {

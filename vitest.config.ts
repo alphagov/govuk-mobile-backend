@@ -1,6 +1,8 @@
 import { coverageConfigDefaults, defineConfig } from 'vitest/config';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
   test: {
     // Since Vitest 3, you can define a workspace in your root config. In this case, Vitest will ignore the vitest.workspace file in the root, if one exists.
     workspace: [
