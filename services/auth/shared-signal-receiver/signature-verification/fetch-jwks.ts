@@ -1,7 +1,8 @@
 import type { CryptoKey, FlattenedJWSInput, JWSHeaderParameters } from 'jose';
 
 import { createRemoteJWKSet, customFetch } from 'jose';
-import { sendHttpRequest } from '../common/http/sendHttpRequest';
+import type { RetryConfig } from '../../http/http-service';
+import { sendHttpRequest } from '../../http/http-service';
 
 type JWKSResolver = (
   protectedHeader?: JWSHeaderParameters,
@@ -27,6 +28,10 @@ export const getJwks = async ({
   requestFn = sendHttpRequest,
   jwksResolver = cachedResolver,
 }: FetchJwksInput): Promise<CryptoKey> => {
+  const timeout = process.env['SHARED_SIGNAL_TIMEOUT'] ?? '5000'; // default to 5 seconds
+  const retryConfig: RetryConfig = {
+    timeout: Number(timeout),
+  };
   if (jwksResolver) {
     return jwksResolver({
       alg: eventAlgorithm,
@@ -36,10 +41,14 @@ export const getJwks = async ({
     cachedResolver = createRemoteJWKSet(new URL(jwksUri), {
       cacheMaxAge: cacheDurationMs,
       [customFetch]: async (url, { headers, method }) => {
-        return requestFn(url, {
-          method,
-          headers,
-        });
+        return requestFn(
+          url,
+          {
+            method,
+            headers,
+          },
+          retryConfig,
+        );
       },
     });
 

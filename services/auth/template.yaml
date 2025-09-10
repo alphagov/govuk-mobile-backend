@@ -2058,6 +2058,7 @@ Resources:
           - IsNonIntegratedEnvironment
           - "True"
           - "False"
+          SHARED_SIGNAL_TIMEOUT_MS: !FindInMap [RequestTimeoutInMillis, Environment, !Ref Environment]  
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
