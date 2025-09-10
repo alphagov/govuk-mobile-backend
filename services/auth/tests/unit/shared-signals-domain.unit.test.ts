@@ -41,4 +41,16 @@ describe('shared signal domain', () => {
       },
     });
   });
+
+  it('should have shield protection for the shared signal domain', () => {
+    template.hasResourceProperties('AWS::Shield::Protection', {
+      Name: {
+        'Fn::Sub': '${AWS::StackName}-shared-signal-shield-protection',
+      },
+      ResourceArn: {
+        'Fn::Sub':
+          'arn:aws:route53:::hostedzone/{{resolve:ssm:/dns/env-hosted-zone-id}}',
+      },
+    });
+  });
 });
