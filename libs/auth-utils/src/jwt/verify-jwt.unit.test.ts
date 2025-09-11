@@ -12,7 +12,11 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { sendHttpRequest } from '@libs/http-utils';
 import { fetchJwks } from '../jwks/fetch-jwks';
 import { verifyJwt } from './verify-jwt';
-import { JOSEAlgNotAllowed, JWTClaimValidationFailed } from 'jose/errors';
+import {
+  JOSEAlgNotAllowed,
+  JWTClaimValidationFailed,
+  JWTExpired,
+} from 'jose/errors';
 
 vi.mock('@libs/http-utils');
 
@@ -236,7 +240,7 @@ describe('GIVEN a call to verify a JWT', () => {
       });
 
       try {
-        const payload = await verifyJwt(jwt, jwks, {
+        await verifyJwt(jwt, jwks, {
           audience: sampleJWTPayload.audience,
           algorithms: [sampleJWTPayload.alg],
           issuer: sampleJWTPayload.issuer,
@@ -250,4 +254,39 @@ describe('GIVEN a call to verify a JWT', () => {
       }
     },
   );
+
+  it('WHEN the JWT is expired THEN an JWTExpired error is thrown', async () => {
+    const testingKeys: KeyData[] = await configureTestingKeys(1);
+    const testingJwks = buildJWKS(testingKeys);
+    const kid = testingKeys[0]?.publicJwk!.kid!;
+    const jwt = await signWithPrivateKey(testingKeys[0]?.privateKey!, {
+      ...sampleJWTPayload,
+      kid,
+      expiryDate: new Date('01/01/2024'),
+      typ: testingTyp,
+    });
+
+    vi.mocked(sendHttpRequest).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(testingJwks),
+    } as unknown as Response);
+
+    const jwks = await fetchJwks('invalid-expired-jwt', testJwksUri, {
+      alg: testingAlgorithm,
+      kid,
+    });
+
+    try {
+      await verifyJwt(jwt, jwks, {
+        audience: sampleJWTPayload.audience,
+        algorithms: [sampleJWTPayload.alg],
+        issuer: sampleJWTPayload.issuer,
+        typ: testingTyp,
+        requiredClaims: testingClaims,
+      });
+    } catch (error) {
+      expect(error instanceof JWTExpired).toBeTruthy();
+    }
+  });
 });
