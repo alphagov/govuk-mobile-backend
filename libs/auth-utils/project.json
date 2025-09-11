@@ -10,12 +10,6 @@
         "lintFilePatterns": ["libs/auth-utils/src/**/*.{ts,tsx,js,jsx}"]
       }
     },
-    "checkov": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "checkov --framework cloudformation --quiet -d . -o cli -o junitxml --output-file-path console,checkov.xml"
-      }
-    },
     "test:unit": {
       "executor": "nx:run-commands",
       "options": {
