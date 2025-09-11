@@ -184,3 +184,4 @@ service-account.json
 checkov.xml
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
+.checkov/__pycache__
