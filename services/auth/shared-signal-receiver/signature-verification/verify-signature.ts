@@ -4,10 +4,10 @@ import {
   InvalidKeyError,
 } from '../errors';
 import { logMessages } from '../log-messages';
-import { getJwks } from './fetch-jwks';
 import type { JWTPayload } from 'jose';
-import { decodeProtectedHeader, jwtVerify } from 'jose';
+import { decodeProtectedHeader } from 'jose';
 import { logger } from '../logger';
+import { fetchJwks, verifyJwt } from '@libs/auth-utils';
 
 export interface SharedSignalsConfig {
   audience: string;
@@ -19,14 +19,12 @@ export interface SharedSignalsConfig {
 
 export interface VerifySetJwtInput {
   jwt: unknown;
-  fetchJwks?: typeof getJwks;
   config: SharedSignalsConfig;
 }
 
 export const verifySETJwt = async ({
   config,
   jwt,
-  fetchJwks = getJwks,
 }: VerifySetJwtInput): Promise<JWTPayload> => {
   try {
     if (typeof jwt !== 'string') {
@@ -41,12 +39,13 @@ export const verifySETJwt = async ({
       );
     }
 
-    const keys = await fetchJwks({
-      ...config,
-      kid: decodedHeaders.kid,
-    });
+    const keys = await fetchJwks(
+      'verify-signature',
+      config.jwksUri,
+      decodedHeaders,
+    );
 
-    const { payload } = await jwtVerify(jwt, keys, {
+    const payload = await verifyJwt(jwt, keys, {
       audience: config.audience,
       issuer: config.issuer,
       algorithms: [config.eventAlgorithm],
