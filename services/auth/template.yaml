@@ -1273,6 +1273,11 @@ Resources:
                   - /
                   - !Ref AWS::StackId
       StageName: !Ref Environment
+      MethodSettings:
+        - ThrottlingRateLimit: 10000
+          ThrottlingBurstLimit: 5000
+          ResourcePath: "/*"
+          HttpMethod: "*"
       AccessLogSetting:
         DestinationArn: !GetAtt AttestationProxyApiAccessLogGroup.Arn
         Format: '{"extendedRequestId":"$context.extendedRequestId","path":"$context.path","responseLength":"$context.responseLength","userAgent":"$context.identity.userAgent","integrationLatency":"$context.integrationLatency","integrationStatus":"$context.integrationStatus","integrationErrorMessage":"$context.integrationErrorMessage","wafResponseCode":"$context.wafResponseCode","errorMessage":"$context.error.message","errorType":"$context.error.type","errorResponseType":"$context.error.responseType","validationErrorString":"$context.error.validationErrorString","requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
@@ -1728,6 +1733,11 @@ Resources:
     Properties:
       Name: !Sub ${AWS::StackName}-shared-signal
       StageName: !Ref Environment
+      MethodSettings:
+        - ThrottlingRateLimit: 10000
+          ThrottlingBurstLimit: 5000
+          ResourcePath: "/*"
+          HttpMethod: "*"
       AccessLogSetting:
         DestinationArn: !GetAtt SharedSignalAccessLogGroup.Arn
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
@@ -2803,6 +2813,7 @@ Resources:
   MockSharedSignalsTransmitterApi:
     Condition: IsNonIntegratedEnvironment
     #checkov:skip=CKV_AWS_76:Ensure API Gateway has Access Logging enabled
+    #checkov:skip=CKV2_GOVUKAPP_2: Ensure every AWS::Serverless::Api Stage MethodSettings entry has ThrottlingRateLimit and ThrottlingBurstLimit
     Type: AWS::Serverless::Api
     Properties:
       Name: !Sub "${AWS::StackName}-mock-shared-signals-transmitter-api"
