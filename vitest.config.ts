@@ -3,6 +3,18 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
+  resolve: {
+    alias: {
+      '@libs/http-utils': new URL(
+        './libs/http-utils/src/index.ts',
+        import.meta.url,
+      ).pathname,
+      '@libs/auth-utils': new URL(
+        './libs/auth-utils/src/index.ts',
+        import.meta.url,
+      ).pathname,
+    },
+  },
   test: {
     // Since Vitest 3, you can define a workspace in your root config. In this case, Vitest will ignore the vitest.workspace file in the root, if one exists.
     workspace: [

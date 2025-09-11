@@ -1,7 +1,7 @@
 import type { CryptoKey, FlattenedJWSInput, JWSHeaderParameters } from 'jose';
 
 import { createRemoteJWKSet, customFetch } from 'jose';
-import { sendHttpRequest } from '../common/http/sendHttpRequest';
+import { sendHttpRequest } from '@libs/http-utils';
 
 type JWKSResolver = (
   protectedHeader?: JWSHeaderParameters,
@@ -36,9 +36,12 @@ export const getJwks = async ({
     cachedResolver = createRemoteJWKSet(new URL(jwksUri), {
       cacheMaxAge: cacheDurationMs,
       [customFetch]: async (url, { headers, method }) => {
-        return requestFn(url, {
-          method,
-          headers,
+        return requestFn({
+          url,
+          httpRequest: {
+            method,
+            headers,
+          },
         });
       },
     });

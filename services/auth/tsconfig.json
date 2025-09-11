@@ -12,5 +12,12 @@
     "**/feature-tests/**",
     "**/**/vitest.*.ts"
   ],
-  "references": []
+  "references": [
+    {
+      "path": "../../libs/http-utils"
+    },
+    {
+      "path": "../../libs/auth-utils"
+    }
+  ]
 }
