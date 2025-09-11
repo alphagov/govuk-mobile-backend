@@ -49,15 +49,6 @@ export default defineConfig({
           hookTimeout: 120000,
         },
       },
-      {
-        test: {
-          include: ['**/feature-tests/functional/**/*.steps.ts'],
-          name: 'functional',
-          environment: 'node',
-          // allow for long running tests
-          testTimeout: 120000,
-        },
-      },
     ],
     // Common test configurations
     globals: true,
@@ -70,7 +61,6 @@ export default defineConfig({
     coverage: {
       exclude: [
         ...coverageConfigDefaults.exclude,
-        '**/feature-tests/**',
         '**/tests/**/*',
         '**/*.test.ts',
         'vitest*.config.ts',

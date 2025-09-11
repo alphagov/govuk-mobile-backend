@@ -8,9 +8,6 @@ tsconfig.tsbuildinfo
 /node_modules
 /coverage
 /.aws-sam
-/feature-tests/functional/driver/
-/feature-tests/functional/fixtures/
-/feature-tests/functional/helper/
 /tests/fixtures/
 package-lock.json
 dist

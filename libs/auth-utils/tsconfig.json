@@ -9,7 +9,6 @@
   "exclude": [
     "node_modules",
     "**/tests/**",
-    "**/feature-tests/**",
     "**/**/vitest.*.ts",
     "../../dist/libs/**"
   ],
