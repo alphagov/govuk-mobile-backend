@@ -9,7 +9,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
-          include: ['**/*.unit.test.ts', '**/**/unit/*.test.ts'],
+          include: [
+            '**/*.unit.test.ts',
+            '**/**/unit/*.test.ts',
+            '**/**/tests/unit/**/*.test.ts',
+          ],
         },
       },
       {
@@ -19,6 +23,18 @@ export default defineConfig({
           environment: 'node',
           // allow for long running tests
           testTimeout: 120000,
+        },
+      },
+      {
+        test: {
+          include: ['scripts/**/*.test.ts'],
+          name: 'scripts',
+          environment: 'node',
+          // allow for extremely long running tests (Deploy script testing)
+          testTimeout: 600000,
+          //Move to single thread to avoid parallel running script files
+          pool: 'threads',
+          poolOptions: { threads: { singleThread: true } },
         },
       },
       {

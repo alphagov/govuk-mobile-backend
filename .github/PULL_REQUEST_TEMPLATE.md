@@ -2,7 +2,7 @@
 
 ### Ticket number
 
-[PSREDEV-XXX]
+[GOVUKAPP-XXX]
 
 ## Checklist
 
