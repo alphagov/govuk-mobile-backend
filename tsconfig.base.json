@@ -19,20 +19,17 @@
     "moduleResolution": "bundler",
     "target": "ES2022",
     "resolveJsonModule": true,
-    "declaration": false,
     "preserveConstEnums": true,
     "sourceMap": false,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "emitDecoratorMetadata": false,
     "lib": ["es2020"],
-    "composite": false,
-    "skipLibCheck": true
-  },
-  "exclude": [
-    "node_modules",
-    "**/tests/**",
-    "**/feature-tests/**",
-    "**/**/vitest.*.ts"
-  ]
+    "skipLibCheck": true,
+    "rootDir": ".",
+    "paths": {
+      "@libs/auth-utils": ["./libs/auth-utils/src/index.ts"],
+      "@libs/http-utils": ["./libs/http-utils/src/index.ts"]
+    }
+  }
 }

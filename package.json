@@ -18,7 +18,8 @@
     "sam:validate:all": "node ./scripts/samValidate.js --projects=all",
     "commit": "cz commit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "tsc:build": "tsc --build"
   },
   "private": true,
   "dependencies": {
@@ -67,7 +68,7 @@
     "@aws-sdk/client-ssm": "^3.879.0",
     "@nx/eslint": "21.3.11",
     "@nx/eslint-plugin": "21.3.11",
-    "@nx/js": "21.3.11",
+    "@nx/js": "^21.3.11",
     "@nx/vite": "21.3.11",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
@@ -111,13 +112,14 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.29.1",
     "uuid": "^11.1.0",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.1",
     "yaml-cfn": "^0.3.2",
     "yargs": "^18.0.0"
   },
   "workspaces": [
-    "auth/*",
-    "chat/*"
+    "services/*",
+    "libs/*"
   ],
   "engines": {
     "node": ">=22.0.0"

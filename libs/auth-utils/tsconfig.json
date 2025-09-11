@@ -5,12 +5,17 @@
     "composite": true,
     "declaration": true
   },
-  "include": ["./**/*.ts"],
+  "include": ["src/**/*/*.ts", "src/index.ts"],
   "exclude": [
     "node_modules",
     "**/tests/**",
     "**/feature-tests/**",
-    "**/**/vitest.*.ts"
+    "**/**/vitest.*.ts",
+    "../../dist/libs/**"
   ],
-  "references": []
+  "references": [
+    {
+      "path": "../http-utils"
+    }
+  ]
 }
