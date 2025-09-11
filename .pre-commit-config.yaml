@@ -39,7 +39,7 @@ repos:
       - id: checkov
         name: checkov-sam-template-scan
         language: system
-        entry: nx affected -t checkov --skip-check CKV_AWS_73,CKV_AWS_115,CKV_AWS_116,CKV_AWS_117,CKV_AWS_120 --external-checks-dir ./.checkov
+        entry: nx affected -t checkov
         pass_filenames: false
         stages: [pre-commit]
 
