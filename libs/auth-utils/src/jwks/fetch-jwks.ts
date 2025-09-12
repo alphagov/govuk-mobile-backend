@@ -27,7 +27,7 @@ const fetchJwks = async (
 
   const jwks = await createRemoteJWKSet(new URL(jwksUri), {
     [customFetch]: async (url) => {
-      return sendHttpRequest(url, {});
+      return sendHttpRequest({ url });
     },
   })({ alg: algorithm });
   const expiresAt = new Date().getTime() + cacheDurationMs;

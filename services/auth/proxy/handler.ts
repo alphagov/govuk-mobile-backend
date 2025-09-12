@@ -55,6 +55,7 @@ export const createHandler = (
         sanitizedHeaders: context.sanitizedHeaders,
         parsedUrl: config.cognitoUrl,
         clientSecret: await getClientSecret(config.cognitoSecretName),
+        config,
       });
 
       logger.info(logMessages.ATTESTATION_COMPLETED);

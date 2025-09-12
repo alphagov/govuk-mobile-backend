@@ -47,6 +47,8 @@ const schema = zod.object({
   customDomainConfigName: zod.string(),
   awsRegion: zod.string(),
   cognitoSecretName: zod.string(),
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  timeoutMs: zod.coerce.number().default(3000),
 });
 
 type SchemaConfig = zod.infer<typeof schema>;
@@ -70,6 +72,7 @@ export async function getConfig(): Promise<AppConfig> {
     customDomainConfigName: process.env['COGNITO_CUSTOM_DOMAIN_SSM_NAME'],
     awsRegion: process.env['REGION'],
     cognitoSecretName: process.env['COGNITO_SECRET_NAME'],
+    timeoutMs: process.env['PROXY_TIMEOUT_MS'],
   });
 
   if (error) {

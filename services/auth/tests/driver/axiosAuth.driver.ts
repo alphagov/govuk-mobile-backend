@@ -108,7 +108,7 @@ export class AxiosAuthDriver implements AuthDriver {
       }),
     );
 
-    const { otp } = TOTP.generate(input.totpSecret);
+    const { otp } = await TOTP.generate(input.totpSecret);
 
     const totpFormResponse = await this.client.post(
       `https://${this.oneLoginDomain}/enter-authenticator-app-code?`,
