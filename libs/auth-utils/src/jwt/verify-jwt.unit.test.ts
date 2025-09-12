@@ -249,7 +249,6 @@ describe('GIVEN a call to verify a JWT', () => {
           ...payloadOverrides,
         });
       } catch (error) {
-        console.log(error);
         expect(error instanceof errorType).toBeTruthy();
       }
     },

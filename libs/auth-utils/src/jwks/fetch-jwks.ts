@@ -22,7 +22,6 @@ const fetchJwks = async (
 ): Promise<CryptoKey> => {
   const cachedJwks = jwksCache[cacheKey];
 
-  console.log(cachedJwks?.expiresAt);
   if (cachedJwks && cachedJwks.expiresAt > Date.now()) {
     return cachedJwks.jwks;
   }

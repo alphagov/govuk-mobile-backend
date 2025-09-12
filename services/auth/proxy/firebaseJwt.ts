@@ -47,7 +47,6 @@ const hasCorrectAudiences = (
   ];
 
   const incomingAudience = payload.aud;
-  console.log(incomingAudience);
 
   return Array.isArray(incomingAudience)
     ? incomingAudience.some((aud: string) => audiences.includes(aud))
