@@ -1,29 +1,17 @@
-import type { JwtPayload } from 'jsonwebtoken';
-import { verify, decode } from 'jsonwebtoken';
-import type { JWK } from 'jwk-to-pem';
-import jwkToPem from 'jwk-to-pem';
 import { JwtError, UnknownAppError } from './errors';
 import type { AppConfig } from './config';
-import { getJwks } from './jwk-cache';
 import { logger } from './logger';
 import { logMessages } from './log-messages';
+import type { JWTPayload } from 'jose';
+import { decodeProtectedHeader } from 'jose';
+import { fetchJwks, verifyJwt } from '@libs/auth-utils';
 
-const alg = 'RS256';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const JWKS_URI = 'https://firebaseappcheck.googleapis.com/v1/jwks';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const RS256 = 'RS256';
 
-const getSigningKey = async (kid: string): Promise<string> => {
-  const jwks = await getJwks();
-  const signingKey = jwks.keys.find((key) => key.kid === kid);
-  if (!signingKey) {
-    throw new JwtError(
-      'No matching key found for kid',
-      `No matching key found for kid "${kid}"`,
-    );
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  return jwkToPem(signingKey as JWK);
-};
-
-const isKnownApp = (payload: JwtPayload, firebaseAppIds: string[]): boolean => {
+const isKnownApp = (payload: JWTPayload, firebaseAppIds: string[]): boolean => {
   return (
     'sub' in payload &&
     typeof payload.sub === 'string' &&
@@ -31,14 +19,8 @@ const isKnownApp = (payload: JwtPayload, firebaseAppIds: string[]): boolean => {
   );
 };
 
-const isJwtPayload = (
-  payload: string | JwtPayload | undefined,
-): payload is JwtPayload => {
-  return typeof payload === 'object';
-};
-
 const isAlgorithmValid = (suppliedAlgo: string): boolean => {
-  return suppliedAlgo === alg;
+  return suppliedAlgo === RS256;
 };
 
 interface ValidateFirebase {
@@ -49,14 +31,14 @@ interface ValidateFirebase {
 const hasValidIss = (
   payload: object,
   firebaseProjectNumber: string,
-): payload is JwtPayload =>
+): payload is JWTPayload =>
   'iss' in payload &&
   typeof payload.iss === 'string' &&
   payload.iss ===
     `https://firebaseappcheck.googleapis.com/${firebaseProjectNumber}`;
 
 const hasCorrectAudiences = (
-  payload: Record<string, unknown> | JwtPayload,
+  payload: Record<string, unknown> | JWTPayload,
   configValues: AppConfig,
 ): boolean => {
   const audiences: string[] = [
@@ -65,6 +47,7 @@ const hasCorrectAudiences = (
   ];
 
   const incomingAudience = payload.aud;
+  console.log(incomingAudience);
 
   return Array.isArray(incomingAudience)
     ? incomingAudience.some((aud: string) => audiences.includes(aud))
@@ -74,79 +57,62 @@ const hasCorrectAudiences = (
 const hasValidAud = (
   payload: object,
   configValues: AppConfig,
-): payload is JwtPayload =>
-  'aud' in payload &&
-  Array.isArray(payload.aud) &&
-  hasCorrectAudiences(payload, configValues);
+): payload is JWTPayload =>
+  'aud' in payload && hasCorrectAudiences(payload, configValues);
 
-const isKidFormatSafe = (kid: unknown): boolean => {
-  if (typeof kid !== 'string') {
-    return false;
-  }
-  // Allows alphanumeric characters, hyphens, and underscores between 5-10 characters long
-  const kidRegex = /^[a-zA-Z0-9_-]{5,10}$/;
+const isKidFormatSafe = (kid: string): boolean => {
+  // Allows alphanumeric characters, hyphens, and underscores
+  const kidRegex = /^[a-zA-Z0-9_-]+$/;
   return kidRegex.test(kid);
 };
 
 export const validateFirebaseJWT = async (
   values: ValidateFirebase,
 ): Promise<void> => {
-  const decodedTokenHeader = decode(values.token, { complete: true })?.header;
+  const decodedTokenHeader = decodeProtectedHeader(values.token);
+  const { kid, alg, typ } = decodedTokenHeader;
 
-  if (decodedTokenHeader?.kid == null) {
+  if (kid == null) {
     throw new JwtError(
       'JWT is missing the "kid" header',
       'kid header is missing',
     );
   }
+  if (alg == null) {
+    throw new JwtError(
+      'JWT is missing the "alg" header',
+      'alg header is missing',
+    );
+  }
+  if (typ == null) {
+    throw new JwtError(
+      'JWT is missing the "typ" header',
+      'typ header is missing',
+    );
+  }
 
-  if (!isKidFormatSafe(decodedTokenHeader.kid)) {
+  if (!isKidFormatSafe(kid)) {
     throw new JwtError(
       '"kid" header is in unsafe format',
-      `"kid" header is in unsafe format "${decodedTokenHeader.kid}"`,
+      `"kid" header is in unsafe format "${kid}"`,
     );
   }
 
-  if (!isAlgorithmValid(decodedTokenHeader.alg)) {
-    throw new JwtError(
-      `Invalid algorithm "${decodedTokenHeader.alg}" in JWT header`,
-    );
+  if (!isAlgorithmValid(alg)) {
+    throw new JwtError(`Invalid algorithm "${alg}" in JWT header`);
   }
 
-  if (decodedTokenHeader.typ !== 'JWT') {
-    throw new JwtError(
-      'JWT is missing the "typ" header or has an invalid type',
-    );
+  if (typ !== 'JWT') {
+    throw new JwtError('JWT "typ" header has an invalid type');
   }
 
-  const signingKey = await getSigningKey(decodedTokenHeader.kid);
-
-  // eslint-disable-next-line promise/avoid-new
-  const verifyPromise = new Promise<string | JwtPayload | undefined>(
-    (resolve, reject) => {
-      verify(
-        values.token,
-        signingKey,
-        {
-          algorithms: [alg],
-        },
-        // eslint-disable-next-line promise/prefer-await-to-callbacks
-        (err, payload) => {
-          if (err) reject(err);
-          else resolve(payload);
-        },
-      );
-    },
-  );
-
-  const decodedPayload = await verifyPromise;
-
-  if (!isJwtPayload(decodedPayload)) {
-    throw new JwtError('Payload is not a valid JWT payload');
-  }
+  const jwks = await fetchJwks(kid, JWKS_URI, decodedTokenHeader);
+  const payload = await verifyJwt(values.token, jwks, {
+    algorithms: [RS256],
+  });
 
   if (
-    !isKnownApp(decodedPayload, [
+    !isKnownApp(payload, [
       values.configValues.firebaseAndroidAppId,
       values.configValues.firebaseIosAppId,
     ])
@@ -154,11 +120,11 @@ export const validateFirebaseJWT = async (
     throw new UnknownAppError('Unknown app associated with attestation token');
   }
 
-  if (!hasValidIss(decodedPayload, values.configValues.projectId)) {
+  if (!hasValidIss(payload, values.configValues.projectId)) {
     throw new JwtError('Invalid "iss" claim in the JWT payload');
   }
 
-  if (!hasValidAud(decodedPayload, values.configValues)) {
+  if (!hasValidAud(payload, values.configValues)) {
     throw new JwtError('Invalid "aud" claim in the JWT payload');
   }
 

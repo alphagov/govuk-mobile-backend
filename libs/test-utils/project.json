@@ -1,0 +1,26 @@
+{
+  "name": "@libs/test-utils",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/test-utils/src/**/*.{ts,tsx,js,jsx}"]
+      }
+    },
+    "test:unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest libs/test-utils/src/**/* --project unit"
+      }
+    },
+    "test:coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run libs/test-utils/src/**/* --coverage --project unit"
+      }
+    }
+  }
+}

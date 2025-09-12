@@ -40,7 +40,7 @@ export const verifySETJwt = async ({
     }
 
     const keys = await fetchJwks(
-      'verify-signature',
+      decodedHeaders.kid,
       config.jwksUri,
       decodedHeaders,
     );

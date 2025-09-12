@@ -27,7 +27,6 @@ const fetchJwks = async (
     return cachedJwks.jwks;
   }
 
-  console.log(protectedHeaders);
   const jwks = await createRemoteJWKSet(new URL(jwksUri), {
     [customFetch]: async (url) => {
       return sendHttpRequest(url, {});

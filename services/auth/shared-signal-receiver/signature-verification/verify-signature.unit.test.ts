@@ -1,13 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  generateKeyPair,
-  JWTPayload,
-  decodeProtectedHeader,
-  CryptoKey,
-  SignJWT,
-  calculateJwkThumbprint,
-  exportJWK,
-} from 'jose';
+import { generateKeysAndJwt } from '../../../../libs/test-utils/src/jwt/generate-keys-and-jwt';
+import { JWTPayload, decodeProtectedHeader } from 'jose';
 import { verifySETJwt } from '../signature-verification/verify-signature';
 import {
   InvalidKeyError,
@@ -47,26 +40,6 @@ interface generateJWTPayload {
   kid?: string;
 }
 
-const signWithPrivateKey = async (
-  privateKey: CryptoKey,
-  options: generateJWTPayload,
-) => {
-  const { issuer, audience, jti, payload, alg, expiryDate, typ, kid } = options;
-  const protectedHeader = {
-    alg,
-    ...(typ ? { typ } : {}),
-    ...(kid ? { kid } : {}),
-  };
-  return await new SignJWT(payload)
-    .setProtectedHeader(protectedHeader)
-    .setIssuedAt(new Date())
-    .setIssuer(issuer)
-    .setJti(jti)
-    .setExpirationTime(expiryDate)
-    .setAudience(audience)
-    .sign(privateKey);
-};
-
 const testingAlgorithm = 'RS256';
 
 const testJwtPayload = {
@@ -101,23 +74,10 @@ const sharedSignalsConfig = {
 };
 
 describe('GIVEN a call to verifySETJwt', async () => {
-  let publicKey: CryptoKey;
-  let publicKid: string;
-  let privateKey: CryptoKey;
-
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('01/01/2025'));
     vi.resetAllMocks();
-
-    ({ publicKey, privateKey } = await generateKeyPair('RS256', {
-      extractable: true,
-    }));
-    const publicJwk = await exportJWK(publicKey);
-    publicKid = await calculateJwkThumbprint(publicJwk, 'sha256');
-
-    vi.mocked(fetchJwks).mockResolvedValue(publicKey);
-    vi.mocked(decodeProtectedHeader).mockReturnValue({ kid: publicKid });
   });
 
   afterEach(() => {
@@ -131,9 +91,9 @@ describe('GIVEN a call to verifySETJwt', async () => {
   });
 
   it('WHEN the given jwt protected headers kid is not defined THEN a InvalidKeyError is throw', async () => {
-    vi.mocked(decodeProtectedHeader).mockReturnValue({});
+    const { jwt } = await generateKeysAndJwt(sampleVerificationEvent);
 
-    const jwt = await signWithPrivateKey(privateKey, sampleVerificationEvent);
+    vi.mocked(decodeProtectedHeader).mockReturnValue({});
 
     await expect(
       verifySETJwt({ jwt, config: sharedSignalsConfig }),
@@ -145,9 +105,12 @@ describe('GIVEN a call to verifySETJwt', async () => {
   });
 
   it('WHEN the fetchJwks call errors THEN a SignatureVerificationError is thrown', async () => {
-    vi.mocked(fetchJwks).mockRejectedValue(new Error('Could not find JWKS'));
+    const { publicKid, jwt } = await generateKeysAndJwt(
+      sampleVerificationEvent,
+    );
 
-    const jwt = await signWithPrivateKey(privateKey, sampleVerificationEvent);
+    vi.mocked(decodeProtectedHeader).mockReturnValue({ kid: publicKid });
+    vi.mocked(fetchJwks).mockRejectedValue(new Error('Could not find JWKS'));
 
     await expect(
       verifySETJwt({ jwt, config: sharedSignalsConfig }),
@@ -188,7 +151,12 @@ describe('GIVEN a call to verifySETJwt', async () => {
   it.each(invalidJwtScenarios)(
     'WHEN the verifyJwt call errors with $scenario THEN a SignatureVerificationError is thrown',
     async ({ configOverrides, error }) => {
-      const jwt = await signWithPrivateKey(privateKey, sampleVerificationEvent);
+      const { publicKey, publicKid, jwt } = await generateKeysAndJwt(
+        sampleVerificationEvent,
+      );
+
+      vi.mocked(decodeProtectedHeader).mockReturnValue({ kid: publicKid });
+      vi.mocked(fetchJwks).mockResolvedValue(publicKey);
 
       await expect(
         verifySETJwt({
@@ -200,10 +168,13 @@ describe('GIVEN a call to verifySETJwt', async () => {
   );
 
   it('WHEN the jwt is expired THEN a SignatureVerificationError is thrown', async () => {
-    const jwt = await signWithPrivateKey(privateKey, {
+    const { publicKey, publicKid, jwt } = await generateKeysAndJwt({
       ...sampleVerificationEvent,
       expiryDate: new Date('01/01/2024'),
     });
+
+    vi.mocked(decodeProtectedHeader).mockReturnValue({ kid: publicKid });
+    vi.mocked(fetchJwks).mockResolvedValue(publicKey);
 
     await expect(
       verifySETJwt({ jwt, config: sharedSignalsConfig }),
@@ -215,7 +186,11 @@ describe('GIVEN a call to verifySETJwt', async () => {
   });
 
   it('WHEN the jwt is valid THEN it returns the payload', async () => {
-    const jwt = await signWithPrivateKey(privateKey, sampleVerificationEvent);
+    const { publicKey, publicKid, jwt } = await generateKeysAndJwt(
+      sampleVerificationEvent,
+    );
+    vi.mocked(decodeProtectedHeader).mockReturnValue({ kid: publicKid });
+    vi.mocked(fetchJwks).mockResolvedValue(publicKey);
 
     const response = await verifySETJwt({ jwt, config: sharedSignalsConfig });
     expect(response).toEqual(expect.objectContaining(testJwtPayload));
