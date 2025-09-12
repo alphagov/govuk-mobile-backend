@@ -2,8 +2,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
 /**
- *
- * @param delayMillis
+ * Wait for a given delay
+ * @param delayMillis - The delay in milliseconds
+ * @returns A promise that resolves when the delay is complete
  */
 async function wait(delayMillis: number): Promise<void> {
   // eslint-disable-next-line promise/avoid-new
@@ -11,10 +12,11 @@ async function wait(delayMillis: number): Promise<void> {
 }
 
 /**
- *
- * @param request
- * @param attempt
- * @param baseDelayMillis
+ * Retry the request with exponential backoff and full jitter
+ * @param request - The request to retry
+ * @param attempt - The attempt number
+ * @param baseDelayMillis - The base delay in milliseconds
+ * @returns The response from the request
  */
 async function retryWithExponentialBackoffAndFullJitter(
   request: () => Promise<Response>,
@@ -39,13 +41,32 @@ interface RetryConfig {
   maxAttempts?: number;
   baseDelayMillis?: number;
   retryableStatusCodes?: number[];
+  timeoutMillis?: number;
 }
 
-const sendHttpRequest = async (
-  url: string,
-  httpRequest: RequestInit,
-  retryConfig?: RetryConfig,
-): Promise<Response> => {
+interface SendHttpRequestOptions {
+  url: string;
+  httpRequest?: RequestInit;
+  retryConfig?: RetryConfig;
+  signal?: AbortSignal;
+}
+
+/**
+ * Send a http request with retry
+ * @param input - The input to send the request
+ * @param input.url - The url to send the request to
+ * @param input.httpRequest - The http request to send
+ * @param input.retryConfig - The retry config
+ * @param input.signal - The signal to abort the request
+ * @returns The response from the request
+ */
+const sendHttpRequest = async ({
+  url,
+  httpRequest = {},
+  retryConfig,
+  signal,
+}: SendHttpRequestOptions): Promise<Response> => {
+  const timeoutMillis = retryConfig?.timeoutMillis ?? 5000;
   let attempt = 0;
 
   // eslint-disable-next-line jsdoc/require-jsdoc
@@ -57,9 +78,13 @@ const sendHttpRequest = async (
       retryConfig?.baseDelayMillis ?? DEFAULT_BASE_DELAY_MILLIS;
     const retryableStatusCodes =
       retryConfig?.retryableStatusCodes ?? DEFAULT_RETRYABLE_STATUS_CODES;
+    const abortSignal = signal ?? AbortSignal.timeout(timeoutMillis);
 
     try {
-      const response = await fetch(url, httpRequest);
+      const response = await fetch(url, {
+        ...httpRequest,
+        signal: abortSignal,
+      });
 
       if (
         retryableStatusCodes.includes(response.status) &&
@@ -74,6 +99,11 @@ const sendHttpRequest = async (
 
       return response;
     } catch (error) {
+      // Do not retry if aborted
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        throw error;
+      }
+
       if (attempt < maxAttempts) {
         return retryWithExponentialBackoffAndFullJitter(
           request,

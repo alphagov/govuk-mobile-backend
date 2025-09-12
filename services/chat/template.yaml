@@ -218,6 +218,11 @@ Resources:
       StageName: !Ref Environment
       RestApiId: !Ref ChatApiGateway
       DeploymentId: !Ref ChatApiGatewayDeployment20250828
+      MethodSettings:
+        - ThrottlingRateLimit: 10000
+          ThrottlingBurstLimit: 5000
+          ResourcePath: "/*"
+          HttpMethod: "*"
       AccessLogSetting:
         DestinationArn: !GetAtt ChatApiGatewayAccessLogGroup.Arn
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","authorizeError":"$context.authorize.error","authorizeLatency":"$context.authorize.latency","authorizeStatus":"$context.authorize.status","authorizerIntegrationLatency":"$context.authorizer.integrationLatency","authorizerIntegrationStatus":"$context.authorizer.integrationStatus","authorizerLatency":"$context.authorizer.latency","authorizerRequestId":"$context.authorizer.requestId","authorizerStatus":"$context.authorizer.status"}'

@@ -22,17 +22,6 @@ class AppError extends Error {
   }
 }
 
-class MissingAttestationTokenError extends AppError {
-  public constructor(publicMessage = 'Invalid request', details?: unknown) {
-    super(publicMessage, {
-      publicMessage,
-      cause: details,
-      statusCode: StatusCodes.UNAUTHORIZED,
-    });
-    this.name = 'MissingAttestationTokenError';
-  }
-}
-
 class UnknownAppError extends AppError {
   public constructor(
     publicMessage = 'Unknown app associated with attestation token',
@@ -99,7 +88,6 @@ class JwtError extends AppError {
 
 export {
   AppError,
-  MissingAttestationTokenError,
   UnknownAppError,
   FailedToFetchSecretError,
   JwksFetchError,

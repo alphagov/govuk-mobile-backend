@@ -9,12 +9,7 @@
     "./**/*.ts",
     "../../libs/test-utils/src/jwt/generate-keys-and-jwt.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "**/tests/**",
-    "**/feature-tests/**",
-    "**/**/vitest.*.ts"
-  ],
+  "exclude": ["node_modules", "**/tests/**", "**/**/vitest.*.ts"],
   "references": [
     {
       "path": "../../libs/test-utils"

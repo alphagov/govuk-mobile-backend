@@ -16,7 +16,6 @@ export interface AttestationUseCase {
  * @param headers - Attestation headers
  * @param config - Firebase app config
  * @returns - Returns void or throws exception
- * @throws {MissingAttestationTokenError}
  */
 export const validateAttestationHeaderOrThrow = async (
   headers: SanitizedRequestHeadersWithAttestation,

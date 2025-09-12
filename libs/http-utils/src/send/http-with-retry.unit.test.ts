@@ -1,5 +1,9 @@
 import { describe, beforeEach, expect, afterEach, it, vi } from 'vitest';
-import { RetryConfig, sendHttpRequest } from './http-with-retry';
+import {
+  RetryConfig,
+  sendHttpRequest,
+  type SendHttpRequestResponse,
+} from './http-with-retry';
 
 const url = 'mock_url';
 
@@ -21,9 +25,18 @@ const getRetryConfig = (): RetryConfig => {
 
 const MOCK_JITTER_MULTIPLIER = 0.5;
 
-let result;
-let mockFetch: vi.SpyInstance;
-let mockSetTimeout: vi.SpyInstance;
+let result: SendHttpRequestResponse<any>;
+let mockFetch: any;
+let mockSetTimeout: any;
+
+const AbortSignalMock = {
+  aborted: false,
+  timeout: vi.fn(() => ({
+    aborted: false,
+  })),
+};
+
+vi.stubGlobal('AbortSignal', AbortSignalMock);
 
 describe('sendHttpRequest', () => {
   beforeEach(() => {
@@ -35,6 +48,7 @@ describe('sendHttpRequest', () => {
           header1: 'mock_header1_value',
           header2: 'mock_header2_value',
         }),
+        json: () => Promise.resolve({ mock: 'response' }),
       } as Response),
     );
 
@@ -53,7 +67,11 @@ describe('sendHttpRequest', () => {
 
   describe('On every request', () => {
     beforeEach(async () => {
-      result = await sendHttpRequest(url, getHttpRequest(), getRetryConfig());
+      result = await sendHttpRequest({
+        url,
+        httpRequest: getHttpRequest(),
+        retryConfig: getRetryConfig(),
+      });
     });
 
     it('Sends a http request using the correct parameters', async () => {
@@ -61,6 +79,7 @@ describe('sendHttpRequest', () => {
         method: 'GET',
         headers: {},
         body: '{"mock":"request"}',
+        signal: expect.any(Object),
       });
     });
   });
@@ -81,10 +100,15 @@ describe('sendHttpRequest', () => {
                 header1: 'mock_header1_value',
                 header2: 'mock_header2_value',
               }),
+              json: () => Promise.resolve({ mock: 'response' }),
             } as Response),
           );
 
-        result = await sendHttpRequest(url, getHttpRequest(), getRetryConfig());
+        result = await sendHttpRequest({
+          url,
+          httpRequest: getHttpRequest(),
+          retryConfig: getRetryConfig(),
+        });
       });
 
       it('Retries the request until success', () => {
@@ -113,11 +137,11 @@ describe('sendHttpRequest', () => {
             throw error;
           });
 
-          result = await sendHttpRequest(
+          result = await sendHttpRequest({
             url,
-            getHttpRequest(),
-            getRetryConfig(),
-          );
+            httpRequest: getHttpRequest(),
+            retryConfig: getRetryConfig(),
+          });
         } catch (error) {}
       });
 
@@ -145,7 +169,11 @@ describe('sendHttpRequest', () => {
 
       it('Throws an error', async () => {
         await expect(
-          sendHttpRequest(url, getHttpRequest(), getRetryConfig()),
+          sendHttpRequest({
+            url,
+            httpRequest: getHttpRequest(),
+            retryConfig: getRetryConfig(),
+          }),
         ).rejects.toThrow();
       });
     });
@@ -170,10 +198,15 @@ describe('sendHttpRequest', () => {
                 header1: 'mock_header1_value',
                 header2: 'mock_header2_value',
               }),
+              json: () => Promise.resolve({ mock: 'response' }),
             } as Response),
           );
 
-        result = await sendHttpRequest(url, getHttpRequest(), getRetryConfig());
+        result = await sendHttpRequest({
+          url,
+          httpRequest: getHttpRequest(),
+          retryConfig: getRetryConfig(),
+        });
       });
 
       it('Retries the request until success', () => {
@@ -199,10 +232,15 @@ describe('sendHttpRequest', () => {
           Promise.resolve({
             status: 503,
             text: () => Promise.resolve('mock_error_string'),
+            json: () => Promise.resolve({ mock: 'response' }),
           } as Response),
         );
 
-        result = await sendHttpRequest(url, getHttpRequest(), getRetryConfig());
+        result = await sendHttpRequest({
+          url,
+          httpRequest: getHttpRequest(),
+          retryConfig: getRetryConfig(),
+        });
       });
 
       it('Retries the request up to configured max attempts', () => {
@@ -242,10 +280,11 @@ describe('sendHttpRequest', () => {
             Promise.resolve({
               status: statusCode,
               text: () => Promise.resolve('mock_error_string'),
+              json: () => Promise.resolve({ mock: 'response' }),
             } as Response),
           );
 
-          await sendHttpRequest(url, getHttpRequest(), undefined);
+          await sendHttpRequest({ url, httpRequest: getHttpRequest() });
 
           expect(mockFetch).toHaveBeenCalledTimes(3);
           expect(mockSetTimeout).toHaveBeenNthCalledWith(
@@ -272,13 +311,14 @@ describe('sendHttpRequest', () => {
             Promise.resolve({
               status: statusCode,
               text: () => Promise.resolve('mock_error_string'),
+              json: () => Promise.resolve({ mock: 'response' }),
             } as Response),
           );
-          result = await sendHttpRequest(
+          result = await sendHttpRequest({
             url,
-            getHttpRequest(),
-            getRetryConfig(),
-          );
+            httpRequest: getHttpRequest(),
+            retryConfig: getRetryConfig(),
+          });
         });
 
         it('Does not retry the request', () => {
@@ -305,14 +345,15 @@ describe('sendHttpRequest', () => {
                 header1: 'mock_header1_value',
                 header2: 'mock_header2_value',
               }),
+              json: () => Promise.resolve({ mock: 'response' }),
             } as Response),
           );
 
-          result = await sendHttpRequest(
+          result = await sendHttpRequest({
             url,
-            getHttpRequest(),
-            getRetryConfig(),
-          );
+            httpRequest: getHttpRequest(),
+            retryConfig: getRetryConfig(),
+          });
         });
 
         it('Does not retry the request', () => {
@@ -324,5 +365,62 @@ describe('sendHttpRequest', () => {
         });
       },
     );
+  });
+
+  describe('Given the request is aborted', () => {
+    class TimeoutError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'TimeoutError';
+      }
+    }
+
+    beforeEach(() => {
+      // Override parent hooks for this suite
+      vi.restoreAllMocks();
+      vi.useFakeTimers();
+      mockFetch = vi
+        .spyOn(global, 'fetch')
+        .mockImplementation((_input: unknown) => {
+          return new Promise((_resolve, reject) => {
+            reject(new TimeoutError('TimeoutError'));
+          });
+        });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it('Throws TimeoutError when the signal aborts', async () => {
+      const promise = sendHttpRequest({
+        url,
+        httpRequest: getHttpRequest(),
+        retryConfig: {
+          maxAttempts: 1,
+          baseDelayMillis: 1,
+          timeoutMillis: 1000,
+        },
+      });
+
+      await expect(promise).rejects.toThrowError(/TimeoutError/);
+    });
+
+    it('Does not retry the request', async () => {
+      await expect(
+        sendHttpRequest({
+          url,
+          httpRequest: getHttpRequest(),
+          retryConfig: {
+            maxAttempts: 1,
+            baseDelayMillis: 1,
+            timeoutMillis: 1000,
+          },
+        }),
+      ).rejects.toThrowError(/TimeoutError/);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
   });
 });

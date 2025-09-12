@@ -2,12 +2,7 @@
   "extends": "./tsconfig.base",
   "compileOnSave": false,
   "files": [],
-  "exclude": [
-    "node_modules",
-    "**/tests/**",
-    "**/feature-tests/**",
-    "**/**/vitest.*.ts"
-  ],
+  "exclude": ["node_modules", "**/tests/**", "**/**/vitest.*.ts"],
   "references": [
     {
       "path": "./services/auth"
