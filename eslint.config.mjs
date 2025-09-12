@@ -37,7 +37,6 @@ export default tseslint.config(
       '.nx',
       '**/debug',
       '**/.aws-sam/**',
-      '**/feature-tests/**',
       '**/tests/**',
       '**/vitest*.ts',
       '**/coverage/**/*',
@@ -152,7 +151,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['auth/feature-tests/**/*.ts', 'auth/**/*.test.ts'],
+    files: ['auth/**/*.test.ts'],
     rules: {
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',
