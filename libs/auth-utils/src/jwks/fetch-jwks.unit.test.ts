@@ -39,7 +39,7 @@ describe('GIVEN a request to Fetch JWKS', () => {
       );
 
       await expect(
-        fetchJwks(testCacheKey, testJwksUrl, testAlgorithm),
+        fetchJwks(testCacheKey, testJwksUrl, { alg: testAlgorithm }),
       ).rejects.toThrow('Could not retrieve JWKS');
     });
     it('AND the call to the Jwks Succeeds THEN the jwks CryptoKey is returned', async () => {
@@ -49,7 +49,9 @@ describe('GIVEN a request to Fetch JWKS', () => {
         json: () => Promise.resolve(testJwksKeys),
       } as unknown as Response);
 
-      const jwks = await fetchJwks(testCacheKey, testJwksUrl, testAlgorithm);
+      const jwks = await fetchJwks(testCacheKey, testJwksUrl, {
+        alg: testAlgorithm,
+      });
       expect(sendHttpRequest).toBeCalledTimes(1);
       expect(isCryptoKey(jwks)).toBeTruthy();
     });
@@ -63,13 +65,15 @@ describe('GIVEN a request to Fetch JWKS', () => {
         status: 200,
         json: () => Promise.resolve(testJwksKeys),
       } as unknown as Response);
-      await fetchJwks(testCacheKey, testJwksUrl, testAlgorithm);
+      await fetchJwks(testCacheKey, testJwksUrl, { alg: testAlgorithm });
       //Reset mocks so counters starts from 0
       vi.resetAllMocks();
     });
 
     it('THEN it returns the cached value', async () => {
-      const jwks = await fetchJwks(testCacheKey, testJwksUrl, testAlgorithm);
+      const jwks = await fetchJwks(testCacheKey, testJwksUrl, {
+        alg: testAlgorithm,
+      });
       expect(sendHttpRequest).toBeCalledTimes(0);
       expect(isCryptoKey(jwks)).toBeTruthy();
     });
@@ -82,7 +86,9 @@ describe('GIVEN a request to Fetch JWKS', () => {
         json: () => Promise.resolve(testJwksKeys),
       } as unknown as Response);
 
-      const jwks = await fetchJwks(testCacheKey, testJwksUrl, testAlgorithm);
+      const jwks = await fetchJwks(testCacheKey, testJwksUrl, {
+        alg: testAlgorithm,
+      });
       expect(sendHttpRequest).toBeCalledTimes(1);
       expect(isCryptoKey(jwks)).toBeTruthy();
     });

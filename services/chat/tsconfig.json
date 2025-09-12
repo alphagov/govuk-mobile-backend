@@ -6,10 +6,6 @@
     "declaration": false
   },
   "include": ["./**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "**/tests/**",
-    "**/**/vitest.*.ts"
-  ],
+  "exclude": ["node_modules", "**/tests/**", "**/**/vitest.*.ts"],
   "references": []
 }

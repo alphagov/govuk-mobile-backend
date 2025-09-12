@@ -5,15 +5,14 @@
     "composite": true,
     "declaration": true
   },
-  "include": ["./**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "**/tests/**",
-    "**/**/vitest.*.ts"
+  "include": [
+    "./**/*.ts",
+    "../../libs/test-utils/src/jwt/generate-keys-and-jwt.ts"
   ],
+  "exclude": ["node_modules", "**/tests/**", "**/**/vitest.*.ts"],
   "references": [
     {
-      "path": "../../libs/http-utils"
+      "path": "../../libs/test-utils"
     },
     {
       "path": "../../libs/auth-utils"
