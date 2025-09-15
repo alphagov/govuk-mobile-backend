@@ -28,15 +28,6 @@ interface ValidateFirebase {
   configValues: AppConfig;
 }
 
-const hasValidIss = (
-  payload: object,
-  firebaseProjectNumber: string,
-): payload is JWTPayload =>
-  'iss' in payload &&
-  typeof payload.iss === 'string' &&
-  payload.iss ===
-    `https://firebaseappcheck.googleapis.com/${firebaseProjectNumber}`;
-
 const hasCorrectAudiences = (
   payload: Record<string, unknown> | JWTPayload,
   configValues: AppConfig,
@@ -108,6 +99,7 @@ export const validateFirebaseJWT = async (
   const jwks = await fetchJwks(kid, JWKS_URI, decodedTokenHeader);
   const payload = await verifyJwt(values.token, jwks, {
     algorithms: [RS256],
+    issuer: `https://firebaseappcheck.googleapis.com/${values.configValues.projectId}`,
   });
 
   if (
@@ -117,10 +109,6 @@ export const validateFirebaseJWT = async (
     ])
   ) {
     throw new UnknownAppError('Unknown app associated with attestation token');
-  }
-
-  if (!hasValidIss(payload, values.configValues.projectId)) {
-    throw new JwtError('Invalid "iss" claim in the JWT payload');
   }
 
   if (!hasValidAud(payload, values.configValues)) {

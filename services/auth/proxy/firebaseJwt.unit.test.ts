@@ -5,6 +5,7 @@ import { AppConfig } from './config';
 import { fetchJwks } from '@libs/auth-utils';
 import { decodeProtectedHeader } from 'jose';
 import { GenerateJwtPayload, generateKeysAndJwt } from '@libs/test-utils';
+import { JWTClaimValidationFailed } from 'jose/errors';
 
 vi.mock('@libs/auth-utils', async (importOriginal) => {
   const originalModule = await importOriginal<
@@ -35,6 +36,7 @@ const configValues: AppConfig = {
   customDomainConfigName: 'mocked-domain',
   awsRegion: 'eu-west-2',
   cognitoSecretName: 'testing', //pragma: allowlist-secret
+  timeoutMs: 5000,
 };
 
 const mockProtectedHeaders = { kid: 'abc-123', alg: 'RS256', typ: 'JWT' };
@@ -222,6 +224,15 @@ describe('firebaseJwt', () => {
       ...mockJwtOptions,
       issuer: 'invalid',
     });
+
+    const expectedPayload = {
+      aud: mockJwtOptions.audience,
+      exp: Math.floor(mockJwtOptions.expiryDate.getTime() / 1000),
+      iat: Math.floor(new Date().getTime() / 1000),
+      jti: mockJwtOptions.jti,
+      iss: 'invalid',
+      ...mockJwtPayload,
+    };
     vi.mocked(decodeProtectedHeader).mockReturnValue(mockProtectedHeaders);
     vi.mocked(fetchJwks).mockResolvedValue(publicKey);
     await expect(
@@ -229,7 +240,14 @@ describe('firebaseJwt', () => {
         token: jwt,
         configValues: configValues,
       }),
-    ).rejects.toThrow(JwtError);
+    ).rejects.toThrow(
+      new JWTClaimValidationFailed(
+        'unexpected "iss" claim value',
+        expectedPayload,
+        'iss',
+        'check_failed',
+      ),
+    );
   });
 
   it.each([{ audience: 'invalid' }, { audience: ['invalid', 'test'] }])(
