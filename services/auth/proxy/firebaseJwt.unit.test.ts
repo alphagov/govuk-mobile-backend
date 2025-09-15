@@ -5,7 +5,6 @@ import { AppConfig } from './config';
 import { fetchJwks } from '@libs/auth-utils';
 import { decodeProtectedHeader } from 'jose';
 import { GenerateJwtPayload, generateKeysAndJwt } from '@libs/test-utils';
-import { JWTClaimValidationFailed } from 'jose/errors';
 
 vi.mock('@libs/auth-utils', async (importOriginal) => {
   const originalModule = await importOriginal<
@@ -225,14 +224,6 @@ describe('firebaseJwt', () => {
       issuer: 'invalid',
     });
 
-    const expectedPayload = {
-      aud: mockJwtOptions.audience,
-      exp: Math.floor(mockJwtOptions.expiryDate.getTime() / 1000),
-      iat: Math.floor(new Date().getTime() / 1000),
-      jti: mockJwtOptions.jti,
-      iss: 'invalid',
-      ...mockJwtPayload,
-    };
     vi.mocked(decodeProtectedHeader).mockReturnValue(mockProtectedHeaders);
     vi.mocked(fetchJwks).mockResolvedValue(publicKey);
     await expect(
@@ -240,14 +231,7 @@ describe('firebaseJwt', () => {
         token: jwt,
         configValues: configValues,
       }),
-    ).rejects.toThrow(
-      new JWTClaimValidationFailed(
-        'unexpected "iss" claim value',
-        expectedPayload,
-        'iss',
-        'check_failed',
-      ),
-    );
+    ).rejects.toThrow(`unexpected "iss" claim value`);
   });
 
   it.each([{ audience: 'invalid' }, { audience: ['invalid', 'test'] }])(
@@ -294,5 +278,15 @@ describe('firebaseJwt', () => {
         `"kid" header is in unsafe format "${kid}"`,
       ),
     );
+  });
+
+  it('should throw an error if the token cannot be decoded', async () => {
+    const { jwt } = await generateKeysAndJwt(mockJwtOptions);
+    vi.mocked(decodeProtectedHeader).mockImplementationOnce(() => {
+      throw new Error('Invalid token');
+    });
+    await expect(
+      validateFirebaseJWT({ token: jwt, configValues: configValues }),
+    ).rejects.toThrow('Invalid token');
   });
 });

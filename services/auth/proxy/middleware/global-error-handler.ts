@@ -6,6 +6,7 @@ import { AppError } from '../errors';
 import { ZodError } from 'zod';
 import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { TokenExpiredError } from 'jsonwebtoken';
+import { JWTClaimValidationFailed } from 'jose/errors';
 
 const generateErrorResponse = ({
   status,
@@ -42,6 +43,11 @@ export const errorMiddleware = (): MiddlewareObj => ({
       request.response = generateErrorResponse({
         status: StatusCodes.UNAUTHORIZED,
         message: 'Attestation token has expired',
+      });
+    } else if (error instanceof JWTClaimValidationFailed) {
+      request.response = generateErrorResponse({
+        status: StatusCodes.UNAUTHORIZED,
+        message: error.reason,
       });
     } else if (error instanceof AppError) {
       request.response = generateErrorResponse({

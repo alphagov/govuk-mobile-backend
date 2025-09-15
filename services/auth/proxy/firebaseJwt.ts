@@ -2,7 +2,7 @@ import { JwtError, UnknownAppError } from './errors';
 import type { AppConfig } from './config';
 import { logger } from './logger';
 import { logMessages } from './log-messages';
-import type { JWTPayload } from 'jose';
+import type { JWTPayload, ProtectedHeaderParameters } from 'jose';
 import { decodeProtectedHeader } from 'jose';
 import { fetchJwks, verifyJwt } from '@libs/auth-utils';
 
@@ -59,7 +59,15 @@ const isKidFormatSafe = (kid: string): boolean => {
 export const validateFirebaseJWT = async (
   values: ValidateFirebase,
 ): Promise<void> => {
-  const decodedTokenHeader = decodeProtectedHeader(values.token);
+  let decodedTokenHeader: ProtectedHeaderParameters = {};
+  try {
+    decodedTokenHeader = decodeProtectedHeader(values.token);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new JwtError(error.message, error);
+    }
+    throw new JwtError('Invalid attestation token', String(error));
+  }
   const { kid, alg, typ } = decodedTokenHeader;
 
   if (kid == null) {
@@ -100,6 +108,11 @@ export const validateFirebaseJWT = async (
   const payload = await verifyJwt(values.token, jwks, {
     algorithms: [RS256],
     issuer: `https://firebaseappcheck.googleapis.com/${values.configValues.projectId}`,
+  }).catch((error: unknown) => {
+    if (error instanceof Error) {
+      throw new JwtError(error.message, error);
+    }
+    throw new JwtError('Invalid attestation token', error);
   });
 
   if (
