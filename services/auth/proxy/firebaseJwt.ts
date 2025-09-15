@@ -63,10 +63,8 @@ export const validateFirebaseJWT = async (
   try {
     decodedTokenHeader = decodeProtectedHeader(values.token);
   } catch (error) {
-    if (error instanceof Error) {
-      throw new JwtError(error.message, error);
-    }
-    throw new JwtError('Invalid attestation token', String(error));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    throw new JwtError((error as Error).message, error);
   }
   const { kid, alg, typ } = decodedTokenHeader;
 
@@ -108,11 +106,9 @@ export const validateFirebaseJWT = async (
   const payload = await verifyJwt(values.token, jwks, {
     algorithms: [RS256],
     issuer: `https://firebaseappcheck.googleapis.com/${values.configValues.projectId}`,
-  }).catch((error: unknown) => {
-    if (error instanceof Error) {
-      throw new JwtError(error.message, error);
-    }
-    throw new JwtError('Invalid attestation token', error);
+    // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
+  }).catch((error: Error) => {
+    throw new JwtError(error.message, error);
   });
 
   if (
