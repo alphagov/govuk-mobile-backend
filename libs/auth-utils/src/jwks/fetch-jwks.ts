@@ -1,4 +1,4 @@
-import type { CryptoKey } from 'jose';
+import type { CryptoKey, JWSHeaderParameters } from 'jose';
 import { createRemoteJWKSet, customFetch } from 'jose';
 import { sendHttpRequest } from '@libs/http-utils';
 
@@ -11,16 +11,17 @@ type JWKSCache = Record<string, { jwks: CryptoKey; expiresAt: number }>;
  * Returns a valid CryptoKey that can be used for Jose JWT verification & validation purposes. May contain multiple keys.
  * @param cacheKey - The name of the cache key to use a cached value (e.g: 'firebaseJwks')
  * @param jwksUri - The URI of the well known JWKS endpoint to use
- * @param algorithm - The algorithm of the desired keyset (e.g: RS256)
+ * @param protectedHeaders - The JWS protected headers for Jose to evaluate the keys to select with
+ * @param token
+ * @returns CryptoKey
  */
 const fetchJwks = async (
   cacheKey: string,
   jwksUri: string,
-  algorithm: string,
+  protectedHeaders?: JWSHeaderParameters,
 ): Promise<CryptoKey> => {
   const cachedJwks = jwksCache[cacheKey];
 
-  console.log(cachedJwks?.expiresAt);
   if (cachedJwks && cachedJwks.expiresAt > Date.now()) {
     return cachedJwks.jwks;
   }
@@ -29,7 +30,7 @@ const fetchJwks = async (
     [customFetch]: async (url) => {
       return sendHttpRequest({ url });
     },
-  })({ alg: algorithm });
+  })(protectedHeaders);
   const expiresAt = new Date().getTime() + cacheDurationMs;
   jwksCache[cacheKey] = {
     jwks,
