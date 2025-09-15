@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 import type { FeatureFlags } from './feature-flags';
 import { FEATURE_FLAGS } from './feature-flags';

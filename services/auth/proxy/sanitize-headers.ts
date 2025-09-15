@@ -8,6 +8,12 @@ const asciiString = z
   // eslint-disable-next-line no-control-regex, sonarjs/no-control-regex
   .regex(/^[\x00-\x7F]*$/, { message: 'Non-ASCII character found' });
 
+// Non-empty ASCII string (after trimming) for headers that must not be empty
+const nonEmptyAsciiString = asciiString
+  .trim()
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  .min(1, { message: 'Header value must not be empty' });
+
 const baseHeaderSchema = z.object({
   'content-type': z.enum([
     'application/x-www-form-urlencoded',
@@ -33,7 +39,7 @@ const baseHeaderSchema = z.object({
 });
 
 const attestationEnabledSchema = baseHeaderSchema.extend({
-  'x-attestation-token': asciiString,
+  'x-attestation-token': nonEmptyAsciiString,
 });
 
 export type SanitizedRequestHeaders = z.infer<typeof baseHeaderSchema>;

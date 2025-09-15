@@ -114,4 +114,26 @@ describe('sanitizeHeaders', () => {
       sanitizeHeaders(headersWithoutToken, disableAttestation),
     ).resolves.toEqual(headersWithoutToken);
   });
+
+  it('should reject empty x-attestation-token when attestation is enabled', async () => {
+    const headers = {
+      'content-type': 'application/x-www-form-urlencoded',
+      'x-attestation-token': '',
+    };
+
+    await expect(sanitizeHeaders(headers, enableAttestation)).rejects.toThrow(
+      ZodError,
+    );
+  });
+
+  it('should reject whitespace-only x-attestation-token when attestation is enabled', async () => {
+    const headers = {
+      'content-type': 'application/x-www-form-urlencoded',
+      'x-attestation-token': '   ',
+    };
+
+    await expect(sanitizeHeaders(headers, enableAttestation)).rejects.toThrow(
+      ZodError,
+    );
+  });
 });

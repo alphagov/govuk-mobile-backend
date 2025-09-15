@@ -50,20 +50,6 @@ class FailedToFetchSecretError extends AppError {
   }
 }
 
-class JwksFetchError extends AppError {
-  public constructor(
-    publicMessage = 'Failed to fetch JWKS',
-    details?: unknown,
-  ) {
-    super(publicMessage, {
-      publicMessage,
-      cause: details,
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-    });
-    this.name = 'JwksFetchError';
-  }
-}
-
 class ConfigError extends AppError {
   public constructor(publicMessage = 'Config error', details?: unknown) {
     super(publicMessage, {
@@ -90,7 +76,6 @@ export {
   AppError,
   UnknownAppError,
   FailedToFetchSecretError,
-  JwksFetchError,
   ConfigError,
   JwtError,
 };
