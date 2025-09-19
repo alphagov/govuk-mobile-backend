@@ -12,6 +12,8 @@ WORKDIR /tests
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json nx.json vitest.config.ts ./
 COPY ./scripts ./scripts
 COPY ./services/auth ./services/auth
+COPY ./services/chat/tsconfig.json ./services/chat/tsconfig.json
+COPY ./libs/ ./libs/
 
 COPY ./services/auth/run-tests.sh /run-tests.sh
 # Fix line endings if necessary
