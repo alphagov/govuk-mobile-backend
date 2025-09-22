@@ -35,10 +35,11 @@ async function _proxyRequest(
     url: `https://${hostname}${path}`,
     httpRequest: {
       method,
-      body,
+      // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style, @typescript-eslint/no-unsafe-type-assertion
+      body: body as string,
       headers: requestHeaders,
-      signal: AbortSignal.timeout(config.timeoutMs),
     },
+    signal: AbortSignal.timeout(config.timeoutMs),
   });
 
   // Convert fetch Response to APIGatewayProxyResultV2

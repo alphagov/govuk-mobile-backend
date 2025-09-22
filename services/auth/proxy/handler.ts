@@ -16,6 +16,7 @@ import { featureFlagsMiddleware } from './middleware/feature-flags';
 import httpUrlEncodeBodyParser from '@middy/http-urlencode-body-parser';
 import type { SanitizedRequestHeaders } from './sanitize-headers';
 import type { SanitizeHeadersContext } from './middleware/sanitize-headers';
+import { logCognitoResponseMiddleware } from './middleware/log-cognito-response';
 
 type AppContext = SanitizeHeadersContext & {
   sanitizedHeaders: SanitizedRequestHeaders;
@@ -41,6 +42,7 @@ export const createHandler = (
     .use(sanitizeHeadersMiddleware)
     .use(attestationMiddleware(dependencies))
     .use(parser({ schema: grantUnionSchema, envelope: ApiGatewayEnvelope }))
+    .use(logCognitoResponseMiddleware)
     .use(errorMiddleware())
     .handler(async (event: RequestBody, context: AppContext) => {
       logger.info(logMessages.ATTESTATION_STARTED);
