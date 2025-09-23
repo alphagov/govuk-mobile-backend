@@ -393,4 +393,34 @@ describe('lambdaHandler', () => {
       expect.stringContaining(logMessages.ATTESTATION_COMPLETED),
     );
   });
+
+  it('logs a warning via middleware on Cognito 4xx responses', async () => {
+    const warnSpy = vi.spyOn(logger, 'warn');
+
+    const handlerWith4xx = createHandler(
+      createMockDependencies({
+        proxy: vi.fn().mockResolvedValue({
+          statusCode: 400,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            error: 'invalid_request',
+            error_description: 'bad',
+          }),
+        }),
+      }),
+    );
+
+    const response = (await handlerWith4xx(
+      createMockEvent(),
+      mockContext,
+    )) as APIGatewayProxyStructuredResultV2;
+
+    expect(response.statusCode).toBe(400);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const [message, details] = warnSpy.mock.calls[0];
+    expect(message).toBe('COGNITO_ERROR');
+    expect(details).toMatchObject({ statusCode: 400 });
+
+    warnSpy.mockRestore();
+  });
 });

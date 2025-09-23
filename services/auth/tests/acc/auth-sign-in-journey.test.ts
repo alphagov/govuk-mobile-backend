@@ -75,4 +75,18 @@ describe('auth sign in journey', () => {
     expect(refreshedAccessToken).toBeTruthy();
     expect(refreshedAccessToken).not.toEqual(initialAccessToken);
   });
+
+  it('should enforce pkce challenge', async () => {
+    const user = await testDataLoader.getSuccessfulSignInUser();
+    const { code } = await authDriver.loginAndGetCode(user);
+    const { token: attestationToken } = await attestationDriver.getToken(
+      testConfig.firebaseIosAppId,
+    );
+    const { status } = await authDriver.exchangeCodeForTokens({
+      attestationHeader: attestationToken,
+      code,
+      code_verifier: 'wrong-code_verifier',
+    });
+    expect(status).toEqual(400);
+  });
 });

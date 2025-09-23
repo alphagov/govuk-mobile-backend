@@ -189,4 +189,24 @@ describe.skipIf(!testConfig.attestationEnabled)('app attestation', () => {
       '{"message":"Unknown app associated with attestation token"}',
     );
   });
+
+  it('should log non 2xx cognito errors', async () => {
+    const { token: attestationToken } = await attestationDriver.getToken(
+      testConfig.firebaseIosAppId,
+    );
+    await authDriver.exchangeCodeForTokens({
+      attestationHeader: attestationToken,
+      code: 'valid-code',
+      code_verifier: 'valid-code-verifier',
+    });
+
+    const response = await loggingDriver.findLogMessageWithRetries({
+      logGroupName: testConfig.authProxyLogGroup,
+      searchString: 'COGNITO_ERROR',
+      delayMs: 5000,
+      startTime: new Date(Date.now() - 60 * 60 * 1000).getTime(),
+    });
+
+    expect(response).toBeDefined();
+  });
 });
