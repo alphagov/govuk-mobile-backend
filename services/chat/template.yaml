@@ -141,7 +141,7 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs
       KmsKeyId: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
-      RetentionInDays: 30
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -288,7 +288,7 @@ Resources:
       # log stream must start with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-chat-proxy-${AWS::StackName}
       KmsKeyId: !GetAtt ChatApiGatewayWafLogGroupKMSKey.Arn
-      RetentionInDays: 30
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
