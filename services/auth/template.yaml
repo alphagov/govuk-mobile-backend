@@ -1576,6 +1576,8 @@ Resources:
       Handler: app.lambdaHandler
       Role: !GetAtt AuthProxyFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt AuthProxyFunctionKMSKey.Arn
+      LoggingConfig: 
+        LogGroup: !Ref AuthProxyFunctionLogGroup
       Environment:
         Variables:
           CONFIG_STACK_NAME: !Ref ConfigStackName
@@ -1601,6 +1603,46 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+
+  AuthProxyFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-auth-proxy-function
+      KmsKeyId: !GetAtt AuthProxyFunctionLogGroupKMSKey.Arn
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   AuthProxyFunctionIAMRole:
     Type: AWS::IAM::Role
@@ -1633,7 +1675,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy-function:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1669,6 +1711,43 @@ Resources:
               - kms:Decrypt*
             Resource:
               - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AuthProxyFunctionLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting Authentication Proxy log groups
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1953,6 +2032,8 @@ Resources:
       Handler: app.lambdaHandler
       Role: !GetAtt SharedSignalAuthorizerIAMRole.Arn
       KmsKeyArn: !GetAtt SharedSignalLambdaKMSKey.Arn
+      LoggingConfig:
+        LogGroup: !Ref SharedSignalAuthorizerLogGroup
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1961,6 +2042,47 @@ Resources:
         Variables:
           SHARED_SIGNAL_CLIENT_SECRET_NAME: !Sub /${ConfigStackName}/shared-signal/secrets-config
           REGION: !Ref AWS::Region
+
+  SharedSignalAuthorizerLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-authorizer-function
+      KmsKeyId: !GetAtt SharedSignalAuthorizerLogGroupKMSKey.Arn
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   SharedSignalAuthorizerIAMRole:
     Condition: IsNotProduction
@@ -1988,7 +2110,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-authorizer:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-authorizer-function:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2025,6 +2147,44 @@ Resources:
               - kms:Decrypt*
             Resource:
               - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalAuthorizerLogGroupKMSKey:
+    Condition: IsNotProduction
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting shared signal authorizer log groups
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2073,7 +2233,49 @@ Resources:
         Environment: !Ref Environment
         System: Authentication
 
+  SharedSignalReceiverFunctionLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-receiver-function
+      KmsKeyId: !GetAtt SharedSignalReceiverFunctionLogGroupKMSKey.Arn
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   SharedSignalReceiverFunctionKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting shared signal receiver function secrets
@@ -2104,6 +2306,44 @@ Resources:
         - Key: System
           Value: Authentication
 
+  SharedSignalReceiverFunctionLogGroupKMSKey:
+    Condition: IsNotProduction
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting shared signal receiver function log groups
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   SharedSignalReceiverFunctionIAMRole:
     Condition: IsNotProduction
     Type: AWS::IAM::Role
@@ -2126,7 +2366,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-receiver:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-receiver-function:*
               - Effect: Allow
                 Action:
                   - cognito-idp:AdminUserGlobalSignOut
@@ -2156,6 +2396,8 @@ Resources:
       Handler: app.lambdaHandler
       Role: !GetAtt SharedSignalHealthCheckFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt SharedSignalHealthCheckFunctionKMSKey.Arn
+      LoggingConfig:
+        LogGroup: !Ref SharedSignalHealthCheckFunctionLogGroup
       Events:
         EventBridgeEvent:
           Type: ScheduleV2
@@ -2188,6 +2430,7 @@ Resources:
         System: Authentication
 
   SharedSignalHealthCheckFunctionKMSKey:
+    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting shared signal health check function secrets
@@ -2244,11 +2487,90 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check-function:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
         - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckFunctionLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-health-check-function
+      KmsKeyId: !GetAtt SharedSignalHealthCheckFunctionLogGroupKMSKey.Arn
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckFunctionLogGroupKMSKey:
+    Condition: IsNotProduction
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting shared signal health check function log groups
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2549,6 +2871,8 @@ Resources:
       CodeUri: .build/revoke-token
       Role: !GetAtt RevokeRefreshTokenFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt RevokeRefreshTokenFunctionKMSKey.Arn
+      LoggingConfig: 
+        LogGroup: !Ref RevokeRefreshTokenFunctionLogGroup
       Environment:
         Variables:
           USER_POOL_ID: !Ref CognitoUserPool
@@ -2569,6 +2893,46 @@ Resources:
         Product: GOV.UK
         Environment: !Ref Environment
         System: Authentication
+
+  RevokeRefreshTokenFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-revoke-refresh-token-function
+      KmsKeyId: !GetAtt RevokeRefreshTokenFunctionLogGroupKMSKey.Arn
+      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
 
   RevokeRefreshTokenFunctionIAMRole:
     Type: AWS::IAM::Role
@@ -2604,7 +2968,8 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-revoke-refresh-token:*
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-revoke-refresh-token-function:*
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2648,6 +3013,43 @@ Resources:
         - Key: System
           Value: Authentication
          
+  RevokeRefreshTokenFunctionLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting revoke refresh token function log groups
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   ############################
   # Acceptance Testing Resources
   ############################
@@ -2715,8 +3117,8 @@ Resources:
                 Action:
                   - logs:FilterLogEvents
                 Resource:
-                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*
-                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check:*
+                  - !GetAtt AuthProxyFunctionLogGroup.Arn
+                  - !GetAtt SharedSignalHealthCheckFunctionLogGroup.Arn
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-cognito-${AWS::StackName}:log-stream*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-attestation-${AWS::StackName}:log-stream*
                   - !GetAtt AttestationProxyApiAccessLogGroup.Arn
@@ -2930,7 +3332,7 @@ Outputs:
 
   AuthProxyLogGroupName:
     Description: The name of the Auth Proxy Lambda function log group
-    Value: !Sub /aws/lambda/${AuthProxyFunction}
+    Value: !Ref AuthProxyFunctionLogGroup
 
   AttestationApiLogGroupName:
     Description: The name of the Attestation API Gateway WAF log group
@@ -2973,7 +3375,7 @@ Outputs:
   SharedSignalReceiverLogGroupName:
     Condition: IsNotProduction
     Description: The name of the Shared Signal Receiver Lambda function log group
-    Value: !Sub /aws/lambda/${SharedSignalReceiverFunction}
+    Value: !Sub /aws/lambda/${AWS::StackName}-shared-signal-receiver-function
 
   SharedSignalReceiverFunctionName:
     Condition: IsNotProduction
@@ -3112,7 +3514,7 @@ Outputs:
   SharedSignalHealthCheckFunctionLogGroupName:
     Condition: IsTestingEnvironment
     Description: The name of the Health Check Lambda function log group name
-    Value: !Sub /aws/lambda/${SharedSignalHealthCheckFunction}
+    Value: !Sub /aws/lambda/${AWS::StackName}-shared-signal-health-check-function
 
   SharedSignalWafThrottlingAlarm:
     Condition: IsNotProduction

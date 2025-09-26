@@ -122,7 +122,7 @@ describe('auth proxy function iam role', () => {
               Effect: 'Allow',
               Resource: {
                 'Fn::Sub':
-                  'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:*',
+                  'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy-function:*',
               },
             }),
           ]),

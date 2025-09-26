@@ -58,7 +58,7 @@ describe('Lambda Authorizer IAM Role', () => {
               Effect: 'Allow',
               Resource: {
                 'Fn::Sub':
-                  'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-chat-proxy-authorizer:*',
+                  'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-chat-proxy-authorizer-function:*',
               },
             },
           ],
