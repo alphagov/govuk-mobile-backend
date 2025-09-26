@@ -122,7 +122,7 @@ describe('shared signal', () => {
           ]),
           Resource: {
             'Fn::Sub':
-              'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-receiver:*',
+              'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-receiver-function:*',
           },
         }),
         expect.objectContaining({

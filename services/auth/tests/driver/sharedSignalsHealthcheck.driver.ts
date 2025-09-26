@@ -15,7 +15,7 @@ export class SharedSignalsHealthCheckDriver {
   }
 
   public async triggerHealthCheck() {
-    const response = await this.client.performAction<InvocationResponse>({
+    await this.client.performAction<InvocationResponse>({
       command: new InvokeCommand({
         FunctionName: this.healthCheckLambdaName,
       }),
