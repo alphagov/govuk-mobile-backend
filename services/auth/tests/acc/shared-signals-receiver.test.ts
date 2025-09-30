@@ -83,7 +83,7 @@ describe(
         expect(await response.json()).toEqual({ message: 'Bad Request' });
       });
 
-      it('sends a  purge user signal with an invalid user and receives a 202 ACCEPTED response', async () => {
+      it('sends a purge user signal with an invalid user and receives a 202 ACCEPTED response', async () => {
         const response = await sharedSignalsDriver.sendAccountPurgeSignal({
           userId: uuidv4(), //arbitrary user not found
           accessToken,

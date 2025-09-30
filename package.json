@@ -27,6 +27,7 @@
     "@aws-lambda-powertools/logger": "^2.25.2",
     "@aws-lambda-powertools/parameters": "^2.25.2",
     "@aws-lambda-powertools/parser": "^2.25.2",
+    "@aws-lambda-powertools/tracer": "^2.25.2",
     "@aws-lambda-powertools/validation": "^2.25.2",
     "@aws-sdk/client-api-gateway": "^3.879.0",
     "@aws-sdk/client-chatbot": "^3.879.0",

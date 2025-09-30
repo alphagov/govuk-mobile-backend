@@ -6,10 +6,12 @@ import type { MiddyfiedHandler } from '@middy/core';
 import middy from '@middy/core';
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import { parser } from '@aws-lambda-powertools/parser/middleware';
+import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import z from 'zod';
 import { errorMiddleware } from './middleware/global-error-handler';
 import secretsManager, { secret } from '@middy/secrets-manager';
 import type { SecretsConfig } from './types';
+import { tracer } from './tracer';
 
 const authorizerEventSchema = z.object({
   headers: z.object({
@@ -28,6 +30,7 @@ const createHandler = (
   Context & { secrets: SecretsConfig }
 > =>
   middy<AuthorizerEvent, APIGatewayAuthorizerResult>()
+    .use(captureLambdaHandler(tracer))
     .use(
       injectLambdaContext(logger, {
         correlationIdPath: 'requestContext.requestId',

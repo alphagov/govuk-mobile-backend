@@ -4,6 +4,7 @@ import type { Dependencies } from './app';
 import { logger } from './logger';
 import middy from '@middy/core';
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
+import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import { errorMiddleware } from './middleware/global-error-handler';
 import { decodeSetMiddleware } from './middleware/decode-set';
 import type { MiddyfiedHandler } from '@middy/core';
@@ -11,6 +12,7 @@ import type { DecodedSetContext } from './middleware/decode-set';
 import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes/api-gateway';
 import z from 'zod';
 import { parser } from '@aws-lambda-powertools/parser/middleware';
+import { tracer } from './tracer';
 
 const schema = z.string();
 
@@ -29,6 +31,7 @@ export const createHandler = (
   DecodedSetContext
 > =>
   middy()
+    .use(captureLambdaHandler(tracer))
     .use(
       injectLambdaContext(logger, {
         correlationIdPath: 'requestContext.requestId',

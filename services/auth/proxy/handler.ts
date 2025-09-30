@@ -11,12 +11,14 @@ import { attestationMiddleware } from './middleware/attestation';
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import { parser } from '@aws-lambda-powertools/parser/middleware';
 import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes/api-gateway';
+import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import { sanitizeHeadersMiddleware } from './middleware/sanitize-headers';
 import { featureFlagsMiddleware } from './middleware/feature-flags';
 import httpUrlEncodeBodyParser from '@middy/http-urlencode-body-parser';
 import type { SanitizedRequestHeaders } from './sanitize-headers';
 import type { SanitizeHeadersContext } from './middleware/sanitize-headers';
 import { logCognitoResponseMiddleware } from './middleware/log-cognito-response';
+import { tracer } from './tracer';
 
 type AppContext = SanitizeHeadersContext & {
   sanitizedHeaders: SanitizedRequestHeaders;
@@ -38,6 +40,7 @@ export const createHandler = (
       }),
     )
     .use(httpUrlEncodeBodyParser())
+    .use(captureLambdaHandler(tracer))
     .use(featureFlagsMiddleware(dependencies))
     .use(sanitizeHeadersMiddleware)
     .use(attestationMiddleware(dependencies))
