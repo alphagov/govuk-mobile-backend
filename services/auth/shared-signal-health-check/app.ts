@@ -4,12 +4,15 @@ import { logMessages } from './log-messages';
 import { logger } from './logger';
 import middy from '@middy/core';
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
+import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import { errorMiddleware } from './middleware/global-error-handler';
 import type { ScheduledEvent } from 'aws-lambda';
+import { tracer } from './tracer';
 
 const healthCheckService = initialiseHealthCheckService();
 
 export const lambdaHandler = middy<ScheduledEvent>()
+  .use(captureLambdaHandler(tracer))
   .use(
     injectLambdaContext(logger, {
       correlationIdPath: 'id',

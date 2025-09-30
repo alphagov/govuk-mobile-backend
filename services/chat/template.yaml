@@ -82,6 +82,7 @@ Globals:
     MemorySize: 128
     Timeout: 60
     Runtime: nodejs22.x
+    Tracing: Active
 
 Resources:
   ChatApiGateway:
@@ -218,6 +219,7 @@ Resources:
       StageName: !Ref Environment
       RestApiId: !Ref ChatApiGateway
       DeploymentId: !Ref ChatApiGatewayDeployment20250828
+      TracingEnabled: true
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
@@ -275,7 +277,6 @@ Resources:
           Value: Chat
 
   ChatApiGatewayWafAssociation:
-    
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ChatApiGateway}/stages/${ChatApiGatewayStage}
@@ -491,6 +492,11 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-chat-proxy-authorizer-function:*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
