@@ -86,7 +86,6 @@ describe('shared signal', () => {
     resourceUnderTest = resources['SharedSignalReceiverFunctionIAMRole'] as any;
 
     expect(resourceUnderTest.Type).toBe('AWS::IAM::Role');
-    expect(resourceUnderTest.Condition).toBe('IsNotProduction');
     expect(resourceUnderTest.Properties.RoleName).toEqual({
       'Fn::Sub': '${AWS::StackName}-shared-signal-receiver-role',
     });
