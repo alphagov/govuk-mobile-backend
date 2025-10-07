@@ -22,7 +22,7 @@ describe('lambdaHandler - revoke-token', () => {
   } as Context;
 
   const createMockEvent = (overrides?: any): APIGatewayProxyEvent => ({
-    body: 'refresh_token=testRefreshToken&client_id=testClientId',
+    body: 'token=testRefreshToken&client_id=testClientId',
     routeKey: '$default',
     rawPath: '/my/path',
     headers: {
@@ -145,7 +145,7 @@ describe('lambdaHandler - revoke-token', () => {
     });
 
     const event = createMockEvent({
-      body: 'refresh_token=validRefreshToken&client_id=validClientId',
+      body: 'token=validRefreshToken&client_id=validClientId',
     });
 
     const result = await lambdaHandler(event, mockContext);

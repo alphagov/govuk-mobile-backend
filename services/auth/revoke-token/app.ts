@@ -18,7 +18,7 @@ const cognitoIdentityServiceProvider: CognitoIdentityProviderClient =
 
 const schema = z.object({
   body: z.object({
-    refresh_token: z.string(),
+    token: z.string(),
     client_id: z.string(),
   }),
 });
@@ -35,7 +35,7 @@ export const lambdaHandler = middy()
   .use(errorMiddleware())
   .handler(async (event: APIGatewayProxyEvent & z.infer<typeof schema>) => {
     // eslint-disable-next-line @typescript-eslint/naming-convention
-    const { refresh_token, client_id } = event.body;
+    const { token, client_id } = event.body;
 
     const clientCredentials: CognitoCredentials =
       await retrieveCognitoCredentials(
@@ -46,7 +46,7 @@ export const lambdaHandler = middy()
       );
 
     const revokeInput: RevokeTokenInput = {
-      Token: refresh_token,
+      Token: token,
       ClientId: clientCredentials.clientId,
       ClientSecret: clientCredentials.clientSecret,
     };
