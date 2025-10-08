@@ -39,7 +39,7 @@ Parameters:
     Default: govuk-app-config
 
   LogRetentionInDays:
-    Type: AWS::SSM::Parameter::Value<Number>
+    Type: AWS::SSM::Parameter::Value<String>
     Description: SSM parameter path that resolves to the desired CloudWatch Logs retention in days
     Default: /govuk-app-config/log-retention/in-days
 
