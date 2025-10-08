@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadTemplateFromFile } from '../common/template';
-import path, { join } from 'path';
+import path from 'path';
 
 const template = loadTemplateFromFile(
   path.join(__dirname, '..', '..', 'template.yaml'),
@@ -158,7 +158,7 @@ describe('Shared Signal WAF logging', () => {
 
   it('has a retention policy of 30 days', () => {
     expect(wafLogGroup.Properties.RetentionInDays).toEqual({
-      'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+      Ref: 'LogRetentionInDays',
     });
   });
 

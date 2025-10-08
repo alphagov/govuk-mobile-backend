@@ -253,7 +253,7 @@ describe('waf', () => {
 
     it('has a retention policy of 30 days', () => {
       expect(logGroup.Properties.RetentionInDays).toEqual({
-        'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+        Ref: 'LogRetentionInDays',
       });
     });
 

@@ -35,6 +35,10 @@ Parameters:
     Description: Stack Name for GovUK APP Auth Stack
     Default: govuk-app-backend
   
+  LogRetentionInDays:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: SSM parameter path that resolves to the desired CloudWatch Logs retention in days
+    Default: /govuk-app-config/log-retention/in-days
 
 Conditions:
   UseCodeSigning: !Not
@@ -141,7 +145,7 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs
       KmsKeyId: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
-      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      RetentionInDays: !Ref LogRetentionInDays
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -288,7 +292,7 @@ Resources:
       # log stream must start with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-chat-proxy-${AWS::StackName}
       KmsKeyId: !GetAtt ChatApiGatewayWafLogGroupKMSKey.Arn
-      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      RetentionInDays: !Ref LogRetentionInDays
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
