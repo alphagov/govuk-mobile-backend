@@ -2187,6 +2187,8 @@ Resources:
       Handler: app.lambdaHandler
       Role: !GetAtt SharedSignalReceiverFunctionIAMRole.Arn
       KmsKeyArn: !GetAtt SharedSignalReceiverFunctionKMSKey.Arn
+      LoggingConfig: 
+        LogGroup: !Ref SharedSignalReceiverFunctionLogGroup
       Events:
         HelloWorldApi:
           Type: Api
