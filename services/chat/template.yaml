@@ -30,9 +30,9 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
   
-  AuthStackName:
+  AppBackendStackName:
     Type: String
-    Description: Stack Name for Auth Stack
+    Description: Stack Name for GovUK APP Auth Stack
     Default: govuk-app-backend
   
 
@@ -534,41 +534,6 @@ Resources:
         - Key: System
           Value: Chat
 
-
-  CloudwatchAlarmChatProxy4xxErrors:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub ${AWS::StackName}-chat-proxy-4xx-errors
-      AlarmDescription: !Sub |
-        Alarm detects a high rate of client-side errors.
-        See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4613701633/Runbook+Chat+API+Gateway+alarms
-      Namespace: AWS/ApiGateway
-      Statistic: Average
-      ActionsEnabled: true
-      MetricName: 4XXError
-      Period: 60
-      EvaluationPeriods: 5
-      DatapointsToAlarm: 5
-      Threshold: 0.05
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: ApiName
-          Value: !Sub ${AWS::StackName}-chat-proxy
-        - Name: Stage
-          Value: !Ref Environment
-      AlarmActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
-      OKActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Chat
-
   CloudwatchAlarmChatProxy5xxErrors:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -592,9 +557,9 @@ Resources:
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
       OKActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -628,9 +593,9 @@ Resources:
         - Name: Region
           Value: !Ref AWS::Region
       AlarmActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
       OKActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic'
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -650,7 +615,7 @@ Outputs:
 
   AuthStackName:
     Description: The name of the Auth stack
-    Value: !Ref AuthStackName
+    Value: !Ref AppBackendStackName
 
   StackName:
     Description: The name of the CloudFormation stack
