@@ -9,29 +9,6 @@ const template = loadTemplateFromFile(
 
 const testCases: AlarmTestCase[] = [
   {
-    name: '4xx',
-    alarmName: `chat-proxy-4xx-errors`,
-    actionsEnabled: true,
-    namespace: 'AWS/ApiGateway',
-    alarmResource: 'CloudwatchAlarmChatProxy4xxErrors',
-    metricName: '4XXError',
-    alarmDescription: 'Alarm detects a high rate of client-side errors.',
-    topicResource: {
-      'Fn::Sub':
-        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic',
-    },
-    statistic: 'Average',
-    period: 60,
-    evaluationPeriods: 5,
-    datapointsToAlarm: 5,
-    threshold: 0.05,
-    comparisonOperator: 'GreaterThanThreshold',
-    dimensions: [
-      { Name: 'ApiName', Value: { 'Fn::Sub': '${AWS::StackName}-chat-proxy' } },
-      { Name: 'Stage', Value: { Ref: 'Environment' } },
-    ],
-  },
-  {
     name: '5xx',
     alarmName: `chat-proxy-5xx-errors`,
     actionsEnabled: true,
@@ -41,7 +18,7 @@ const testCases: AlarmTestCase[] = [
     alarmDescription: 'Alarm detects a high rate of server-side errors.',
     topicResource: {
       'Fn::Sub':
-        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic',
+        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic',
     },
     statistic: 'Average',
     period: 60,

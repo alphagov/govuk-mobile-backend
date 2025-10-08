@@ -19,7 +19,7 @@ const testCases: AlarmTestCase[] = [
       'Alarm when the Chat Proxy WAF rate limit exceeds 300 requests per 5 minutes',
     topicResource: {
       'Fn::Sub':
-        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AuthStackName}-cloudwatch-alarm-topic',
+        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic',
     },
     statistic: 'Sum',
     extendedStatistic: undefined,
