@@ -156,9 +156,13 @@ describe('Shared Signal WAF logging', () => {
     });
   });
 
-  it('has a retention policy of 30 days', () => {
+  it('has a retention policy mapped by environment', () => {
     expect(wafLogGroup.Properties.RetentionInDays).toEqual({
-      Ref: 'LogRetentionInDays',
+      'Fn::FindInMap': [
+        'LogRetentionByEnv',
+        'Environment',
+        { Ref: 'Environment' },
+      ],
     });
   });
 

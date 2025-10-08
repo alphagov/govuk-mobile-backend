@@ -38,11 +38,6 @@ Parameters:
     Description: Stack Name for Config Stack
     Default: govuk-app-config
 
-  LogRetentionInDays:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: SSM parameter path that resolves to the desired CloudWatch Logs retention in days
-    Default: /govuk-app-config/log-retention/in-days
-
   TestRoleArn:
     Type: String
     Description: The ARN of the role that will used for integration tests
@@ -86,6 +81,15 @@ Mappings:
       staging: "5000"
       integration: "5000"
       production: "5000"
+
+  LogRetentionByEnv:
+    Environment:
+      local: 30
+      build: 30
+      dev: 30
+      staging: 30
+      integration: 30
+      production: 365
 
 Conditions:
   UseCodeSigning: !Not
@@ -431,7 +435,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub aws-waf-logs-cognito-${AWS::StackName}
       KmsKeyId: !GetAtt CognitoWAFLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -1183,7 +1187,7 @@ Resources:
       # log stream must start with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-attestation-${AWS::StackName}
       KmsKeyId: !GetAtt AuthProxyWAFLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -1296,7 +1300,7 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-attestation-proxy-api
       KmsKeyId: !GetAtt AttestationProxyApiAccessLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: AttestationProxyApiAccessLogGroupProtectionPolicy
         Description: Protect basic types of sensitive data
@@ -1615,7 +1619,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-auth-proxy-function
       KmsKeyId: !GetAtt AuthProxyFunctionLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -1883,7 +1887,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-shared-signal
       KmsKeyId: !GetAtt SharedSignalAccessLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -2043,7 +2047,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-authorizer-function
       KmsKeyId: !GetAtt SharedSignalAuthorizerLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -2230,7 +2234,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-receiver-function
       KmsKeyId: !GetAtt SharedSignalReceiverFunctionLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -2490,7 +2494,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-shared-signal-health-check-function
       KmsKeyId: !GetAtt SharedSignalHealthCheckFunctionLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -2758,7 +2762,7 @@ Resources:
       # must starts with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-shared-signal-${AWS::StackName}
       KmsKeyId: !GetAtt SharedSignalWafLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -2874,7 +2878,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-revoke-refresh-token-function
       KmsKeyId: !GetAtt RevokeRefreshTokenFunctionLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data

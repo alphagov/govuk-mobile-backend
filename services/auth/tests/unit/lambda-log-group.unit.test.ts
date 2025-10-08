@@ -51,9 +51,13 @@ describe.each(cases)(
       });
     });
 
-    it('should use retention from SSM parameter', () => {
+    it('should use retention from mapping by environment', () => {
       expect(lg.Properties.RetentionInDays).toEqual({
-        Ref: 'LogRetentionInDays',
+        'Fn::FindInMap': [
+          'LogRetentionByEnv',
+          'Environment',
+          { Ref: 'Environment' },
+        ],
       });
     });
 
