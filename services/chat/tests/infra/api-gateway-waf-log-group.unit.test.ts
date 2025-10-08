@@ -33,9 +33,9 @@ describe('Chat API Gateway WAF Log Group', () => {
     });
   });
 
-  it('should have a parameterized retention policy from SSM', () => {
+  it('should have a retention policy from SSM parameter', () => {
     expect(resourceUnderTest.Properties.RetentionInDays).toEqual({
-      'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+      Ref: 'LogRetentionInDays',
     });
   });
 

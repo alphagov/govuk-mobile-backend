@@ -192,9 +192,9 @@ describe('Chat API Gateway Access Log Group', () => {
       'Fn::Sub': '/aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs',
     });
   });
-  it('should have a parameterized retention policy from SSM', () => {
+  it('should have a retention policy from SSM parameter', () => {
     expect(resourceUnderTest.Properties.RetentionInDays).toEqual({
-      'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+      Ref: 'LogRetentionInDays',
     });
   });
   it('should have a KMS key for encryption', () => {
