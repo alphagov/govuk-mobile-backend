@@ -21,7 +21,7 @@ describe('Set up the Cognito WAF Log Group for GovUK app', () => {
   it('has a retention policy of 30 days', () => {
     template.hasResourceProperties('AWS::Logs::LogGroup', {
       RetentionInDays: {
-        'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+        Ref: 'LogRetentionInDays',
       },
     });
   });

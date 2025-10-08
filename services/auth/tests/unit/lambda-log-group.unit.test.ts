@@ -53,7 +53,7 @@ describe.each(cases)(
 
     it('should use retention from SSM parameter', () => {
       expect(lg.Properties.RetentionInDays).toEqual({
-        'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+        Ref: 'LogRetentionInDays',
       });
     });
 
