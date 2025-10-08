@@ -1765,7 +1765,6 @@ Resources:
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AttestationProxyApi}/*/*/*
 
   CognitoResourceServer:
-    Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolResourceServer
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -1778,7 +1777,6 @@ Resources:
  
   # Shared signal user pool client
   CognitoM2MClient:
-    Condition: IsNotProduction
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref CognitoUserPool
@@ -1801,7 +1799,6 @@ Resources:
       AccessTokenValidity: 3600 # 1 hour in seconds
 
   SharedSignalApi:
-    Condition: IsNotProduction
     Type: AWS::Serverless::Api
     Metadata:
       cfn-lint:
@@ -1839,7 +1836,6 @@ Resources:
         System: Authentication
 
   SharedSignalsApiRecordSet:
-    Condition: IsNotProduction
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Sub '{{resolve:ssm:/dns/env-hosted-zone-id}}' 
@@ -1850,7 +1846,6 @@ Resources:
         HostedZoneId: !GetAtt SharedSignalDomainName.RegionalHostedZoneId
 
   SharedSignalDomainName:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::DomainName
     Properties:
       RegionalCertificateArn: !Sub '{{resolve:ssm:/certificates/domain-certificate}}'
@@ -1871,7 +1866,6 @@ Resources:
           Value: Authentication
 
   SharedSignalBasePathMapping:
-    Condition: IsNotProduction
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
       DomainName: !Ref SharedSignalDomainName
@@ -1879,7 +1873,6 @@ Resources:
       Stage: !Ref SharedSignalApi.Stage
 
   SharedSignalAccessLogGroup:
-    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
@@ -1914,7 +1907,6 @@ Resources:
           Value: Authentication
 
   SharedSignalAccessLogGroupKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting the Shared Signal Access Log Group
@@ -1952,7 +1944,6 @@ Resources:
           Value: Authentication
 
   SharedSignalApiGatewayAlarm4xxErrors:
-    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-4xx-errors
@@ -1988,7 +1979,6 @@ Resources:
           Value: Authentication
 
   SharedSignalApiGatewayAlarm5xxErrors:
-    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-5xx-errors
@@ -2024,7 +2014,6 @@ Resources:
           Value: Authentication
 
   SharedSignalAuthorizer:
-    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-shared-signal-authorizer-function
@@ -2044,7 +2033,6 @@ Resources:
           REGION: !Ref AWS::Region
 
   SharedSignalAuthorizerLogGroup:
-    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
@@ -2085,7 +2073,6 @@ Resources:
           Value: Authentication
 
   SharedSignalAuthorizerIAMRole:
-    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::StackName}-shared-signal-authorizer-role
@@ -2124,7 +2111,6 @@ Resources:
           Value: Authentication
 
   SharedSignalLambdaKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting Shared Signal authorizer secrets
@@ -2156,7 +2142,6 @@ Resources:
           Value: Authentication
 
   SharedSignalAuthorizerLogGroupKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting shared signal authorizer log groups
@@ -2194,7 +2179,6 @@ Resources:
           Value: Authentication
 
   SharedSignalReceiverFunction:
-    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-shared-signal-receiver
@@ -2234,7 +2218,6 @@ Resources:
         System: Authentication
 
   SharedSignalReceiverFunctionLogGroup:
-    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
@@ -2275,7 +2258,6 @@ Resources:
           Value: Authentication
 
   SharedSignalReceiverFunctionKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting shared signal receiver function secrets
@@ -2307,7 +2289,6 @@ Resources:
           Value: Authentication
 
   SharedSignalReceiverFunctionLogGroupKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting shared signal receiver function log groups
@@ -2345,7 +2326,6 @@ Resources:
           Value: Authentication
 
   SharedSignalReceiverFunctionIAMRole:
-    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::StackName}-shared-signal-receiver-role
@@ -2387,7 +2367,6 @@ Resources:
           Value: Authentication
 
   SharedSignalHealthCheckFunction:
-    Condition: IsNotProduction
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-shared-signal-health-check
@@ -2430,7 +2409,6 @@ Resources:
         System: Authentication
 
   SharedSignalHealthCheckFunctionKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting shared signal health check function secrets
@@ -2462,7 +2440,6 @@ Resources:
           Value: Authentication
 
   SharedSignalHealthCheckFunctionIAMRole:
-    Condition: IsNotProduction
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::StackName}-shared-signal-health-check-role
@@ -2501,7 +2478,6 @@ Resources:
           Value: Authentication
 
   SharedSignalHealthCheckFunctionLogGroup:
-    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
@@ -2542,7 +2518,6 @@ Resources:
           Value: Authentication
 
   SharedSignalHealthCheckFunctionLogGroupKMSKey:
-    Condition: IsNotProduction
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for encrypting shared signal health check function log groups
@@ -2580,7 +2555,6 @@ Resources:
           Value: Authentication
 
   SharedSignalHealthCheckAlarmErrors:
-    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-errors-alarm
@@ -2613,7 +2587,6 @@ Resources:
           Value: Authentication
 
   SharedSignalHealthCheckAlarmFailedInvocations:
-    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties: 
       AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-failed-invocations-alarm
@@ -2647,7 +2620,6 @@ Resources:
           Value: Authentication
 
   SharedSignalIPSet:
-    Condition: IsNotProduction
     Type: AWS::WAFv2::IPSet
     Properties:
       Name: !Sub ${AWS::StackName}-shared-signals-ipset
@@ -2664,14 +2636,12 @@ Resources:
           Value: Authentication
 
   SharedSignalWafAssociation:
-    Condition: IsNotProduction
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${SharedSignalApi}/stages/${SharedSignalApi.Stage}
       WebACLArn: !GetAtt SharedSignalWAF.Arn
 
   SharedSignalWAF:
-    Condition: IsNotProduction
     Type: AWS::WAFv2::WebACL
     Properties:
       Name: !Sub ${AWS::StackName}-shared-signal-waf
@@ -2738,7 +2708,6 @@ Resources:
           Value: Authentication   
   
   SharedSignalWafThrottlingAlarm:
-    Condition: IsNotProduction
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-waf-throttling-alarm
@@ -2776,7 +2745,6 @@ Resources:
           Value: Authentication
 
   SharedSignalWafLogGroup:
-    Condition: IsNotProduction
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
@@ -2855,7 +2823,6 @@ Resources:
           Value: Authentication 
 
   SharedSignalWAFLoggingConfiguration:
-    Condition: IsNotProduction
     Type: AWS::WAFv2::LoggingConfiguration
     Properties:
       LogDestinationConfigs:
