@@ -2755,7 +2755,6 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
-      # must starts with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-shared-signal-${AWS::StackName}
       KmsKeyId: !GetAtt SharedSignalWafLogGroupKMSKey.Arn
       RetentionInDays: !Ref LogRetentionInDays
