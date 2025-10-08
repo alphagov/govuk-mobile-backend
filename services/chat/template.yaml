@@ -34,11 +34,6 @@ Parameters:
     Type: String
     Description: Stack Name for GovUK APP Auth Stack
     Default: govuk-app-backend
-  
-  LogRetentionInDays:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: SSM parameter path that resolves to the desired CloudWatch Logs retention in days
-    Default: /govuk-app-config/log-retention/in-days
 
 Conditions:
   UseCodeSigning: !Not
@@ -72,6 +67,15 @@ Mappings:
       staging: https://oidc.staging.account.gov.uk
       integration: https://oidc.integration.account.gov.uk
       production: https://oidc.account.gov.uk
+
+  LogRetentionByEnv:
+    Environment:
+      local: 30
+      build: 30
+      dev: 30
+      staging: 30
+      integration: 30
+      production: 365
 
 Globals:
   Function:
@@ -145,7 +149,7 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/api-gateway/${AWS::StackName}-chat-proxy-access-logs
       KmsKeyId: !GetAtt ChatApiGatewayAccessLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -292,7 +296,7 @@ Resources:
       # log stream must start with aws-waf-logs-
       LogGroupName: !Sub aws-waf-logs-chat-proxy-${AWS::StackName}
       KmsKeyId: !GetAtt ChatApiGatewayWafLogGroupKMSKey.Arn
-      RetentionInDays: !Ref LogRetentionInDays
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
@@ -390,7 +394,7 @@ Resources:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-chat-proxy-authorizer-function
       KmsKeyId: !GetAtt ChatLambdaLogGroupKMSKey.Arn
-      RetentionInDays: !Sub '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}'
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
       DataProtectionPolicy:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data

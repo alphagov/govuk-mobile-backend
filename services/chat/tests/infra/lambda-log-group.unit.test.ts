@@ -20,9 +20,13 @@ describe('Chat Lambda Log Group', () => {
     });
   });
 
-  it('should have retention from SSM parameter', () => {
+  it('should have retention from mapping by environment', () => {
     expect(resourceUnderTest.Properties.RetentionInDays).toEqual({
-      'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/log-retention/in-days}}',
+      'Fn::FindInMap': [
+        'LogRetentionByEnv',
+        'Environment',
+        { Ref: 'Environment' },
+      ],
     });
   });
 

@@ -18,10 +18,14 @@ describe('Set up the Cognito WAF Log Group for GovUK app', () => {
       LogGroupName: { 'Fn::Sub': 'aws-waf-logs-cognito-${AWS::StackName}' },
     });
   });
-  it('has a retention policy of 30 days', () => {
+  it('has a retention policy mapped by environment', () => {
     template.hasResourceProperties('AWS::Logs::LogGroup', {
       RetentionInDays: {
-        Ref: 'LogRetentionInDays',
+        'Fn::FindInMap': [
+          'LogRetentionByEnv',
+          'Environment',
+          { Ref: 'Environment' },
+        ],
       },
     });
   });
