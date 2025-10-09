@@ -211,7 +211,7 @@ export class AxiosAuthDriver implements AuthDriver {
         ...headers,
       },
       body: querystring.stringify({
-        refresh_token: refreshToken,
+        token: refreshToken,
         client_id: this.clientId,
       }),
     }).then((response) => {
