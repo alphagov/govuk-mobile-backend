@@ -158,7 +158,7 @@ describe.each(sharedSignalLogGroups)(
             ...dataProtectionPolicy.Configuration.CustomDataIdentifier,
             {
               Name: 'OneLoginUserId',
-              Regex: '(?:urn:fdc:gov\\.uk:[0-9]{4}):[a-zA-Z0-9]*',
+              Regex: '(?:urn:fdc:gov\\.uk:[0-9]{4}):[a-zA-Z0-9_\\-]*',
             },
           ],
         },
