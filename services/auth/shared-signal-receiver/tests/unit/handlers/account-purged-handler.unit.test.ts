@@ -65,17 +65,14 @@ describe('handleAccountPurgedRequest', () => {
     } as AccountPurgedRequest;
 
     const response = await handleAccountPurgedRequest(input);
-    expect(loggerInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      'unique-jti-12345',
-    );
+    expect(loggerInfoMock).toHaveBeenCalledWith('jti: ', 'unique-jti-12345');
     expect(adminGlobalSignOut).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(adminDeleteUser).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(loggerInfoMock).toHaveBeenCalledWith(
       'SIGNAL_SUCCESS_ACCOUNT_PURGE',
       {
         userId: 'urn:example:uri:12345',
-        correlationId: input.jti,
+        jti: input.jti,
       },
     );
     expect(response).toEqual({
@@ -109,15 +106,12 @@ describe('handleAccountPurgedRequest', () => {
     } as AccountPurgedRequest;
 
     const response = await handleAccountPurgedRequest(input);
-    expect(loggerInfoMock).toHaveBeenCalledWith(
-      'CorrelationId: ',
-      'unique-jti-12345',
-    );
+    expect(loggerInfoMock).toHaveBeenCalledWith('jti: ', 'unique-jti-12345');
     expect(adminGlobalSignOut).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(adminDeleteUser).toHaveBeenCalledWith('urn:example:uri:12345');
     expect(loggerErrorMock).toHaveBeenCalledWith('SIGNAL_ERROR_ACCOUNT_PURGE', {
       userId: 'urn:example:uri:12345',
-      correlationId: input.jti,
+      jti: input.jti,
     });
     expect(response).toEqual({
       body: JSON.stringify({

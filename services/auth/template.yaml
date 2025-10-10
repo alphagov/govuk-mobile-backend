@@ -1892,11 +1892,16 @@ Resources:
         Name: CloudWatchLogs-PersonalInformation-Protection
         Description: Protect basic types of sensitive data
         Version: "2021-06-01"
+        Configuration:
+          CustomDataIdentifier:
+            - Name: OneLoginUserId
+              Regex: ^(?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*$
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - OneLoginUserId
             Operation:
               Audit:
                 FindingsDestination: {}
@@ -1904,6 +1909,7 @@ Resources:
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - OneLoginUserId
             Operation:
               Deidentify:
                 MaskConfig: {} # marks sensitive data with asterisks
@@ -2056,12 +2062,15 @@ Resources:
           CustomDataIdentifier:
             - Name: JWTTokens
               Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+            - Name: OneLoginUserId
+              Regex: ^(?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*$
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Audit:
                 FindingsDestination: {}
@@ -2070,6 +2079,7 @@ Resources:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Deidentify:
                 MaskConfig: {}
@@ -2243,12 +2253,15 @@ Resources:
           CustomDataIdentifier:
             - Name: JWTTokens
               Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+            - Name: OneLoginUserId
+              Regex: ^(?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*$
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Audit:
                 FindingsDestination: {}
@@ -2257,6 +2270,7 @@ Resources:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Deidentify:
                 MaskConfig: {}
@@ -2503,12 +2517,15 @@ Resources:
           CustomDataIdentifier:
             - Name: JWTTokens
               Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+            - Name: OneLoginUserId
+              Regex: ^(?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*$
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Audit:
                 FindingsDestination: {}
@@ -2517,6 +2534,7 @@ Resources:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Deidentify:
                 MaskConfig: {}
@@ -2770,13 +2788,16 @@ Resources:
         Configuration:
           CustomDataIdentifier:
             - Name: JWTTokens
-              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?  
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+            - Name: OneLoginUserId
+              Regex: ^(?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*$  
         Statement:
           - Sid: audit-policy
             DataIdentifier:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Audit:
                 FindingsDestination: {}
@@ -2785,6 +2806,7 @@ Resources:
               - arn:aws:dataprotection::aws:data-identifier/EmailAddress
               - arn:aws:dataprotection::aws:data-identifier/IpAddress
               - JWTTokens
+              - OneLoginUserId
             Operation:
               Deidentify:
                 MaskConfig: {}  # marks sensitive data with asterisks

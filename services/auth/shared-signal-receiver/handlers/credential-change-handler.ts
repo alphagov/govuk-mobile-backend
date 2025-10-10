@@ -12,8 +12,8 @@ export type CredentialChangeRequest = z.infer<typeof credentialChangeSchema>;
 export const handleCredentialChangeRequest = async (
   credentialChangeRequest: CredentialChangeRequest,
 ): Promise<APIGatewayProxyResult> => {
-  const correlationId = credentialChangeRequest.jti;
-  logger.info('CorrelationId: ', correlationId);
+  const { jti } = credentialChangeRequest;
+  logger.info('jti: ', jti);
 
   const events =
     credentialChangeRequest.events[
@@ -25,7 +25,7 @@ export const handleCredentialChangeRequest = async (
   if (!isUserSignedOut) {
     logger.error(logMessages.SIGNAL_ERROR_CREDENTIAL_CHANGE, {
       userId,
-      correlationId,
+      jti,
       changeType: events.change_type,
     });
     return generateResponse(
@@ -36,7 +36,7 @@ export const handleCredentialChangeRequest = async (
 
   logger.info(logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE, {
     userId,
-    correlationId,
+    jti,
     credentialType: events.credential_type,
   });
 
