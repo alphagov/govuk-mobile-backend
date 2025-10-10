@@ -1895,7 +1895,7 @@ Resources:
         Configuration:
           CustomDataIdentifier:
             - Name: OneLoginUserId
-              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*
+              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9_\-]*
         Statement:
           - Sid: audit-policy
             DataIdentifier:
@@ -2063,7 +2063,7 @@ Resources:
             - Name: JWTTokens
               Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
             - Name: OneLoginUserId
-              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*
+              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9_\-]*
         Statement:
           - Sid: audit-policy
             DataIdentifier:
@@ -2254,7 +2254,7 @@ Resources:
             - Name: JWTTokens
               Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
             - Name: OneLoginUserId
-              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*
+              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9_\-]*
         Statement:
           - Sid: audit-policy
             DataIdentifier:
@@ -2518,7 +2518,7 @@ Resources:
             - Name: JWTTokens
               Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
             - Name: OneLoginUserId
-              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*
+              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9_\-]*
         Statement:
           - Sid: audit-policy
             DataIdentifier:
@@ -2790,7 +2790,7 @@ Resources:
             - Name: JWTTokens
               Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
             - Name: OneLoginUserId
-              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9]*  
+              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9_\-]*  
         Statement:
           - Sid: audit-policy
             DataIdentifier:
