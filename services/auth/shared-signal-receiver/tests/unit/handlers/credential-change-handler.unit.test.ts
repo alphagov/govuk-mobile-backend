@@ -57,7 +57,7 @@ describe('handleCredentialChangeRequest', () => {
       2,
       logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE,
       {
-        correlationId: signal.jti,
+        jti: signal.jti,
         credentialType: credentialType,
         userId: 'urn:example:account:1234567890',
       },
@@ -121,12 +121,12 @@ describe('handleCredentialChangeRequest', () => {
       });
     });
 
-    it('should produce an error log with the correlation id', async () => {
+    it('should produce an error log with the jti', async () => {
       expect(loggerErrorMock).toHaveBeenCalledWith(
         logMessages.SIGNAL_ERROR_CREDENTIAL_CHANGE,
         {
           userId: 'urn:example:account:1234567890',
-          correlationId: signal.jti,
+          jti: signal.jti,
           changeType: 'update',
         },
       );
