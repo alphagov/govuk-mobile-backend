@@ -1,0 +1,877 @@
+extends:
+  - r/javascript.lang.security
+  - r/typescript.lang.security
+  - r/nodejs
+  - r/owasp-top-ten
+  - p/cwe-top-25
+
+rules:
+  # Container-level Caching (Lambda-appropriate)
+  - id: container-cache-without-ttl
+    patterns:
+      - pattern: |
+          let $CACHE = {};
+          ...
+          $CACHE[$KEY] = $VALUE;
+      - pattern-not-inside: |
+          let $CACHE = {};
+          ...
+          $CACHE[$KEY] = {
+            value: $VALUE,
+            expires: $EXPIRY
+          };
+    message: 'Container-level cache should include TTL to prevent stale data across warm starts. Consider adding expiration timestamps. See https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#No-TTL-in-Caching-Mechanism-causes-stale-data-across-Lambda-Warm-Starts'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      lambda_specific: true
+      documentation: https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#No-TTL-in-Caching-Mechanism-causes-stale-data-across-Lambda-Warm-Starts
+      wiki_section: 'No TTL in Caching Mechanism causes stale data across Lambda Warm Starts'
+      references:
+        - 'https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html'
+
+  - id: cache-size-unbounded
+    patterns:
+      - pattern: |
+          $CACHE[$KEY] = $VALUE;
+      - pattern-not-inside: |
+          if (Object.keys($CACHE).length > $LIMIT) {
+            ...
+          }
+      - metavariable-regex:
+          metavariable: $CACHE
+          regex: .*(cache|Cache).*
+    message: 'Unbounded cache can cause Lambda memory issues. Implement cache size limits or LRU eviction. See https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Unbounded-cache-can-cause-Lambda-memory-exhaustion'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Unbounded-cache-can-cause-Lambda-memory-exhaustion'
+      wiki_section: 'Unbounded cache can cause Lambda memory exhaustion'
+
+  # Resource Handling - Critical for Lambda
+  - id: unclosed-database-connection
+    patterns:
+      - pattern-either:
+          - pattern: |
+              const $CLIENT = new $DB_CLIENT(...);
+              ...
+              await $CLIENT.query(...);
+          - pattern: |
+              const $CLIENT = new $DB_CLIENT(...);
+              ...
+              await $CLIENT.execute(...);
+          - pattern: |
+              const $CLIENT = new $DB_CLIENT(...);
+              ...
+              $CLIENT.connect(...);
+      - pattern-not-inside: |
+          const $CLIENT = new $DB_CLIENT(...);
+          ...
+          $CLIENT.end();
+      - pattern-not-inside: |
+          const $CLIENT = new $DB_CLIENT(...);
+          ...
+          await $CLIENT.end();
+      - pattern-not-inside: |
+          const $CLIENT = new $DB_CLIENT(...);
+          ...
+          $CLIENT.close();
+      - metavariable-regex:
+          metavariable: $DB_CLIENT
+          regex: .*(Client|Pool|Connection|Database).*
+    message: 'Database client not explicitly closed. Can cause connection leaks in Lambda containers.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: resource_management
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Database-connections'
+      wiki_section: 'Database connections'
+
+  - id: aws-sdk-client-not-reused
+    patterns:
+      - pattern-inside: |
+          exports.handler = async ($EVENT, $CONTEXT) => {
+            ...
+          }
+      - pattern: |
+          const $CLIENT = new AWS.$SERVICE(...);
+    message: 'AWS SDK clients should be initialised outside handler for connection reuse across warm starts. See https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#AWS-SDK-Client-not-reused'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#AWS-SDK-Client-not-reused'
+      wiki_section: 'AWS SDK Client not reused'
+
+  # Timeout and Retry Patterns
+  - id: http-request-no-timeout
+    patterns:
+      - pattern-either:
+          - pattern: await fetch($URL, $OPTIONS)
+          - pattern: await fetch($URL)
+      - pattern-not: |
+          await fetch($URL, {
+            ...,
+            signal: AbortSignal.timeout($TIMEOUT),
+            ...
+          })
+      - pattern-not: |
+          await fetch($URL, {
+            ...,
+            timeout: $TIMEOUT,
+            ...
+          })
+      - pattern-not: |
+          await fetch($URL, {
+            ...,
+            signal: $SIGNAL,
+            ...
+          })
+    message: 'HTTP requests must have timeout handling to prevent Lambda execution timeout. Use AbortSignal.timeout() or request timeout.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: reliability
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Timeout-handling'
+      wiki_section: 'Timeout handling'
+
+  - id: missing-exponential-backoff
+    patterns:
+      - pattern-inside: |
+          for (let $I = 0; $I < $RETRIES; $I++) {
+            ...
+            await $API_CALL(...);
+            ...
+          }
+      - pattern-not-inside: |
+          for (let $I = 0; $I < $RETRIES; $I++) {
+            ...
+            const $DELAY = $BASE_DELAY * Math.pow($MULTIPLIER, $I);
+            ...
+          }
+      - pattern-not-inside: |
+          for (let $I = 0; $I < $RETRIES; $I++) {
+            ...
+            await new Promise(resolve => setTimeout(resolve, $DELAY * Math.pow(2, $I)));
+            ...
+          }
+    message: 'Retry logic should use exponential backoff with jitter to reduce upstream load. Add Math.random() for jitter.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: reliability
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Retry-Logic-with-Exponential-Backoff'
+      wiki_section: 'Retry Logic with Exponential Backoff'
+
+  - id: infinite-retry-risk
+    pattern-either:
+      - pattern: |
+          while ($CONDITION) {
+            try {
+              await $API_CALL(...);
+            } catch ($E) {
+              ...
+            }
+          }
+      - pattern: |
+          for (;;) {
+            try {
+              await $API_CALL(...);
+            } catch ($E) {
+              ...
+            }
+          }
+    message: 'Infinite retry loops can exhaust Lambda execution time. Use bounded retry with max attempts.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: aws-sdk-no-retry-config
+    patterns:
+      - pattern: |
+          new AWS.$SERVICE({
+            $...PARAMS
+          })
+      - pattern-not: |
+          new AWS.$SERVICE({
+            ...,
+            maxRetries: $RETRIES,
+            ...
+          })
+      - pattern-not: |
+          new AWS.$SERVICE({
+            ...,
+            retryDelayOptions: $OPTIONS,
+            ...
+          })
+    message: 'AWS SDK clients should configure retry behaviour for resilience. Add maxRetries and retryDelayOptions.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Memory Management
+  - id: large-object-allocation-in-handler
+    patterns:
+      - pattern-inside: |
+          exports.handler = async (...) => {
+            ...
+          }
+      - pattern-either:
+          - pattern: |
+              const $VAR = new Array($SIZE)
+          - pattern: |
+              const $VAR = Array($SIZE)
+          - pattern: |
+              Buffer.alloc($SIZE)
+          - pattern: |
+              Buffer.allocUnsafe($SIZE)
+      - metavariable-comparison:
+          metavariable: $SIZE
+          comparison: $SIZE > 1000000
+    message: 'Large object allocation in handler can cause Lambda memory limits to be exceeded. Consider streaming or external storage.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Returning-large-objects-from-Lambda'
+      wiki_section: 'Returning large objects from Lambda'
+
+  - id: response-data-accumulation-unbounded
+    patterns:
+      - pattern: |
+          let $DATA = '';
+          ...
+          $RES.on('data', ($CHUNK) => {
+            $DATA += $CHUNK;
+          });
+      - pattern-not-inside: |
+          let $DATA = '';
+          let $SIZE = 0;
+          ...
+          $RES.on('data', ($CHUNK) => {
+            $SIZE += $CHUNK.length;
+            if ($SIZE > $LIMIT) { 
+              $RES.destroy();
+              throw new Error('Response too large');
+            }
+            $DATA += $CHUNK;
+          });
+    message: 'Unbounded response accumulation can exceed Lambda memory limits. Implement size limits and streaming.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: synchronous-file-operations
+    pattern-either:
+      - pattern: fs.readFileSync(...)
+      - pattern: fs.writeFileSync(...)
+      - pattern: fs.existsSync(...)
+      - pattern: fs.statSync(...)
+      - pattern: fs.readdirSync(...)
+    message: 'Synchronous file operations block Lambda execution. Use async alternatives (fs.promises) for better performance.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: eval-usage
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: Function(...)(...)
+      - pattern: new Function(...)
+    message: 'eval and Function constructor pose security risks and prevent Lambda optimizations. Use safer alternatives.'
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: unsafe-regex-redos
+    patterns:
+      - pattern-either:
+          - pattern: new RegExp($PATTERN)
+          - pattern: /$PATTERN/
+      - metavariable-regex:
+          metavariable: $PATTERN
+          regex: .*(\.\*\+|\+\*|\{\d+,\}|\(\.\*\)\+).*
+    message: 'Potential ReDoS vulnerability. Complex regex can cause Lambda timeout through exponential backtracking.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: detect-command-injection
+    message: 'Command injection vulnerability. Validate and sanitize inputs before passing to child processes.'
+    metadata:
+      cwe: 'CWE-78: OS Command Injection'
+      owasp:
+        - A01:2017 - Injection
+        - A03:2021 - Injection
+      category: security
+      technology: [javascript, aws-lambda]
+      vulnerability_class: [Command Injection]
+    languages: [javascript, typescript]
+    severity: WARNING
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern: $EVENT
+          - pattern-either:
+              - pattern-inside: |
+                  exports.handler = function ($EVENT, ...) {
+                    ...
+                  }
+              - pattern-inside: |
+                  function $FUNC ($EVENT, ...) {...}
+                  ...
+                  exports.handler = $FUNC
+    pattern-sinks:
+      - patterns:
+          - focus-metavariable: $CMD
+          - pattern-either:
+              - pattern: exec($CMD,...)
+              - pattern: execSync($CMD,...)
+              - pattern: spawn($CMD,...)
+              - pattern: spawnSync($CMD,...)
+              - pattern: $CP.exec($CMD,...)
+              - pattern: $CP.execSync($CMD,...)
+              - pattern: $CP.spawn($CMD,...)
+              - pattern: $CP.spawnSync($CMD,...)
+
+  # Error Handling
+  - id: missing-error-handling-in-handler
+    patterns:
+      - pattern-inside: |
+          exports.handler = async (...) => {
+            ...
+          }
+      - pattern: await $FUNC(...)
+      - pattern-not-inside: |
+          try {
+            ...
+          } catch ($E) {
+            ...
+          }
+      - pattern-not-inside: |
+          const $RES = await $FUNC(...).catch(...)
+    message: 'Lambda handler should have proper error handling to prevent uncaught promise rejections and ensure proper error responses.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: reliability
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Handler-Error-Handling'
+      wiki_section: 'Handler Error Handling'
+
+  - id: json-parsing-no-error-handling
+    patterns:
+      - pattern: |
+          const $VAR = JSON.parse($STR)
+      - pattern-not-inside: |
+          try {
+            ...
+            const $VAR = JSON.parse($STR)
+            ...
+          } catch ($E) {
+            ...
+          }
+    message: 'JSON.parse can throw SyntaxError. Wrap in try-catch for robust error handling.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: reliability
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Parsing-JSON-Safely'
+      wiki_section: 'Parsing JSON Safely'
+
+  - id: error-details-exposure
+    patterns:
+      - pattern-inside: |
+          } catch ($E) {
+            ...
+            throw $E;
+          }
+      - pattern-not-inside: |
+          } catch ($E) {
+            console.error(...);
+            throw new Error('Internal server error');
+          }
+    message: 'Raw error re-throwing may expose sensitive information. Log details and throw sanitized errors.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Performance Optimizations
+  - id: cold-start-imports
+    patterns:
+      - pattern-inside: |
+          exports.handler = async (...) => {
+            ...
+          }
+      - pattern: |
+          const $VAR = require($MODULE)
+    message: 'Move require statements outside handler to reduce cold start latency.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      documentation: 'https://gov-uk.atlassian.net/wiki/spaces/GOVUK/pages/4607246339/Semgrep+Warnings#Imports'
+      wiki_section: 'Imports'
+
+  - id: inefficient-json-deep-copy
+    pattern-either:
+      - pattern: JSON.parse(JSON.stringify($OBJ))
+      - pattern: |
+          const $STR = JSON.stringify($OBJ);
+          const $PARSED = JSON.parse($STR);
+    message: 'Inefficient JSON deep copy pattern. Consider structuredClone() or dedicated libraries for better performance.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: repeated-config-loading
+    patterns:
+      - pattern-inside: |
+          exports.handler = async (...) => {
+            ...
+            const $CONFIG = await getConfig();
+            ...
+          }
+    message: 'Configuration loading in handler executes on every invocation. Cache config at module level or implement memoization.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Lambda Context Usage
+  - id: lambda-context-unused
+    patterns:
+      - pattern: |
+          exports.handler = async ($EVENT, $CONTEXT) => {
+            ...
+          }
+      - pattern-not-inside: |
+          exports.handler = async ($EVENT, $CONTEXT) => {
+            ...
+            $CONTEXT.$METHOD
+            ...
+          }
+      - pattern-not-inside: |
+          exports.handler = async ($EVENT, $CONTEXT) => {
+            ...
+            console.log(..., $CONTEXT.requestId, ...)
+            ...
+          }
+    message: 'Lambda context provides useful metadata (requestId, remainingTimeInMillis). Consider using for logging and timeout management.'
+    languages: [javascript, typescript]
+    severity: INFO
+
+  - id: missing-remaining-time-check
+    patterns:
+      - pattern-inside: |
+          exports.handler = async ($EVENT, $CONTEXT) => {
+            ...
+            for (...) {
+              ...
+            }
+            ...
+          }
+      - pattern-not-inside: |
+          exports.handler = async ($EVENT, $CONTEXT) => {
+            ...
+            for (...) {
+              if ($CONTEXT.getRemainingTimeInMillis() < $THRESHOLD) {
+                break;
+              }
+              ...
+            }
+            ...
+          }
+    message: 'Long-running loops should check remaining execution time to prevent Lambda timeout.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Configuration and Environment
+  - id: env-var-validation-insufficient
+    patterns:
+      - pattern: |
+          if ($VAR == null) {
+            throw new $ERROR(...);
+          }
+      - pattern-not: |
+          if (!$VAR || $VAR.trim() === '') {
+            throw new $ERROR(...);
+          }
+    message: 'Environment variable validation should check for empty/whitespace strings, not just null/undefined.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: ssm-parameter-no-caching
+    patterns:
+      - pattern-inside: |
+          exports.handler = async (...) => {
+            ...
+            const $VALUE = await $SSM.getParameter(...).promise()
+            ...
+          }
+    message: 'SSM parameter calls should be cached at module level to avoid repeated API calls and reduce cold start time.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: dotenv-in-lambda
+    patterns:
+      - pattern: dotenv.config()
+      - pattern-inside: |
+          exports.handler = ...
+    message: 'dotenv should not be used in Lambda. Use native environment variables or AWS Parameter Store/Secrets Manager.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # HTTP and Network
+  - id: fetch-response-not-consumed
+    patterns:
+      - pattern: |
+          const $RESPONSE = await fetch(...)
+          if (!$RESPONSE.ok) {
+            throw $ERROR
+          }
+      - pattern-not: |
+          const $RESPONSE = await fetch(...)
+          if (!$RESPONSE.ok) {
+            const $BODY = await $RESPONSE.text()
+            throw $ERROR
+          }
+      - pattern-not: |
+          const $RESPONSE = await fetch(...)
+          if (!$RESPONSE.ok) {
+            await $RESPONSE.text()
+            throw $ERROR
+          }
+    message: 'Unconsumed fetch response bodies can cause connection leaks. Read response body before throwing errors.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: unsafe-header-forwarding
+    patterns:
+      - pattern: |
+          for (const [$K, $V] of Object.entries($HEADERS)) {
+            $RESP_HEADERS[$K.toLowerCase()] = $V;
+          }
+      - pattern-not-inside: |
+          const $ALLOWED_HEADERS = [...];
+          for (const [$K, $V] of Object.entries($HEADERS)) {
+            if ($ALLOWED_HEADERS.includes($K.toLowerCase())) {
+              $RESP_HEADERS[$K.toLowerCase()] = $V;
+            }
+          }
+    message: 'Blindly forwarding headers can leak sensitive information. Use header allowlists.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: sensitive-data-in-query-params
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new URLSearchParams({
+                ...,
+                $KEY: $SECRET,
+                ...
+              })
+          - pattern: |
+              `${$URL}?$KEY=${$SECRET}`
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: .*(secret|password|token|key|credential|auth).*
+    message: 'Sensitive data in query parameters may be logged in access logs. Use request body or headers instead.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Lambda-specific Anti-patterns
+  - id: infinite-loop-without-timeout-check
+    patterns:
+      - pattern-inside: |
+          exports.handler = async (...) => {
+            ...
+          }
+      - pattern-either:
+          - pattern: |
+              while (true) { ... }
+          - pattern: |
+              for (;;) { ... }
+          - pattern: |
+              setInterval($FUNC, $INTERVAL)
+    message: 'Infinite loops in Lambda will hit execution timeout. Add break conditions or timeout checks.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: callback-and-async-mixed
+    patterns:
+      - pattern: |
+          exports.handler = async ($EVENT, $CONTEXT, $CALLBACK) => {
+            ...
+            $CALLBACK(...);
+          }
+    message: 'Mixing async/await with callback pattern can cause double responses. Use either async/await OR callback, not both.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: unhandled-promise-in-callback-handler
+    patterns:
+      - pattern-inside: |
+          exports.handler = ($EVENT, $CONTEXT, $CALLBACK) => {
+            ...
+          }
+      - pattern: |
+          $ASYNC_FUNC()
+      - pattern-not: |
+          $ASYNC_FUNC().catch($CALLBACK)
+      - pattern-not: |
+          $ASYNC_FUNC().then(...).catch($CALLBACK)
+    message: 'Async operations in callback-style handlers must handle promise rejections explicitly.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Tree Shaking and Bundle Size Optimization
+  - id: wildcard-import-prevents-treeshaking
+    patterns:
+      - pattern-either:
+          - pattern: import * as $NAME from '$MODULE'
+          - pattern: const $NAME = require('$MODULE')
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(lodash|ramda|rxjs|date-fns|@aws-sdk/.*|uuid)$
+    message: 'Wildcard imports prevent tree shaking. Use named imports: import { specific } from "module" to reduce bundle size.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      bundle_optimization: true
+
+  - id: aws-sdk-v2-import
+    patterns:
+      - pattern-either:
+          - pattern: const AWS = require('aws-sdk')
+          - pattern: import AWS from 'aws-sdk'
+          - pattern: import * as AWS from 'aws-sdk'
+    message: 'AWS SDK v2 imports the entire SDK (~3MB). Use AWS SDK v3 with specific service imports: import { DynamoDBClient } from "@aws-sdk/client-dynamodb"'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: lodash-full-import
+    patterns:
+      - pattern-either:
+          - pattern: const _ = require('lodash')
+          - pattern: import _ from 'lodash'
+          - pattern: import * as _ from 'lodash'
+    message: 'Full lodash import adds ~70KB to bundle. Use specific imports: import { get, set } from "lodash" or lodash-es for better tree shaking.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: moment-js-usage
+    patterns:
+      - pattern-either:
+          - pattern: const moment = require('moment')
+          - pattern: import moment from 'moment'
+          - pattern: require('moment')
+    message: 'Moment.js is large (~70KB) and not tree-shakeable. Use date-fns, dayjs, or native Date APIs for smaller bundle size.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: large-utility-library-full-import
+    patterns:
+      - pattern-either:
+          - pattern: const $LIB = require('$MODULE')
+          - pattern: import $LIB from '$MODULE'
+          - pattern: import * as $LIB from '$MODULE'
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(rxjs|ramda|date-fns|validator|crypto-js|axios)$
+    message: 'Large utility library imported entirely. Use specific imports to enable tree shaking: import { isEmail } from "validator"'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: polyfill-import-in-lambda
+    patterns:
+      - pattern-either:
+          - pattern: require('core-js')
+          - pattern: import 'core-js'
+          - pattern: require('regenerator-runtime')
+          - pattern: import 'regenerator-runtime'
+          - pattern: require('@babel/polyfill')
+          - pattern: import '@babel/polyfill'
+    message: 'Full polyfill imports add significant bundle size. Lambda Node.js runtime supports modern features - configure babel for specific Node.js version target.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: unused-import-detection
+    patterns:
+      - pattern-either:
+          - pattern: import '$MODULE'
+          - pattern: require('$MODULE')
+      - pattern-not-inside: |
+          import '$MODULE'
+          ...
+          // @side-effect
+      - pattern-not-inside: |
+          require('$MODULE')
+          ...
+          // @side-effect
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(?!\./).*(?<!\.css)$
+    message: 'Import without usage detected. If this is for side effects, add // @side-effect comment. Otherwise remove to reduce bundle size.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: inefficient-uuid-import
+    patterns:
+      - pattern-either:
+          - pattern: const uuid = require('uuid')
+          - pattern: import uuid from 'uuid'
+          - pattern: import * as uuid from 'uuid'
+    message: 'Full UUID library import. Use specific imports: import { v4 } from "uuid" or use crypto.randomUUID() in Node.js 14.17+.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Tree Shaking and Bundle Size Optimization
+  - id: wildcard-import-prevents-treeshaking
+    patterns:
+      - pattern-either:
+          - pattern: import * as $NAME from '$MODULE'
+          - pattern: const $NAME = require('$MODULE')
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(lodash|ramda|rxjs|date-fns|@aws-sdk/.*|uuid)$
+    message: 'Wildcard imports prevent tree shaking. Use named imports: import { specific } from "module" to reduce bundle size.'
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: performance
+      bundle_optimization: true
+
+  - id: aws-sdk-v2-import
+    patterns:
+      - pattern-either:
+          - pattern: const AWS = require('aws-sdk')
+          - pattern: import AWS from 'aws-sdk'
+          - pattern: import * as AWS from 'aws-sdk'
+    message: 'AWS SDK v2 imports the entire SDK. Use AWS SDK v3 with specific service imports for better tree shaking: import { DynamoDBClient } from "@aws-sdk/client-dynamodb"'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: lodash-full-import
+    patterns:
+      - pattern-either:
+          - pattern: const _ = require('lodash')
+          - pattern: import _ from 'lodash'
+          - pattern: import * as _ from 'lodash'
+    message: 'Full lodash import adds ~70KB to bundle. Use specific imports: import { get, set } from "lodash" or lodash/es for better tree shaking.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: moment-js-usage
+    patterns:
+      - pattern-either:
+          - pattern: const moment = require('moment')
+          - pattern: import moment from 'moment'
+          - pattern: require('moment')
+    message: 'Moment.js is large (~70KB) and not tree-shakeable. Use date-fns, dayjs, or native Date APIs for smaller bundle size.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: unused-aws-sdk-v3-import
+    patterns:
+      - pattern: |
+          import { $...IMPORTS } from '$AWS_MODULE';
+          ...
+      - pattern-not-inside: |
+          import { $...IMPORTS } from '$AWS_MODULE';
+          ...
+          new $CLIENT(...);
+      - pattern-not-inside: |
+          import { $...IMPORTS } from '$AWS_MODULE';
+          ...
+          $CLIENT.send(...);
+      - metavariable-regex:
+          metavariable: $AWS_MODULE
+          regex: ^@aws-sdk/.*
+    message: 'Unused AWS SDK imports increase bundle size. Remove unused imports or use them in your code.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: default-and-named-import-mixed
+    patterns:
+      - pattern-either:
+          - pattern: |
+              import $DEFAULT, { $...NAMED } from '$MODULE'
+          - pattern: |
+              import $DEFAULT from '$MODULE';
+              import { $...NAMED } from '$MODULE'
+    message: 'Mixed default and named imports from same module can prevent optimal tree shaking. Prefer consistent import style.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: large-utility-library-full-import
+    patterns:
+      - pattern-either:
+          - pattern: const $LIB = require('$MODULE')
+          - pattern: import $LIB from '$MODULE'
+          - pattern: import * as $LIB from '$MODULE'
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(rxjs|ramda|date-fns|validator|crypto-js)$
+    message: 'Large utility library imported entirely. Use specific imports to enable tree shaking and reduce bundle size.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: node-modules-deep-import
+    patterns:
+      - pattern-either:
+          - pattern: require('$MODULE/$DEEP_PATH')
+          - pattern: import $NAME from '$MODULE/$DEEP_PATH'
+      - metavariable-regex:
+          metavariable: $DEEP_PATH
+          regex: .+/.+
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(?!@aws-sdk|@types|lodash).*
+    message: 'Deep imports from node_modules may break with package updates and can prevent tree shaking. Use package main exports when possible.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: polyfill-import-in-lambda
+    patterns:
+      - pattern-either:
+          - pattern: require('core-js')
+          - pattern: import 'core-js'
+          - pattern: require('regenerator-runtime')
+          - pattern: import 'regenerator-runtime'
+          - pattern: require('@babel/polyfill')
+          - pattern: import '@babel/polyfill'
+    message: 'Full polyfill imports add significant bundle size. Lambda Node.js runtime supports modern features - use targeted polyfills or configure babel for specific targets.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: entire-rxjs-import
+    patterns:
+      - pattern-either:
+          - pattern: import { $...OPERATORS } from 'rxjs/operators'
+          - pattern: const { $...OPERATORS } = require('rxjs/operators')
+      - metavariable-comparison:
+          metavariable: $OPERATORS
+          comparison: len($OPERATORS) > 5
+    message: 'Importing many RxJS operators at once. Consider importing only needed operators: import { map } from "rxjs/operators" for better tree shaking.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: unused-import-with-side-effects
+    patterns:
+      - pattern-either:
+          - pattern: import '$MODULE'
+          - pattern: require('$MODULE')
+      - pattern-not-inside: |
+          import '$MODULE'
+          ...
+          // Side effect needed
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(?!\./).*
+    message: 'Import without usage detected. If this is for side effects, add a comment. Otherwise remove to reduce bundle size.'
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: inefficient-uuid-import
+    patterns:
+      - pattern-either:
+          - pattern: const uuid = require('uuid')
+          - pattern: import uuid from 'uuid'
+          - pattern: import * as uuid from 'uuid'
+    message: 'Full UUID library import. Use specific version imports for tree shaking: import { v4 } from "uuid" or use crypto.randomUUID() in Node.js 14.17+.'
+    languages: [javascript, typescript]
+    severity: WARNING

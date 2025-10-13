@@ -1,0 +1,9 @@
+# Ignore test files
+**/test/**
+**/tests/**
+**/*.test.ts
+**/*.spec.ts
+**/step-definitions/**
+
+# Ignore nx files
+.nx/nxw.js
