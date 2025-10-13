@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base",
+  "compilerOptions": {
+    "outDir": "../../dist",
+    "composite": true,
+    "declaration": true
+  },
+  "include": ["src/**/*/*.ts", "src/index.ts"],
+  "exclude": [
+    "node_modules",
+    "**/tests/**",
+    "**/**/vitest.*.ts",
+    "../../dist/libs/**"
+  ],
+  "references": [
+    {
+      "path": "../http-utils"
+    }
+  ]
+}

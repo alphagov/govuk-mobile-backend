@@ -1,0 +1,26 @@
+{
+  "name": "@libs/auth-utils",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/auth-utils/src/**/*.{ts,tsx,js,jsx}"]
+      }
+    },
+    "test:unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest libs/auth-utils/src/**/* --project unit"
+      }
+    },
+    "test:coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run libs/auth-utils/src/**/* --coverage --project unit"
+      }
+    }
+  }
+}

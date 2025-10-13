@@ -146,15 +146,48 @@ This will generate a `.env` file in the current directory (`auth`) containing yo
 
 ### SAM deploy to Dev Environment
 
-- Setup AWS CLI - https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html  
-  Validate the SAM template `sam validate --lint`
-- Build SAM project `sam build`
-- Run guided deployment `sam deploy --guided` to create the \*.toml file
-- Update the toml file as below and update local deployment variables
+We utilise the power of Nx to help us bundle, SAM build & SAM deploy our code from our own machines into the dev environment. In order to carry this out you will need to:
+
+- Setup AWS CLI - https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html
+- Signed in/configured a sign in of your AWS CLI for the desired account to deploy into (We usually use the dev account)
+- Install Nx globally `npm install -g nx`
+- Installed all local dependences from the root folder `npm install`
+
+Following from this you need to configure a local.env file for deployments at `env/local.env` in the folder structure. This file needs to contain the following values
 
 ```
-...
-stack_name = "<your-stack-name>"
-s3_prefix = "<your-stack-name>"
-parameter_overrides = "Environment=\"dev\" CodeSigningConfigArn=\"none\" PermissionsBoundary=\"none\" ConfigStackName=\"<your-ssm-config-name>\""
+ENVIRONMENT=dev
+USER_PREFIX=<<A prefix for stack names, we usually use our initials e.g: sb/bb>>
+CODE_SIGNING_ARN=none
+PERMISSION_BOUNDARY_ARN=none
+SAM_DEPLOY_BUCKET=<<The SAM Deployment bucketname for the targetted AWS environment>>
+CONFIG_STACK_NAME=<<This is the cloudformation stack name of your personal SSM stack deployment (e.g: sb-ssm)>>
+TEST_ROLE_ARN=<<The ARN of a valid release pipeline Test Role>>
 ```
+
+Beyond the values defined by yourself, the ARNs and Bucket names can be fetched from the desired AWS account. The environment is set to dev, as this deploys the dev versions of the SAM stacks for testing.
+
+In order to then deploy we can simply use our Nx commands of:
+
+```sh
+nx affected -t sam:deploy //This deploys all stacks affected by changes
+nx run-many -t sam:deploy //This deploys all stacks
+nx run <project>:sam:deploy //This would deploy a specific stack
+
+//Alternatively
+npm run sam:deploy:all
+npm run sam:deploy:affected
+```
+
+### Testing the build & deploy scripts
+
+Some tests have been written to verify the functionality of the validate/build/deploy scripts for the SAM stacks & apps. These are very slow running tests that require a few pre-requisites to function correctly. They are:
+
+- Signing into an AWS profile for local deployment
+- Installation of Nx `npm install -g nx`
+- Instalation of all dependences `npm install`
+
+The tests for the validation script verifies the output of the XML report of the validation results. For the build script verify the creation of the SAM build folders & final template.yaml file. And finally for the deploy script call out to cloudformation after execution to verify the creation of all expected stacks from the command. All 3 are set up to verify that targetting all projects or only affected will function. They do not run in parallel as the scripts frequently act on files within the folder structure, and have been set up to clean the structure before each test run.
+
+In order to run these tests we have an npm script:
+`npm run test:scripts`

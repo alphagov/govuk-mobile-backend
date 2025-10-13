@@ -1,0 +1,4 @@
+export const logMessages = {
+  HEALTH_CHECK_START: 'HEALTH_CHECK_START',
+  HEALTH_CHECK_END: 'HEALTH_CHECK_END',
+};

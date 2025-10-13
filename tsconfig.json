@@ -2,12 +2,22 @@
   "extends": "./tsconfig.base",
   "compileOnSave": false,
   "files": [],
+  "exclude": ["node_modules", "**/tests/**", "**/**/vitest.*.ts"],
   "references": [
     {
-      "path": "./auth"
+      "path": "./services/auth"
     },
     {
-      "path": "./chat"
+      "path": "./services/chat"
+    },
+    {
+      "path": "./libs/http-utils"
+    },
+    {
+      "path": "./libs/auth-utils"
+    },
+    {
+      "path": "./libs/test-utils"
     }
   ]
 }

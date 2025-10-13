@@ -19,7 +19,6 @@ permissions:
 defaults:
   run:
     shell: bash
-    working-directory: ./auth
 
 jobs:
   deploy:
@@ -31,34 +30,42 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@b3498302c5c423fa896b97a26bb183df735d08f8 # v4.3.0
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Set up SAM cli
-        uses: aws-actions/setup-sam@v2
+        uses: aws-actions/setup-sam@f664fad9e12492edfc187a31f575537dfbb0ff63 # v2
         with:
           use-installer: true # this caches installation but is only available on Linux x86-64 runners
 
       - name: Set up AWS creds
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1v4
         with:
           role-to-assume: ${{ vars.GH_ACTIONS_ROLE_ARN }}
           aws-region: eu-west-2
 
+      - name: Set up Node
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
       - name: SAM validate
-        working-directory: ./auth
-        run: sam validate --lint
+        run: 'npx nx run auth:sam:validate'
 
       - name: SAM build
-        run: sam build
+        run: 'npx nx run auth:sam:build'
 
       - name: Deploy Auth SAM app
         uses: govuk-one-login/devplatform-upload-action@v3.9.4
         with:
           artifact-bucket-name: ${{ vars.ARTIFACT_BUCKET_NAME }}
           signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
-          working-directory: ./auth/.aws-sam/build
+          working-directory: ./services/auth/.aws-sam/build
 
       - name: Build, tag, and push testing images to Amazon ECR
         uses: govuk-one-login/devplatform-upload-action-ecr@v1.4.0
@@ -66,5 +73,6 @@ jobs:
           container-sign-kms-key-arn: ${{ vars.CONTAINER_SIGN_KMS_KEY_ARN }}
           ecr-repo-name: ${{ vars.AUTH_TEST_ECR_REPOSITORY_NAME }}
           role-to-assume-arn: ${{ vars.GH_ACTIONS_ROLE_ARN }}
+          dockerfile: Dockerfile.auth
           build-and-push-image-only: true
           push-latest-tag: true

@@ -16,6 +16,9 @@
     "build": {
       "cache": true
     },
+    "sam:validate": {
+      "cache": false
+    },
     "test:unit": {
       "cache": true
     },
@@ -36,7 +39,7 @@
         },
         "build": {
           "targetName": "build",
-          "configName": "tsconfig.lib.json",
+          "configName": "tsconfig.json",
           "buildDepsName": "build-deps",
           "watchDepsName": "watch-deps"
         }

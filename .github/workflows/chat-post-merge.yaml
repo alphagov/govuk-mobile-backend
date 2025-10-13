@@ -1,0 +1,78 @@
+name: Chat test, build and deploy
+run-name: Chat test, build and deploy to ${{ inputs.environment }}
+
+on:
+  workflow_call:
+    inputs:
+      environment: { required: true, type: string }
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: environment
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@b3498302c5c423fa896b97a26bb183df735d08f8 # v4.3.0
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Set up SAM cli
+        uses: aws-actions/setup-sam@f664fad9e12492edfc187a31f575537dfbb0ff63 # v2
+        with:
+          use-installer: true # this caches installation but is only available on Linux x86-64 runners
+
+      - name: Set up AWS creds
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1v4
+        with:
+          role-to-assume: ${{ vars.CHAT_GH_ACTIONS_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Set up Node
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: SAM validate
+        run: 'npx nx run chat:sam:validate'
+
+      - name: SAM build
+        run: 'npx nx run chat:sam:build'
+
+      - name: Deploy Chat SAM app
+        uses: govuk-one-login/devplatform-upload-action@v3.9.4
+        with:
+          artifact-bucket-name: ${{ vars.CHAT_ARTIFACT_BUCKET_NAME }} # Need to configure git environment for the new buckets
+          signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
+          working-directory: ./services/chat/.aws-sam/build
+
+      - name: Build, tag, and push testing images to Amazon ECR
+        uses: govuk-one-login/devplatform-upload-action-ecr@v1.4.0
+        with:
+          container-sign-kms-key-arn: ${{ vars.CHAT_CONTAINER_SIGN_KMS_KEY_ARN }}
+          ecr-repo-name: ${{ vars.CHAT_TEST_ECR_REPOSITORY_NAME }}
+          role-to-assume-arn: ${{ vars.CHAT_GH_ACTIONS_ROLE_ARN }}
+          dockerfile: Dockerfile.chat
+          build-and-push-image-only: true
+          push-latest-tag: true

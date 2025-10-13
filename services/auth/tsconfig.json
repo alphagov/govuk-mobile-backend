@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base",
+  "compilerOptions": {
+    "outDir": "../../dist",
+    "composite": true,
+    "declaration": true
+  },
+  "include": [
+    "./**/*.ts",
+    "../../libs/test-utils/src/jwt/generate-keys-and-jwt.ts"
+  ],
+  "exclude": ["node_modules", "**/tests/**", "**/**/vitest.*.ts"],
+  "references": [
+    {
+      "path": "../../libs/test-utils"
+    },
+    {
+      "path": "../../libs/auth-utils"
+    }
+  ]
+}

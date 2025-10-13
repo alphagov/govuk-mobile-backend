@@ -24,7 +24,7 @@ export default tseslint.config(
         },
         tsconfigRootDir: import.meta.dirname,
         sourceType: 'module',
-        ecmaVersion: 'ES2020',
+        ecmaVersion: 2020,
         projectService: {
           allowDefaultProject: ['eslint.config.mjs'],
         },
@@ -37,11 +37,13 @@ export default tseslint.config(
       '.nx',
       '**/debug',
       '**/.aws-sam/**',
-      '**/feature-tests/**',
       '**/tests/**',
       '**/vitest*.ts',
       '**/coverage/**/*',
       'eslint.config.mjs',
+      'scripts/**',
+      '**/.build/*',
+      '**/*.test.ts',
     ],
   },
   {
@@ -60,7 +62,6 @@ export default tseslint.config(
       'promise/no-new-statics': 'error',
       'promise/no-promise-in-callback': 'error',
       'promise/no-return-in-finally': 'warn',
-      'promise/param-names': 'warn',
       'promise/prefer-await-to-callbacks': 'error',
       'promise/prefer-await-to-then': 'off',
       'promise/prefer-catch': 'off',
@@ -150,7 +151,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['auth/feature-tests/**/*.ts', 'auth/**/*.test.ts'],
+    files: ['auth/**/*.test.ts'],
     rules: {
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',
@@ -167,7 +168,8 @@ export default tseslint.config(
       'import/resolver': {
         typescript: {
           // Optionally, specify the path to your tsconfig
-          project: './tsconfig.json',
+          project: ['services/*/tsconfig.json', 'libs/*/tsconfig.json'],
+          alwaysTryTypes: true,
         },
       },
     },

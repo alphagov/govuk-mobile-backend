@@ -1,0 +1,198 @@
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
+import { loadTemplateFromFile } from '../common/template';
+import path from 'path';
+
+const template = loadTemplateFromFile(
+  path.join(__dirname, '..', '..', 'template.yaml'),
+);
+
+type Case = {
+  logGroupLogicalId: string;
+  logGroupName: string;
+};
+
+const dataProtectionPolicy = {
+  Name: 'CloudWatchLogs-PersonalInformation-Protection',
+  Description: 'Protect basic types of sensitive data',
+  Version: '2021-06-01',
+  Configuration: {
+    CustomDataIdentifier: [
+      {
+        Name: 'JWTTokens',
+        Regex:
+          'e[yw][A-Za-z0-9-_]+\\.(?:e[yw][A-Za-z0-9-_]+)?\\.[A-Za-z0-9-_]{2,}(?:(?:\\.[A-Za-z0-9-_]{2,}){2})?',
+      },
+    ],
+  },
+  Statement: [
+    {
+      Sid: 'audit-policy',
+      DataIdentifier: [
+        'arn:aws:dataprotection::aws:data-identifier/EmailAddress',
+        'arn:aws:dataprotection::aws:data-identifier/IpAddress',
+        'JWTTokens',
+      ],
+      Operation: {
+        Audit: {
+          FindingsDestination: {},
+        },
+      },
+    },
+    {
+      Sid: 'masking-policy',
+      DataIdentifier: [
+        'arn:aws:dataprotection::aws:data-identifier/EmailAddress',
+        'arn:aws:dataprotection::aws:data-identifier/IpAddress',
+        'JWTTokens',
+      ],
+      Operation: {
+        Deidentify: {
+          MaskConfig: {},
+        },
+      },
+    },
+  ],
+};
+
+const logGroups: Case[] = [
+  {
+    logGroupLogicalId: 'AuthProxyFunctionLogGroup',
+    logGroupName: 'auth-proxy',
+  },
+  {
+    logGroupLogicalId: 'RevokeRefreshTokenFunctionLogGroup',
+    logGroupName: 'revoke-refresh-token',
+  },
+];
+describe.each(logGroups)(
+  '$logGroupLogicalId',
+  ({ logGroupLogicalId, logGroupName }) => {
+    const resources = template.findResources('AWS::Logs::LogGroup');
+    const lg = resources[logGroupLogicalId] as any;
+
+    it('should exist', () => {
+      expect(lg).toBeDefined();
+    });
+
+    it('should point to the correct lambda log group name with function appended', () => {
+      expect(lg.Properties.LogGroupName).toEqual({
+        'Fn::Sub':
+          '/aws/lambda/${AWS::StackName}-' + `${logGroupName}-function`,
+      });
+    });
+
+    it('should use retention from mapping by environment', () => {
+      expect(lg.Properties.RetentionInDays).toEqual({
+        'Fn::FindInMap': [
+          'LogRetentionByEnv',
+          'Environment',
+          { Ref: 'Environment' },
+        ],
+      });
+    });
+
+    it('should be encrypted with KMS', () => {
+      expect(lg.Properties.KmsKeyId).toEqual({
+        'Fn::GetAtt': [`${logGroupLogicalId}KMSKey`, 'Arn'],
+      });
+    });
+
+    it('should have data protection policy for email, ip and JWTs', () => {
+      expect(lg.Properties.DataProtectionPolicy).toEqual(dataProtectionPolicy);
+    });
+  },
+);
+
+const sharedSignalLogGroups: Case[] = [
+  {
+    logGroupLogicalId: 'SharedSignalAuthorizerLogGroup',
+    logGroupName: 'shared-signal-authorizer',
+  },
+  {
+    logGroupLogicalId: 'SharedSignalReceiverFunctionLogGroup',
+    logGroupName: 'shared-signal-receiver',
+  },
+  {
+    logGroupLogicalId: 'SharedSignalHealthCheckFunctionLogGroup',
+    logGroupName: 'shared-signal-health-check',
+  },
+];
+describe.each(sharedSignalLogGroups)(
+  '$logGroupLogicalId',
+  ({ logGroupLogicalId, logGroupName }) => {
+    const resources = template.findResources('AWS::Logs::LogGroup');
+    const lg = resources[logGroupLogicalId] as any;
+
+    it('should exist', () => {
+      expect(lg).toBeDefined();
+    });
+
+    it('should point to the correct lambda log group name with function appended', () => {
+      expect(lg.Properties.LogGroupName).toEqual({
+        'Fn::Sub':
+          '/aws/lambda/${AWS::StackName}-' + `${logGroupName}-function`,
+      });
+    });
+
+    it('should use retention from mapping by environment', () => {
+      expect(lg.Properties.RetentionInDays).toEqual({
+        'Fn::FindInMap': [
+          'LogRetentionByEnv',
+          'Environment',
+          { Ref: 'Environment' },
+        ],
+      });
+    });
+
+    it('should be encrypted with KMS', () => {
+      expect(lg.Properties.KmsKeyId).toEqual({
+        'Fn::GetAtt': [`${logGroupLogicalId}KMSKey`, 'Arn'],
+      });
+    });
+
+    it('should have data protection policy for email, ip, JWTs and OneLoginUserId', () => {
+      expect(lg.Properties.DataProtectionPolicy).toEqual({
+        ...dataProtectionPolicy,
+        Configuration: {
+          CustomDataIdentifier: [
+            ...dataProtectionPolicy.Configuration.CustomDataIdentifier,
+            {
+              Name: 'OneLoginUserId',
+              Regex: '(?:urn:fdc:gov\\.uk:[0-9]{4}):[a-zA-Z0-9_\\-]*',
+            },
+          ],
+        },
+        Statement: [
+          {
+            Sid: 'audit-policy',
+            DataIdentifier: [
+              'arn:aws:dataprotection::aws:data-identifier/EmailAddress',
+              'arn:aws:dataprotection::aws:data-identifier/IpAddress',
+              'JWTTokens',
+              'OneLoginUserId',
+            ],
+            Operation: {
+              Audit: {
+                FindingsDestination: {},
+              },
+            },
+          },
+          {
+            Sid: 'masking-policy',
+            DataIdentifier: [
+              'arn:aws:dataprotection::aws:data-identifier/EmailAddress',
+              'arn:aws:dataprotection::aws:data-identifier/IpAddress',
+              'JWTTokens',
+              'OneLoginUserId',
+            ],
+            Operation: {
+              Deidentify: {
+                MaskConfig: {},
+              },
+            },
+          },
+        ],
+      });
+    });
+  },
+);
