@@ -11,7 +11,7 @@ export interface FindLogMessageOptions {
   filterPattern?: string;
   retries?: number;
   delayMs?: number;
-  startTime?: number;
+  startTime: number;
   endTime?: number;
 }
 
@@ -29,15 +29,15 @@ export class LoggingDriver {
     retries = 5,
     delayMs = 2000,
     startTime,
-    endTime,
+    endTime = new Date(Date.now()).getTime(),
   }: FindLogMessageOptions): Promise<string> {
     for (let attempt = 1; attempt <= retries; attempt++) {
       const message = await this._findLogMessage({
         logGroupName,
         searchString,
         filterPattern,
-        startTime: startTime ?? 0,
-        endTime: endTime ?? 0,
+        startTime,
+        endTime,
       });
 
       if (message != null) {
