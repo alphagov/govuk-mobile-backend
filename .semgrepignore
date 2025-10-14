@@ -12,4 +12,4 @@ dist/
 coverage/
 reports/
 
-libs/test-utils
+libs/test-utils/**
