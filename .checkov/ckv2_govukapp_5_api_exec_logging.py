@@ -6,7 +6,6 @@ from checkov.cloudformation.checks.resource.base_resource_value_check import (
 )
 from checkov.common.models.enums import CheckCategories, CheckResult
 
-
 class ApiExecutionLoggingEnabled(BaseResourceValueCheck):
     def __init__(self) -> None:
         name = "Ensure API execution logging is enabled (stage MethodSettings loggingLevel)"
@@ -39,7 +38,4 @@ class ApiExecutionLoggingEnabled(BaseResourceValueCheck):
             return CheckResult.PASSED
         return CheckResult.FAILED
 
-
 scanner = ApiExecutionLoggingEnabled()
-
-
