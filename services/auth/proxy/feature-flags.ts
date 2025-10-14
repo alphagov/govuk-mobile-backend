@@ -2,13 +2,11 @@ import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 
 const fetchFeatureFlag = async (flagName: string): Promise<boolean> => {
   const configStackName = process.env['CONFIG_STACK_NAME'];
-  // nosemgrep: env-var-validation-insufficient
   if (configStackName == null) {
     throw new Error('Missing Environment Variable: CONFIG_STACK_NAME');
   }
   const paramaterPath = `/${configStackName}/feature-flags/${flagName}`;
   const parameter = await getParameter(paramaterPath, { maxAge: 900 }); //Caching for 15 minutes
-  // nosemgrep: env-var-validation-insufficient
   if (parameter == null) {
     throw new Error(`Missing SSM Paramater at: ${paramaterPath}`);
   }

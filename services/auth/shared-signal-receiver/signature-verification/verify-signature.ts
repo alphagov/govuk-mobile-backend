@@ -33,7 +33,6 @@ export const verifySETJwt = async ({
 
     const decodedHeaders = decodeProtectedHeader(jwt);
 
-    // nosemgrep: env-var-validation-insufficient
     if (decodedHeaders.kid == null) {
       throw new InvalidKeyError(
         'One or more keys used to encrypt or sign the SET is invalid or otherwise unacceptable to the SET Recipient (expired, revoked, failed certificate validation, etc.).',
