@@ -229,6 +229,7 @@ Resources:
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
+          LoggingLevel: ERROR
           ResourcePath: "/*"
           HttpMethod: "*"
       AccessLogSetting:
@@ -283,7 +284,6 @@ Resources:
           Value: Chat
 
   ChatApiGatewayWafAssociation:
-    
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ChatApiGateway}/stages/${ChatApiGatewayStage}

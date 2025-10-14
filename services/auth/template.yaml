@@ -1285,6 +1285,7 @@ Resources:
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
+          LoggingLevel: ERROR
           ResourcePath: "/*"
           HttpMethod: "*"
       AccessLogSetting:
@@ -1809,18 +1810,13 @@ Resources:
 
   SharedSignalApi:
     Type: AWS::Serverless::Api
-    Metadata:
-      cfn-lint:
-        # Add this to your existing Metadata block
-        config:
-          ignore_checks:
-            - W1028
     Properties:
       Name: !Sub ${AWS::StackName}-shared-signal
       StageName: !Ref Environment
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
+          LoggingLevel: ERROR
           ResourcePath: "/*"
           HttpMethod: "*"
       AccessLogSetting:
