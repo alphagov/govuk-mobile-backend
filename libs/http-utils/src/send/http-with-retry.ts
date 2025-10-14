@@ -101,7 +101,7 @@ const sendHttpRequest = async ({
     } catch (error) {
       // Do not retry if aborted
       if (error instanceof Error && error.name === 'TimeoutError') {
-        throw error;
+        throw error; // nosemgrep
       }
 
       if (attempt < maxAttempts) {
