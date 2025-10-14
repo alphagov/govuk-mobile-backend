@@ -229,7 +229,7 @@ Resources:
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
-          LoggingLevel: ERROR
+          LoggingLevel: INFO
           ResourcePath: "/*"
           HttpMethod: "*"
       AccessLogSetting:
