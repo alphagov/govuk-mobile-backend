@@ -19,8 +19,9 @@ class ApiExecutionLoggingEnabled(BaseResourceValueCheck):
         super().__init__(name=name, id=id, categories=categories, supported_resources=supported_resources)
 
     def get_inspected_key(self) -> str:
-        # we need custom logic; not a single key
-        return "Properties"
+        properties = conf.get("Properties")
+        if not properties:
+            return CheckResult.FAILED
 
     def scan_resource_conf(self, conf: dict[str, Any]) -> CheckResult:
         props = conf.get("Properties", {})
