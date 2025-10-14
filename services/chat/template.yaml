@@ -696,3 +696,7 @@ Outputs:
   ChatAuthorizerFunctionKMSKeyArn:
     Description: The ARN of the KMS key used by the Chat authorizer function
     Value: !GetAtt ChatAuthorizerFunctionKMSKey.Arn
+
+  ChatApiGatewayWafLogGroupName:
+    Description: The name of the Chat API Gateway WAF log group
+    Value: !Ref ChatApiGatewayWafLogGroup
