@@ -144,10 +144,6 @@ Notes:
 - If `.env.static` exists at the repo root, its contents are written first to `.env`.
 - Outputs for each stack are appended and grouped by a comment header.
 
-### Running only for a single stack (legacy per-service scripts)
-
-Some service folders have their own legacy script variants. Prefer the top-level script above.
-
 ### SAM deploy to Dev Environment
 
 We utilise the power of Nx to help us bundle, SAM build & SAM deploy our code from our own machines into the dev environment. In order to carry this out you will need to:
