@@ -21,7 +21,8 @@ describe('Chat API Gateway WAF Log Group', () => {
     const resources = template.findResources(
       'AWS::WAFv2::LoggingConfiguration',
     );
-    const resourceUnderTest = resources['ChatApiGatewayWafLogging'];
+    const resourceUnderTest =
+      resources['ChatApiGatewayWafLoggingConfiguration'];
     expect(resourceUnderTest).toBeDefined();
     expect(resourceUnderTest.Type).toEqual('AWS::WAFv2::LoggingConfiguration');
     expect(resourceUnderTest.Properties).toBeDefined();
