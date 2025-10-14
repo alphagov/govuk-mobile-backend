@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { LoggingDriver } from '../driver/logging.driver';
+import { LoggingDriver } from '../../../../libs/test-utils/src/aws/logging.driver';
 import { LambdaClient, InvokeCommand, LogType } from '@aws-sdk/client-lambda';
 import { testConfig } from '../common/config';
 import { repeatedlyRequestEndpoint } from '../driver/waf.driver';
@@ -9,9 +9,12 @@ import {
   DescribeAlarmsOutput,
   SetAlarmStateCommand,
 } from '@aws-sdk/client-cloudwatch';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { TestLambdaDriver } from '../../../../libs/test-utils/src/aws/testLambda.driver';
 
-const driver = new TestLambdaDriver();
+const driver = new TestLambdaDriver({
+  region: testConfig.region,
+  functionName: testConfig.testLambdaFunctionName,
+});
 const loggingDriver = new LoggingDriver(driver);
 const startTime = Date.now() - 1000 * 60 * 2; // 5 minutes ago
 
