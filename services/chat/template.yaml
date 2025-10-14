@@ -289,6 +289,15 @@ Resources:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ChatApiGateway}/stages/${ChatApiGatewayStage}
       WebACLArn: !GetAtt ChatApiGatewayWaf.Arn
 
+  
+
+  ChatApiGatewayWafLogging:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      ResourceArn: !GetAtt ChatApiGatewayWaf.Arn
+      LogDestinationConfigs:
+        - !GetAtt ChatApiGatewayWafLogGroup.Arn
+
   ChatApiGatewayWafLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
