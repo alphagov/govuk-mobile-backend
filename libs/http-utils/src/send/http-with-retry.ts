@@ -112,7 +112,8 @@ const sendHttpRequest = async ({
         );
       }
 
-      throw error;
+      // semgrep ignored because this function bubbles up the error
+      throw error; // nosemgrep
     }
   }
 
