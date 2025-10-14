@@ -7,9 +7,9 @@ import { testConfig } from '../common/config';
 import { AttestationDriver } from '../driver/attestation.driver';
 import { TestDataLoader } from '../driver/testDataLoader.driver';
 import { AxiosAuthDriver } from '../driver/axiosAuth.driver';
-import { LoggingDriver } from '../driver/logging.driver';
+import { LoggingDriver } from '../../../../libs/test-utils/src/aws/logging.driver';
 import querystring from 'querystring';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { TestLambdaDriver } from '../../../../libs/test-utils/src/aws/testLambda.driver';
 
 describe.skipIf(!testConfig.isLocalEnvironment)('attestation', async () => {
   describe('attestation proxy is a confidential client', () => {
@@ -46,7 +46,10 @@ describe.skipIf(!testConfig.attestationEnabled)('app attestation', () => {
     testConfig.oneLoginEnvironment,
   );
   const attestationDriver = new AttestationDriver();
-  const testLambdaDriver = new TestLambdaDriver();
+  const testLambdaDriver = new TestLambdaDriver({
+    region: testConfig.region,
+    functionName: testConfig.testLambdaFunctionName,
+  });
   const loggingDriver = new LoggingDriver(testLambdaDriver);
 
   beforeAll(async () => {

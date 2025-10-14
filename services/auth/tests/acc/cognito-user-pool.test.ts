@@ -4,7 +4,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { assert, describe, it } from 'vitest';
 import { testConfig } from '../common/config';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { TestLambdaDriver } from '../../../../libs/test-utils/src/aws/testLambda.driver';
 
 const command = new DescribeUserPoolCommand({
   UserPoolId: testConfig.userPoolId,
@@ -12,7 +12,10 @@ const command = new DescribeUserPoolCommand({
 
 // not supported by permissions boundaries
 describe.skip('Check deployed Cognito User Pool Client', async () => {
-  const driver = new TestLambdaDriver();
+  const driver = new TestLambdaDriver({
+    region: testConfig.region,
+    functionName: testConfig.testLambdaFunctionName,
+  });
 
   const response = await driver.performAction<DescribeUserPoolResponse>({
     service: 'CognitoIdentityProviderClient',
