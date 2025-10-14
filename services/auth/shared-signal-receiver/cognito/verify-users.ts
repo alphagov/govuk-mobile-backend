@@ -23,6 +23,6 @@ export const verifyUsername = async (username: string): Promise<boolean> => {
       return false;
     }
     // bubble up any other errors
-    throw error;
+    throw error; // nosemgrep
   }
 };

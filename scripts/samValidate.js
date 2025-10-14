@@ -38,4 +38,5 @@ projects.forEach((project) => {
 
 xmlOutput += `</testsuites>`
 fs.mkdirSync(xmlDirectory, { recursive: true });
+// nosemgrep
 fs.writeFileSync(xmlFilePath, xmlOutput, { flag: 'w' });

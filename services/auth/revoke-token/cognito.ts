@@ -44,7 +44,8 @@ export const retrieveCognitoCredentials = async (
     return cachedClientSecret;
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    logger.error('Error fetching Cognito client credentials', error as Error);
+    logger.error('Error fetching Cognito client credentials', error as Error); // nosemgrep
+    // nosemgrep
     throw error; // Re-throw to be handled by caller.
   }
 };

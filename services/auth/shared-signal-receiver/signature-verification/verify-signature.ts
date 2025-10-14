@@ -60,7 +60,8 @@ export const verifySETJwt = async ({
     switch (true) {
       case error instanceof InvalidRequestError:
       case error instanceof InvalidKeyError:
-        throw error;
+        // semgrep ignored because this function bubbles up the error
+        throw error; // nosemgrep
       default:
         throw new SignatureVerificationError(String(error));
     }

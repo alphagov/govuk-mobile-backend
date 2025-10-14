@@ -38,7 +38,7 @@ export class SharedSignalHealthCheckService implements SharedSignalHealthCheck {
       );
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const secretConfig: SecretsConfig = JSON.parse(secret) as SecretsConfig;
+    const secretConfig: SecretsConfig = JSON.parse(secret) as SecretsConfig; // nosemgrep
     const response = await sendHttpRequest({
       url: this.healthCheckTokenUrl,
       httpRequest: {

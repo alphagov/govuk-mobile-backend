@@ -7,3 +7,7 @@
 
 # Ignore nx files
 .nx/nxw.js
+
+dist/
+coverage/
+reports/

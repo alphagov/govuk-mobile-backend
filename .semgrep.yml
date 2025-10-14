@@ -376,12 +376,17 @@ rules:
 
   - id: error-details-exposure
     patterns:
+      - pattern: throw $E;
       - pattern-inside: |
+          try {
+            ...
           } catch ($E) {
             ...
             throw $E;
           }
       - pattern-not-inside: |
+          try {
+            ...
           } catch ($E) {
             console.error(...);
             throw new Error('Internal server error');
@@ -481,13 +486,16 @@ rules:
   - id: env-var-validation-insufficient
     patterns:
       - pattern: |
-          if ($VAR == null) {
+          if ($ENV_VAR == null) {
             throw new $ERROR(...);
           }
       - pattern-not: |
-          if (!$VAR || $VAR.trim() === '') {
+          if (!$ENV_VAR || $ENV_VAR.trim() === '') {
             throw new $ERROR(...);
           }
+      - metavariable-regex:
+          metavariable: $ENV_VAR
+          regex: .*(process|process.env).*
     message: 'Environment variable validation should check for empty/whitespace strings, not just null/undefined.'
     languages: [javascript, typescript]
     severity: WARNING

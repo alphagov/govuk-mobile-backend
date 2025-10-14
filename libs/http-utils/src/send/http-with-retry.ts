@@ -101,7 +101,7 @@ const sendHttpRequest = async ({
     } catch (error) {
       // Do not retry if aborted
       if (error instanceof Error && error.name === 'TimeoutError') {
-        throw error;
+        throw error; // nosemgrep
       }
 
       if (attempt < maxAttempts) {
@@ -112,7 +112,8 @@ const sendHttpRequest = async ({
         );
       }
 
-      throw error;
+      // semgrep ignored because this function bubbles up the error
+      throw error; // nosemgrep
     }
   }
 
