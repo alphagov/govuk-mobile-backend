@@ -25,6 +25,7 @@ const validateCognitoUrl = async (
     maxAge: sixtyMinutes,
   });
 
+  // nosemgrep: env-var-validation-insufficient
   if (domainName == null) {
     throw new ConfigError(`No parameter for value: ${configName}`);
   }

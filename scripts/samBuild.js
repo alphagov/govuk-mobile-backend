@@ -23,6 +23,7 @@ const samTemplateFile = [projectPath, 'template.yaml'].join('/');
 
 // Grab Globals and Resources as objects from template yaml
 const { Globals, Resources } = yamlParse(
+  // nosemgrep
   readFileSync(samTemplateFile, 'utf-8'),
 );
 

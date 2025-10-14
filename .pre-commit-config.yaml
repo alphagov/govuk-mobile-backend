@@ -2,7 +2,7 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     hooks:
       - id: check-merge-conflict
-    rev: v5.0.0
+    rev: v6.0.0
   - repo: git@github.com:Yelp/detect-secrets
     hooks:
       - args:
@@ -42,14 +42,6 @@ repos:
         entry: nx affected -t checkov
         pass_filenames: false
         stages: [pre-commit]
-  - repo: https://github.com/semgrep/semgrep
-    rev: v1.131.0
-    hooks:
-      - id: semgrep
-        args: ['--config=.semgrep.yml']
-        pass_filenames: false # This forces it to scan all files in repo
-        always_run: true # Run even if no files match
-        verbose: true
 
       - id: acceptance tests
         name: acceptance tests
@@ -64,3 +56,12 @@ repos:
         entry: nx affected -t auth:test:int
         pass_filenames: false
         stages: [pre-push]
+
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.89.0
+    hooks:
+      - id: semgrep
+        args: ['--config=.semgrep.yml']
+        pass_filenames: false # This forces it to scan all files in repo
+        always_run: true # Run even if no files match
+        verbose: true

@@ -376,12 +376,17 @@ rules:
 
   - id: error-details-exposure
     patterns:
+      - pattern: throw $E;
       - pattern-inside: |
+          try {
+            ...
           } catch ($E) {
             ...
             throw $E;
           }
       - pattern-not-inside: |
+          try {
+            ...
           } catch ($E) {
             console.error(...);
             throw new Error('Internal server error');

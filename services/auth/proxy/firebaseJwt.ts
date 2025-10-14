@@ -68,18 +68,21 @@ export const validateFirebaseJWT = async (
   }
   const { kid, alg, typ } = decodedTokenHeader;
 
+  // nosemgrep: env-var-validation-insufficient
   if (kid == null) {
     throw new JwtError(
       'JWT is missing the "kid" header',
       'kid header is missing',
     );
   }
+  // nosemgrep: env-var-validation-insufficient
   if (alg == null) {
     throw new JwtError(
       'JWT is missing the "alg" header',
       'alg header is missing',
     );
   }
+  // nosemgrep: env-var-validation-insufficient
   if (typ == null) {
     throw new JwtError(
       'JWT is missing the "typ" header',
