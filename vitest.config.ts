@@ -77,6 +77,8 @@ export default defineConfig({
         '**/*.test.ts',
         'vitest*.config.ts',
         '__mocks__',
+        'libs/test-utils/**/*',
+        'scripts/**/*',
       ],
       reporter: ['text', 'lcov'],
       reportOnFailure: true,

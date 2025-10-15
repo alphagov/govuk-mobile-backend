@@ -289,6 +289,13 @@ Resources:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ChatApiGateway}/stages/${ChatApiGatewayStage}
       WebACLArn: !GetAtt ChatApiGatewayWaf.Arn
 
+  ChatApiGatewayWafLoggingConfiguration:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      ResourceArn: !GetAtt ChatApiGatewayWaf.Arn
+      LogDestinationConfigs:
+        - !GetAtt ChatApiGatewayWafLogGroup.Arn
+
   ChatApiGatewayWafLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -689,3 +696,7 @@ Outputs:
   ChatAuthorizerFunctionKMSKeyArn:
     Description: The ARN of the KMS key used by the Chat authorizer function
     Value: !GetAtt ChatAuthorizerFunctionKMSKey.Arn
+
+  ChatApiGatewayWafLogGroupName:
+    Description: The name of the Chat API Gateway WAF log group
+    Value: !Ref ChatApiGatewayWafLogGroup

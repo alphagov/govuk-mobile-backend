@@ -17,6 +17,22 @@ describe('Chat API Gateway WAF Log Group', () => {
   const resource = template.findResources('AWS::Logs::LogGroup');
   resourceUnderTest = resource['ChatApiGatewayWafLogGroup'] as any;
 
+  it('should configure AWS::WAFv2::LoggingConfiguration to the WAF log group', () => {
+    const resources = template.findResources(
+      'AWS::WAFv2::LoggingConfiguration',
+    );
+    const resourceUnderTest =
+      resources['ChatApiGatewayWafLoggingConfiguration'];
+    expect(resourceUnderTest).toBeDefined();
+    expect(resourceUnderTest.Type).toEqual('AWS::WAFv2::LoggingConfiguration');
+    expect(resourceUnderTest.Properties).toBeDefined();
+
+    // Destination should be a CloudWatch Logs log group
+    expect(resourceUnderTest.Properties.LogDestinationConfigs).toEqual([
+      { 'Fn::GetAtt': ['ChatApiGatewayWafLogGroup', 'Arn'] },
+    ]);
+  });
+
   it('should have a log group name', () => {
     expect(resourceUnderTest.Properties.LogGroupName).toEqual({
       'Fn::Sub': 'aws-waf-logs-chat-proxy-${AWS::StackName}',

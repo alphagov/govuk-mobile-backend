@@ -118,31 +118,31 @@ There are five workflows automating our tests, publishing and general checks:
 
 ## Getting CloudFormation Outputs to a `.env` File
 
-We use a helper script to automate the process of extracting outputs from your AWS CloudFormation stacks and writing them into a `.env` file, making it easy to use these values in your local applications or CI/CD pipelines. All output keys are prefixed with `CFN_`.
+We use a helper script to extract outputs from CloudFormation stacks and write them into a `.env` file. All output keys are prefixed with `CFN_`.
 
-## Prerequisites
-
-Before running this script, ensure you have the following installed and configured:
+### Prerequisites
 
 - AWS CLI
 - jq
 
-### Running the script
+### Using the top-level script (multiple stacks + static values)
 
-Execute the script, providing your CloudFormation stack name as the first argument.
-
-```sh
-cd auth
-sh ./get-cloudformation-outputs.sh <your-stack-name>
-```
-
-This will generate a `.env` file in the current directory (`auth`) containing your CloudFormation outputs.
-
-**Optional:** You can specify a different output file path as the second argument:
+The top-level script supports combining outputs from multiple stacks and prepends any static env values from `.env.static` if present.
 
 ```sh
-./get-cloudformation-outputs.sh <your-stack-name> config/my_app_variables.env
+./scripts/get-cloudformation-outputs.sh .env <auth-stack-name> <chat-stack-name>
+
+# Example
+./scripts/get-cloudformation-outputs.sh .env govuk-app-backend govuk-chat-backend
+
+# Then load the values
+source .env
 ```
+
+Notes:
+
+- If `.env.static` exists at the repo root, its contents are written first to `.env`.
+- Outputs for each stack are appended and grouped by a comment header.
 
 ### SAM deploy to Dev Environment
 

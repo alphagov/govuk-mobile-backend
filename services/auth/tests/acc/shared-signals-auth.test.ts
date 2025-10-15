@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ClientCredentialsDriver } from '../driver/client-credentials.driver';
 import { testConfig } from '../common/config';
-import { v4 as uuidv4 } from 'uuid';
 import axios, { AxiosError } from 'axios';
 import { SharedSignalsDriver } from '../driver/shared-signals.driver';
 

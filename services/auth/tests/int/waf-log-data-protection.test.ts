@@ -1,13 +1,16 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { LoggingDriver } from '../driver/logging.driver';
+import { LoggingDriver } from '../../../../libs/test-utils/src/aws/logging.driver';
 import { testConfig } from '../common/config';
 import axios from 'axios';
 import querystring from 'querystring';
 import jsonwebtoken from 'jsonwebtoken';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { TestLambdaDriver } from '../../../../libs/test-utils/src/aws/testLambda.driver';
 import { sleep } from '../common/sleep';
 
-const driver = new TestLambdaDriver();
+const driver = new TestLambdaDriver({
+  region: testConfig.region,
+  functionName: testConfig.testLambdaFunctionName,
+});
 
 describe(
   'waf logging data protection policies',

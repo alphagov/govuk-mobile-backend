@@ -1,11 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { SharedSignalsHealthCheckDriver } from '../driver/sharedSignalsHealthcheck.driver';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { TestLambdaDriver } from '../../../../libs/test-utils/src/aws/testLambda.driver';
 import { testConfig } from '../common/config';
-import { LoggingDriver } from '../driver/logging.driver';
+import { LoggingDriver } from '../../../../libs/test-utils/src/aws/logging.driver';
 
 describe('Shared Signals Health-check', () => {
-  const testLambdaDirver = new TestLambdaDriver();
+  const testLambdaDirver = new TestLambdaDriver({
+    region: testConfig.region,
+    functionName: testConfig.testLambdaFunctionName,
+  });
   const healthCheckScenario = new SharedSignalsHealthCheckDriver(
     testLambdaDirver,
     testConfig.sharedSignalHealthCheckFunctionName,

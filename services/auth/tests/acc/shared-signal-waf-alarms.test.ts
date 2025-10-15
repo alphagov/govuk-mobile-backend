@@ -5,9 +5,12 @@ import {
 import { assert, describe, it } from 'vitest';
 import { testConfig } from '../common/config';
 import { AlarmTestCase } from '../types/alarm-test-case';
-import { TestLambdaDriver } from '../driver/testLambda.driver';
+import { TestLambdaDriver } from '../../../../libs/test-utils/src/aws/testLambda.driver';
 
-const driver = new TestLambdaDriver();
+const driver = new TestLambdaDriver({
+  region: testConfig.region,
+  functionName: testConfig.testLambdaFunctionName,
+});
 
 const testCases: AlarmTestCase[] = [
   {
