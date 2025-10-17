@@ -61,6 +61,11 @@ describe('Lambda Authorizer IAM Role', () => {
                   'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-chat-proxy-authorizer-function:*',
               },
             },
+            {
+              Action: ['xray:PutTraceSegments', 'xray:PutTelemetryRecords'],
+              Effect: 'Allow',
+              Resource: '*',
+            },
           ],
           Version: '2012-10-17',
         },

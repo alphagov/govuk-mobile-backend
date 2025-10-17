@@ -9,8 +9,10 @@ import middy from '@middy/core';
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import { parser } from '@aws-lambda-powertools/parser/middleware';
 import { APIGatewayTokenAuthorizerEventSchema } from '@aws-lambda-powertools/parser/schemas/api-gateway';
+import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import type { z } from 'zod';
 import { errorMiddleware } from './middleware/global-error-handler';
+import { tracer } from './tracer';
 
 const generatePolicy = (
   principalId: string,
@@ -67,6 +69,7 @@ export const lambdaHandler = middy<
   z.infer<typeof APIGatewayTokenAuthorizerEventSchema>,
   APIGatewayAuthorizerResult
 >()
+  .use(captureLambdaHandler(tracer))
   .use(
     injectLambdaContext(logger, {
       correlationIdPath: 'requestContext.requestId',
