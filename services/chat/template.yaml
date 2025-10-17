@@ -702,6 +702,102 @@ Resources:
         - Key: System
           Value: Chat
 
+
+  # WebSocket API for real-time streaming (dev-only)
+  ChatWebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      Name: !Sub ${AWS::StackName}-chat-websocket
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Description: WebSocket API for real-time chat streaming
+
+  ChatWebSocketConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      ApiId: !Ref ChatWebSocketApi
+      RouteKey: $connect
+      Target: !Sub integrations/${ChatWebSocketConnectIntegration}
+
+  ChatWebSocketDisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      ApiId: !Ref ChatWebSocketApi
+      RouteKey: $disconnect
+      Target: !Sub integrations/${ChatWebSocketDisconnectIntegration}
+
+  ChatWebSocketMessageRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      ApiId: !Ref ChatWebSocketApi
+      RouteKey: $default
+      Target: !Sub integrations/${ChatWebSocketMessageIntegration}
+
+  ChatWebSocketConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      ApiId: !Ref ChatWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatWebSocketFunction.Arn}/invocations
+
+  ChatWebSocketDisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      ApiId: !Ref ChatWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatWebSocketFunction.Arn}/invocations
+
+  ChatWebSocketMessageIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      ApiId: !Ref ChatWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatWebSocketFunction.Arn}/invocations
+
+  ChatWebSocketFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-chat-websocket
+      Handler: handler.lambdaHandler
+      CodeUri: .build/websocket
+      Description: WebSocket handler for real-time chat streaming
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          NODE_OPTIONS: '--enable-source-maps'
+          WEBSOCKET_ENDPOINT: !Sub https://${ChatWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Chat
+
+  ChatWebSocketFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      FunctionName: !Ref ChatWebSocketFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ChatWebSocketApi}/*/*
+
+  ChatWebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      ApiId: !Ref ChatWebSocketApi
+      StageName: !Ref Environment
+      AutoDeploy: true
+
+
 Outputs:
   AWSAccountId:
     Description: The AWS Account ID
@@ -732,6 +828,16 @@ Outputs:
     Condition: IsNonIntegratedEnvironment
     Description: CloudFront domain name for streaming via Function URL
     Value: !GetAtt ChatStreamingCloudFrontDistribution.DomainName
+
+  ChatWebSocketApiUrl:
+    Condition: IsNonIntegratedEnvironment
+    Description: WebSocket API URL for real-time streaming
+    Value: !Sub wss://${ChatWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+
+  ChatWebSocketApiId:
+    Condition: IsNonIntegratedEnvironment
+    Description: The ID of the WebSocket API
+    Value: !Ref ChatWebSocketApi
 
   ChatApiGatewayId:
     Description: The ID of the Chat API Gateway

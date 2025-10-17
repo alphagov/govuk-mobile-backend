@@ -34,6 +34,31 @@ Ensure you have pulled down the stack outputs from the SAM template to a `.env`,
 sh ../auth/helper-scripts/get-cloudformation-outputs.sh your-stack-name
 ```
 
+### PoC: Streaming Demonstrations (dev only)
+
+The chat service includes two streaming approaches for demonstration:
+
+#### 1. Function URL Streaming (Buffered)
+```bash
+# Get Function URL
+aws cloudformation describe-stacks --stack-name ps-chat --query 'Stacks[0].Outputs[?OutputKey==`ChatStreamingFunctionUrl`].OutputValue' --output text
+
+# Test streaming (note: Function URLs buffer responses)
+curl -N "$CHAT_STREAMING_FUNCTION_URL"
+```
+
+#### 2. WebSocket Streaming (True Real-time)
+```bash
+# Get WebSocket URL
+aws cloudformation describe-stacks --stack-name ps-chat --query 'Stacks[0].Outputs[?OutputKey==`ChatWebSocketApiUrl`].OutputValue' --output text
+
+# Test WebSocket streaming (requires ws package)
+npm install ws
+node test-websocket.js wss://YOUR_WEBSOCKET_URL_HERE
+```
+
+The WebSocket approach provides **true streaming** where each token is sent immediately to the client, unlike Function URLs which buffer the entire response.
+
 There are multiple sets of tests, specifically, `unit`, `acc` & `int`, below is a brief description of what is expected for each:
 
 #### infra
