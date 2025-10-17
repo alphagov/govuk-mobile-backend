@@ -105,6 +105,88 @@ Resources:
         - Key: System
           Value: Chat
 
+  # PoC: Streaming Lambda exposed via Function URL for easy local testing
+  ChatStreamingFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-chat-streaming
+      Handler: handler.lambdaHandler
+      CodeUri: .build/streaming
+      Runtime: nodejs22.x
+      Description: PoC Lambda that streams SSE using Lambda response streaming
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins: ['*']
+          AllowMethods: ['GET','POST']
+          AllowHeaders: ['*']
+        InvokeMode: RESPONSE_STREAM
+      Environment:
+        Variables:
+          NODE_OPTIONS: '--enable-source-maps'
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Chat
+
+  # Explicit permission for Function URL invocation in non-integrated envs
+  ChatStreamingFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      FunctionName: !Ref ChatStreamingFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+
+  # CloudFront distribution fronting the Function URL for streaming (dev-only)
+  ChatStreamingCloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - Id: ChatStreamingFunctionUrlOrigin
+            DomainName: !Select
+              - 2
+              - !Split
+                - '/'
+                - !GetAtt ChatStreamingFunctionUrl.FunctionUrl
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: ChatStreamingFunctionUrlOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # Managed-CachingDisabled
+          OriginRequestPolicyId: !Ref ChatStreamingOriginRequestPolicy
+          Compress: false
+        DefaultRootObject: ''
+        PriceClass: PriceClass_100
+        Comment: !Sub ${AWS::StackName}-chat-streaming-cf
+        IPV6Enabled: true
+
+  ChatStreamingOriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Condition: IsNonIntegratedEnvironment
+    Properties:
+      OriginRequestPolicyConfig:
+        Name: !Sub ${AWS::StackName}-chat-streaming-origin-policy
+        CookiesConfig:
+          CookieBehavior: none
+        HeadersConfig:
+          HeaderBehavior: whitelist
+          Headers:
+            - Govuk-Chat-End-User-Id
+            - Accept
+            - Content-Type
+        QueryStringsConfig:
+          QueryStringBehavior: all
+
   ChatApiGatewayResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -640,6 +722,16 @@ Outputs:
   ChatApiGatewayUrl:
     Description: Auth Proxy Gateway endpoint URL
     Value: !Sub https://${ChatApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+
+  ChatStreamingFunctionUrl:
+    Condition: IsNonIntegratedEnvironment
+    Description: Function URL for the PoC streaming Lambda
+    Value: !GetAtt ChatStreamingFunctionUrl.FunctionUrl
+
+  ChatStreamingCloudFrontDomainName:
+    Condition: IsNonIntegratedEnvironment
+    Description: CloudFront domain name for streaming via Function URL
+    Value: !GetAtt ChatStreamingCloudFrontDistribution.DomainName
 
   ChatApiGatewayId:
     Description: The ID of the Chat API Gateway
