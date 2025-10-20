@@ -102,6 +102,71 @@ const testCases: AlarmTestCase[] = [
       { Name: 'Method', Value: 'POST' },
     ],
   },
+  {
+    name: 'Concurrency',
+    alarmName: `attestation-concurrency`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    alarmResource: 'AttestationConcurrencyAlarm',
+    topicResource: 'CloudWatchAlarmTopicPagerDuty',
+    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
+    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
+    metricName: 'ConcurrentExecutions',
+    alarmDescription:
+      'Alarm when the Auth Proxy Lambda concurrency approaches the limit, triggers at 80% of the limit.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    statistic: 'Maximum',
+    period: 60,
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 800,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [{ Name: 'FunctionName', Value: { Ref: 'AuthProxyFunction' } }],
+  },
+  {
+    name: 'Throttles',
+    alarmName: `attestation-throttles`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    alarmResource: 'AttestationThrottlesAlarm',
+    topicResource: 'CloudWatchAlarmTopicPagerDuty',
+    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
+    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
+    metricName: 'Throttles',
+    alarmDescription: 'Alarm when the Auth Proxy Lambda is being throttled.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 1,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [{ Name: 'FunctionName', Value: { Ref: 'AuthProxyFunction' } }],
+  },
+  {
+    name: 'Timeouts',
+    alarmName: `attestation-timeout`,
+    actionsEnabled: true,
+    namespace: '${AWS::StackName}/Timeouts',
+    alarmResource: 'AttestationTimeoutAlarm',
+    topicResource: 'CloudWatchAlarmTopicPagerDuty',
+    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
+    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
+    metricName: 'AttestationFunctionTimeout',
+    alarmDescription:
+      'Alarm when the Auth Proxy Lambda function is timing out.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 5,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [{ Name: 'FunctionName', Value: { Ref: 'AuthProxyFunction' } }],
+  },
 ];
 
 describe.each(testCases)(
@@ -117,7 +182,6 @@ describe.each(testCases)(
     metricName,
     namespace,
     alarmDescription,
-    topicDisplayName,
     dimensions,
     statistic,
     extendedStatistic,
@@ -251,7 +315,13 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName,
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(namespace);
+
+      const actualNamespace = cloudWatchAlarmUnderTest.Properties.Namespace;
+      if (typeof actualNamespace === 'object' && 'Fn::Sub' in actualNamespace) {
+        expect(actualNamespace['Fn::Sub']).toEqual(namespace);
+      } else {
+        expect(actualNamespace).toEqual(namespace);
+      }
 
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
       expect(cloudWatchAlarmUnderTest.Properties.ExtendedStatistic).toEqual(
