@@ -146,7 +146,7 @@ const testCases: AlarmTestCase[] = [
     dimensions: [{ Name: 'FunctionName', Value: { Ref: 'AuthProxyFunction' } }],
   },
   {
-    name: 'Throttles',
+    name: 'Timeouts',
     alarmName: `attestation-timeout`,
     actionsEnabled: true,
     namespace: '${AWS::StackName}/Timeouts',
