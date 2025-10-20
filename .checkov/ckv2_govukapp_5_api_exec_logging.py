@@ -9,7 +9,7 @@ from checkov.common.models.enums import CheckCategories, CheckResult
 class ApiExecutionLoggingEnabled(BaseResourceValueCheck):
     def __init__(self) -> None:
         name = "Ensure API execution logging is enabled (stage MethodSettings loggingLevel)"
-        id = "CKV2_GOVUKAPP_3"
+        id = "CKV2_GOVUKAPP_5"
         supported_resources = [
             "AWS::Serverless::Api",
             "AWS::ApiGateway::Stage",
