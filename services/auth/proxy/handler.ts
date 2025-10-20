@@ -46,6 +46,9 @@ export const createHandler = (
     .use(errorMiddleware())
     .handler(async (event: RequestBody, context: AppContext) => {
       logger.info(logMessages.ATTESTATION_STARTED);
+      logger.info(logMessages.ENDPOINT_REQUEST, {
+        grant_type: event.grant_type,
+      });
 
       const { proxy, getClientSecret, getConfig } = dependencies;
       const config = await getConfig();
