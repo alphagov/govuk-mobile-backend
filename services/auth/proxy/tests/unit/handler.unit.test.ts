@@ -385,9 +385,15 @@ describe('lambdaHandler', () => {
       mockContext,
     )) as APIGatewayProxyStructuredResultV2;
 
-    expect(consoleSpy).toHaveBeenCalledTimes(2);
+    expect(consoleSpy).toHaveBeenCalledTimes(3);
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining(logMessages.ATTESTATION_STARTED),
+    );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining(logMessages.ENDPOINT_REQUEST),
+      {
+        grant_type: 'authorization_code',
+      },
     );
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining(logMessages.ATTESTATION_COMPLETED),
