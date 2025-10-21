@@ -1575,7 +1575,7 @@ Resources:
       AlarmDescription: !Sub |
         Alarm when the Auth Proxy Lambda concurrency approaches the limit, triggers at 80% of the limit.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Attestation+Lambda+Alarms
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
       Namespace: AWS/Lambda
       Statistic: Maximum
       ActionsEnabled: true
@@ -1608,7 +1608,7 @@ Resources:
       AlarmDescription: !Sub |
         Alarm when the Auth Proxy Lambda is being throttled.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Attestation+Lambda+Alarms
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
       Namespace: AWS/Lambda
       Statistic: Sum
       ActionsEnabled: true
@@ -1641,7 +1641,7 @@ Resources:
       AlarmDescription: !Sub |
         Alarm when the Auth Proxy Lambda function is timing out.
         See resolution steps in runbook:
-        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Attestation+Lambda+Alarms
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
       Namespace: !Sub "${AWS::StackName}/Timeouts"
       Statistic: Sum
       ActionsEnabled: true

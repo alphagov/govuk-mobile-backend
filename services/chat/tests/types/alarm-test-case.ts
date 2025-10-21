@@ -1,14 +1,15 @@
 export type AlarmTestCase = {
-  name?: string;
-  alarmName?: string;
-  actionsEnabled?: boolean;
-  alarmResource?: string;
+  name: string;
+  alarmName: string;
+  actionsEnabled: boolean;
+  alarmResource: string;
+  topicResource: object;
   metricName: string;
   alarmDescription: string;
-  topicResource: object;
+  topicDisplayName: string;
   period: number;
   evaluationPeriods: number;
-  datapointsToAlarm: number;
+  datapointsToAlarm?: number;
   threshold: number;
   comparisonOperator: string;
   dimensions?: any[];

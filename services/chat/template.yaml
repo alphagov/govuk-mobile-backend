@@ -620,6 +620,115 @@ Resources:
         - Key: System
           Value: Chat
 
+  CloudWatchAlarmAuthorizerConcurrency:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-authorizer-concurrency
+      AlarmDescription: !Sub |
+        Alarm when the Authorizer Lambda concurrency approaches the limit, triggers at 80% of the limit.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Maximum
+      ActionsEnabled: true
+      MetricName: ConcurrentExecutions
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 800 # ReservedConcurrentExecutions for the Auth Lambda is set to 1000 and so this is 80% of that
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ChatAuthorizerFunction
+      AlarmActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+      OKActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  CloudWatchAlarmAuthorizerThrottles:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-authorizer-throttles
+      AlarmDescription: !Sub |
+        Alarm when the Authorizer Lambda is being throttled.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: Throttles
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ChatAuthorizerFunction
+      AlarmActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+      OKActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat 
+
+  CloudWatchAlarmAuthorizerTimeouts:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-authorizer-timeout
+      AlarmDescription: !Sub |
+        Alarm when the Authorizer Lambda function is timing out.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: !Sub "${AWS::StackName}/Timeouts"
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: ChatAuthorizerFunctionTimeout
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 5 
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ChatAuthorizerFunction
+      AlarmActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+      OKActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Chat
+
+  CloudWatchAlarmAuthorizerTimeoutMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref ChatAuthorizerFunctionLogGroup
+      FilterPattern: '{ ($.type = "platform.report") && ($.record.status = "timeout") }'
+      MetricTransformations:
+        - MetricValue: "1"
+          MetricNamespace: !Sub "${AWS::StackName}/Timeouts"
+          MetricName: "ChatAuthorizerFunctionTimeout"
+
 Outputs:
   AWSAccountId:
     Description: The AWS Account ID
