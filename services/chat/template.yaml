@@ -226,6 +226,7 @@ Resources:
       StageName: !Ref Environment
       RestApiId: !Ref ChatApiGateway
       DeploymentId: !Ref ChatApiGatewayDeployment20250828
+      TracingEnabled: true
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
