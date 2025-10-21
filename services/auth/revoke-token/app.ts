@@ -6,10 +6,12 @@ import { logger } from './logger';
 import middy from '@middy/core';
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import { parser } from '@aws-lambda-powertools/parser/middleware';
+import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import { z } from 'zod';
 import { errorMiddleware } from './middleware/global-error-handler';
 import httpUrlEncodeBodyParser from '@middy/http-urlencode-body-parser';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
+import { tracer } from './tracer';
 
 const cognitoIdentityServiceProvider: CognitoIdentityProviderClient =
   new CognitoIdentityProviderClient({
@@ -24,6 +26,7 @@ const schema = z.object({
 });
 
 export const lambdaHandler = middy()
+  .use(captureLambdaHandler(tracer))
   .use(
     injectLambdaContext(logger, {
       correlationIdPath: 'requestContext.requestId',

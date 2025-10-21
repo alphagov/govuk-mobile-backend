@@ -151,6 +151,7 @@ Globals:
     MemorySize: 128
     Timeout: 60
     Runtime: nodejs22.x
+    Tracing: Active
 
 Resources:
   CognitoUserPool:
@@ -1282,6 +1283,7 @@ Resources:
                   - /
                   - !Ref AWS::StackId
       StageName: !Ref Environment
+      TracingEnabled: true
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
@@ -1795,6 +1797,11 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy-function:*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1922,6 +1929,7 @@ Resources:
     Properties:
       Name: !Sub ${AWS::StackName}-shared-signal
       StageName: !Ref Environment
+      TracingEnabled: true
       MethodSettings:
         - ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 5000
@@ -2484,6 +2492,11 @@ Resources:
                   - cognito-idp:AdminUpdateUserAttributes
                   - cognito-idp:AdminGetUser
                 Resource: !GetAtt CognitoUserPool.Arn
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2595,6 +2608,11 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check-function:*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -3075,6 +3093,11 @@ Resources:
                   - logs:PutLogEvents
                 Resource: 
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-revoke-refresh-token-function:*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
