@@ -9,33 +9,80 @@ const template = loadTemplateFromFile(
 
 const testCases: AlarmTestCase[] = [
   {
-    name: '5xx',
-    alarmName: `chat-proxy-5xx-errors`,
+    name: 'Concurrency',
+    alarmName: `authorizer-concurrency`,
     actionsEnabled: true,
-    alarmResource: 'CloudwatchAlarmChatProxy5xxErrors',
-    namespace: 'AWS/ApiGateway',
-    metricName: '5XXError',
-    alarmDescription: 'Alarm detects a high rate of server-side errors.',
+    namespace: 'AWS/Lambda',
+    alarmResource: 'CloudWatchAlarmAuthorizerConcurrency',
     topicResource: {
       'Fn::Sub':
         'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic',
     },
+    metricName: 'ConcurrentExecutions',
+    alarmDescription:
+      'Alarm when the Authorizer Lambda concurrency approaches the limit, triggers at 80% of the limit.',
     topicDisplayName: 'cloudwatch-alarm-topic',
-    statistic: 'Average',
+    statistic: 'Maximum',
     period: 60,
-    evaluationPeriods: 3,
-    datapointsToAlarm: 3,
-    threshold: 0.05,
-    comparisonOperator: 'GreaterThanThreshold',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 800,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'ApiName', Value: { 'Fn::Sub': '${AWS::StackName}-chat-proxy' } },
-      { Name: 'Stage', Value: { Ref: 'Environment' } },
+      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+    ],
+  },
+  {
+    name: 'Throttles',
+    alarmName: `authorizer-throttles`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    alarmResource: 'CloudWatchAlarmAuthorizerThrottles',
+    topicResource: {
+      'Fn::Sub':
+        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic',
+    },
+    metricName: 'Throttles',
+    alarmDescription: 'Alarm when the Authorizer Lambda is being throttled.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 1,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+    ],
+  },
+  {
+    name: 'Timeouts',
+    alarmName: `authorizer-timeout`,
+    actionsEnabled: true,
+    namespace: '${AWS::StackName}/Timeouts',
+    alarmResource: 'CloudWatchAlarmAuthorizerTimeouts',
+    topicResource: {
+      'Fn::Sub':
+        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic',
+    },
+    metricName: 'ChatAuthorizerFunctionTimeout',
+    alarmDescription:
+      'Alarm when the Authorizer Lambda function is timing out.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 5,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
     ],
   },
 ];
 
 describe.each(testCases)(
-  'Set up CloudWatch Alarm for Chat Api Gateway $name errors with supporting alarm resources',
+  'Set up CloudWatch Alarm $alarmName for Lambda Authorizer',
   ({
     alarmName,
     actionsEnabled,
@@ -78,7 +125,13 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
         metricName,
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Namespace).toEqual(namespace);
+
+      const actualNamespace = cloudWatchAlarmUnderTest.Properties.Namespace;
+      if (typeof actualNamespace === 'object' && 'Fn::Sub' in actualNamespace) {
+        expect(actualNamespace['Fn::Sub']).toEqual(namespace);
+      } else {
+        expect(actualNamespace).toEqual(namespace);
+      }
 
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
       expect(cloudWatchAlarmUnderTest.Properties.ExtendedStatistic).toEqual(
