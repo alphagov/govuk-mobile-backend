@@ -15,12 +15,12 @@ const driver = new TestLambdaDriver({
 const testCases: AlarmTestCase[] = [
   {
     name: 'SharedSignalAuthorizerConcurrency',
-    alarmName: `shared-signal-authorizer-concurrency`,
+    alarmName: `${testConfig.stackName}-shared-signal-authorizer-concurrency`,
     actionsEnabled: true,
     namespace: 'AWS/Lambda',
     metricName: 'ConcurrentExecutions',
     alarmDescription:
-      'Alarm when the Authorizer Lambda concurrency approaches the limit, triggers at 80% of the limit.',
+      'Alarm when the Shared Signal Authorizer Lambda concurrency approaches the limit, triggers at 80% of the limit.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     statistic: 'Maximum',
     period: 60,
@@ -34,11 +34,12 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: 'SharedSignalAuthorizerThrottles',
-    alarmName: `shared-signal-authorizer-throttles`,
+    alarmName: `${testConfig.stackName}-shared-signal-authorizer-throttles`,
     actionsEnabled: true,
     namespace: 'AWS/Lambda',
     metricName: 'Throttles',
-    alarmDescription: 'Alarm when the Authorizer Lambda is being throttled.',
+    alarmDescription:
+      'Alarm when the Shared Signal Authorizer Lambda is being throttled.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     period: 60,
     statistic: 'Sum',
@@ -52,12 +53,12 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: 'SharedSignalAuthorizerTimeouts',
-    alarmName: `shared-signal-authorizer-timeout`,
+    alarmName: `${testConfig.stackName}-shared-signal-authorizer-timeout`,
     actionsEnabled: true,
-    namespace: '${AWS::StackName}/Timeouts',
+    namespace: `${testConfig.stackName}/Timeouts`,
     metricName: 'SharedSignalAuthFunctionTimeout',
     alarmDescription:
-      'Alarm when the Authorizer Lambda function is timing out.',
+      'Alarm when the Shared Signal Authorizer Lambda function is timing out.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     period: 60,
     statistic: 'Sum',
@@ -71,12 +72,12 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: 'SharedSignalReceiverConcurrency',
-    alarmName: `shared-signal-receiver-concurrency`,
+    alarmName: `${testConfig.stackName}-shared-signal-receiver-concurrency`,
     actionsEnabled: true,
     namespace: 'AWS/Lambda',
     metricName: 'ConcurrentExecutions',
     alarmDescription:
-      'Alarm when the Receiver Lambda concurrency approaches the limit, triggers at 80% of the limit.',
+      'Alarm when the Shared Signal Receiver concurrency approaches the limit, triggers at 80% of the limit.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     statistic: 'Maximum',
     period: 60,
@@ -90,11 +91,12 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: 'SharedSignalReceiverThrottles',
-    alarmName: `shared-signal-receiver-throttles`,
+    alarmName: `${testConfig.stackName}-shared-signal-receiver-throttles`,
     actionsEnabled: true,
     namespace: 'AWS/Lambda',
     metricName: 'Throttles',
-    alarmDescription: 'Alarm when the Receiver Lambda is being throttled.',
+    alarmDescription:
+      'Alarm when the Shared Signal Receiver Lambda is being throttled.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     period: 60,
     statistic: 'Sum',
@@ -108,11 +110,12 @@ const testCases: AlarmTestCase[] = [
   },
   {
     name: 'SharedSignalReceiverTimeouts',
-    alarmName: `shared-signal-receiver-timeout`,
+    alarmName: `${testConfig.stackName}-shared-signal-receiver-timeout`,
     actionsEnabled: true,
-    namespace: '${AWS::StackName}/Timeouts',
+    namespace: `${testConfig.stackName}/Timeouts`,
     metricName: 'SharedSignalReceiverFunctionTimeout',
-    alarmDescription: 'Alarm when the Receiver Lambda function is timing out.',
+    alarmDescription:
+      'Alarm when the Shared Signal Receiver Lambda function is timing out.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     period: 60,
     statistic: 'Sum',
