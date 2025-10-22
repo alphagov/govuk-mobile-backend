@@ -29,7 +29,7 @@ const testCases: AlarmTestCase[] = [
     threshold: 800,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+      { Name: 'FunctionName', Value: { Ref: 'SharedSignalAuthorizer' } },
     ],
   },
   {
@@ -47,7 +47,7 @@ const testCases: AlarmTestCase[] = [
     threshold: 1,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+      { Name: 'FunctionName', Value: { Ref: 'SharedSignalAuthorizer' } },
     ],
   },
   {
@@ -55,7 +55,7 @@ const testCases: AlarmTestCase[] = [
     alarmName: `shared-signal-authorizer-timeout`,
     actionsEnabled: true,
     namespace: '${AWS::StackName}/Timeouts',
-    metricName: 'ChatAuthorizerFunctionTimeout',
+    metricName: 'SharedSignalAuthFunctionTimeout',
     alarmDescription:
       'Alarm when the Authorizer Lambda function is timing out.',
     topicDisplayName: 'cloudwatch-alarm-topic',
@@ -66,17 +66,17 @@ const testCases: AlarmTestCase[] = [
     threshold: 5,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+      { Name: 'FunctionName', Value: { Ref: 'SharedSignalAuthorizer' } },
     ],
   },
   {
-    name: 'SharedSignalAuthorizerConcurrency',
-    alarmName: `shared-signal-authorizer-concurrency`,
+    name: 'SharedSignalReceiverConcurrency',
+    alarmName: `shared-signal-receiver-concurrency`,
     actionsEnabled: true,
     namespace: 'AWS/Lambda',
     metricName: 'ConcurrentExecutions',
     alarmDescription:
-      'Alarm when the Authorizer Lambda concurrency approaches the limit, triggers at 80% of the limit.',
+      'Alarm when the Receiver Lambda concurrency approaches the limit, triggers at 80% of the limit.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     statistic: 'Maximum',
     period: 60,
@@ -85,16 +85,16 @@ const testCases: AlarmTestCase[] = [
     threshold: 800,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+      { Name: 'FunctionName', Value: { Ref: 'SharedSignalReceiverFunction' } },
     ],
   },
   {
-    name: 'SharedSignalAuthorizerThrottles',
-    alarmName: `shared-signal-authorizer-throttles`,
+    name: 'SharedSignalReceiverThrottles',
+    alarmName: `shared-signal-receiver-throttles`,
     actionsEnabled: true,
     namespace: 'AWS/Lambda',
     metricName: 'Throttles',
-    alarmDescription: 'Alarm when the Authorizer Lambda is being throttled.',
+    alarmDescription: 'Alarm when the Receiver Lambda is being throttled.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     period: 60,
     statistic: 'Sum',
@@ -103,17 +103,16 @@ const testCases: AlarmTestCase[] = [
     threshold: 1,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+      { Name: 'FunctionName', Value: { Ref: 'SharedSignalReceiverFunction' } },
     ],
   },
   {
-    name: 'SharedSignalAuthorizerTimeouts',
-    alarmName: `shared-signal-authorizer-timeout`,
+    name: 'SharedSignalReceiverTimeouts',
+    alarmName: `shared-signal-receiver-timeout`,
     actionsEnabled: true,
     namespace: '${AWS::StackName}/Timeouts',
-    metricName: 'ChatAuthorizerFunctionTimeout',
-    alarmDescription:
-      'Alarm when the Authorizer Lambda function is timing out.',
+    metricName: 'SharedSignalReceiverFunctionTimeout',
+    alarmDescription: 'Alarm when the Receiver Lambda function is timing out.',
     topicDisplayName: 'cloudwatch-alarm-topic',
     period: 60,
     statistic: 'Sum',
@@ -122,7 +121,7 @@ const testCases: AlarmTestCase[] = [
     threshold: 5,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'ChatAuthorizerFunction' } },
+      { Name: 'FunctionName', Value: { Ref: 'SharedSignalReceiverFunction' } },
     ],
   },
 ];
