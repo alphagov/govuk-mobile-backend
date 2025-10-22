@@ -127,6 +127,63 @@ const testCases: AlarmTestCase[] = [
       { Name: 'FunctionName', Value: { Ref: 'SharedSignalReceiverFunction' } },
     ],
   },
+  {
+    name: 'RevokeRefreshTokenConcurrency',
+    alarmName: `${testConfig.stackName}-revoke-refresh-token-concurrency`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    metricName: 'ConcurrentExecutions',
+    alarmDescription:
+      'Alarm when the Revoke Refresh Token Lambda concurrency approaches the limit, triggers at 80% of the limit.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    statistic: 'Maximum',
+    period: 60,
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 800,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      { Name: 'FunctionName', Value: { Ref: 'RevokeRefreshTokenFunction' } },
+    ],
+  },
+  {
+    name: 'RevokeRefreshTokenThrottles',
+    alarmName: `${testConfig.stackName}-revoke-refresh-token-throttles`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    metricName: 'Throttles',
+    alarmDescription:
+      'Alarm when the Revoke Refresh Token Lambda is being throttled.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 1,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      { Name: 'FunctionName', Value: { Ref: 'RevokeRefreshTokenFunction' } },
+    ],
+  },
+  {
+    name: 'RevokeRefreshTokenTimeouts',
+    alarmName: `${testConfig.stackName}-revoke-refresh-token-timeout`,
+    actionsEnabled: true,
+    namespace: `${testConfig.stackName}/Timeouts`,
+    metricName: 'RevokeRefreshTokenFunctionTimeout',
+    alarmDescription:
+      'Alarm when the Revoke Refresh Token Lambda function is timing out.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 5,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      { Name: 'FunctionName', Value: { Ref: 'RevokeRefreshTokenFunction' } },
+    ],
+  },
 ];
 
 describe.each(testCases)(
