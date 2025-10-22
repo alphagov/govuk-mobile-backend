@@ -29,7 +29,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 800,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'SharedSignalAuthorizer' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-authorizer-function`,
+      },
     ],
   },
   {
@@ -48,7 +51,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 1,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'SharedSignalAuthorizer' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-authorizer-function`,
+      },
     ],
   },
   {
@@ -67,7 +73,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 5,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'SharedSignalAuthorizer' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-authorizer-function`,
+      },
     ],
   },
   {
@@ -86,7 +95,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 800,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'SharedSignalReceiverFunction' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-receiver`,
+      },
     ],
   },
   {
@@ -105,7 +117,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 1,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'SharedSignalReceiverFunction' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-receiver`,
+      },
     ],
   },
   {
@@ -124,7 +139,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 5,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'SharedSignalReceiverFunction' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-receiver`,
+      },
     ],
   },
   {
@@ -143,7 +161,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 800,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'RevokeRefreshTokenFunction' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-revoke-refresh-token`,
+      },
     ],
   },
   {
@@ -162,7 +183,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 1,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'RevokeRefreshTokenFunction' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-revoke-refresh-token`,
+      },
     ],
   },
   {
@@ -181,7 +205,10 @@ const testCases: AlarmTestCase[] = [
     threshold: 5,
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [
-      { Name: 'FunctionName', Value: { Ref: 'RevokeRefreshTokenFunction' } },
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-revoke-refresh-token`,
+      },
     ],
   },
 ];
