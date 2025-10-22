@@ -2315,7 +2315,7 @@ Resources:
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-authorizer-concurrency
       AlarmDescription: !Sub |
-        Alarm when the Auth Proxy Lambda concurrency approaches the limit, triggers at 80% of the limit.
+        Alarm when the Shared Signal Authorizer Lambda concurrency approaches the limit, triggers at 80% of the limit.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
       Namespace: AWS/Lambda
@@ -2346,9 +2346,9 @@ Resources:
   SharedSignalAuthorizerThrottlesAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub ${AWS::StackName}-shared-signal-throttles
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-authorizer-throttles
       AlarmDescription: !Sub |
-        Alarm when the Auth Proxy Lambda is being throttled.
+        Alarm when the Shared Signal Authorizer Lambda is being throttled.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
       Namespace: AWS/Lambda
@@ -2381,13 +2381,13 @@ Resources:
     Properties:
       AlarmName: !Sub ${AWS::StackName}-shared-signal-authorizer-timeout
       AlarmDescription: !Sub |
-        Alarm when the Auth Proxy Lambda function is timing out.
+        Alarm when the Shared Signal Authorizer Lambda function is timing out.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
       Namespace: !Sub "${AWS::StackName}/Timeouts"
       Statistic: Sum
       ActionsEnabled: true
-      MetricName: AttestationFunctionTimeout
+      MetricName: SharedSignalAuthFunctionTimeout
       Period: 60
       EvaluationPeriods: 1
       DatapointsToAlarm: 1
@@ -2418,6 +2418,115 @@ Resources:
         - MetricValue: "1"
           MetricNamespace: !Sub "${AWS::StackName}/Timeouts"
           MetricName: "SharedSignalAuthFunctionTimeout"
+
+  SharedSignalReceiverConcurrencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-receiver-concurrency
+      AlarmDescription: !Sub |
+        Alarm when the Shared Signal Receiver concurrency approaches the limit, triggers at 80% of the limit.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Maximum
+      ActionsEnabled: true
+      MetricName: ConcurrentExecutions
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 800 # ReservedConcurrentExecutions for the Attestation/Auth Lambda is set to 1000 and so this is 80% of that
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalReceiverFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalReceiverThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-receiver-throttles
+      AlarmDescription: !Sub |
+        Alarm when the Shared Signal Receiver Lambda is being throttled.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: Throttles
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalReceiverFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication 
+
+  SharedSignalReceiverTimeoutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-receiver-timeout
+      AlarmDescription: !Sub |
+        Alarm when the Shared Signal Receiver Lambda function is timing out.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: !Sub "${AWS::StackName}/Timeouts"
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: SharedSignalReceiverFunctionTimeout
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 5 
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalReceiverFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalReceiverTimeoutMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref SharedSignalReceiverFunctionLogGroup
+      FilterPattern: '{ ($.type = "platform.report") && ($.record.status = "timeout") }'
+      MetricTransformations:
+        - MetricValue: "1"
+          MetricNamespace: !Sub "${AWS::StackName}/Timeouts"
+          MetricName: "SharedSignalReceiverFunctionTimeout"
 
   SharedSignalReceiverFunction:
     Type: AWS::Serverless::Function
