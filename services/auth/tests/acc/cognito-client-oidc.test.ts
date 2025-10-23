@@ -19,18 +19,22 @@ const environmentMapping = [
   {
     environment: 'build',
     oneLoginEnvironment: 'integration',
+    refreshTokenValidity: 31536000, // 365 days
   },
   {
     environment: 'dev',
     oneLoginEnvironment: 'integration',
+    refreshTokenValidity: 31536000, // 365 days
   },
   {
     environment: 'integration',
     oneLoginEnvironment: 'integration',
+    refreshTokenValidity: 31536000, // 365 days
   },
   {
     environment: 'staging',
     oneLoginEnvironment: 'staging',
+    refreshTokenValidity: 3600, // 60 minutes
   },
 ];
 
@@ -80,7 +84,9 @@ describe('Check deployed Cognito User Pool Client', async () => {
     });
 
     it('has refresh token expiration set correctly', () => {
-      const expectedRefreshTokenValidity = 31536000; // 365 days in seconds
+      const expectedRefreshTokenValidity = environmentMapping.find(
+        (env) => env.environment === testConfig.deployedEnvironment,
+      )?.refreshTokenValidity;
       assert.equal(
         parseTokenValidityToSeconds(
           userPoolClient.RefreshTokenValidity,

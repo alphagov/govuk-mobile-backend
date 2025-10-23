@@ -91,6 +91,15 @@ Mappings:
       integration: 30
       production: 365
 
+  RefreshTokenValidityInSeconds:
+    Environment:
+      local: 31536000 # 365 days
+      build: 31536000 # 365 days
+      dev: 31536000 # 365 days
+      staging: 3600 # 60 minutes - for app team testing
+      integration: 31536000 # 365 days
+      production: 31536000 # 365 days
+
 Conditions:
   UseCodeSigning: !Not
     - !Equals
@@ -240,7 +249,10 @@ Resources:
         RefreshToken: seconds
       AccessTokenValidity: 300 # 5 minutes in seconds
       IdTokenValidity: 3600 # 1 hour in seconds
-      RefreshTokenValidity: 31536000 # 365 days in seconds (365 * 24 hours * 3600 seconds)
+      RefreshTokenValidity: !FindInMap
+        - RefreshTokenValidityInSeconds
+        - Environment
+        - !Ref Environment
       EnableTokenRevocation: true
       AllowedOAuthFlowsUserPoolClient: true
 
