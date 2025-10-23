@@ -95,7 +95,13 @@ describe('Set up the Cognito User Pool OIDC client', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       AccessTokenValidity: 300, //5 minutes
       IdTokenValidity: 3600, // one hr
-      RefreshTokenValidity: 31536000, // 365 days
+      RefreshTokenValidity: {
+        'Fn::FindInMap': [
+          'RefreshTokenValidityInSeconds',
+          'Environment',
+          { Ref: 'Environment' },
+        ],
+      }, // 365 days
     });
   });
 
