@@ -240,7 +240,7 @@ Resources:
         RefreshToken: seconds
       AccessTokenValidity: 300 # 5 minutes in seconds
       IdTokenValidity: 3600 # 1 hour in seconds
-      RefreshTokenValidity: 604800 # 7 days in seconds (7* 24 hours * 3600 seconds)
+      RefreshTokenValidity: 31536000 # 365 days in seconds (365 * 24 hours * 3600 seconds)
       EnableTokenRevocation: true
       AllowedOAuthFlowsUserPoolClient: true
 
