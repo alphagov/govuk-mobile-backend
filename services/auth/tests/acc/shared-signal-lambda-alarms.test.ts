@@ -211,6 +211,72 @@ const testCases: AlarmTestCase[] = [
       },
     ],
   },
+  {
+    name: 'SharedSignalHealthCheckConcurrency',
+    alarmName: `${testConfig.stackName}-shared-signal-health-check-concurrency`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    metricName: 'ConcurrentExecutions',
+    alarmDescription:
+      'Alarm when the Shared Signal Health Check concurrency approaches the limit, triggers at 80% of the limit.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    statistic: 'Maximum',
+    period: 60,
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 800,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-health-check`,
+      },
+    ],
+  },
+  {
+    name: 'SharedSignalHealthCheckThrottles',
+    alarmName: `${testConfig.stackName}-shared-signal-health-check-throttles`,
+    actionsEnabled: true,
+    namespace: 'AWS/Lambda',
+    metricName: 'Throttles',
+    alarmDescription:
+      'Alarm when the Shared Signal Health Check Lambda is being throttled.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 1,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-health-check`,
+      },
+    ],
+  },
+  {
+    name: 'SharedSignalHealthCheckTimeouts',
+    alarmName: `${testConfig.stackName}-shared-signal-health-check-timeout`,
+    actionsEnabled: true,
+    namespace: `${testConfig.stackName}/Timeouts`,
+    metricName: 'SharedSignalHealthCheckFunctionTimeout',
+    alarmDescription:
+      'Alarm when the Shared Signal Health Check Lambda function is timing out.',
+    topicDisplayName: 'cloudwatch-alarm-topic',
+    period: 60,
+    statistic: 'Sum',
+    evaluationPeriods: 1,
+    datapointsToAlarm: 1,
+    threshold: 5,
+    comparisonOperator: 'GreaterThanOrEqualToThreshold',
+    dimensions: [
+      {
+        Name: 'FunctionName',
+        Value: `${testConfig.stackName}-shared-signal-health-check`,
+      },
+    ],
+  },
 ];
 
 describe.each(testCases)(

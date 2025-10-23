@@ -2727,6 +2727,115 @@ Resources:
         - Key: System
           Value: Authentication
 
+  SharedSignalHealthCheckConcurrencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-concurrency
+      AlarmDescription: !Sub |
+        Alarm when the Shared Signal Health Check concurrency approaches the limit, triggers at 80% of the limit.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Maximum
+      ActionsEnabled: true
+      MetricName: ConcurrentExecutions
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 800 # ReservedConcurrentExecutions for the Attestation/Auth Lambda is set to 1000 and so this is 80% of that
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalHealthCheckFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-throttles
+      AlarmDescription: !Sub |
+        Alarm when the Shared Signal Health Check Lambda is being throttled.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: Throttles
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalHealthCheckFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication 
+
+  SharedSignalHealthCheckTimeoutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-shared-signal-health-check-timeout
+      AlarmDescription: !Sub |
+        Alarm when the Shared Signal Health Check Lambda function is timing out.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: !Sub "${AWS::StackName}/Timeouts"
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: SharedSignalHealthCheckFunctionTimeout
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 5 
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SharedSignalHealthCheckFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SharedSignalHealthCheckTimeoutMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref SharedSignalHealthCheckFunctionLogGroup
+      FilterPattern: '{ ($.type = "platform.report") && ($.record.status = "timeout") }'
+      MetricTransformations:
+        - MetricValue: "1"
+          MetricNamespace: !Sub "${AWS::StackName}/Timeouts"
+          MetricName: "SharedSignalHealthCheckFunctionTimeout"
+
   SharedSignalHealthCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -3577,6 +3686,8 @@ Resources:
                   - !GetAtt SharedSignalHealthCheckFunctionLogGroup.Arn
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-cognito-${AWS::StackName}:log-stream*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-attestation-${AWS::StackName}:log-stream*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-proxy:log-stream*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-shared-signal-health-check:log-stream*
                   - !GetAtt AttestationProxyApiAccessLogGroup.Arn
 
               - Effect: Allow
