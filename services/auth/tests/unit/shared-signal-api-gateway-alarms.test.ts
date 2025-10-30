@@ -14,13 +14,13 @@ const testCases: AlarmTestCase[] = [
     actionsEnabled: true,
     namespace: 'AWS/ApiGateway',
     alarmResource: 'SharedSignalApiGatewayAlarm4xxErrors',
-    topicResource: 'CloudWatchAlarmTopicPagerDuty',
-    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
-    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicResource: 'CloudWatchAlarmWarningsTopic',
+    topicPolicyResource: 'CloudWatchAlarmWarningsPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmWarningsNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: '4XXError',
     alarmDescription: 'Alarm detects a high rate of client-side errors.',
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 5,
@@ -40,14 +40,14 @@ const testCases: AlarmTestCase[] = [
     alarmName: 'shared-signal-5xx-errors',
     actionsEnabled: true,
     alarmResource: 'SharedSignalApiGatewayAlarm5xxErrors',
-    topicResource: 'CloudWatchAlarmTopicPagerDuty',
+    topicResource: 'CloudWatchAlarmWarningsTopic',
     namespace: 'AWS/ApiGateway',
-    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
-    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicPolicyResource: 'CloudWatchAlarmWarningsPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmWarningsNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: '5XXError',
     alarmDescription: 'Alarm detects a high rate of server-side errors.',
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 3,
@@ -71,8 +71,10 @@ describe.each(testCases)(
     actionsEnabled,
     alarmResource,
     topicResource,
+    topicKeyName,
     subscriptionResource,
     topicPolicyResource,
+    topicDisplayName,
     slackChannelConfigurationResource,
     metricName,
     namespace,
@@ -99,9 +101,6 @@ describe.each(testCases)(
     const subscriptionResources = template.findResources(
       'AWS::SNS::Subscription',
     );
-    const subscriptionUnderTest = subscriptionResources[
-      subscriptionResource
-    ] as any;
 
     const topicPolicies = template.findResources('AWS::SNS::TopicPolicy');
     const topicPolicyUnderTest = topicPolicies[topicPolicyResource] as any;
@@ -145,6 +144,9 @@ describe.each(testCases)(
       ).toEqual([
         {
           Ref: 'CloudWatchAlarmTopicPagerDuty',
+        },
+        {
+          Ref: 'CloudWatchAlarmWarningsTopic',
         },
       ]);
       expect(slackChannelConfigurationUnderTest.Properties.Tags).toEqual([
@@ -248,10 +250,10 @@ describe.each(testCases)(
       expect(snsTopicUnderTest.Type).toEqual('AWS::SNS::Topic');
       expect(snsTopicUnderTest.Properties).toBeDefined();
       expect(snsTopicUnderTest.Properties.DisplayName).toEqual({
-        'Fn::Sub': '${AWS::StackName}-cloudwatch-alarm-topic',
+        'Fn::Sub': `\${AWS::StackName}-${topicDisplayName}`,
       });
       expect(snsTopicUnderTest.Properties.KmsMasterKeyId).toEqual({
-        Ref: 'CloudWatchAlarmNotificationTopicKey',
+        Ref: `${topicKeyName}`,
       });
       expect(snsTopicUnderTest.Properties.Tags).toEqual([
         { Key: 'Product', Value: 'GOV.UK' },
@@ -260,26 +262,32 @@ describe.each(testCases)(
       ]);
     });
 
-    it(`should create a SNS subscription for ${metricName}`, () => {
-      expect(subscriptionUnderTest).toBeDefined();
-      expect(subscriptionUnderTest.Type).toEqual('AWS::SNS::Subscription');
-      expect(subscriptionUnderTest.Properties).toBeDefined();
-      expect(subscriptionUnderTest.Properties.Protocol).toEqual({
-        'Fn::If': ['IsNotProduction', 'lambda', 'https'],
-      });
-      expect(subscriptionUnderTest.Properties.Endpoint).toEqual({
-        'Fn::If': [
-          'IsNotProduction',
-          { 'Fn::GetAtt': ['PagerDutyTestFunction', 'Arn'] },
-          {
-            'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}',
-          },
-        ],
-      });
-      expect(subscriptionUnderTest.Properties.TopicArn).toEqual({
-        Ref: topicResource,
-      });
-    });
+    it.skipIf(!subscriptionResource)(
+      `should create a SNS subscription for ${metricName}`,
+      () => {
+        const subscriptionUnderTest = subscriptionResources[
+          subscriptionResource
+        ] as any;
+        expect(subscriptionUnderTest).toBeDefined();
+        expect(subscriptionUnderTest.Type).toEqual('AWS::SNS::Subscription');
+        expect(subscriptionUnderTest.Properties).toBeDefined();
+        expect(subscriptionUnderTest.Properties.Protocol).toEqual({
+          'Fn::If': ['IsNotProduction', 'lambda', 'https'],
+        });
+        expect(subscriptionUnderTest.Properties.Endpoint).toEqual({
+          'Fn::If': [
+            'IsNotProduction',
+            { 'Fn::GetAtt': ['PagerDutyTestFunction', 'Arn'] },
+            {
+              'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}',
+            },
+          ],
+        });
+        expect(subscriptionUnderTest.Properties.TopicArn).toEqual({
+          Ref: topicResource,
+        });
+      },
+    );
 
     it(`should create an SNS topic policy for ${metricName}`, () => {
       expect(topicPolicyUnderTest).toBeDefined();

@@ -18,9 +18,9 @@ const testCases: AlarmTestCase[] = [
     alarmDescription: 'Alarm detects a high rate of server-side errors.',
     topicResource: {
       'Fn::Sub':
-        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic',
+        'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-warnings-topic',
     },
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 3,

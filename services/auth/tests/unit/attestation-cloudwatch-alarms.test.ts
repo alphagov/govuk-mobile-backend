@@ -14,13 +14,13 @@ const testCases: AlarmTestCase[] = [
     actionsEnabled: true,
     namespace: 'AWS/ApiGateway',
     alarmResource: 'CloudwatchAlarmAuthProxy4xxErrors',
-    topicResource: 'CloudWatchAlarmTopicPagerDuty',
-    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
-    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicResource: 'CloudWatchAlarmWarningsTopic',
+    topicPolicyResource: 'CloudWatchAlarmWarningsPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmWarningsNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: '4XXError',
     alarmDescription: 'Alarm detects a high rate of client-side errors.',
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 5,
@@ -38,15 +38,15 @@ const testCases: AlarmTestCase[] = [
     name: '5xx',
     alarmName: `auth-proxy-5xx-errors`,
     actionsEnabled: true,
-    alarmResource: 'CloudwatchAlarmAuthProxy5xxErrors',
-    topicResource: 'CloudWatchAlarmTopicPagerDuty',
     namespace: 'AWS/ApiGateway',
-    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
-    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    alarmResource: 'CloudwatchAlarmAuthProxy5xxErrors',
+    topicResource: 'CloudWatchAlarmWarningsTopic',
+    topicPolicyResource: 'CloudWatchAlarmWarningsPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmWarningsNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: '5XXError',
     alarmDescription: 'Alarm detects a high rate of server-side errors.',
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 3,
@@ -59,11 +59,12 @@ const testCases: AlarmTestCase[] = [
     name: 'Latency',
     alarmName: `auth-proxy-latency-errors`,
     actionsEnabled: true,
+    namespace: 'AWS/ApiGateway',
     alarmResource: 'CloudwatchAlarmAuthProxyLatencyErrors',
     topicResource: 'CloudWatchAlarmTopicPagerDuty',
-    namespace: 'AWS/ApiGateway',
     subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
     topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: 'Latency',
     alarmDescription: 'Alarm detects a high rate of latency errors.',
@@ -82,13 +83,13 @@ const testCases: AlarmTestCase[] = [
     actionsEnabled: true,
     namespace: 'AWS/ApiGateway',
     alarmResource: 'CloudwatchAlarmRevokeToken4xxErrors',
-    topicResource: 'CloudWatchAlarmTopicPagerDuty',
-    subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
-    topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicResource: 'CloudWatchAlarmWarningsTopic',
+    topicPolicyResource: 'CloudWatchAlarmWarningsPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmWarningsNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: '4XXError',
     alarmDescription: 'Alarm detects a high rate of client-side errors.',
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 5,
@@ -111,6 +112,7 @@ const testCases: AlarmTestCase[] = [
     topicResource: 'CloudWatchAlarmTopicPagerDuty',
     subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
     topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: 'ConcurrentExecutions',
     alarmDescription:
@@ -133,6 +135,7 @@ const testCases: AlarmTestCase[] = [
     topicResource: 'CloudWatchAlarmTopicPagerDuty',
     subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
     topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: 'Throttles',
     alarmDescription: 'Alarm when the Auth Proxy Lambda is being throttled.',
@@ -154,6 +157,7 @@ const testCases: AlarmTestCase[] = [
     topicResource: 'CloudWatchAlarmTopicPagerDuty',
     subscriptionResource: 'CloudWatchAlarmTopicSubscriptionPagerDuty',
     topicPolicyResource: 'CloudWatchAlarmPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmNotificationTopicKey',
     slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
     metricName: 'AttestationFunctionTimeout',
     alarmDescription:
@@ -176,6 +180,8 @@ describe.each(testCases)(
     actionsEnabled,
     alarmResource,
     topicResource,
+    topicDisplayName,
+    topicKeyName,
     subscriptionResource,
     topicPolicyResource,
     slackChannelConfigurationResource,
@@ -250,6 +256,9 @@ describe.each(testCases)(
       ).toEqual([
         {
           Ref: 'CloudWatchAlarmTopicPagerDuty',
+        },
+        {
+          Ref: 'CloudWatchAlarmWarningsTopic',
         },
       ]);
       expect(slackChannelConfigurationUnderTest.Properties.Tags).toEqual([
@@ -359,10 +368,10 @@ describe.each(testCases)(
       expect(snsTopicUnderTest.Type).toEqual('AWS::SNS::Topic');
       expect(snsTopicUnderTest.Properties).toBeDefined();
       expect(snsTopicUnderTest.Properties.DisplayName).toEqual({
-        'Fn::Sub': '${AWS::StackName}-cloudwatch-alarm-topic',
+        'Fn::Sub': `\${AWS::StackName}-${topicDisplayName}`,
       });
       expect(snsTopicUnderTest.Properties.KmsMasterKeyId).toEqual({
-        Ref: 'CloudWatchAlarmNotificationTopicKey',
+        Ref: `${topicKeyName}`,
       });
       expect(snsTopicUnderTest.Properties.Tags).toEqual([
         { Key: 'Product', Value: 'GOV.UK' },
@@ -371,26 +380,29 @@ describe.each(testCases)(
       ]);
     });
 
-    it(`should create a SNS subscription for ${metricName}`, () => {
-      expect(subscriptionUnderTest).toBeDefined();
-      expect(subscriptionUnderTest.Type).toEqual('AWS::SNS::Subscription');
-      expect(subscriptionUnderTest.Properties).toBeDefined();
-      expect(subscriptionUnderTest.Properties.Protocol).toEqual({
-        'Fn::If': ['IsNotProduction', 'lambda', 'https'],
-      });
-      expect(subscriptionUnderTest.Properties.Endpoint).toEqual({
-        'Fn::If': [
-          'IsNotProduction',
-          { 'Fn::GetAtt': ['PagerDutyTestFunction', 'Arn'] },
-          {
-            'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}',
-          },
-        ],
-      });
-      expect(subscriptionUnderTest.Properties.TopicArn).toEqual({
-        Ref: topicResource,
-      });
-    });
+    it.skipIf(!subscriptionResource)(
+      `should create a SNS subscription for ${metricName}`,
+      () => {
+        expect(subscriptionUnderTest).toBeDefined();
+        expect(subscriptionUnderTest.Type).toEqual('AWS::SNS::Subscription');
+        expect(subscriptionUnderTest.Properties).toBeDefined();
+        expect(subscriptionUnderTest.Properties.Protocol).toEqual({
+          'Fn::If': ['IsNotProduction', 'lambda', 'https'],
+        });
+        expect(subscriptionUnderTest.Properties.Endpoint).toEqual({
+          'Fn::If': [
+            'IsNotProduction',
+            { 'Fn::GetAtt': ['PagerDutyTestFunction', 'Arn'] },
+            {
+              'Fn::Sub': '{{resolve:ssm:/${ConfigStackName}/pager-duty/url}}',
+            },
+          ],
+        });
+        expect(subscriptionUnderTest.Properties.TopicArn).toEqual({
+          Ref: topicResource,
+        });
+      },
+    );
 
     it(`should create an SNS topic policy for ${metricName}`, () => {
       expect(topicPolicyUnderTest).toBeDefined();

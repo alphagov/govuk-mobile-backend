@@ -4,7 +4,8 @@ export type AlarmTestCase = {
   actionsEnabled: boolean;
   alarmResource: string;
   topicResource: string;
-  subscriptionResource: string;
+  topicKeyName: string;
+  subscriptionResource?: string;
   topicPolicyResource: string;
   slackChannelConfigurationResource: string;
   metricName: string;
