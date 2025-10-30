@@ -580,9 +580,9 @@ Resources:
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-warnings-topic'
       OKActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-topic'
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${AppBackendStackName}-cloudwatch-alarm-warnings-topic'
       Tags:
         - Key: Product
           Value: GOV.UK

@@ -136,6 +136,9 @@ describe.each(testCases)(
         {
           Ref: 'CloudWatchAlarmTopicPagerDuty',
         },
+        {
+          Ref: 'CloudWatchAlarmWarningsTopic',
+        },
       ]);
       expect(slackChannelConfigurationUnderTest.Properties.Tags).toEqual([
         { Key: 'Product', Value: 'GOV.UK' },

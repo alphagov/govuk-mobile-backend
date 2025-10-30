@@ -673,9 +673,9 @@ Resources:
         - Name: Method
           Value: POST
       AlarmActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -706,9 +706,9 @@ Resources:
         - Name: ApiName
           Value: !Ref AttestationProxyApi
       AlarmActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -779,9 +779,9 @@ Resources:
         - Name: Method
           Value: POST
       AlarmActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -790,13 +790,26 @@ Resources:
         - Key: System
           Value: Authentication
 
-
   CloudWatchAlarmTopicPagerDuty:
     Type: AWS::SNS::Topic
     Properties:
       KmsMasterKeyId: !Ref CloudWatchAlarmNotificationTopicKey
       TopicName: !Sub '${AWS::StackName}-cloudwatch-alarm-topic'
       DisplayName: !Sub '${AWS::StackName}-cloudwatch-alarm-topic'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudWatchAlarmWarningsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: !Ref CloudWatchAlarmWarningsNotificationTopicKey
+      TopicName: !Sub '${AWS::StackName}-cloudwatch-alarm-warnings-topic'
+      DisplayName: !Sub '${AWS::StackName}-cloudwatch-alarm-warnings-topic'
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -835,7 +848,71 @@ Resources:
               ArnLike:
                 AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
 
+  CloudWatchAlarmWarningsPublishToTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref CloudWatchAlarmWarningsTopic
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sns:Publish
+            Resource: !Ref CloudWatchAlarmWarningsTopic
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Condition:
+              ArnLike:
+                AWS:SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
+
   CloudWatchAlarmNotificationTopicKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow the account to manage the key
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Sid: Allow Cloudwatch alarms access
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+          - Sid: Allow CWE access
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  CloudWatchAlarmWarningsNotificationTopicKey:
     Type: AWS::KMS::Key
     Properties:
       EnableKeyRotation: true
@@ -925,6 +1002,7 @@ Resources:
       SlackWorkspaceId: !Sub '{{resolve:ssm:/${ConfigStackName}/slack/workspace-id}}'
       SnsTopicArns:
         - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2107,9 +2185,9 @@ Resources:
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       Tags:
         - Key: Product
           Value: GOV.UK
@@ -2142,9 +2220,9 @@ Resources:
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       OKActions:
-        - !Ref CloudWatchAlarmTopicPagerDuty
+        - !Ref CloudWatchAlarmWarningsTopic
       Tags:
         - Key: Product
           Value: GOV.UK

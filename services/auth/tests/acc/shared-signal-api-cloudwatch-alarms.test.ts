@@ -20,7 +20,7 @@ const testCases: AlarmTestCase[] = [
     metricName: '4XXError',
     alarmDescription:
       'Shared Signal Alarm detects a high rate of client-side errors.',
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 5,
@@ -40,7 +40,7 @@ const testCases: AlarmTestCase[] = [
     metricName: '5XXError',
     alarmDescription:
       'Shared Signal Alarm detects a high rate of server-side errors.',
-    topicDisplayName: 'cloudwatch-alarm-topic',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
     period: 60,
     evaluationPeriods: 3,
