@@ -171,6 +171,61 @@ const testCases: AlarmTestCase[] = [
     comparisonOperator: 'GreaterThanOrEqualToThreshold',
     dimensions: [{ Name: 'FunctionName', Value: { Ref: 'AuthProxyFunction' } }],
   },
+  {
+    name: 'LowCount',
+    alarmName: `auth-proxy-low-count`,
+    actionsEnabled: true,
+    namespace: '${AWS::StackName}/Timeouts',
+    alarmResource: 'CloudwatchAlarmAuthProxyLowCount',
+    topicResource: 'CloudWatchAlarmWarningsTopic',
+    topicPolicyResource: 'CloudWatchAlarmWarningsPublishToTopicPolicy',
+    topicKeyName: 'CloudWatchAlarmWarningsNotificationTopicKey',
+    slackChannelConfigurationResource: 'SlackSupportChannelConfiguration',
+    alarmDescription:
+      'Alarm detects a low rate of requests, based on anomaly detection.',
+    topicDisplayName: 'cloudwatch-alarm-warnings-topic',
+    evaluationPeriods: 5,
+    datapointsToAlarm: 5,
+    comparisonOperator: 'LessThanLowerThreshold',
+    metrics: [
+      {
+        Id: 'm1',
+        MetricStat: {
+          Metric: {
+            Dimensions: [
+              {
+                Name: 'ApiName',
+                Value: {
+                  Ref: 'AttestationProxyApi',
+                },
+              },
+              {
+                Name: 'Stage',
+                Value: {
+                  Ref: 'Environment',
+                },
+              },
+              {
+                Name: 'Resource',
+                Value: '/oauth2/token',
+              },
+            ],
+            MetricName: 'Count',
+            Namespace: 'AWS/ApiGateway',
+          },
+          Period: 120,
+          Stat: 'Sum',
+        },
+        ReturnData: true,
+      },
+      {
+        Expression: 'ANOMALY_DETECTION_BAND(m1, 2)',
+        Id: 'anomalyBand',
+        Label: 'ExpectedTrafficBand',
+        ReturnData: true,
+      },
+    ],
+  },
 ];
 
 describe.each(testCases)(
@@ -196,6 +251,7 @@ describe.each(testCases)(
     datapointsToAlarm,
     threshold,
     comparisonOperator,
+    metrics,
   }) => {
     const cloudWatchAlarmResources = template.findResources(
       'AWS::CloudWatch::Alarm',
@@ -321,15 +377,23 @@ describe.each(testCases)(
         cloudWatchAlarmUnderTest.Properties.AlarmDescription['Fn::Sub'];
 
       expect(actualDescription.includes(alarmDescription)).toBeTruthy();
-      expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
-        metricName,
-      );
+
+      if (metricName) {
+        expect(cloudWatchAlarmUnderTest.Properties.MetricName).toEqual(
+          metricName,
+        );
+      }
 
       const actualNamespace = cloudWatchAlarmUnderTest.Properties.Namespace;
-      if (typeof actualNamespace === 'object' && 'Fn::Sub' in actualNamespace) {
-        expect(actualNamespace['Fn::Sub']).toEqual(namespace);
-      } else {
-        expect(actualNamespace).toEqual(namespace);
+      if (actualNamespace) {
+        if (
+          typeof actualNamespace === 'object' &&
+          'Fn::Sub' in actualNamespace
+        ) {
+          expect(actualNamespace['Fn::Sub']).toEqual(namespace);
+        } else {
+          expect(actualNamespace).toEqual(namespace);
+        }
       }
 
       expect(cloudWatchAlarmUnderTest.Properties.Statistic).toEqual(statistic);
@@ -343,7 +407,11 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.DatapointsToAlarm).toEqual(
         datapointsToAlarm,
       );
-      expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(threshold);
+      if (threshold) {
+        expect(cloudWatchAlarmUnderTest.Properties.Threshold).toEqual(
+          threshold,
+        );
+      }
       expect(cloudWatchAlarmUnderTest.Properties.ComparisonOperator).toEqual(
         comparisonOperator,
       );
@@ -356,6 +424,7 @@ describe.each(testCases)(
       expect(cloudWatchAlarmUnderTest.Properties.OKActions).toEqual([
         { Ref: topicResource },
       ]);
+      expect(cloudWatchAlarmUnderTest.Properties.Metrics).toEqual(metrics);
       expect(cloudWatchAlarmUnderTest.Properties.Tags).toEqual([
         { Key: 'Product', Value: 'GOV.UK' },
         { Key: 'Environment', Value: { Ref: 'Environment' } },

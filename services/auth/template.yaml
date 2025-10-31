@@ -751,6 +751,52 @@ Resources:
         - Key: System
           Value: Authentication
 
+  CloudwatchAlarmAuthProxyLowCount:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-auth-proxy-low-count
+      AlarmDescription: !Sub |
+        Alarm detects a low rate of requests, based on anomaly detection.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms
+      ActionsEnabled: true
+      TreatMissingData: notBreaching
+      ComparisonOperator: LessThanLowerThreshold
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      ThresholdMetricId: anomalyBand
+      Metrics:
+        - Id: m1
+          MetricStat:
+            Metric:
+              Namespace: AWS/ApiGateway
+              MetricName: Count
+              Dimensions:
+                - Name: ApiName
+                  Value: !Ref AttestationProxyApi
+                - Name: Stage
+                  Value: !Ref Environment
+                - Name: Resource
+                  Value: /oauth2/token
+            Period: 120
+            Stat: Sum
+          ReturnData: true
+        - Id: anomalyBand
+          Expression: "ANOMALY_DETECTION_BAND(m1, 2)"
+          Label: "ExpectedTrafficBand"
+          ReturnData: True
+      AlarmActions:
+        - !Ref CloudWatchAlarmWarningsTopic
+      OKActions:
+        - !Ref CloudWatchAlarmWarningsTopic
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
   CloudwatchAlarmRevokeToken4xxErrors:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -1634,6 +1680,8 @@ Resources:
                   Value: !Ref Environment
                 - Name: Resource
                   Value: /oauth2/token
+                - Name: Method
+                  Value: POST
               MetricName: Count
               Namespace: AWS/ApiGateway
             Period: 120
