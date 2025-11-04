@@ -101,6 +101,7 @@
     "firebase-admin": "^13.3.0",
     "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
+    "lambda-live-debugger": "^1.10.2",
     "nx": "21.3.11",
     "pkce-challenge": "^5.0.0",
     "prettier": "^2.6.2",
