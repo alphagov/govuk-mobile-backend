@@ -2,9 +2,9 @@
 import type { LldConfigTs } from 'lambda-live-debugger';
 
 /**
- * Configuration file for lambda-live-debugger
+ * Configuration file for lambda-live-debugger with Terraform
  * 
- * This enables remote debugging of the dummy calculator Lambda function.
+ * This enables remote debugging of the dummy calculator Lambda function using Terraform.
  * 
  * IMPORTANT: Run `lld` from this directory (services/dummy-debugger-test/)
  * 
@@ -17,17 +17,14 @@ import type { LldConfigTs } from 'lambda-live-debugger';
  *   6. Run `lld -r` to remove the debugger when done
  */
 const config: LldConfigTs = {
-  framework: 'sam',
-//   samConfigFile: 'samconfig.toml',
-  samTemplateFile: 'template.yaml', // Relative path - run lld from service directory
-  samStackName: 'ps-dummy-debugger-test',
+  framework: 'terraform',
   region: 'eu-west-2', // Change to your preferred region
   observable: false, // Set to true for observability mode (non-blocking)
   verbose: true, // Enable verbose logging to help debug issues
-  // Explicitly provide Lambda information since framework detection might fail in monorepo
+  // Provide Lambda information explicitly for Terraform
   getLambdas: (
     foundLambdas: unknown[] | null | undefined,
-    configParam: { samStackName?: string },
+    configParam: Record<string, unknown>,
   ): { functionName: string; codePath: string }[] => {
     // If lambdas were found by framework detection, use them
     const EMPTY_ARRAY_LENGTH = 0;
@@ -36,18 +33,15 @@ const config: LldConfigTs = {
       return foundLambdas as any;
     }
     
-    // Fallback: Manually provide Lambda configuration
-    // The code path should point to the TypeScript source file (relative to this config file)
+    // Manually provide Lambda configuration
+    // Update these values to match your Terraform-defined Lambda function
     const codePath = 'app.ts';
-    const stackName = configParam.samStackName ?? 'ps-dummy-debugger-test';
-
+    const functionName = 'ps-dummy-debugger-test-dummy-calculator'; // Match your Terraform function_name
+    
     return [
       {
-        // Function name will be resolved from the deployed stack
-        // Format: ${StackName}-dummy-calculator
-        functionName: `${stackName}-dummy-calculator`,
+        functionName: functionName,
         codePath: codePath,
-        // Explicitly specify the handler name to match template.yaml: Handler: app.lambdaHandler
       },
     ];
   },
