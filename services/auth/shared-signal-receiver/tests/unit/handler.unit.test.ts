@@ -144,7 +144,7 @@ describe('lambdaHandler', () => {
     const result = await lambdaHandler(await createEvent(), mockContext);
 
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
-    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
+    expect(JSON.parse(result.body).error).toBe(ReasonPhrases.BAD_REQUEST);
   });
 
   it('should return INTERNAL_SERVER_ERROR when CognitoError is thrown', async () => {
@@ -166,7 +166,7 @@ describe('lambdaHandler', () => {
     const result = await lambdaHandler(await createEvent(), mockContext);
 
     expect(result.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(result.body).message).toBe(
+    expect(JSON.parse(result.body).error).toBe(
       ReasonPhrases.INTERNAL_SERVER_ERROR,
     );
   });
@@ -204,7 +204,7 @@ describe('lambdaHandler', () => {
     );
 
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
-    expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
+    expect(JSON.parse(result.body).error).toBe(ReasonPhrases.BAD_REQUEST);
 
     expect(mockRequestHandler).not.toHaveBeenCalled();
   });

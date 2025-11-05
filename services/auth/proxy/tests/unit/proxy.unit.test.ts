@@ -12,7 +12,13 @@ import { proxy, ProxyInput } from '../../proxy';
 import { sendHttpRequest } from '@libs/http-utils';
 import type { AppConfig } from '../../config';
 
-vi.mock('@libs/http-utils');
+vi.mock('@libs/http-utils', async () => {
+  const actual = await vi.importActual('@libs/http-utils');
+  return {
+    ...actual,
+    sendHttpRequest: vi.fn(),
+  };
+});
 
 const mockAppConfig = {
   timeoutMs: 3000,

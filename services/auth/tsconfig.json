@@ -12,6 +12,9 @@
   "exclude": ["node_modules", "**/tests/**", "**/**/vitest.*.ts"],
   "references": [
     {
+      "path": "../../libs/http-utils"
+    },
+    {
       "path": "../../libs/test-utils"
     },
     {

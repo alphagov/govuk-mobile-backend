@@ -3,6 +3,7 @@ import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 import type { SanitizedRequestHeaders } from './sanitize-headers';
 import type { RequestBody } from './validation/body';
 import { sendHttpRequest } from '@libs/http-utils';
+import { createResponseV2 } from '@libs/http-utils';
 import type { AppConfig } from './config';
 
 /**
@@ -50,11 +51,13 @@ async function _proxyRequest(
     response.headers.entries(),
   );
 
-  return {
-    statusCode: response.status,
-    body: responseBody,
-    headers: responseHeaders,
-  };
+  return createResponseV2(
+    {
+      statusCode: response.status,
+      headers: responseHeaders,
+    },
+    responseBody,
+  );
 }
 
 export const proxy = async ({

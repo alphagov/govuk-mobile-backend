@@ -1,7 +1,7 @@
-import { generateResponse } from '../response';
+import { createResponse } from '@libs/http-utils';
+import { StatusCodes } from 'http-status-codes';
 import type { credentialChangeSchema } from '../schema/credential-change';
 import type { z } from 'zod';
-import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 import { adminGlobalSignOut } from '../cognito/sign-out-user';
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import { logMessages } from '../log-messages';
@@ -28,10 +28,7 @@ export const handleCredentialChangeRequest = async (
       jti,
       changeType: events.change_type,
     });
-    return generateResponse(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      ReasonPhrases.INTERNAL_SERVER_ERROR,
-    );
+    return createResponse(StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
   logger.info(logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE, {
@@ -40,5 +37,5 @@ export const handleCredentialChangeRequest = async (
     credentialType: events.credential_type,
   });
 
-  return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+  return createResponse(StatusCodes.ACCEPTED);
 };

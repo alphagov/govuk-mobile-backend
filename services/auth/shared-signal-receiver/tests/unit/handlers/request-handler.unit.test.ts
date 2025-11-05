@@ -152,7 +152,7 @@ describe('requestHandler', () => {
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
     expect(result.body).toBe(
       JSON.stringify({
-        message: ReasonPhrases.BAD_REQUEST,
+        error: ReasonPhrases.BAD_REQUEST,
       }),
     );
     expect(isUserValidMock).not.toHaveBeenCalled();
@@ -262,7 +262,7 @@ describe('requestHandler', () => {
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
     expect(result.body).toBe(
       JSON.stringify({
-        message: ReasonPhrases.BAD_REQUEST,
+        error: ReasonPhrases.BAD_REQUEST,
       }),
     );
     expect(errorSpy).toHaveBeenCalledWith(logMessages.ERROR_UNKNOWN_SIGNAL);

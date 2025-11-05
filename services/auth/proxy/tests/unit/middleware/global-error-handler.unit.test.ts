@@ -52,7 +52,7 @@ describe('errorMiddleware', () => {
 
   describe('when ParseError is thrown', () => {
     it('should return 400 BAD_REQUEST for ParseError', () => {
-      const parseError = new ParseError('Invalid JSON');
+      const parseError = new ParseError('Failed to parse API Gateway body');
       mockRequest.error = parseError;
 
       const middleware = errorMiddleware();

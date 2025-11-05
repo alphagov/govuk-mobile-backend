@@ -67,7 +67,7 @@ describe('errorMiddleware', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: ReasonPhrases.BAD_REQUEST }),
+        body: JSON.stringify({ error: ReasonPhrases.BAD_REQUEST }),
       });
       expect(mockLogger.error).toHaveBeenCalledWith('ParseError', {
         error: parseError,
@@ -89,7 +89,7 @@ describe('errorMiddleware', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: ReasonPhrases.BAD_REQUEST }),
+        body: JSON.stringify({ error: ReasonPhrases.BAD_REQUEST }),
       });
       expect(mockLogger.error).toHaveBeenCalledWith(
         'UnsupportedMediaTypeError',
@@ -147,7 +147,7 @@ describe('errorMiddleware', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: ReasonPhrases.INTERNAL_SERVER_ERROR }),
+        body: JSON.stringify({ error: ReasonPhrases.INTERNAL_SERVER_ERROR }),
       });
       expect(mockLogger.error).toHaveBeenCalledWith('Error', {
         error: genericError,
@@ -166,7 +166,7 @@ describe('errorMiddleware', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: ReasonPhrases.INTERNAL_SERVER_ERROR }),
+        body: JSON.stringify({ error: ReasonPhrases.INTERNAL_SERVER_ERROR }),
       });
       expect(mockLogger.error).toHaveBeenCalledWith('Error', {
         error: unknownError,

@@ -1,9 +1,5 @@
 import { describe, beforeEach, expect, afterEach, it, vi } from 'vitest';
-import {
-  RetryConfig,
-  sendHttpRequest,
-  type SendHttpRequestResponse,
-} from './http-with-retry';
+import { RetryConfig, sendHttpRequest } from './http-with-retry';
 
 const url = 'mock_url';
 
@@ -25,7 +21,7 @@ const getRetryConfig = (): RetryConfig => {
 
 const MOCK_JITTER_MULTIPLIER = 0.5;
 
-let result: SendHttpRequestResponse<any>;
+let result: Response;
 let mockFetch: any;
 let mockSetTimeout: any;
 

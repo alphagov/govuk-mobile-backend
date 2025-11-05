@@ -115,7 +115,7 @@ describe('handleAccountPurgedRequest', () => {
     });
     expect(response).toEqual({
       body: JSON.stringify({
-        message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+        error: ReasonPhrases.INTERNAL_SERVER_ERROR,
       }),
       headers: {
         'Content-Type': 'application/json',

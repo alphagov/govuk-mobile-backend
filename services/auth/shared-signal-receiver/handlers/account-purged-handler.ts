@@ -1,5 +1,5 @@
-import { ReasonPhrases, StatusCodes } from 'http-status-codes';
-import { generateResponse } from '../response';
+import { createResponse } from '@libs/http-utils';
+import { StatusCodes } from 'http-status-codes';
 import type { accountPurgedSchema } from '../schema/account-purged';
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import type { z } from 'zod';
@@ -28,16 +28,13 @@ export const handleAccountPurgedRequest = async (
       userId,
       jti,
     });
-    return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+    return createResponse(StatusCodes.ACCEPTED);
   } else {
     logger.error(logMessages.SIGNAL_ERROR_ACCOUNT_PURGE, {
       userId,
       jti,
     });
 
-    return generateResponse(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      ReasonPhrases.INTERNAL_SERVER_ERROR,
-    );
+    return createResponse(StatusCodes.INTERNAL_SERVER_ERROR);
   }
 };

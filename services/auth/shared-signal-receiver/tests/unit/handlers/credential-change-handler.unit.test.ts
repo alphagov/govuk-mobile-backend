@@ -112,7 +112,7 @@ describe('handleCredentialChangeRequest', () => {
     it('should return 500 INTERNAL_SERVER_ERROR if the operation fails', async () => {
       expect(response).toEqual({
         body: JSON.stringify({
-          message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+          error: ReasonPhrases.INTERNAL_SERVER_ERROR,
         }),
         headers: {
           'Content-Type': 'application/json',

@@ -4,8 +4,8 @@ import { credentialChangeSchema } from '../schema/credential-change';
 import { handleCredentialChangeRequest } from './credential-change-handler';
 import { handleAccountPurgedRequest } from './account-purged-handler';
 import type { APIGatewayProxyResult } from 'aws-lambda';
-import { generateResponse } from '../response';
-import { ReasonPhrases, StatusCodes } from 'http-status-codes';
+import { createResponse } from '@libs/http-utils';
+import { StatusCodes } from 'http-status-codes';
 import { isUserValid } from '../service/validation-service';
 import { logMessages } from '../log-messages';
 import { signalVerificationSchema } from '../schema/verification';
@@ -56,10 +56,7 @@ export const requestHandler = async (
       logMessages.SIGNAL_DISABLED,
       'Shared signal feature is disabled',
     );
-    return generateResponse(
-      StatusCodes.SERVICE_UNAVAILABLE,
-      ReasonPhrases.SERVICE_UNAVAILABLE,
-    );
+    return createResponse(StatusCodes.SERVICE_UNAVAILABLE);
   }
 
   for (const h of handlers) {
@@ -67,7 +64,7 @@ export const requestHandler = async (
       const shouldValidateUser = h.requiresUserValidation ?? true;
       if (shouldValidateUser) {
         if (!(await isUserValid(jsonBody, h.schemaName))) {
-          return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+          return createResponse(StatusCodes.ACCEPTED);
         }
       }
       return await h.handler(jsonBody);
@@ -75,5 +72,5 @@ export const requestHandler = async (
   }
 
   logger.error(logMessages.ERROR_UNKNOWN_SIGNAL);
-  return generateResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+  return createResponse(StatusCodes.BAD_REQUEST);
 };

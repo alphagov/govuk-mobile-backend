@@ -16,6 +16,7 @@ import {
   TooManyRequestsError,
 } from './errors';
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
+import { createResponse } from '@libs/http-utils';
 
 export const revokeRefreshToken = async (
   input: RevokeTokenInput,
@@ -27,11 +28,7 @@ export const revokeRefreshToken = async (
     await cognitoIdentityServiceProvider.send(command);
 
     logger.info('Refresh token revoked successfully.');
-    return {
-      statusCode: StatusCodes.OK,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: ReasonPhrases.OK }),
-    };
+    return createResponse(StatusCodes.OK);
   } catch (error) {
     if (error instanceof InvalidParameterException) {
       throw new InvalidParameterError(
