@@ -1,22 +1,26 @@
 import { getJwksKeys } from './getJwksKeys';
-import { generateResponse } from './response';
+import { generateResponseV2 } from '@libs/http-utils';
 
 export const lambdaHandler = async (event: any): Promise<any> => {
   console.log(event);
   try {
     if (event.path === '/.well-known/jwks.json' && event.httpMethod === 'GET') {
-      return generateResponse(200, {
-        keys: await getJwksKeys(),
-      });
+      // For JWKS, we need to return the keys directly, not wrapped in {message: ...}
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keys: await getJwksKeys(),
+        }),
+      };
     }
 
-    return generateResponse(404, {
-      message: 'not found',
-    });
+    return generateResponseV2({ status: 404, message: 'not found' });
   } catch (error) {
     console.log(error);
 
-    return generateResponse(500, {
+    return generateResponseV2({
+      status: 500,
       message: 'Internal server error',
     });
   }
