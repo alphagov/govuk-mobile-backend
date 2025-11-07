@@ -28,6 +28,21 @@ describe('generateResponse', () => {
     });
     expect(JSON.parse(result.body)).toEqual({ message: 'created' });
   });
+
+  it('includes additional non-conflicting headers alongside default Content-Type', () => {
+    const result = generateResponse({
+      status: 204,
+      message: '',
+      headers: { 'Cache-Control': 'no-store' },
+    });
+
+    expect(result.statusCode).toBe(204);
+    expect(result.headers).toEqual({
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    });
+    expect(result.body).toBe(JSON.stringify({ message: '' }));
+  });
 });
 
 describe('generateErrorResponse (SET)', () => {

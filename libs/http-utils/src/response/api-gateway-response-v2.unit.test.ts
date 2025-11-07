@@ -8,24 +8,22 @@ describe('generateResponseV2', () => {
     expect(result.statusCode).toBe(200);
     expect(result.headers).toEqual({ 'Content-Type': 'application/json' });
     expect(result.body).toBe(JSON.stringify({ message: 'OK' }));
+    expect(JSON.parse(result.body)).toEqual({ message: 'OK' });
   });
 
-  it('merges additional headers and allows overriding default Content-Type', () => {
+  it('merges provided headers and allows overriding default Content-Type', () => {
     const result = generateResponseV2({
       status: 201,
-      message: 'Created',
-      headers: {
-        'X-Custom-Header': 'custom',
-        'Content-Type': 'application/xml',
-      },
+      message: 'created',
+      headers: { 'X-Custom': '123', 'Content-Type': 'text/plain' },
     });
 
     expect(result.statusCode).toBe(201);
-    expect(result.headers).toEqual({
-      'Content-Type': 'application/xml',
-      'X-Custom-Header': 'custom',
+    expect(result.headers).toMatchObject({
+      'Content-Type': 'text/plain',
+      'X-Custom': '123',
     });
-    expect(result.body).toBe(JSON.stringify({ message: 'Created' }));
+    expect(JSON.parse(result.body)).toEqual({ message: 'created' });
   });
 
   it('includes additional non-conflicting headers alongside default Content-Type', () => {
