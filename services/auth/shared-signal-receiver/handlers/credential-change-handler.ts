@@ -1,4 +1,4 @@
-import { generateResponse } from '../response';
+import { generateResponse } from '@libs/http-utils';
 import type { credentialChangeSchema } from '../schema/credential-change';
 import type { z } from 'zod';
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
@@ -28,10 +28,10 @@ export const handleCredentialChangeRequest = async (
       jti,
       changeType: events.change_type,
     });
-    return generateResponse(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      ReasonPhrases.INTERNAL_SERVER_ERROR,
-    );
+    return generateResponse({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: ReasonPhrases.INTERNAL_SERVER_ERROR,
+    });
   }
 
   logger.info(logMessages.SIGNAL_SUCCESS_CREDENTIAL_CHANGE, {
@@ -40,5 +40,8 @@ export const handleCredentialChangeRequest = async (
     credentialType: events.credential_type,
   });
 
-  return generateResponse(StatusCodes.ACCEPTED, ReasonPhrases.ACCEPTED);
+  return generateResponse({
+    status: StatusCodes.ACCEPTED,
+    message: ReasonPhrases.ACCEPTED,
+  });
 };

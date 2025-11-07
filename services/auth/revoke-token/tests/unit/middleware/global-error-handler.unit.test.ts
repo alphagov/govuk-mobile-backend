@@ -64,6 +64,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.BAD_REQUEST,
         body: JSON.stringify({ message: ReasonPhrases.BAD_REQUEST }),
       });
@@ -84,6 +87,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.BAD_REQUEST,
         body: JSON.stringify({ message: ReasonPhrases.BAD_REQUEST }),
       });
@@ -105,6 +111,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.BAD_REQUEST,
         body: JSON.stringify({ message: 'Invalid request parameters' }),
       });
@@ -122,6 +131,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.UNAUTHORIZED,
         body: JSON.stringify({ message: 'Access denied' }),
       });
@@ -141,6 +153,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.TOO_MANY_REQUESTS,
         body: JSON.stringify({ message: 'Too many requests' }),
       });
@@ -158,6 +173,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         body: JSON.stringify({ message: ReasonPhrases.INTERNAL_SERVER_ERROR }),
       });
@@ -177,6 +195,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         body: JSON.stringify({ message: ReasonPhrases.INTERNAL_SERVER_ERROR }),
       });
@@ -194,6 +215,9 @@ describe('errorMiddleware', () => {
       middleware.onError(mockRequest);
 
       expect(mockRequest.response).toEqual({
+        headers: {
+          'Content-Type': 'application/json',
+        },
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
         body: JSON.stringify({ message: ReasonPhrases.INTERNAL_SERVER_ERROR }),
       });

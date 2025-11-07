@@ -1,28 +1,24 @@
 import type { APIGatewayProxyResult } from 'aws-lambda';
+import type { SETErrorResponse } from './types';
 
-interface ErrorResponse {
-  errorCode: string;
-  errorDescription: string;
-}
-
-const generateResponse = (
-  status: number,
-  message: string,
-): APIGatewayProxyResult => {
+const generateResponse = ({
+  status,
+  message,
+  headers,
+}: {
+  status: number;
+  message: string;
+  headers?: Record<string, string>;
+}): APIGatewayProxyResult => {
+  const defaultHeaders = { 'Content-Type': 'application/json' };
   return {
     statusCode: status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...defaultHeaders, ...headers },
     body: JSON.stringify({
-      message: message,
+      message,
     }),
   };
 };
-
-interface SETErrorResponse {
-  status: number;
-  errorCode: string;
-  errorDescription: string;
-}
 
 const generateSETErrorResponse = (
   // error response for SET (Security Event Token)
@@ -38,5 +34,4 @@ const generateSETErrorResponse = (
   };
 };
 
-export type { ErrorResponse };
 export { generateResponse, generateSETErrorResponse as generateErrorResponse };

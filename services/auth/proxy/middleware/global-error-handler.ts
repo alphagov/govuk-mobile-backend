@@ -4,20 +4,8 @@ import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { logger } from '../logger';
 import { AppError } from '../errors';
 import { ZodError } from 'zod';
-import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { TokenExpiredError } from 'jsonwebtoken';
-
-const generateErrorResponse = ({
-  status,
-  message,
-}: {
-  status: number;
-  message: string;
-}): APIGatewayProxyResultV2 => ({
-  statusCode: status,
-  headers: { 'Content-Type': 'application/x-amz-json-1.1' },
-  body: JSON.stringify({ message }),
-});
+import { generateErrorResponseV2 } from '@libs/http-utils';
 
 export const errorMiddleware = (): MiddlewareObj => ({
   onError: (request: Request): void => {
@@ -34,22 +22,22 @@ export const errorMiddleware = (): MiddlewareObj => ({
       error instanceof ZodError ||
       error.name === 'UnsupportedMediaTypeError'
     ) {
-      request.response = generateErrorResponse({
+      request.response = generateErrorResponseV2({
         status: StatusCodes.BAD_REQUEST,
         message: ReasonPhrases.BAD_REQUEST,
       });
     } else if (error instanceof TokenExpiredError) {
-      request.response = generateErrorResponse({
+      request.response = generateErrorResponseV2({
         status: StatusCodes.UNAUTHORIZED,
         message: 'Attestation token has expired',
       });
     } else if (error instanceof AppError) {
-      request.response = generateErrorResponse({
+      request.response = generateErrorResponseV2({
         status: error.statusCode,
         message: error.publicMessage,
       });
     } else {
-      request.response = generateErrorResponse({
+      request.response = generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
         message: ReasonPhrases.INTERNAL_SERVER_ERROR,
       });
