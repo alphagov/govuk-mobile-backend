@@ -4024,7 +4024,7 @@ Resources:
     Type: AWS::XRay::SamplingRule
     Properties:
       SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-revoke-refresh-token
+        RuleName: !Sub ${AWS::StackName}-revoke-token
         Priority: 9001
         FixedRate: 1.0 
         ReservoirSize: 5  
@@ -4048,7 +4048,7 @@ Resources:
     Type: AWS::XRay::SamplingRule
     Properties:
       SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-shared-signal-receiver
+        RuleName: !Sub ${AWS::StackName}-sig-receiver
         Priority: 9002
         FixedRate: 1.0 
         ReservoirSize: 10  
@@ -4072,7 +4072,7 @@ Resources:
     Type: AWS::XRay::SamplingRule
     Properties:
       SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-shared-signal-health
+        RuleName: !Sub ${AWS::StackName}-sig-health
         Priority: 9003
         FixedRate: 1.0 
         ReservoirSize: 5  
@@ -4096,7 +4096,7 @@ Resources:
     Type: AWS::XRay::SamplingRule
     Properties:
       SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-shared-signal-auth
+        RuleName: !Sub ${AWS::StackName}-sig-auth
         Priority: 9004
         FixedRate: 1.0 
         ReservoirSize: 15  

@@ -31,7 +31,7 @@ const testCases: XRaySamplingRuleTestCase[] = [
   },
   {
     resourceName: 'XRayRevokeTokenSamplingRule',
-    ruleName: 'revoke-refresh-token',
+    ruleName: 'revoke-token',
     priority: 9001,
     serviceName: 'revoke-refresh-token',
     httpMethod: 'POST',
@@ -41,7 +41,7 @@ const testCases: XRaySamplingRuleTestCase[] = [
   },
   {
     resourceName: 'XRaySharedSignalReceiverSamplingRule',
-    ruleName: 'shared-signal-receiver',
+    ruleName: 'sig-receiver',
     priority: 9002,
     serviceName: 'shared-signal-receiver',
     httpMethod: 'POST',
@@ -51,7 +51,7 @@ const testCases: XRaySamplingRuleTestCase[] = [
   },
   {
     resourceName: 'XRaySharedSignalHealthCheckSamplingRule',
-    ruleName: 'shared-signal-health',
+    ruleName: 'sig-health',
     priority: 9003,
     serviceName: 'shared-signal-health-check',
     httpMethod: '*',
@@ -61,7 +61,7 @@ const testCases: XRaySamplingRuleTestCase[] = [
   },
   {
     resourceName: 'XRaySharedSignalAuthorizerSamplingRule',
-    ruleName: 'shared-signal-auth',
+    ruleName: 'sig-auth',
     priority: 9004,
     serviceName: 'shared-signal-authorizer',
     httpMethod: '*',
@@ -204,6 +204,41 @@ describe('X-Ray Sampling Rules collection', () => {
       const priority = (resource as any).Properties.SamplingRule.Priority;
       expect(priority).toBeGreaterThanOrEqual(9000);
       expect(priority).toBeLessThan(9010);
+    }
+  });
+
+  it('should have rule names that do not exceed 32 characters when AWS::StackName is "govuk-app-backend"', () => {
+    const stackName = 'govuk-app-backend';
+    const failedResources: string[] = [];
+
+    for (const [resourceName, resource] of Object.entries(xrayResources)) {
+      const ruleName = (resource as any).Properties.SamplingRule.RuleName;
+
+      if (ruleName && ruleName['Fn::Sub']) {
+        const template = ruleName['Fn::Sub'] as string;
+        const resolvedRuleName = template.replace(
+          '${AWS::StackName}',
+          stackName,
+        );
+
+        if (resolvedRuleName.length > 32) {
+          failedResources.push(
+            `${resourceName}: "${resolvedRuleName}" (${resolvedRuleName.length} characters)`,
+          );
+        }
+      }
+    }
+
+    // Assert that no resources failed the 32-character limit
+    expect(failedResources).toHaveLength(0);
+
+    // If there are failures, provide detailed information
+    if (failedResources.length > 0) {
+      throw new Error(
+        `The following rule names exceed 32 characters:\n${failedResources.join(
+          '\n',
+        )}`,
+      );
     }
   });
 });
