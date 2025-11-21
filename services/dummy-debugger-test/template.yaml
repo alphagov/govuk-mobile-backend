@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Dummy Lambda function for testing lambda-live-debugger
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    Description: Environment name
+
+Globals:
+  Function:
+    MemorySize: 128
+    Timeout: 60
+    Runtime: nodejs22.x
+    Tracing: Active
+
+Resources:
+  DummyCalculatorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-dummy-calculator'
+      CodeUri: .build/
+      Handler: app.lambdaHandler
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /calculate
+            Method: post
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Testing
+        Purpose: LambdaLiveDebuggerTesting
+
+Outputs:
+  DummyCalculatorFunctionName:
+    Description: Name of the dummy calculator Lambda function
+    Value: !Ref DummyCalculatorFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-DummyCalculatorFunctionName'
+
+  DummyCalculatorFunctionArn:
+    Description: ARN of the dummy calculator Lambda function
+    Value: !GetAtt DummyCalculatorFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-DummyCalculatorFunctionArn'
+
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/calculate'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiEndpoint'
+

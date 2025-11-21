@@ -1,0 +1,40 @@
+{
+  "name": "dummy-debugger-test",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "targets": {
+    "sam:build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node ./scripts/samBuild.js --project=dummy-debugger-test"
+      }
+    },
+    "sam:deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sam:build"],
+      "options": {
+        "command": "node ./scripts/samDeploy.js --project=dummy-debugger-test"
+      }
+    },
+    "sam:validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node ./scripts/samValidate.js --projects=dummy-debugger-test"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["services/dummy-debugger-test/**/*.{ts,tsx,js,jsx}"]
+      }
+    },
+    "test:unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest services/dummy-debugger-test/**/* --project unit"
+      }
+    }
+  }
+}
+
