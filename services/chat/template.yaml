@@ -608,6 +608,7 @@ Resources:
       Threshold: 300
       DatapointsToAlarm: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: WebACL
           Value: !Sub ${AWS::StackName}-waf-chat-proxy
