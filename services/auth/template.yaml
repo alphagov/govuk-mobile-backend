@@ -273,6 +273,7 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: WebACL
           Value: !Join
@@ -523,6 +524,7 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: UserPool
           Value: !Ref CognitoUserPool
@@ -557,6 +559,7 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: UserPool
           Value: !Ref CognitoUserPool
@@ -591,6 +594,7 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: UserPool
           Value: !Ref CognitoUserPool
@@ -625,6 +629,7 @@ Resources:
       DatapointsToAlarm: 5
       Threshold: 5
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       Dimensions:
         - Name: UserPool
           Value: !Ref CognitoUserPool
@@ -3191,6 +3196,7 @@ Resources:
       DatapointsToAlarm: 2
       Threshold: 1
       ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
       AlarmActions:
         - !Ref CloudWatchAlarmTopicPagerDuty
       OKActions:
@@ -3987,127 +3993,6 @@ Resources:
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
         - !Ref AWS::NoValue
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  # X-Ray Sampling Rules for Critical Endpoints
-  XRayAuthProxySamplingRule:
-    Type: AWS::XRay::SamplingRule
-    Properties:
-      SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-auth-proxy
-        Priority: 9000
-        FixedRate: 1.0 
-        ReservoirSize: 20  
-        ServiceName: !Sub ${AWS::StackName}-auth-proxy
-        ServiceType: "*"
-        Host: "*"
-        HTTPMethod: "POST"
-        URLPath: "/oauth2/token"
-        Version: 1
-        ResourceARN: "*"
-        Attributes: {}
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  XRayRevokeTokenSamplingRule:
-    Type: AWS::XRay::SamplingRule
-    Properties:
-      SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-revoke-token
-        Priority: 9001
-        FixedRate: 1.0 
-        ReservoirSize: 5  
-        ServiceName: !Sub ${AWS::StackName}-revoke-refresh-token
-        ServiceType: "*"
-        Host: "*"
-        HTTPMethod: "POST"
-        URLPath: "/oauth2/revoke"
-        Version: 1
-        ResourceARN: "*"
-        Attributes: {}
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  XRaySharedSignalReceiverSamplingRule:
-    Type: AWS::XRay::SamplingRule
-    Properties:
-      SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-sig-receiver
-        Priority: 9002
-        FixedRate: 1.0 
-        ReservoirSize: 10  
-        ServiceName: !Sub ${AWS::StackName}-shared-signal-receiver
-        ServiceType: "*"
-        Host: "*"
-        HTTPMethod: "POST"
-        URLPath: "/receiver"
-        Version: 1
-        ResourceARN: "*"
-        Attributes: {}
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  XRaySharedSignalHealthCheckSamplingRule:
-    Type: AWS::XRay::SamplingRule
-    Properties:
-      SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-sig-health
-        Priority: 9003
-        FixedRate: 1.0 
-        ReservoirSize: 5  
-        ServiceName: !Sub ${AWS::StackName}-shared-signal-health-check
-        ServiceType: "*"
-        Host: "*"
-        HTTPMethod: "*"
-        URLPath: "*"
-        Version: 1
-        ResourceARN: "*"
-        Attributes: {}
-      Tags:
-        - Key: Product
-          Value: GOV.UK
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: System
-          Value: Authentication
-
-  XRaySharedSignalAuthorizerSamplingRule:
-    Type: AWS::XRay::SamplingRule
-    Properties:
-      SamplingRule:
-        RuleName: !Sub ${AWS::StackName}-sig-auth
-        Priority: 9004
-        FixedRate: 1.0 
-        ReservoirSize: 15  
-        ServiceName: !Sub ${AWS::StackName}-shared-signal-authorizer
-        ServiceType: "*"
-        Host: "*"
-        HTTPMethod: "*"
-        URLPath: "*"
-        Version: 1
-        ResourceARN: "*"
-        Attributes: {}
       Tags:
         - Key: Product
           Value: GOV.UK
