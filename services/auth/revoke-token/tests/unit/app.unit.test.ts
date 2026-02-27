@@ -58,7 +58,7 @@ describe('lambdaHandler - revoke-token', () => {
     expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
   });
 
-  it('returns 400 if refresh_token is missing', async () => {
+  it('returns 400 if token is missing', async () => {
     const event = createMockEvent({ body: 'client_id=testClientId' });
     const result = await lambdaHandler(event, mockContext);
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
@@ -66,7 +66,7 @@ describe('lambdaHandler - revoke-token', () => {
   });
 
   it('returns 400 if client_id is missing', async () => {
-    const event = createMockEvent({ body: 'refresh_token=testRefreshToken' });
+    const event = createMockEvent({ body: 'token=testRefreshToken' });
     const result = await lambdaHandler(event, mockContext);
     expect(result.statusCode).toBe(StatusCodes.BAD_REQUEST);
     expect(JSON.parse(result.body).message).toBe(ReasonPhrases.BAD_REQUEST);
@@ -74,7 +74,7 @@ describe('lambdaHandler - revoke-token', () => {
 
   it('returns 400 if parameters are invalid', async () => {
     const event = createMockEvent({
-      body: 'client_id=testClientId&refresh_token=refresh_token',
+      body: 'client_id=testClientId&token=refresh_token',
     });
 
     mockRetrieveCognitoCredentials.mockResolvedValue({
@@ -113,7 +113,20 @@ describe('lambdaHandler - revoke-token', () => {
       body: JSON.stringify({ message: 'Success' }),
     });
 
-    const event = createMockEvent();
+    // Create a completely fresh event object to avoid middleware caching issues
+    const event = {
+      body: 'token=testRefreshToken&client_id=testClientId',
+      routeKey: '$default',
+      rawPath: '/my/path',
+      headers: {
+        header1: 'value1',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json, application/x-www-form-urlencoded',
+      },
+      requestContext: {
+        requestId: 'id',
+      },
+    } as APIGatewayProxyEvent;
 
     const result = await lambdaHandler(event, mockContext);
 
