@@ -9,7 +9,8 @@ import { parser } from '@aws-lambda-powertools/parser/middleware';
 import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import z from 'zod';
 import { errorMiddleware } from './middleware/global-error-handler';
-import secretsManager, { secret } from '@middy/secrets-manager';
+import secretsManager from '@middy/secrets-manager';
+import secret from '@middy/secrets-manager';
 import type { SecretsConfig } from './types';
 import { tracer } from './tracer';
 
