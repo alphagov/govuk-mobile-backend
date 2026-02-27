@@ -6,9 +6,10 @@ import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 const mockConfigStackName = 'test-ssm';
 
 vi.mock('@aws-lambda-powertools/parameters/ssm', async (importOriginal) => {
-  const originalModule = await importOriginal<
-    typeof import('@aws-lambda-powertools/parameters/ssm')
-  >();
+  const originalModule =
+    await importOriginal<
+      typeof import('@aws-lambda-powertools/parameters/ssm')
+    >();
   return {
     ...originalModule,
     getParameter: vi.fn().mockResolvedValue('True'),

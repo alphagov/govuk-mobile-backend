@@ -24,9 +24,8 @@ const getCognitoTokenPayloadFromJwt = async (
   });
 
   try {
-    const payload: CognitoAccessTokenPayload = await verifier.verify(
-      authHeader,
-    );
+    const payload: CognitoAccessTokenPayload =
+      await verifier.verify(authHeader);
     return payload;
   } catch (err) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
