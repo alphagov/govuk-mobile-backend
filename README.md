@@ -156,7 +156,13 @@ We utilise the power of Nx to help us bundle, SAM build & SAM deploy our code fr
 Following from this you need to configure a local.env file for deployments at `env/local.env` in the folder structure. This file needs to contain the following values
 
 ```
-
+ENVIRONMENT=dev
+USER_PREFIX=<<A prefix for stack names, we usually use our initials e.g: sb/bb>>
+CODE_SIGNING_ARN=none
+PERMISSION_BOUNDARY_ARN=none
+SAM_DEPLOY_BUCKET=<<The SAM Deployment bucketname for the targetted AWS environment>>
+CONFIG_STACK_NAME=<<This is the cloudformation stack name of your personal SSM stack deployment (e.g: sb-ssm)>>
+TEST_ROLE_ARN=<<The ARN of a valid release pipeline Test Role>>
 ```
 
 Beyond the values defined by yourself, the ARNs and Bucket names can be fetched from the desired AWS account. The environment is set to dev, as this deploys the dev versions of the SAM stacks for testing.
