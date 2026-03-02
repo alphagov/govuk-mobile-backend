@@ -17,8 +17,9 @@ export class ClientCredentialsDriver {
   public async getAccessToken(): Promise<string> {
     const secretsConfig: SecretsConfig =
       await this.getSharedSignalSecretConfig();
-    const config: AxiosRequestConfig =
-      await this.constructAxiosRequestConfig(secretsConfig);
+    const config: AxiosRequestConfig = await this.constructAxiosRequestConfig(
+      secretsConfig,
+    );
 
     const response = await axios(config);
     return response.data.access_token;
@@ -27,8 +28,9 @@ export class ClientCredentialsDriver {
   public async getAccessTokenWithCustomCredentials(
     secretsConfig: SecretsConfig,
   ): Promise<string> {
-    const config: AxiosRequestConfig =
-      await this.constructAxiosRequestConfig(secretsConfig);
+    const config: AxiosRequestConfig = await this.constructAxiosRequestConfig(
+      secretsConfig,
+    );
 
     const response: AxiosResponse = await axios(config);
     return response.data.access_token;

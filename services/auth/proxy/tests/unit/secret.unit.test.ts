@@ -4,10 +4,9 @@ import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 import { FailedToFetchSecretError } from '../../errors';
 
 vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
-  const originalModule =
-    await importOriginal<
-      typeof import('@aws-lambda-powertools/parameters/secrets')
-    >();
+  const originalModule = await importOriginal<
+    typeof import('@aws-lambda-powertools/parameters/secrets')
+  >();
   return {
     ...originalModule,
     getSecret: vi.fn().mockResolvedValue(

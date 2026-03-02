@@ -5,10 +5,9 @@ import { ConfigError } from '../../errors';
 const getParameterMock = vi.fn().mockResolvedValue('custom-domain');
 
 vi.mock('@aws-lambda-powertools/parameters/ssm', async (importOriginal) => {
-  const originalModule =
-    await importOriginal<
-      typeof import('@aws-lambda-powertools/parameters/ssm')
-    >();
+  const originalModule = await importOriginal<
+    typeof import('@aws-lambda-powertools/parameters/ssm')
+  >();
   return {
     ...originalModule,
     getParameter: vi.fn(() => getParameterMock()),

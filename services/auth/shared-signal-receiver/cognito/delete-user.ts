@@ -26,8 +26,9 @@ export const adminDeleteUser = async (userName: string): Promise<boolean> => {
       Username: toCognitoUsername(userName),
     };
     const command = new AdminDeleteUserCommand(input);
-    const response: AdminDeleteUserCommandOutput =
-      await cognitoClient.send(command);
+    const response: AdminDeleteUserCommandOutput = await cognitoClient.send(
+      command,
+    );
 
     return response.$metadata.httpStatusCode == StatusCodes.OK;
   } catch (error) {
