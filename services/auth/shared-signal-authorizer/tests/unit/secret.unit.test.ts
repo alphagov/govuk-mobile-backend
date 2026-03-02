@@ -3,9 +3,10 @@ import { getSecretObject } from '../../secret';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
 
 vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
-  const originalModule = await importOriginal<
-    typeof import('@aws-lambda-powertools/parameters/secrets')
-  >();
+  const originalModule =
+    await importOriginal<
+      typeof import('@aws-lambda-powertools/parameters/secrets')
+    >();
   return {
     ...originalModule,
     getSecret: vi.fn().mockResolvedValue(

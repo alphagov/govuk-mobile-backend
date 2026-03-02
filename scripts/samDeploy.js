@@ -49,7 +49,12 @@ const samTemplateFile = [projectPath, '.aws-sam', 'build', 'template.yaml'].join
 const stackName = [userPrefix, project].join('-');
 
 //TODO: Work on parralel deployments where multiple stacks exists
-execSync(`sam deploy --capabilities CAPABILITY_NAMED_IAM --stack-name ${stackName} --s3-bucket ${s3BucketName} --s3-prefix ${stackName} --template-file ${samTemplateFile} --parameter-overrides ${overrideArgsString} --no-fail-on-empty-changeset`, {stdio: 'inherit'});
+try {
+execSync(`sam deploy --region eu-west-2 --capabilities CAPABILITY_NAMED_IAM --stack-name ${stackName} --s3-bucket ${s3BucketName} --s3-prefix ${stackName} --template-file ${samTemplateFile} --parameter-overrides ${overrideArgsString} --no-fail-on-empty-changeset`, {stdio: 'inherit'});
+} catch (e) {
+    console.error(`Error deploying stack ${stackName} for project ${project}:`, e);
+    process.exit(1);
+}
 console.log(
     `===============  Finished Deploy for project: ${project}  ===============`,
 );

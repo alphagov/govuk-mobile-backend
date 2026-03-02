@@ -24,11 +24,14 @@ describe(
 
     describe('Given a shared signal event signed with a valid private key and access token', async () => {
       let userId;
-      beforeAll(async () => {
-        // Set a valid private key
-        await sharedSignalsDriver.setPrivateKey();
-        userId = await createUserAndReturnCognitoUserId();
-      }, 10 * 60 * 1_000);
+      beforeAll(
+        async () => {
+          // Set a valid private key
+          await sharedSignalsDriver.setPrivateKey();
+          userId = await createUserAndReturnCognitoUserId();
+        },
+        10 * 60 * 1_000,
+      );
 
       // Generate an access token
       const accessToken = await clientCredentialsDriver.getAccessToken();

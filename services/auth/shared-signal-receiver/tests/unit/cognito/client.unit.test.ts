@@ -3,10 +3,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => {
   return {
-    CognitoIdentityProviderClient: vi.fn().mockImplementation((config) => ({
-      config,
-      __mock: true,
-    })),
+    CognitoIdentityProviderClient: class {
+      config: any;
+      __mock = true;
+      constructor(config: any) {
+        this.config = config;
+      }
+    },
   };
 });
 
