@@ -7,8 +7,9 @@ import { decodeProtectedHeader } from 'jose';
 import { GenerateJwtPayload, generateKeysAndJwt } from '@libs/test-utils';
 
 vi.mock('@libs/auth-utils', async (importOriginal) => {
-  const originalModule =
-    await importOriginal<typeof import('@libs/auth-utils')>();
+  const originalModule = await importOriginal<
+    typeof import('@libs/auth-utils')
+  >();
 
   return {
     ...originalModule, // Include all original exports

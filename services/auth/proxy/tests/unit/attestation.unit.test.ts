@@ -4,8 +4,9 @@ import { AppConfig } from '../../config';
 
 const validateFirebaseMock = vi.fn();
 vi.mock('../../firebaseJwt', async (importOriginal) => {
-  const originalModule =
-    await importOriginal<typeof import('../../firebaseJwt')>();
+  const originalModule = await importOriginal<
+    typeof import('../../firebaseJwt')
+  >();
 
   return {
     ...originalModule, // Include all original exports

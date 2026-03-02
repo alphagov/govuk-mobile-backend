@@ -9,7 +9,7 @@ import { parser } from '@aws-lambda-powertools/parser/middleware';
 import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import z from 'zod';
 import { errorMiddleware } from './middleware/global-error-handler';
-import secretsManager from '@middy/secrets-manager';
+import secretsManager, { secret } from '@middy/secrets-manager';
 import type { SecretsConfig } from './types';
 import { tracer } from './tracer';
 
@@ -29,12 +29,7 @@ const createHandler = (
   Error,
   Context & { secrets: SecretsConfig }
 > =>
-  middy<
-    AuthorizerEvent,
-    APIGatewayAuthorizerResult,
-    Error,
-    Context & { secrets: SecretsConfig }
-  >()
+  middy<AuthorizerEvent, APIGatewayAuthorizerResult>()
     .use(captureLambdaHandler(tracer))
     .use(
       injectLambdaContext(logger, {
@@ -46,7 +41,7 @@ const createHandler = (
       secretsManager({
         fetchData: {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          secrets: process.env['CHAT_SECRET_NAME']!,
+          secrets: secret<SecretsConfig>(process.env['CHAT_SECRET_NAME']!),
         },
         setToContext: true,
         // defaults cache to forever

@@ -17,7 +17,7 @@ export default defineConfig({
   },
   test: {
     // Since Vitest 3, you can define a workspace in your root config. In this case, Vitest will ignore the vitest.workspace file in the root, if one exists.
-    projects: [
+    workspace: [
       {
         // will inherit options from this config like plugins and pool
         extends: true,

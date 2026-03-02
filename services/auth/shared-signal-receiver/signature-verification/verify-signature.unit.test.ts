@@ -10,8 +10,9 @@ import {
 import { fetchJwks } from '@libs/auth-utils';
 
 vi.mock('@libs/auth-utils', async (importOriginal) => {
-  const originalModule =
-    await importOriginal<typeof import('@libs/auth-utils')>();
+  const originalModule = await importOriginal<
+    typeof import('@libs/auth-utils')
+  >();
 
   return {
     ...originalModule, // Include all original exports

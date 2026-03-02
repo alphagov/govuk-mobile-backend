@@ -44,7 +44,6 @@ for STACK_NAME in "$@"; do
   echo "Fetching outputs for stack: ${STACK_NAME}"
   STACK_OUTPUTS=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    --region eu-west-2 \
     --query 'Stacks[0].Outputs[]' \
     --output json 2>/dev/null || true)
 
