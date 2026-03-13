@@ -2,6 +2,28 @@
 
 The Chat API Proxy enables a secure integration between the GOV.UK App and the Chat API.
 
+## Architecture
+
+### Overview
+
+This service acts as a secure reverse proxy between the GOV.UK mobile app and the backend Chat API. It provides custom authorization and request validation before forwarding requests to the downstream Chat API service.
+
+### Components
+
+1. **API Gateway** - AWS API Gateway configured with a `{proxy+}` resource to accept all HTTP methods and paths
+2. **Lambda Authorizer** - Custom authorization function that validates incoming requests and extracts user context
+3. **HTTP Proxy Integration** - Transparently forwards authorized requests to the backend Chat API
+
+### Request Flow
+
+1. Client sends request to API Gateway with `Authorization` header
+2. API Gateway invokes the Lambda Authorizer to validate the request
+3. Authorizer validates the token and extracts user information
+4. If authorized, API Gateway forwards the request to the Chat API backend with:
+   - `Authorization` - Bearer token from the authorizer context
+   - `Govuk-Chat-End-User-Id` - User identifier extracted during authorization
+5. Response is returned to the client
+
 ### Pre-requisites for local development
 
 1. Follow the [pre-requisites](../README.md#1-prerequisites) in the main README.md of this repository.
@@ -34,7 +56,7 @@ Ensure you have pulled down the stack outputs from the SAM template to a `.env`,
 sh ../auth/helper-scripts/get-cloudformation-outputs.sh your-stack-name
 ```
 
-There are multiple sets of tests, specifically, `unit`, `acc` & `int`, below is a brief description of what is expected for each:
+There are multiple sets of tests, specifically, `infra` & `acc`, below is a brief description of what is expected for each:
 
 #### infra
 
