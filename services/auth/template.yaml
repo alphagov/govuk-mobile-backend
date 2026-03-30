@@ -96,7 +96,7 @@ Mappings:
       local: 31536000 # 365 days
       build: 31536000 # 365 days
       dev: 31536000 # 365 days
-      staging: 3600 # 60 minutes - for app team testing
+      staging: 31536000 # 365 days
       integration: 31536000 # 365 days
       production: 31536000 # 365 days
 

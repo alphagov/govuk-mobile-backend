@@ -34,7 +34,7 @@ const environmentMapping = [
   {
     environment: 'staging',
     oneLoginEnvironment: 'staging',
-    refreshTokenValidity: 3600, // 60 minutes
+    refreshTokenValidity: 31536000, // 365 days
   },
 ];
 
