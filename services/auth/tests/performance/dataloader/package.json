@@ -9,6 +9,6 @@
   "devDependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1000.0",
     "jose": "^6.0.12",
-    "uuid": "^11.1.0"
+    "uuid": "^14.0.0"
   }
 }
