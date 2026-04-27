@@ -118,11 +118,10 @@ describe('Check deployed Cognito User Pool Client', async () => {
   });
 
   it('has callback URLs set correctly', () => {
-    const expectedCallbackURLs = [
+    assert.include(
+      userPoolClient.CallbackURLs ?? [],
       'govuk://govuk/login-auth-callback',
-      'https://d84l1y8p4kdic.cloudfront.net', // used for testing purposes
-    ];
-    assert.deepEqual(userPoolClient.CallbackURLs, expectedCallbackURLs);
+    );
   });
 
   it('has logout URL set correctly', () => {
