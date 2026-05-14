@@ -101,7 +101,7 @@
     "install": "^0.13.0",
     "jsonwebtoken": "^9.0.3",
     "nx": "22.6.3",
-    "pkce-challenge": "^5.0.1",
+    "pkce-challenge": "^6.0.0",
     "prettier": "^2.8.8",
     "puppeteer": "^24.40.0",
     "querystring": "^0.2.1",
