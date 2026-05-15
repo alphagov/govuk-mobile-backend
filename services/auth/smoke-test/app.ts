@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import middy from '@middy/core';
 // eslint-disable-next-line importPlugin/no-internal-modules
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
@@ -161,12 +161,12 @@ export const lambdaHandler = middy<ScheduledEvent>()
       });
 
       if (typeof tokenResponse.access_token !== 'string') {
-        throw new Error(
+        throw new TypeError(
           `Token exchange failed: ${tokenResponse.status.toString()}`,
         );
       }
       if (typeof tokenResponse.refresh_token !== 'string') {
-        throw new Error('Token exchange missing refresh_token');
+        throw new TypeError('Token exchange missing refresh_token');
       }
 
       logger.info('smoke test step', { runId, step: 'token-refresh' });
