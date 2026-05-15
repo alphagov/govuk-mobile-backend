@@ -4,29 +4,29 @@
 version: 2
 updates:
   # Enables version updates for pnpm
-  - package-ecosystem: "npm"
-    directory: "/" # Location of package manifests
+  - package-ecosystem: 'npm'
+    directory: '/' # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     # Create a group of dependencies to be updated together in one pull request
     groups:
       dependencies:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "patch"
-          - "minor"
+          - 'patch'
+          - 'minor'
 
   # Enables version updates for github actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     # Create a group of dependencies to be updated together in one pull request
     groups:
       dependencies:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "patch"
-          - "minor"
+          - 'patch'
+          - 'minor'

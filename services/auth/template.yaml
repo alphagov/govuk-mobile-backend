@@ -4001,6 +4001,279 @@ Resources:
         - Key: System
           Value: Authentication
 
+  SmokeTestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-smoke-test
+      Description: Production smoke test for sign-in and token refresh flows
+      CodeUri: .build/smoke-test/
+      Handler: app.lambdaHandler
+      Role: !GetAtt SmokeTestFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt SmokeTestFunctionKMSKey.Arn
+      LoggingConfig:
+        LogGroup: !Ref SmokeTestFunctionLogGroup
+      Events:
+        SmokeTestSchedule:
+          Type: ScheduleV2
+          Name: !Sub ${AWS::StackName}-smoke-test-event-bridge
+          Properties:
+            Name: !Sub ${AWS::StackName}-smoke-test-event
+            PermissionsBoundary: !If
+              - UsePermissionsBoundary
+              - !Ref PermissionsBoundary
+              - !Ref AWS::NoValue
+            ScheduleExpression: rate(5 minutes)
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+              MaximumEventAgeInSeconds: 300
+      Environment:
+        Variables:
+          COGNITO_URL: !Join
+            - ''
+            - - !Sub '{{resolve:ssm:/${ConfigStackName}/cognito/custom-domain}}'
+              - !Sub .auth.${AWS::Region}.amazoncognito.com
+          AUTH_PROXY_URL: !Sub https://${AttestationProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+          CLIENT_ID: !Ref CognitoUserPoolClient
+          REDIRECT_URI: https://d84l1y8p4kdic.cloudfront.net
+          ONE_LOGIN_DOMAIN: !If
+            - IsProduction
+            - signin.account.gov.uk
+            - !Sub
+              - signin.${OneLoginEnv}.account.gov.uk
+              - OneLoginEnv: !FindInMap [OneLogin, Environment, !Ref Environment]
+          USER_SECRET_NAME: !Sub /${ConfigStackName}/smoke-test/user # pragma: allowlist secret
+          FIREBASE_SECRET_NAME: !Sub /${ConfigStackName}/firebase/service-account
+          FIREBASE_IOS_APP_ID: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}'
+          POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-smoke-test
+          POWERTOOLS_LOGGER_LOG_EVENT: "False"
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+
+  SmokeTestFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for smoke test Lambda function environment variables
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+            Resource:
+              - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SmokeTestFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-smoke-test
+      KmsKeyId: !GetAtt SmokeTestFunctionLogGroupKMSKey.Arn
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+            - Name: OneLoginUserId
+              Regex: (?:urn:fdc:gov\.uk:[0-9]{4}):[a-zA-Z0-9_\-]*
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+              - OneLoginUserId
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+              - OneLoginUserId
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SmokeTestFunctionLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for smoke test Lambda function log group
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SmokeTestFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-smoke-test-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SmokeTestFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/smoke-test/user-* # pragma: allowlist secret
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/firebase/service-account-*
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-smoke-test:*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SmokeTestAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-smoke-test-failure
+      AlarmDescription: !Sub |
+        Production smoke test failed for 2 consecutive 5-minute runs (sign-in or token refresh).
+        Check logs: /aws/lambda/${AWS::StackName}-smoke-test
+      ActionsEnabled: false
+      Namespace: GOVUKMobileAuth
+      MetricName: SmokeTestSuccess
+      Dimensions:
+        - Name: Service
+          Value: Auth
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions:
+        - !Ref CloudWatchAlarmWarningsTopic
+      OKActions:
+        - !Ref CloudWatchAlarmWarningsTopic
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  SmokeTestDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub ${AWS::StackName}-smoke-test
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0, "y": 0, "width": 24, "height": 6,
+              "properties": {
+                "metrics": [["GOVUKMobileAuth", "SmokeTestSuccess", "Service", "Auth", {"stat": "Minimum", "period": 300}]],
+                "title": "Smoke Test Success (1=pass, 0=fail)",
+                "view": "timeSeries",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "log",
+              "x": 0, "y": 6, "width": 24, "height": 8,
+              "properties": {
+                "query": "SOURCE '/aws/lambda/${AWS::StackName}-smoke-test' | fields @timestamp, runId, step, status, error | sort @timestamp desc | limit 50",
+                "title": "Recent Smoke Test Runs",
+                "view": "table",
+                "region": "${AWS::Region}"
+              }
+            }
+          ]
+        }
+
 Outputs:
   AWSAccountId:
     Description: AWS Account ID
