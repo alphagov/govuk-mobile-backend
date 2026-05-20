@@ -4005,7 +4005,6 @@ Resources:
   # Smoke Testing Resources
   ############################
   SmokeTestFunction:
-    Condition: IsNonIntegratedEnvironment
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-smoke-test
@@ -4026,7 +4025,8 @@ Resources:
               - UsePermissionsBoundary
               - !Ref PermissionsBoundary
               - !Ref AWS::NoValue
-            ScheduleExpression: rate(5 minutes)
+            ScheduleExpression: "cron(0/5 9-17 ? * MON-FRI *)"
+            ScheduleExpressionTimezone: Europe/London
             RetryPolicy:
               MaximumRetryAttempts: 2
               MaximumEventAgeInSeconds: 300
@@ -4053,7 +4053,6 @@ Resources:
         System: Authentication
 
   SmokeTestFunctionKMSKey:
-    Condition: IsNonIntegratedEnvironment
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for smoke test Lambda function environment variables
@@ -4085,7 +4084,6 @@ Resources:
           Value: Authentication
 
   SmokeTestFunctionLogGroup:
-    Condition: IsNonIntegratedEnvironment
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupClass: STANDARD
@@ -4130,7 +4128,6 @@ Resources:
           Value: Authentication
 
   SmokeTestFunctionLogGroupKMSKey:
-    Condition: IsNonIntegratedEnvironment
     Type: AWS::KMS::Key
     Properties:
       Description: KMS key for smoke test Lambda function log group
@@ -4168,7 +4165,6 @@ Resources:
           Value: Authentication
 
   SmokeTestFunctionIAMRole:
-    Condition: IsNonIntegratedEnvironment
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::StackName}-smoke-test-role
@@ -4218,7 +4214,6 @@ Resources:
           Value: Authentication
 
   SmokeTestAlarm:
-    Condition: IsNonIntegratedEnvironment
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub ${AWS::StackName}-smoke-test-failure
@@ -4237,7 +4232,7 @@ Resources:
       DatapointsToAlarm: 2
       Threshold: 1
       ComparisonOperator: LessThanThreshold
-      TreatMissingData: breaching
+      TreatMissingData: notBreaching
       AlarmActions:
         - !Ref CloudWatchAlarmWarningsTopic
       OKActions:
@@ -4251,7 +4246,6 @@ Resources:
           Value: Authentication
 
   SmokeTestDashboard:
-    Condition: IsNonIntegratedEnvironment
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Sub ${AWS::StackName}-smoke-test
