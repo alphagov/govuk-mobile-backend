@@ -7,6 +7,7 @@ export interface LoginUserInput {
 export interface LoginUserResponse {
   code: string;
   code_verifier: string;
+  returnedState: string | null;
 }
 
 export type TokenExchangeResponse = {

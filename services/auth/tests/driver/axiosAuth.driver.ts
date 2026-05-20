@@ -31,6 +31,7 @@ export class AxiosAuthDriver implements AuthDriver {
     redirectUri: string,
     proxyUrl: string,
     oneLoginEnvironment: string,
+    oneLoginDomainOverride?: string,
   ) {
     this.clientId = clientId;
     this.authUrl = authUrl;
@@ -40,7 +41,8 @@ export class AxiosAuthDriver implements AuthDriver {
     this.redirectUri = redirectUri;
     this.proxyDomain = new URL(proxyUrl).hostname;
     this.proxyPath = new URL(proxyUrl).pathname;
-    this.oneLoginDomain = `signin.${oneLoginEnvironment}.account.gov.uk`;
+    this.oneLoginDomain =
+      oneLoginDomainOverride ?? `signin.${oneLoginEnvironment}.account.gov.uk`;
     const jar = new CookieJar();
     this.client = wrapper(
       axios.create({
@@ -62,7 +64,10 @@ export class AxiosAuthDriver implements AuthDriver {
     return input.val();
   }
 
-  async loginAndGetCode(input: LoginUserInput): Promise<LoginUserResponse> {
+  async loginAndGetCode(
+    input: LoginUserInput,
+    state = 'debug123',
+  ): Promise<LoginUserResponse> {
     this.clearCookies();
     const { code_verifier, code_challenge } = await pkceChallenge();
     const authorizeEndpoint =
@@ -74,7 +79,7 @@ export class AxiosAuthDriver implements AuthDriver {
         scope: 'openid email',
         code_challenge,
         code_challenge_method: 'S256',
-        state: 'debug123',
+        state,
         idpidentifier: 'onelogin',
       });
 
@@ -120,10 +125,12 @@ export class AxiosAuthDriver implements AuthDriver {
 
     const redirectedUrl = new URL(totpFormResponse.request.res.responseUrl);
     const code = redirectedUrl.searchParams.get('code');
+    const returnedState = redirectedUrl.searchParams.get('state');
 
     return {
       code: code!,
       code_verifier,
+      returnedState,
     };
   }
 
