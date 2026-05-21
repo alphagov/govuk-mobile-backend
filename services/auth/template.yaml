@@ -4043,7 +4043,7 @@ Resources:
               - signin.${OneLoginEnv}.account.gov.uk
               - OneLoginEnv: !FindInMap [OneLogin, Environment, !Ref Environment]
           USER_SECRET_NAME: !Sub /${ConfigStackName}/smoke-test/user # pragma: allowlist secret
-          FIREBASE_SECRET_NAME: !Sub /${ConfigStackName}/firebase/service-account
+          GCP_CREDENTIAL_CONFIG_PARAM: !Sub /${ConfigStackName}/smoke-test/gcp-credential-config
           FIREBASE_IOS_APP_ID: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}'
           POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-smoke-test
           POWERTOOLS_LOGGER_LOG_EVENT: "False"
@@ -4185,7 +4185,11 @@ Resources:
                   - secretsmanager:GetSecretValue # pragma: allowlist secret
                 Resource:
                   - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/smoke-test/user-* # pragma: allowlist secret
-                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/firebase/service-account-*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/smoke-test/gcp-credential-config
               - Effect: Allow
                 Action:
                   - cloudwatch:PutMetricData

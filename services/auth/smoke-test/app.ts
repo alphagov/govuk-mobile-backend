@@ -11,14 +11,17 @@ import {
   PutMetricDataCommand,
 } from '@aws-sdk/client-cloudwatch';
 
-import type { ServiceAccount } from 'firebase-admin/app';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import type { Credential, GoogleOAuthAccessToken } from 'firebase-admin/app';
+import { getApps, initializeApp } from 'firebase-admin/app';
 // eslint-disable-next-line importPlugin/no-internal-modules
 import { getAppCheck } from 'firebase-admin/app-check';
+import { ExternalAccountClient } from 'google-auth-library';
+import type { ExternalAccountClientOptions } from 'google-auth-library';
 import zod from 'zod/v4';
 import { AxiosAuthDriver } from '../tests/driver/axiosAuth.driver';
 import type { ScheduledEvent } from 'aws-lambda';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 
 const logger = new Logger({
   serviceName: process.env['POWERTOOLS_SERVICE_NAME'] ?? 'smoke-test',
@@ -40,7 +43,7 @@ const configSchema = zod.object({
   redirectUri: zod.string(),
   oneLoginDomain: zod.string(),
   userSecretName: zod.string(),
-  firebaseSecretName: zod.string(),
+  gcpCredentialConfigParam: zod.string(),
   firebaseIosAppId: zod.string(),
 });
 
@@ -51,7 +54,7 @@ const parsedConfig = configSchema.safeParse({
   redirectUri: process.env['REDIRECT_URI'],
   oneLoginDomain: process.env['ONE_LOGIN_DOMAIN'],
   userSecretName: process.env['USER_SECRET_NAME'],
-  firebaseSecretName: process.env['FIREBASE_SECRET_NAME'],
+  gcpCredentialConfigParam: process.env['GCP_CREDENTIAL_CONFIG_PARAM'],
   firebaseIosAppId: process.env['FIREBASE_IOS_APP_ID'],
 });
 
@@ -72,12 +75,35 @@ async function ensureFirebaseInitialized(): Promise<void> {
     isFirebaseInitialized = true;
     return;
   }
-  const serviceAccount = await getSecret(smokeTestConfig.firebaseSecretName, {
-    transform: 'json',
-  });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  initializeApp({ credential: cert(serviceAccount as ServiceAccount) });
+  const configJson = await getParameter(
+    smokeTestConfig.gcpCredentialConfigParam,
+  );
+  if (configJson == null) {
+    throw new Error('GCP credential config SSM parameter returned empty');
+  }
+
+  const externalClient = ExternalAccountClient.fromJSON(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    JSON.parse(configJson) as ExternalAccountClientOptions,
+  );
+  if (externalClient === null) {
+    throw new Error(
+      'Invalid GCP Workload Identity Federation credential config',
+    );
+  }
+
+  const credential: Credential = {
+    getAccessToken: async (): Promise<GoogleOAuthAccessToken> => {
+      const { token } = await externalClient.getAccessToken();
+      if (token === null || token === undefined) {
+        throw new Error('GCP access token exchange returned null');
+      }
+      return { access_token: token, expires_in: 3600 };
+    },
+  };
+
+  initializeApp({ credential });
   isFirebaseInitialized = true;
 }
 
