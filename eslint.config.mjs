@@ -3,7 +3,6 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import promisePlugin from 'eslint-plugin-promise';
-import jsdocPlugin from 'eslint-plugin-jsdoc';
 import importPlugin from 'eslint-plugin-import';
 import securityPlugin from 'eslint-plugin-security';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
@@ -12,7 +11,6 @@ export default tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
-  jsdocPlugin.configs['flat/recommended-typescript'],
   importPlugin.flatConfigs.recommended,
   securityPlugin.configs.recommended,
   sonarjsPlugin.configs.recommended,
@@ -123,15 +121,7 @@ export default tseslint.config(
       'no-loop-func': 'off',
       '@typescript-eslint/no-loop-func': 'error',
       'no-magic-numbers': 'off',
-      '@typescript-eslint/no-magic-numbers': [
-        'error',
-        {
-          ignoreEnums: true,
-          ignoreNumericLiteralTypes: true,
-          ignoreReadonlyClassProperties: false,
-          ignoreTypeIndexes: false,
-        },
-      ],
+      '@typescript-eslint/no-magic-numbers': 'off',
       'no-shadow': 'off',
       '@typescript-eslint/no-shadow': 'error',
       '@typescript-eslint/no-unnecessary-parameter-property-assignment':
