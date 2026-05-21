@@ -83,10 +83,12 @@ async function ensureFirebaseInitialized(): Promise<void> {
     throw new Error('GCP credential config SSM parameter returned empty');
   }
 
-  const externalClient = ExternalAccountClient.fromJSON(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    JSON.parse(configJson) as ExternalAccountClientOptions,
-  );
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  const parsedConfig = JSON.parse(configJson) as ExternalAccountClientOptions & {
+    service_account_email?: string;
+  };
+
+  const externalClient = ExternalAccountClient.fromJSON(parsedConfig);
   if (externalClient === null) {
     throw new Error(
       'Invalid GCP Workload Identity Federation credential config',
@@ -103,7 +105,7 @@ async function ensureFirebaseInitialized(): Promise<void> {
     },
   };
 
-  initializeApp({ credential });
+  initializeApp({ credential, serviceAccountId: parsedConfig.service_account_email });
   isFirebaseInitialized = true;
 }
 
