@@ -61,14 +61,14 @@ jobs:
         run: 'npx nx run chat:sam:build'
 
       - name: Deploy Chat SAM app
-        uses: govuk-one-login/devplatform-upload-action@v3.9.4
+        uses: govuk-one-login/devplatform-upload-action@v3.14.0
         with:
           artifact-bucket-name: ${{ vars.CHAT_ARTIFACT_BUCKET_NAME }} # Need to configure git environment for the new buckets
           signing-profile-name: ${{ vars.SIGNING_PROFILE_NAME }}
           working-directory: ./services/chat/.aws-sam/build
 
       - name: Build, tag, and push testing images to Amazon ECR
-        uses: govuk-one-login/devplatform-upload-action-ecr@v1.4.0
+        uses: govuk-one-login/devplatform-upload-action-ecr@v1.5.0
         with:
           container-sign-kms-key-arn: ${{ vars.CHAT_CONTAINER_SIGN_KMS_KEY_ARN }}
           ecr-repo-name: ${{ vars.CHAT_TEST_ECR_REPOSITORY_NAME }}
