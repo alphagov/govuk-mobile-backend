@@ -115,15 +115,37 @@ export class AxiosAuthDriver implements AuthDriver {
 
     const { otp } = await TOTP.generate(input.totpSecret);
 
-    const totpFormResponse = await this.client.post(
-      `https://${this.oneLoginDomain}/enter-authenticator-app-code?`,
-      querystring.stringify({
-        _csrf: csrfToken,
-        code: otp,
-      }),
-    );
+    // Track the last redirect destination across the full chain.
+    // beforeRedirect fires before each hop, so after all HTTP redirects are
+    // exhausted (or axios fails to follow a custom scheme), this holds the
+    // URL containing the auth code.
+    let codeRedirectUrl: string | undefined;
 
-    const redirectedUrl = new URL(totpFormResponse.request.res.responseUrl);
+    try {
+      await this.client.post(
+        `https://${this.oneLoginDomain}/enter-authenticator-app-code?`,
+        querystring.stringify({
+          _csrf: csrfToken,
+          code: otp,
+        }),
+        {
+          beforeRedirect: (
+            _options: Record<string, unknown>,
+            responseDetails: { headers: Record<string, string> },
+          ) => {
+            codeRedirectUrl = responseDetails.headers['location'];
+          },
+        },
+      );
+    } catch (error) {
+      if (!codeRedirectUrl) throw error;
+    }
+
+    if (!codeRedirectUrl) {
+      throw new Error('TOTP step did not produce a redirect to the app');
+    }
+
+    const redirectedUrl = new URL(codeRedirectUrl);
     const code = redirectedUrl.searchParams.get('code');
     const returnedState = redirectedUrl.searchParams.get('state');
 
