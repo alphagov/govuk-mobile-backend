@@ -147,6 +147,27 @@ Conditions:
       - !Ref IsEphemeralStack
       - 'True'
 
+  IsSmokeTestEnvironment:
+    Fn::Or:
+      - Fn::Equals:
+          - !Ref Environment
+          - 'dev'
+      - Fn::Equals:
+          - !Ref Environment
+          - 'staging'
+      - Fn::Equals:
+          - !Ref Environment
+          - 'production'
+
+  IsSmokeTestWithAttestation:
+    Fn::Or:
+      - Fn::Equals:
+          - !Ref Environment
+          - 'dev'
+      - Fn::Equals:
+          - !Ref Environment
+          - 'production'
+
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -4006,6 +4027,7 @@ Resources:
   ############################
   SmokeTestFunction:
     Type: AWS::Serverless::Function
+    Condition: IsSmokeTestEnvironment
     Properties:
       FunctionName: !Sub ${AWS::StackName}-smoke-test
       Description: Production smoke test for sign-in and token refresh flows
@@ -4043,8 +4065,18 @@ Resources:
               - signin.${OneLoginEnv}.account.gov.uk
               - OneLoginEnv: !FindInMap [OneLogin, Environment, !Ref Environment]
           USER_SECRET_NAME: !Sub /${ConfigStackName}/smoke-test/user # pragma: allowlist secret
-          FIREBASE_SECRET_NAME: !Sub /${ConfigStackName}/firebase/service-account
-          FIREBASE_IOS_APP_ID: !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}'
+          GCP_CREDENTIAL_CONFIG_PARAM: !If
+            - IsSmokeTestWithAttestation
+            - !Sub /${ConfigStackName}/smoke-test/gcp-credential-config
+            - !Ref AWS::NoValue
+          FIREBASE_IOS_APP_ID: !If
+            - IsSmokeTestWithAttestation
+            - !Sub '{{resolve:ssm:/${ConfigStackName}/firebase/appcheck/ios-app-id}}'
+            - !Ref AWS::NoValue
+          REQUIRE_ATTESTATION: !If
+            - IsSmokeTestWithAttestation
+            - 'true'
+            - 'false'
           POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-smoke-test
           POWERTOOLS_LOGGER_LOG_EVENT: "False"
       Tags:
@@ -4054,6 +4086,7 @@ Resources:
 
   SmokeTestFunctionKMSKey:
     Type: AWS::KMS::Key
+    Condition: IsSmokeTestEnvironment
     Properties:
       Description: KMS key for smoke test Lambda function environment variables
       EnableKeyRotation: true
@@ -4085,6 +4118,7 @@ Resources:
 
   SmokeTestFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsSmokeTestEnvironment
     Properties:
       LogGroupClass: STANDARD
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-smoke-test
@@ -4129,6 +4163,7 @@ Resources:
 
   SmokeTestFunctionLogGroupKMSKey:
     Type: AWS::KMS::Key
+    Condition: IsSmokeTestEnvironment
     Properties:
       Description: KMS key for smoke test Lambda function log group
       EnableKeyRotation: true
@@ -4166,6 +4201,7 @@ Resources:
 
   SmokeTestFunctionIAMRole:
     Type: AWS::IAM::Role
+    Condition: IsSmokeTestEnvironment
     Properties:
       RoleName: !Sub ${AWS::StackName}-smoke-test-role
       AssumeRolePolicyDocument:
@@ -4185,7 +4221,11 @@ Resources:
                   - secretsmanager:GetSecretValue # pragma: allowlist secret
                 Resource:
                   - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/smoke-test/user-* # pragma: allowlist secret
-                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/firebase/service-account-*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigStackName}/smoke-test/gcp-credential-config
               - Effect: Allow
                 Action:
                   - cloudwatch:PutMetricData
@@ -4215,6 +4255,7 @@ Resources:
 
   SmokeTestAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: IsSmokeTestEnvironment
     Properties:
       AlarmName: !Sub ${AWS::StackName}-smoke-test-failure
       AlarmDescription: !Sub |
@@ -4247,6 +4288,7 @@ Resources:
 
   SmokeTestDashboard:
     Type: AWS::CloudWatch::Dashboard
+    Condition: IsSmokeTestEnvironment
     Properties:
       DashboardName: !Sub ${AWS::StackName}-smoke-test
       DashboardBody: !Sub |

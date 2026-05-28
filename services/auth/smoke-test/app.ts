@@ -11,14 +11,16 @@ import {
   PutMetricDataCommand,
 } from '@aws-sdk/client-cloudwatch';
 
-import type { ServiceAccount } from 'firebase-admin/app';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import type { Credential, GoogleOAuthAccessToken } from 'firebase-admin/app';
+import { getApps, initializeApp } from 'firebase-admin/app';
 // eslint-disable-next-line importPlugin/no-internal-modules
 import { getAppCheck } from 'firebase-admin/app-check';
+import { ExternalAccountClient } from 'google-auth-library';
 import zod from 'zod/v4';
 import { AxiosAuthDriver } from '../tests/driver/axiosAuth.driver';
 import type { ScheduledEvent } from 'aws-lambda';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 
 const logger = new Logger({
   serviceName: process.env['POWERTOOLS_SERVICE_NAME'] ?? 'smoke-test',
@@ -40,8 +42,9 @@ const configSchema = zod.object({
   redirectUri: zod.string(),
   oneLoginDomain: zod.string(),
   userSecretName: zod.string(),
-  firebaseSecretName: zod.string(),
-  firebaseIosAppId: zod.string(),
+  requireAttestation: zod.enum(['true', 'false']).default('true'),
+  gcpCredentialConfigParam: zod.string().optional(),
+  firebaseIosAppId: zod.string().optional(),
 });
 
 const parsedConfig = configSchema.safeParse({
@@ -51,9 +54,24 @@ const parsedConfig = configSchema.safeParse({
   redirectUri: process.env['REDIRECT_URI'],
   oneLoginDomain: process.env['ONE_LOGIN_DOMAIN'],
   userSecretName: process.env['USER_SECRET_NAME'],
-  firebaseSecretName: process.env['FIREBASE_SECRET_NAME'],
+  requireAttestation: process.env['REQUIRE_ATTESTATION'],
+  gcpCredentialConfigParam: process.env['GCP_CREDENTIAL_CONFIG_PARAM'],
   firebaseIosAppId: process.env['FIREBASE_IOS_APP_ID'],
 });
+
+const userSchema = zod.object({
+  email: zod.string(),
+  password: zod.string(),
+  totpSecret: zod.string(),
+});
+
+const gcpCredentialConfigSchema = zod
+  .object({
+    audience: zod.string(),
+    subject_token_type: zod.string(),
+    service_account_email: zod.string().optional(),
+  })
+  .loose();
 
 if (!parsedConfig.success) {
   throw new Error(zod.prettifyError(parsedConfig.error));
@@ -63,39 +81,87 @@ const smokeTestConfig = parsedConfig.data;
 
 let isFirebaseInitialized = false;
 
-/**
- *
- */
 async function ensureFirebaseInitialized(): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
   if (isFirebaseInitialized || getApps().length !== 0) {
     isFirebaseInitialized = true;
     return;
   }
-  const serviceAccount = await getSecret(smokeTestConfig.firebaseSecretName, {
-    transform: 'json',
-  });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  initializeApp({ credential: cert(serviceAccount as ServiceAccount) });
+  if (smokeTestConfig.gcpCredentialConfigParam === undefined) {
+    throw new Error(
+      'GCP_CREDENTIAL_CONFIG_PARAM is required when attestation is enabled',
+    );
+  }
+
+  const configJson = await getParameter(
+    smokeTestConfig.gcpCredentialConfigParam,
+    {
+      transform: 'json',
+    },
+  );
+
+  const configParseResult = gcpCredentialConfigSchema.safeParse(configJson);
+  if (!configParseResult.success) {
+    throw new Error(
+      `Invalid GCP credential config: ${zod.prettifyError(
+        configParseResult.error,
+      )}`,
+    );
+  }
+
+  const config = configParseResult.data;
+
+  const externalClient = ExternalAccountClient.fromJSON(config);
+  if (externalClient === null) {
+    throw new Error(
+      'Invalid GCP Workload Identity Federation credential config',
+    );
+  }
+
+  const { service_account_email: serviceAccountEmail } = config;
+  if (serviceAccountEmail === undefined) {
+    throw new Error('Service account email missing from credential config');
+  }
+
+  const projectId = serviceAccountEmail.split('@')[1]?.split('.')[0];
+
+  if (projectId === undefined) {
+    throw new Error(
+      'Project ID could not be inferred from service account email',
+    );
+  }
+
+  const credential: Credential = {
+    getAccessToken: async (): Promise<GoogleOAuthAccessToken> => {
+      const response = await externalClient.getAccessToken();
+      if (response.token === null || response.token === undefined) {
+        throw new Error('GCP access token exchange returned null');
+      }
+      return { access_token: response.token, expires_in: 3600 };
+    },
+  };
+
+  initializeApp({
+    credential,
+    serviceAccountId: serviceAccountEmail,
+    projectId,
+  });
   isFirebaseInitialized = true;
 }
 
-/**
- *
- */
 async function getAttestationToken(): Promise<string> {
   await ensureFirebaseInitialized();
+  if (smokeTestConfig.firebaseIosAppId === undefined) {
+    throw new Error(
+      'FIREBASE_IOS_APP_ID is required when attestation is enabled',
+    );
+  }
   const { token } = await getAppCheck().createToken(
     smokeTestConfig.firebaseIosAppId,
   );
   return token;
 }
 
-/**
- *
- * @param success
- */
 async function emitMetric(success: boolean): Promise<void> {
   await cloudwatch.send(
     new PutMetricDataCommand({
@@ -119,7 +185,6 @@ export const lambdaHandler = middy<ScheduledEvent>()
   .use(captureLambdaHandler(tracer))
   .use(injectLambdaContext(logger))
   .handler(async (): Promise<void> => {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
     const runId = randomBytes(8).toString('hex');
     logger.info('smoke test started', { runId });
 
@@ -128,7 +193,12 @@ export const lambdaHandler = middy<ScheduledEvent>()
         transform: 'json',
       });
 
-      const attestationToken = await getAttestationToken();
+      const userParseResult = await userSchema.parseAsync(user);
+
+      const attestationToken =
+        smokeTestConfig.requireAttestation === 'true'
+          ? await getAttestationToken()
+          : '';
 
       const authDriver = new AxiosAuthDriver(
         smokeTestConfig.clientId,
@@ -139,13 +209,12 @@ export const lambdaHandler = middy<ScheduledEvent>()
         smokeTestConfig.oneLoginDomain,
       );
 
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
       const state = randomBytes(16).toString('hex');
 
       logger.info('smoke test step', { runId, step: 'sign-in' });
       // eslint-disable-next-line @typescript-eslint/naming-convention
       const { code, code_verifier, returnedState } =
-        await authDriver.loginAndGetCode(user, state);
+        await authDriver.loginAndGetCode(userParseResult, state);
 
       if (returnedState !== state) {
         throw new Error(
