@@ -4060,7 +4060,7 @@ Resources:
               - !Sub .auth.${AWS::Region}.amazoncognito.com
           AUTH_PROXY_URL: !Sub https://${AttestationProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
           CLIENT_ID: !Ref CognitoUserPoolClient
-          REDIRECT_URI: https://d84l1y8p4kdic.cloudfront.net
+          REDIRECT_URI: govuk://govuk/login-auth-callback
           ONE_LOGIN_DOMAIN: !Sub
               - signin.${OneLoginEnv}.account.gov.uk
               - OneLoginEnv: !FindInMap [OneLogin, Environment, !Ref Environment]
