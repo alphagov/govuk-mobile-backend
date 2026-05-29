@@ -4061,7 +4061,10 @@ Resources:
           AUTH_PROXY_URL: !Sub https://${AttestationProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
           CLIENT_ID: !Ref CognitoUserPoolClient
           REDIRECT_URI: govuk://govuk/login-auth-callback
-          ONE_LOGIN_DOMAIN: !Sub
+          ONE_LOGIN_DOMAIN: !If
+            - IsProduction
+            - signin.account.gov.uk
+            - !Sub
               - signin.${OneLoginEnv}.account.gov.uk
               - OneLoginEnv: !FindInMap [OneLogin, Environment, !Ref Environment]
           USER_SECRET_NAME: !Sub /${ConfigStackName}/smoke-test/user # pragma: allowlist secret
