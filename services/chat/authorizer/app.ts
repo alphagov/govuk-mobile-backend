@@ -11,7 +11,7 @@ import { parser } from '@aws-lambda-powertools/parser/middleware';
 import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import z from 'zod';
 import { errorMiddleware } from './middleware/global-error-handler';
-import secretsManager, { secret } from '@middy/secrets-manager';
+import secretsManager, { secretsManagerParam } from '@middy/secrets-manager';
 import type { SecretsConfig } from './types';
 import { tracer } from './tracer';
 
@@ -42,8 +42,10 @@ const createHandler = (
     .use(
       secretsManager({
         fetchData: {
-          //eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-          secrets: secret<SecretsConfig>(process.env['CHAT_SECRET_NAME']!),
+          secrets: secretsManagerParam<SecretsConfig>(
+            //eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            process.env['CHAT_SECRET_NAME']!,
+          ),
         },
         setToContext: true,
         // defaults cache to forever

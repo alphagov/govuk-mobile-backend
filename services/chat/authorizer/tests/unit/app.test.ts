@@ -25,7 +25,7 @@ vi.mock('@middy/secrets-manager', async () => {
   return {
     __esModule: true,
     default: mockMiddleware,
-    secret: vi.fn().mockResolvedValue({
+    secretsManagerParam: vi.fn().mockResolvedValue({
       secrets: {
         clientId: 'valid-client-id',
         userPoolId: 'valid-user-pool-id',
