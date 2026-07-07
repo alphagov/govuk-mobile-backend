@@ -1,3 +1,5 @@
+/* eslint-disable importPlugin/no-internal-modules */
+
 import { authorizerResult } from './client/authorizer-client';
 import { logMessages } from './log-messages';
 import type { APIGatewayAuthorizerResult, Context } from 'aws-lambda';
@@ -40,7 +42,7 @@ const createHandler = (
     .use(
       secretsManager({
         fetchData: {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          //eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           secrets: secret<SecretsConfig>(process.env['CHAT_SECRET_NAME']!),
         },
         setToContext: true,

@@ -1,3 +1,5 @@
+/* eslint-disable importPlugin/no-internal-modules */
+
 import type { APIGatewayAuthorizerResult, StatementEffect } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import type { CognitoAccessTokenPayload } from 'aws-jwt-verify/jwt-model';

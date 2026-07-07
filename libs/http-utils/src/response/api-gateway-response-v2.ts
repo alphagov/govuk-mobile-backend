@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/function-return-type */
 import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 
 const generateResponseV2 = ({

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers */
 /* eslint-disable @typescript-eslint/naming-convention */
 
 /**
@@ -69,7 +68,6 @@ const sendHttpRequest = async ({
   const timeoutMillis = retryConfig?.timeoutMillis ?? 5000;
   let attempt = 0;
 
-  // eslint-disable-next-line jsdoc/require-jsdoc
   async function request(): Promise<Response> {
     attempt++;
 

@@ -1,3 +1,5 @@
+/* eslint-disable importPlugin/no-internal-modules */
+
 import type { MiddlewareObj, Request } from '@middy/core';
 import { logger } from '../logger';
 import { ParseError } from '@aws-lambda-powertools/parser';
