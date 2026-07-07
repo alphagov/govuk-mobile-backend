@@ -3778,6 +3778,298 @@ Resources:
         - MetricValue: "1"
           MetricNamespace: !Sub "${AWS::StackName}/Timeouts"
           MetricName: "RevokeRefreshTokenFunctionTimeout"
+  
+  LinkingVerificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-linking-verification"
+      Description: Generates a verification hash for account linking.
+      Handler: app.lambdaHandler
+      CodeUri: .build/linking-verification
+      Role: !GetAtt LinkingVerificationFunctionIAMRole.Arn
+      KmsKeyArn: !GetAtt LinkingVerificationFunctionKMSKey.Arn
+      LoggingConfig: 
+        LogGroup: !Ref LinkingVerificationFunctionLogGroup
+      Environment:
+        Variables:
+          HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/hash-key-secret
+          POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-linking-verification
+          POWERTOOLS_LOGGER_LOG_EVENT: !If
+          - IsNonIntegratedEnvironment
+          - "True"
+          - "False"
+      Events:
+        RevokePost:
+          Type: Api
+          Properties:
+            Path: /linking/verification
+            Method: POST
+            RestApiId: !Ref AttestationProxyApi
+      Tags:
+        Product: GOV.UK
+        Environment: !Ref Environment
+        System: Authentication
+
+  LinkingVerificationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupClass: STANDARD
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-linking-verification-function
+      KmsKeyId: !GetAtt LinkingVerificationFunctionLogGroupKMSKey.Arn
+      RetentionInDays: !FindInMap [LogRetentionByEnv, Environment, !Ref Environment]
+      DataProtectionPolicy:
+        Name: CloudWatchLogs-PersonalInformation-Protection
+        Description: Protect basic types of sensitive data
+        Version: '2021-06-01'
+        Configuration:
+          CustomDataIdentifier:
+            - Name: JWTTokens
+              Regex: e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?
+        Statement:
+          - Sid: audit-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Audit:
+                FindingsDestination: {}
+          - Sid: masking-policy
+            DataIdentifier:
+              - arn:aws:dataprotection::aws:data-identifier/EmailAddress
+              - arn:aws:dataprotection::aws:data-identifier/IpAddress
+              - JWTTokens
+            Operation:
+              Deidentify:
+                MaskConfig: {}
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  LinkingVerificationFunctionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-linking-verification-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LinkingVerificationFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue # pragma: allowlist secret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ConfigStackName}/linking/dvla/hash-key-secret-*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-revoke-refresh-token-function:*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  LinkingVerificationFunctionKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting linking verification secrets
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+            Resource:
+              - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+         
+  LinkingVerificationFunctionLogGroupKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting linking verification function log groups
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  LinkingVerificationConcurrencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-linking-verification-concurrency
+      AlarmDescription: !Sub |
+        Alarm when the Linking Verification Lambda concurrency approaches the limit, triggers at 80% of the limit.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Maximum
+      ActionsEnabled: true
+      MetricName: ConcurrentExecutions
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 800 # ReservedConcurrentExecutions for the Attestation/Auth Lambda is set to 1000 and so this is 80% of that
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LinkingVerificationFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  LinkingVerificationThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-linking-verification-throttles
+      AlarmDescription: !Sub |
+        Alarm when the Linking Verification Lambda is being throttled.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: Throttles
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LinkingVerificationFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication 
+
+  LinkingVerificationTimeoutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-linking-verification-timeout
+      AlarmDescription: !Sub |
+        Alarm when the Linking Verification Lambda function is timing out.
+        See resolution steps in runbook:
+        {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4754178049/Runbook+Common+Lambda+Alarms
+      Namespace: !Sub "${AWS::StackName}/Timeouts"
+      Statistic: Sum
+      ActionsEnabled: true
+      MetricName: LinkingVerificationFunctionTimeout
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 5 
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LinkingVerificationFunction
+      AlarmActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      OKActions:
+        - !Ref CloudWatchAlarmTopicPagerDuty
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  LinkingVerificationTimeoutMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LinkingVerificationFunctionLogGroup
+      FilterPattern: '{ ($.type = "platform.report") && ($.record.status = "timeout") }'
+      MetricTransformations:
+        - MetricValue: "1"
+          MetricNamespace: !Sub "${AWS::StackName}/Timeouts"
+          MetricName: "LinkingVerificationFunctionTimeout"
 
 
   ############################
