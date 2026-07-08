@@ -1,5 +1,3 @@
-/* eslint-disable importPlugin/no-internal-modules */
-
 import { Logger } from '@aws-lambda-powertools/logger';
 import { search } from '@aws-lambda-powertools/logger/correlationId';
 
