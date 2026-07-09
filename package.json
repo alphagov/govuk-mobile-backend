@@ -29,17 +29,17 @@
     "@aws-lambda-powertools/parser": "2.33.1",
     "@aws-lambda-powertools/tracer": "2.33.1",
     "@aws-lambda-powertools/validation": "2.33.1",
-    "@aws-sdk/client-api-gateway": "3.1078.0",
-    "@aws-sdk/client-chatbot": "3.1078.0",
-    "@aws-sdk/client-cloudformation": "3.1078.0",
-    "@aws-sdk/client-cloudwatch": "3.1078.0",
-    "@aws-sdk/client-cloudwatch-logs": "3.1078.0",
-    "@aws-sdk/client-cognito-identity-provider": "3.1078.0",
-    "@aws-sdk/client-iam": "3.1078.0",
-    "@aws-sdk/client-lambda": "3.1078.0",
-    "@aws-sdk/client-secrets-manager": "3.1078.0",
-    "@aws-sdk/client-sns": "3.1078.0",
-    "@aws-sdk/client-ssm": "3.1078.0",
+    "@aws-sdk/client-api-gateway": "3.1083.0",
+    "@aws-sdk/client-chatbot": "3.1083.0",
+    "@aws-sdk/client-cloudformation": "3.1083.0",
+    "@aws-sdk/client-cloudwatch": "3.1083.0",
+    "@aws-sdk/client-cloudwatch-logs": "3.1083.0",
+    "@aws-sdk/client-cognito-identity-provider": "3.1083.0",
+    "@aws-sdk/client-iam": "3.1083.0",
+    "@aws-sdk/client-lambda": "3.1083.0",
+    "@aws-sdk/client-secrets-manager": "3.1083.0",
+    "@aws-sdk/client-sns": "3.1083.0",
+    "@aws-sdk/client-ssm": "3.1083.0",
     "@middy/core": "7.7.0",
     "@middy/http-urlencode-body-parser": "7.7.0",
     "@middy/secrets-manager": "7.7.0",
@@ -79,8 +79,8 @@
     "axios-cookiejar-support": "^6.0.5",
     "cheerio": "^1.2.0",
     "dotenv": "^16.6.1",
-    "esbuild": "0.28.0",
-    "esbuild-plugin-tsc": "^0.5.0",
+    "esbuild": "0.28.1",
+    "esbuild-plugin-tsc": "^0.6.0",
     "eslint": "^9.39.4",
     "eslint-formatter-junit": "^8.40.0",
     "eslint-import-resolver-typescript": "^4.4.4",
@@ -122,6 +122,6 @@
     "fast-xml-parser": "^5.4.2"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.9.5"
+    "@rollup/rollup-linux-x64-gnu": "4.62.2"
   }
 }
