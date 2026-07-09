@@ -63,17 +63,17 @@ export const lambdaHandler = middy()
 
     //Decoding JWT -> Getting email
     const claims = decodeJwt(token);
-    const { sub } = claims;
-    if (typeof sub !== 'string' || !sub) {
+    const { username } = claims;
+    if (typeof username !== 'string' || !username) {
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
-        message: 'No valid sub in token',
+        message: 'No valid username in token',
       });
     }
 
     const command = new AdminGetUserCommand({
       UserPoolId: userPoolId,
-      Username: sub,
+      Username: username,
     });
     let email = '';
     try {

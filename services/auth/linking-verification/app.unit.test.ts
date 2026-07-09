@@ -38,10 +38,11 @@ const getApiGatewayEvent = (body: string) => {
   } as APIGatewayProxyEvent;
 };
 
-const generateJwt = async (sub?: string) => {
+const generateJwt = async (username?: string) => {
   const secretKey = await generateSecret('HS256');
   const payload = {
-    ...(sub ? { sub: sub } : {}),
+    sub: '123',
+    ...(username ? { username: username } : {}),
   };
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
@@ -114,13 +115,15 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     );
   });
 
-  it('WHEN the jwt lacks a sub THEN an error is returned', async () => {
+  it('WHEN the jwt lacks a username THEN an error is returned', async () => {
     const event = getApiGatewayEvent(
       JSON.stringify({ token: await generateJwt() }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe('No valid sub in token');
+    expect(JSON.parse(response.body).message).toBe(
+      'No valid username in token',
+    );
   });
 
   it('WHEN cognito throws an error THEN an error is returned', async () => {
@@ -128,7 +131,7 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
       .on(AdminGetUserCommand)
       .rejects(new Error('Failed to get user'));
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('user-sub-123') }),
+      JSON.stringify({ token: await generateJwt('username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
@@ -140,7 +143,7 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
       .on(AdminGetUserCommand)
       .resolves({ UserAttributes: [{ Name: 'abc', Value: '123' }] });
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('user-sub-123') }),
+      JSON.stringify({ token: await generateJwt('username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
@@ -154,7 +157,7 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     (getSecret as Mock).mockRejectedValue(new Error('network error'));
 
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('user-sub-123') }),
+      JSON.stringify({ token: await generateJwt('username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
@@ -168,7 +171,7 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     (getSecret as Mock).mockResolvedValue(undefined);
 
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('user-sub-123') }),
+      JSON.stringify({ token: await generateJwt('username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
@@ -182,7 +185,7 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     (getSecret as Mock).mockResolvedValue('mock_hash_key');
 
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('user-sub-123') }),
+      JSON.stringify({ token: await generateJwt('username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     console.log(response);
