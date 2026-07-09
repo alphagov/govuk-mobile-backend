@@ -10,6 +10,15 @@ import z from 'zod';
 import { tracer } from './tracer';
 import { logger } from './logger';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
+import {
+  AdminGetUserCommand,
+  CognitoIdentityProviderClient,
+} from '@aws-sdk/client-cognito-identity-provider';
+
+const cognitoIdentityServiceProvider: CognitoIdentityProviderClient =
+  new CognitoIdentityProviderClient({
+    region: 'eu-west-2',
+  });
 
 const requestSchema = z.object({
   token: z.string(),
@@ -44,13 +53,53 @@ export const lambdaHandler = middy()
       });
     }
 
-    //Decoding JWT -> Getting email
-    const claims = decodeJwt(token);
-    const { email } = claims;
-    if (typeof email !== 'string' || !email) {
+    const userPoolId = process.env['USER_POOL_ID'];
+    if (typeof userPoolId !== 'string' || !userPoolId) {
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
-        message: 'No valid email in token',
+        message: 'Invalid environment variables',
+      });
+    }
+
+    //Decoding JWT -> Getting email
+    const claims = decodeJwt(token);
+    const { sub } = claims;
+    if (typeof sub !== 'string' || !sub) {
+      return generateErrorResponseV2({
+        status: StatusCodes.INTERNAL_SERVER_ERROR,
+        message: 'No valid sub in token',
+      });
+    }
+
+    const command = new AdminGetUserCommand({
+      UserPoolId: userPoolId,
+      Username: sub,
+    });
+    let email = '';
+    try {
+      const cognitoUser = await cognitoIdentityServiceProvider.send(command);
+      if (!cognitoUser.UserAttributes) {
+        return generateErrorResponseV2({
+          status: StatusCodes.INTERNAL_SERVER_ERROR,
+          message: 'No valid cognito user',
+        });
+      }
+      const emailAttribute = cognitoUser.UserAttributes.find(
+        (attribute) => attribute.Name === 'email',
+      );
+      email = emailAttribute?.Value ?? 'no-email';
+      if (email === 'no-email') {
+        return generateErrorResponseV2({
+          status: StatusCodes.INTERNAL_SERVER_ERROR,
+          message: 'No valid cognito email',
+        });
+      }
+    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      logger.error((error as Error).message);
+      return generateErrorResponseV2({
+        status: StatusCodes.INTERNAL_SERVER_ERROR,
+        message: 'Cognito Failure',
       });
     }
 
@@ -60,7 +109,9 @@ export const lambdaHandler = middy()
       hashKey = await getSecret(hashKeyParamName, {
         maxAge: sixtyMinutes,
       });
-    } catch {
+    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      logger.error((error as Error).message);
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
         message: 'Failed to fetch hash key',
