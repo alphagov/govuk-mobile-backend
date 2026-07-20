@@ -679,10 +679,10 @@ Resources:
         Alarm detects a high rate of client-side errors.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4544724994/Runbook+Attestation+API+Gateway+alarms
-      Namespace: AWS/ApiGateway
+      Namespace: Custom/ApiGateway
       Statistic: Average
       ActionsEnabled: true
-      MetricName: 4XXError
+      MetricName: AttestationProxyApiNonWAF4xxMetricFilter
       Period: 60
       EvaluationPeriods: 5
       DatapointsToAlarm: 5
@@ -1454,7 +1454,7 @@ Resources:
           HttpMethod: "*"
       AccessLogSetting:
         DestinationArn: !GetAtt AttestationProxyApiAccessLogGroup.Arn
-        Format: '{"extendedRequestId":"$context.extendedRequestId","path":"$context.path","responseLength":"$context.responseLength","userAgent":"$context.identity.userAgent","integrationLatency":"$context.integrationLatency","integrationStatus":"$context.integrationStatus","integrationErrorMessage":"$context.integrationErrorMessage","wafResponseCode":"$context.wafResponseCode","errorMessage":"$context.error.message","errorType":"$context.error.type","errorResponseType":"$context.error.responseType","validationErrorString":"$context.error.validationErrorString","requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
+        Format: '{"extendedRequestId":"$context.extendedRequestId","path":"$context.path","responseLength":"$context.responseLength","userAgent":"$context.identity.userAgent","integrationLatency":"$context.integrationLatency","integrationStatus":"$context.integrationStatus","integrationErrorMessage":"$context.integrationErrorMessage","wafResponseCode":"$context.wafResponseCode","errorMessage":"$context.error.message","errorType":"$context.error.type","errorResponseType":"$context.error.responseType","validationErrorString":"$context.error.validationErrorString","requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","wafStatus":"$context.wafResponseCode"}'
       Tags:
         Product: GOV.UK
         Environment: !Ref Environment
@@ -1539,6 +1539,17 @@ Resources:
         - MetricName: Attestation200ResponseCount
           MetricNamespace: !Sub ${AWS::StackName}/Responses
           MetricValue: '1'
+
+  AttestationProxyApiNonWAF4xxMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref AttestationProxyApiAccessLogGroup
+      FilterPattern: '{ ($.status = 4*) && ($.wafStatus != "403") && ($.wafStatus != "BLOCK") }'
+      MetricTransformations:
+        - MetricName: AttestationProxyApiNonWAF4xxMetricFilter
+          MetricNamespace: Custom/ApiGateway
+          MetricValue: "1"
+          DefaultValue: 0
 
   AttestationLambdaErrorRateAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -2102,7 +2113,7 @@ Resources:
           HttpMethod: "*"
       AccessLogSetting:
         DestinationArn: !GetAtt SharedSignalAccessLogGroup.Arn
-        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol"}'
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","wafStatus":"$context.wafResponseCode"}'
       Auth:
         DefaultAuthorizer: SharedSignalAuthorizer
         Authorizers:
@@ -2235,6 +2246,17 @@ Resources:
         - Key: System
           Value: Authentication
 
+  SharedSignalApiNonWAF4xxMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref SharedSignalAccessLogGroup
+      FilterPattern: '{ ($.status = 4*) && ($.wafStatus != "403") && ($.wafStatus != "BLOCK") }'
+      MetricTransformations:
+        - MetricName: SharedSignalApiNonWAF4xxMetricFilter
+          MetricNamespace: Custom/ApiGateway
+          MetricValue: "1"
+          DefaultValue: 0
+
   SharedSignalApiGatewayAlarm4xxErrors:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -2243,10 +2265,10 @@ Resources:
         Shared Signal Alarm detects a high rate of client-side errors.
         See resolution steps in runbook:
         {{resolve:ssm:/${ConfigStackName}/runbook-links/prefix}}/pages/4615012361/API+Gateway+alarms
-      Namespace: AWS/ApiGateway
+      Namespace: Custom/ApiGateway
       Statistic: Average
       ActionsEnabled: true
-      MetricName: 4XXError
+      MetricName: SharedSignalApiNonWAF4xxMetricFilter
       Period: 60
       EvaluationPeriods: 5
       DatapointsToAlarm: 5
