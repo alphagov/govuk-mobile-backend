@@ -351,6 +351,7 @@ describe('Chat API Gateway Stage', () => {
         authorizerLatency: '$context.authorizer.latency',
         authorizerRequestId: '$context.authorizer.requestId',
         authorizerStatus: '$context.authorizer.status',
+        wafStatus: '$context.wafResponseCode',
       }),
     });
   });
