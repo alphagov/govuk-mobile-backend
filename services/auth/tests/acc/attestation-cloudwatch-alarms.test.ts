@@ -17,7 +17,7 @@ const testCases: AlarmTestCase[] = [
     name: '4xx',
     alarmName: `${testConfig.stackName}-auth-proxy-4xx-errors`,
     actionsEnabled: true,
-    metricName: '4XXError',
+    metricName: 'AttestationProxyApiNonWAF4xxMetricFilter',
     alarmDescription: 'Alarm detects a high rate of client-side errors.',
     topicDisplayName: 'cloudwatch-alarm-warnings-topic',
     statistic: 'Average',
@@ -26,7 +26,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 0.05,
     comparisonOperator: 'GreaterThanThreshold',
-    namespace: 'AWS/ApiGateway',
+    namespace: 'Custom/ApiGateway',
     dimensions: [
       { Name: 'ApiName', Value: testConfig.authProxyId },
       { Name: 'Resource', Value: '/oauth2/token' },

@@ -17,7 +17,7 @@ const testCases: AlarmTestCase[] = [
     name: '4xx',
     alarmName: `${testConfig.stackName}-shared-signal-4xx-errors`,
     actionsEnabled: true,
-    metricName: '4XXError',
+    metricName: 'SharedSignalApiNonWAF4xxMetricFilter',
     alarmDescription:
       'Shared Signal Alarm detects a high rate of client-side errors.',
     topicDisplayName: 'cloudwatch-alarm-warnings-topic',
@@ -27,7 +27,7 @@ const testCases: AlarmTestCase[] = [
     datapointsToAlarm: 5,
     threshold: 0.05,
     comparisonOperator: 'GreaterThanThreshold',
-    namespace: 'AWS/ApiGateway',
+    namespace: 'Custom/ApiGateway',
     dimensions: [
       { Name: 'ApiName', Value: `${testConfig.stackName}-shared-signal` },
       { Name: 'Stage', Value: testConfig.deployedEnvironment },
