@@ -68,7 +68,7 @@ jobs:
           working-directory: ./services/chat/.aws-sam/build
 
       - name: Build, tag, and push testing images to Amazon ECR
-        uses: govuk-one-login/devplatform-upload-action-ecr@v1.4.0
+        uses: govuk-one-login/devplatform-upload-action-ecr@v1.7.0
         with:
           container-sign-kms-key-arn: ${{ vars.CHAT_CONTAINER_SIGN_KMS_KEY_ARN }}
           ecr-repo-name: ${{ vars.CHAT_TEST_ECR_REPOSITORY_NAME }}
