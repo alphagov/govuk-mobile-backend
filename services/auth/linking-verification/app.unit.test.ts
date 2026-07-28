@@ -38,7 +38,7 @@ const getApiGatewayEvent = (body: string) => {
   } as APIGatewayProxyEvent;
 };
 
-const generateJwt = async (username?: string) => {
+const generateJwt = async (jti: string, username?: string) => {
   const secretKey = await generateSecret('HS256');
   const payload = {
     sub: '123',
@@ -48,6 +48,7 @@ const generateJwt = async (username?: string) => {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('2h')
+    .setJti(jti)
     .sign(secretKey);
 };
 
@@ -77,7 +78,8 @@ const cognitoMock = mockClient(CognitoIdentityProviderClient);
 
 describe('GIVEN the Linking Verification Handler is invoked', () => {
   beforeEach(() => {
-    vi.stubEnv('HASH_KEY_SECRET_NAME', testParamName);
+    vi.stubEnv('VERIFICATION_HASH_KEY_SECRET_NAME', testParamName);
+    vi.stubEnv('SESSION_HASH_KEY_SECRET_NAME', testParamName);
     vi.stubEnv('USER_POOL_ID', testPoolId);
     vi.clearAllMocks();
     cognitoMock.reset();
@@ -95,8 +97,18 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     expect(JSON.parse(response.body).message).toBe('Invalid request body');
   });
 
-  it('WHEN the hash key variable is not valid THEN an error is returned', async () => {
-    vi.stubEnv('HASH_KEY_SECRET_NAME', undefined);
+  it('WHEN the verification hash key variable is not valid THEN an error is returned', async () => {
+    vi.stubEnv('VERIFICATION_HASH_KEY_SECRET_NAME', undefined);
+    const event = getApiGatewayEvent(JSON.stringify({ token: 'abc' }));
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe(
+      'Invalid environment variables',
+    );
+  });
+
+  it('WHEN the session hash key variable is not valid THEN an error is returned', async () => {
+    vi.stubEnv('SESSION_HASH_KEY_SECRET_NAME', undefined);
     const event = getApiGatewayEvent(JSON.stringify({ token: 'abc' }));
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
@@ -116,22 +128,32 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
   });
 
   it('WHEN the jwt lacks a username THEN an error is returned', async () => {
+    const jti = 'test123';
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt() }),
+      JSON.stringify({ token: await generateJwt(jti) }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe(
-      'No valid username in token',
+    expect(JSON.parse(response.body).message).toBe('Invalid claims in token');
+  });
+
+  it('WHEN the jwt lacks a jti THEN an error is returned', async () => {
+    const jti = '';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
     );
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe('Invalid claims in token');
   });
 
   it('WHEN cognito throws an error THEN an error is returned', async () => {
     cognitoMock
       .on(AdminGetUserCommand)
       .rejects(new Error('Failed to get user'));
+    const jti = 'test123';
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('username-123') }),
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
@@ -142,40 +164,81 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     cognitoMock
       .on(AdminGetUserCommand)
       .resolves({ UserAttributes: [{ Name: 'abc', Value: '123' }] });
+    const jti = 'test123';
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('username-123') }),
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
     expect(JSON.parse(response.body).message).toBe('No valid cognito email');
   });
 
-  it('WHEN the hash secret fails to fetch THEN an error is returned', async () => {
+  it('WHEN the verification hash secret fails to fetch THEN an error is returned', async () => {
     cognitoMock.on(AdminGetUserCommand).resolves({
       UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
     });
     (getSecret as Mock).mockRejectedValue(new Error('network error'));
 
+    const jti = 'test123';
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('username-123') }),
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe('Failed to fetch hash key');
+    expect(JSON.parse(response.body).message).toBe(
+      'Failed to fetch hash key(s)',
+    );
   });
 
-  it('WHEN the hash secret is not valid THEN an error is returned', async () => {
+  it('WHEN the session hash secret fails to fetch THEN an error is returned', async () => {
+    cognitoMock.on(AdminGetUserCommand).resolves({
+      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
+    });
+    (getSecret as Mock)
+      .mockResolvedValueOnce('fetched first secret')
+      .mockRejectedValue(new Error('network error'));
+
+    const jti = 'test123';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
+    );
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe(
+      'Failed to fetch hash key(s)',
+    );
+  });
+
+  it('WHEN the verification hash secret is not valid THEN an error is returned', async () => {
     cognitoMock.on(AdminGetUserCommand).resolves({
       UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
     });
     (getSecret as Mock).mockResolvedValue(undefined);
 
+    const jti = 'test123';
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('username-123') }),
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe('Invalid hash key');
+    expect(JSON.parse(response.body).message).toBe('Invalid hash key(s)');
+  });
+
+  it('WHEN the session hash secret is not valid THEN an error is returned', async () => {
+    cognitoMock.on(AdminGetUserCommand).resolves({
+      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
+    });
+    (getSecret as Mock)
+      .mockResolvedValueOnce('fetchedFirstValid')
+      .mockResolvedValue(undefined);
+
+    const jti = 'test123';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
+    );
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe('Invalid hash key(s)');
   });
 
   it('WHEN no errors occur THEN an hash is returned', async () => {
@@ -184,12 +247,14 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     });
     (getSecret as Mock).mockResolvedValue('mock_hash_key');
 
+    const jti = 'test123';
     const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt('username-123') }),
+      JSON.stringify({ token: await generateJwt(jti, 'username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
     console.log(response);
     expect(response.statusCode).toBe(StatusCodes.OK);
     expect(JSON.parse(response.body).verificationHash).toBeTypeOf('string');
+    expect(JSON.parse(response.body).sessionHash).toBeTypeOf('string');
   });
 });
