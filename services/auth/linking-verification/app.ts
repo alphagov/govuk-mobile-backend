@@ -35,7 +35,7 @@ export const lambdaHandler = middy()
   )
   .handler(async (event: APIGatewayProxyEvent) => {
     //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const eventBody = JSON.parse(event.body);
+    const eventBody = JSON.parse(event.body ?? '{}');
     const validationResult = z.safeParse(requestSchema, eventBody);
     if (!validationResult.success) {
       return generateErrorResponseV2({
@@ -45,8 +45,15 @@ export const lambdaHandler = middy()
     }
     const { token } = validationResult.data;
 
-    const hashKeyParamName = process.env['HASH_KEY_SECRET_NAME'];
-    if (typeof hashKeyParamName !== 'string' || !hashKeyParamName) {
+    const verificationHashKeyParamName =
+      process.env['VERIFICATION_HASH_KEY_SECRET_NAME'];
+    const sessionHashKeyParamName = process.env['SESSION_HASH_KEY_SECRET_NAME'];
+    if (
+      typeof verificationHashKeyParamName !== 'string' ||
+      !verificationHashKeyParamName ||
+      typeof sessionHashKeyParamName !== 'string' ||
+      !sessionHashKeyParamName
+    ) {
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
         message: 'Invalid environment variables',
@@ -63,11 +70,16 @@ export const lambdaHandler = middy()
 
     //Decoding JWT -> Getting email
     const claims = decodeJwt(token);
-    const { username } = claims;
-    if (typeof username !== 'string' || !username) {
+    const { username, jti } = claims;
+    if (
+      typeof username !== 'string' ||
+      !username ||
+      typeof jti !== 'string' ||
+      !jti
+    ) {
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
-        message: 'No valid username in token',
+        message: 'Invalid claims in token',
       });
     }
 
@@ -103,10 +115,14 @@ export const lambdaHandler = middy()
       });
     }
 
-    //Hashing Email
-    let hashKey = undefined;
+    //Hashing Email & JTI
+    let verificationHashKey = undefined;
+    let sessionHashKey = undefined;
     try {
-      hashKey = await getSecret(hashKeyParamName, {
+      verificationHashKey = await getSecret(verificationHashKeyParamName, {
+        maxAge: sixtyMinutes,
+      });
+      sessionHashKey = await getSecret(sessionHashKeyParamName, {
         maxAge: sixtyMinutes,
       });
     } catch (error) {
@@ -114,25 +130,33 @@ export const lambdaHandler = middy()
       logger.error((error as Error).message);
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
-        message: 'Failed to fetch hash key',
+        message: 'Failed to fetch hash key(s)',
       });
     }
 
-    if (typeof hashKey !== 'string') {
+    if (
+      typeof verificationHashKey !== 'string' ||
+      typeof sessionHashKey !== 'string'
+    ) {
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
-        message: 'Invalid hash key',
+        message: 'Invalid hash key(s)',
       });
     }
 
-    const verificationHash = createHmac('sha256', hashKey)
+    const verificationHash = createHmac('sha256', verificationHashKey)
       .update(email)
+      .digest('hex');
+
+    const sessionHash = createHmac('sha256', sessionHashKey)
+      .update(jti)
       .digest('hex');
 
     return {
       statusCode: StatusCodes.OK,
       body: JSON.stringify({
         verificationHash,
+        sessionHash,
       }),
     };
   });

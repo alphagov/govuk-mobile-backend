@@ -3814,7 +3814,8 @@ Resources:
         LogGroup: !Ref LinkingVerificationFunctionLogGroup
       Environment:
         Variables:
-          HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/hash-key-secret
+          VERIFICATION_HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/hash-key-secret
+          SESSION_HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/session-hash-key-secret
           USER_POOL_ID: !Ref CognitoUserPool
           POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-linking-verification
           POWERTOOLS_LOGGER_LOG_EVENT: !If
