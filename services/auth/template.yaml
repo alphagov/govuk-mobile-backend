@@ -3939,7 +3939,7 @@ Resources:
       Description: KMS asymmetric key for signing the JWT token shared to DVLA
       EnableKeyRotation: false
       KeyUsage: SIGN_VERIFY
-      CustomerMasterKeySpec: RSA_2048
+      KeySpec: RSA_2048
       MultiRegion: false
       KeyPolicy:
         Version: '2012-10-17'
