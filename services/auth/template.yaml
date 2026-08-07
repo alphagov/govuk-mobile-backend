@@ -3816,6 +3816,8 @@ Resources:
         Variables:
           VERIFICATION_HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/hash-key-secret
           SESSION_HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/session-hash-key-secret
+          DVLA_JWE_PUBLIC_KEY: !Sub /${ConfigStackName}/linking/dvla/jwe-public-key-secret
+          DVLA_LINKING_KEY_ARN: !GetAtt LinkingVerificationTokenSigningKey.Arn
           USER_POOL_ID: !Ref CognitoUserPool
           POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-linking-verification
           POWERTOOLS_LOGGER_LOG_EVENT: !If
@@ -3925,6 +3927,66 @@ Resources:
           Value: !Ref Environment
         - Key: System
           Value: Authentication
+
+  LinkingVerificationTokenSigningKey:
+    Type: AWS::KMS::Key
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_7"
+            comment: "AWS KMS does not support automatic key rotation for asymmetric keys (RSA_2048). Rotation is handled via JWKS lifecycle."
+    Properties:
+      Description: KMS asymmetric key for signing the JWT token shared to DVLA
+      EnableKeyRotation: false
+      KeyUsage: SIGN_VERIFY
+      CustomerMasterKeySpec: RSA_2048
+      MultiRegion: false
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - kms:Encrypt*
+              - kms:Decrypt*
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:Describe*
+            Resource:
+              - '*'
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt LinkingVerificationFunctionIAMRole.Arn
+            Action:
+              - 'kms:Sign'
+              - 'kms:GetPublicKey'
+              - 'kns:DescribeKey'
+            Resource: 
+              - '*'
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+  
+  LinkingVerificationTokenSigningKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/dvla-verification-jwt-signing-key
+      TargetKeyId: !Ref LinkingVerificationTokenSigningKey
 
   LinkingVerificationFunctionKMSKey:
     Type: AWS::KMS::Key
