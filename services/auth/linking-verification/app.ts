@@ -70,12 +70,12 @@ export const lambdaHandler = middy()
 
     //Decoding JWT -> Getting email
     const claims = decodeJwt(token);
-    const { username, jti } = claims;
+    const { username, sub } = claims;
     if (
       typeof username !== 'string' ||
       !username ||
-      typeof jti !== 'string' ||
-      !jti
+      typeof sub !== 'string' ||
+      !sub
     ) {
       return generateErrorResponseV2({
         status: StatusCodes.INTERNAL_SERVER_ERROR,
@@ -149,7 +149,7 @@ export const lambdaHandler = middy()
       .digest('hex');
 
     const sessionHash = createHmac('sha256', sessionHashKey)
-      .update(jti)
+      .update(sub)
       .digest('hex');
 
     return {
