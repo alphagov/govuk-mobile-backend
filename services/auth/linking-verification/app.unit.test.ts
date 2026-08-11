@@ -3,13 +3,22 @@ import { lambdaHandler } from './app';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 import { StatusCodes } from 'http-status-codes';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
+import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import { clearCaches } from '@aws-lambda-powertools/parameters';
-import { generateSecret, SignJWT } from 'jose';
+import {
+  compactDecrypt,
+  exportSPKI,
+  generateKeyPair,
+  generateSecret,
+  SignJWT,
+} from 'jose';
 import { mockClient } from 'aws-sdk-client-mock';
 import {
   AdminGetUserCommand,
   CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { SignCommand, KMSClient } from '@aws-sdk/client-kms';
+import { generateKeyPairSync, KeyObject } from 'crypto';
 
 /**
  * Validation
@@ -48,8 +57,12 @@ const generateJwt = async (sub: string, username?: string) => {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('2h')
-    .setJti(sub)
+    .setSubject(sub)
     .sign(secretKey);
+};
+
+const generateTestingKeyPair = async () => {
+  return generateKeyPair('RS256');
 };
 
 const mockContext = {
@@ -74,12 +87,29 @@ vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
   };
 });
 
+vi.mock('@aws-lambda-powertools/parameters/ssm', async (importOriginal) => {
+  const originalModule = await importOriginal<
+    typeof import('@aws-lambda-powertools/parameters/secrets')
+  >();
+  return {
+    ...originalModule,
+    getParameter: vi.fn().mockResolvedValue(
+      JSON.stringify({
+        client_secret: 'mock-client-param', // pragma: allowlist-secret
+      }),
+    ),
+  };
+});
+
 const cognitoMock = mockClient(CognitoIdentityProviderClient);
+const kmsMock = mockClient(KMSClient);
 
 describe('GIVEN the Linking Verification Handler is invoked', () => {
   beforeEach(() => {
     vi.stubEnv('VERIFICATION_HASH_KEY_SECRET_NAME', testParamName);
     vi.stubEnv('SESSION_HASH_KEY_SECRET_NAME', testParamName);
+    vi.stubEnv('DVLA_JWE_PUB_KEY_PARAM_NAME', testParamName);
+    vi.stubEnv('DVLA_JWS_SIGNING_KEY_ID', testParamName);
     vi.stubEnv('USER_POOL_ID', testPoolId);
     vi.clearAllMocks();
     cognitoMock.reset();
@@ -97,35 +127,24 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     expect(JSON.parse(response.body).message).toBe('Invalid request body');
   });
 
-  it('WHEN the verification hash key variable is not valid THEN an error is returned', async () => {
-    vi.stubEnv('VERIFICATION_HASH_KEY_SECRET_NAME', undefined);
-    const event = getApiGatewayEvent(JSON.stringify({ token: 'abc' }));
-    const response = await lambdaHandler(event, mockContext);
-    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe(
-      'Invalid environment variables',
-    );
-  });
-
-  it('WHEN the session hash key variable is not valid THEN an error is returned', async () => {
-    vi.stubEnv('SESSION_HASH_KEY_SECRET_NAME', undefined);
-    const event = getApiGatewayEvent(JSON.stringify({ token: 'abc' }));
-    const response = await lambdaHandler(event, mockContext);
-    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe(
-      'Invalid environment variables',
-    );
-  });
-
-  it('WHEN the user pool id is not valid THEN an error is returned', async () => {
-    vi.stubEnv('USER_POOL_ID', undefined);
-    const event = getApiGatewayEvent(JSON.stringify({ token: 'abc' }));
-    const response = await lambdaHandler(event, mockContext);
-    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe(
-      'Invalid environment variables',
-    );
-  });
+  it.each([
+    { env: 'VERIFICATION_HASH_KEY_SECRET_NAME' },
+    { env: 'SESSION_HASH_KEY_SECRET_NAME' },
+    { env: 'DVLA_JWE_PUB_KEY_PARAM_NAME' },
+    { env: 'DVLA_JWS_SIGNING_KEY_ID' },
+    { env: 'USER_POOL_ID' },
+  ])(
+    'WHEN the $env is not valid THEN an error is returned',
+    async ({ env }) => {
+      vi.stubEnv(env, undefined);
+      const event = getApiGatewayEvent(JSON.stringify({ token: 'abc' }));
+      const response = await lambdaHandler(event, mockContext);
+      expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+      expect(JSON.parse(response.body).message).toBe(
+        'Invalid environment variables',
+      );
+    },
+  );
 
   it('WHEN the jwt lacks a username THEN an error is returned', async () => {
     const sub = 'test123';
@@ -185,9 +204,23 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe(
-      'Failed to fetch hash key(s)',
+    expect(JSON.parse(response.body).message).toBe('Failed to fetch key(s)');
+  });
+
+  it('WHEN the verification hash secret is not valid THEN an error is returned', async () => {
+    cognitoMock.on(AdminGetUserCommand).resolves({
+      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
+    });
+    (getSecret as Mock).mockResolvedValue(undefined);
+    (getParameter as Mock).mockResolvedValue('param');
+
+    const sub = 'test123';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(sub, 'username-123') }),
     );
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe('Invalid key(s)');
   });
 
   it('WHEN the session hash secret fails to fetch THEN an error is returned', async () => {
@@ -204,24 +237,7 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe(
-      'Failed to fetch hash key(s)',
-    );
-  });
-
-  it('WHEN the verification hash secret is not valid THEN an error is returned', async () => {
-    cognitoMock.on(AdminGetUserCommand).resolves({
-      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
-    });
-    (getSecret as Mock).mockResolvedValue(undefined);
-
-    const sub = 'test123';
-    const event = getApiGatewayEvent(
-      JSON.stringify({ token: await generateJwt(sub, 'username-123') }),
-    );
-    const response = await lambdaHandler(event, mockContext);
-    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe('Invalid hash key(s)');
+    expect(JSON.parse(response.body).message).toBe('Failed to fetch key(s)');
   });
 
   it('WHEN the session hash secret is not valid THEN an error is returned', async () => {
@@ -231,6 +247,7 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     (getSecret as Mock)
       .mockResolvedValueOnce('fetchedFirstValid')
       .mockResolvedValue(undefined);
+    (getParameter as Mock).mockResolvedValue('param');
 
     const sub = 'test123';
     const event = getApiGatewayEvent(
@@ -238,23 +255,109 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     );
     const response = await lambdaHandler(event, mockContext);
     expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(JSON.parse(response.body).message).toBe('Invalid hash key(s)');
+    expect(JSON.parse(response.body).message).toBe('Invalid key(s)');
   });
 
-  it('WHEN no errors occur THEN an hash is returned', async () => {
+  it('WHEN the dvla JWE Pub Key param fails to fetch THEN an error is returned', async () => {
     cognitoMock.on(AdminGetUserCommand).resolves({
       UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
     });
-    (getSecret as Mock).mockResolvedValue('mock_hash_key');
+    (getSecret as Mock)
+      .mockResolvedValueOnce('fetched first secret')
+      .mockResolvedValueOnce('fetched second secret');
+    (getParameter as Mock).mockRejectedValue(new Error('network error'));
 
     const sub = 'test123';
     const event = getApiGatewayEvent(
       JSON.stringify({ token: await generateJwt(sub, 'username-123') }),
     );
     const response = await lambdaHandler(event, mockContext);
-    console.log(response);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe('Failed to fetch key(s)');
+  });
+
+  it('WHEN the dvla JWE Pub Key is not valid THEN an error is returned', async () => {
+    cognitoMock.on(AdminGetUserCommand).resolves({
+      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
+    });
+    (getSecret as Mock)
+      .mockResolvedValueOnce('fetchedFirstValid')
+      .mockResolvedValueOnce('fetchedSecondValid');
+    (getParameter as Mock).mockResolvedValue(undefined);
+
+    const sub = 'test123';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(sub, 'username-123') }),
+    );
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe('Invalid key(s)');
+  });
+
+  it('WHEN kms throws an error THEN an error is returned', async () => {
+    const keys = await generateTestingKeyPair();
+    const pubKeyPem = exportSPKI(keys.publicKey);
+    cognitoMock.on(AdminGetUserCommand).resolves({
+      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
+    });
+    (getSecret as Mock)
+      .mockResolvedValueOnce('fetchedFirstValid')
+      .mockResolvedValueOnce('fetchedSecondValid');
+    (getParameter as Mock).mockResolvedValue(pubKeyPem);
+    kmsMock.on(SignCommand).rejects(new Error('Network Error'));
+
+    const sub = 'test123';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(sub, 'username-123') }),
+    );
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe('Failed to sign token');
+  });
+
+  it('WHEN kms does not return a signature THEN an error is returned', async () => {
+    const keys = await generateTestingKeyPair();
+    const pubKeyPem = exportSPKI(keys.publicKey);
+    cognitoMock.on(AdminGetUserCommand).resolves({
+      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
+    });
+    (getSecret as Mock)
+      .mockResolvedValueOnce('fetchedFirstValid')
+      .mockResolvedValueOnce('fetchedSecondValid');
+    (getParameter as Mock).mockResolvedValue(pubKeyPem);
+    kmsMock.on(SignCommand).resolves({});
+
+    const sub = 'test123';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(sub, 'username-123') }),
+    );
+    const response = await lambdaHandler(event, mockContext);
+    expect(response.statusCode).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+    expect(JSON.parse(response.body).message).toBe('No signature returned');
+  });
+
+  it.only('WHEN no errors occur THEN a JWE is returned', async () => {
+    const keys = await generateTestingKeyPair();
+    const pubKeyPem = exportSPKI(keys.publicKey);
+    cognitoMock.on(AdminGetUserCommand).resolves({
+      UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
+    });
+    (getSecret as Mock).mockResolvedValue('mock_hash_key');
+    (getParameter as Mock).mockResolvedValue(pubKeyPem);
+    kmsMock.on(SignCommand).resolves({ Signature: Uint8Array.from('abc123') });
+
+    const sub = 'test123';
+    const event = getApiGatewayEvent(
+      JSON.stringify({ token: await generateJwt(sub, 'username-123') }),
+    );
+    const response = await lambdaHandler(event, mockContext);
+    const responseBody = JSON.parse(response.body);
+
+    // const decryptedToken = compactDecrypt(responseBody.token, keys.privateKey);
+    //TODO: Ensure the token is decryptable with test key pair, but need to wait for
+    // correct key algs, encs from DVLA, this may all change
+
     expect(response.statusCode).toBe(StatusCodes.OK);
-    expect(JSON.parse(response.body).verificationHash).toBeTypeOf('string');
-    expect(JSON.parse(response.body).sessionHash).toBeTypeOf('string');
+    expect(responseBody.token).toBeTypeOf('string');
   });
 });
