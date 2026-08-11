@@ -185,6 +185,7 @@ export const lambdaHandler = middy()
       verification,
       iat,
       exp: iat + 600,
+      iss: 'urn:gds:app-backend:linking-verification',
     };
 
     const encodedHeader = base64UrlEncode(jwtHeader);
