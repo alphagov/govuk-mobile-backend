@@ -3,22 +3,14 @@ import { lambdaHandler } from './app';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 import { StatusCodes } from 'http-status-codes';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
-import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import { clearCaches } from '@aws-lambda-powertools/parameters';
-import {
-  compactDecrypt,
-  exportSPKI,
-  generateKeyPair,
-  generateSecret,
-  SignJWT,
-} from 'jose';
+import { exportSPKI, generateKeyPair, generateSecret, SignJWT } from 'jose';
 import { mockClient } from 'aws-sdk-client-mock';
 import {
   AdminGetUserCommand,
   CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { SignCommand, KMSClient } from '@aws-sdk/client-kms';
-import { generateKeyPairSync, KeyObject } from 'crypto';
 
 /**
  * Validation
@@ -82,20 +74,6 @@ vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
     getSecret: vi.fn().mockResolvedValue(
       JSON.stringify({
         client_secret: 'mock-client-secret', // pragma: allowlist-secret
-      }),
-    ),
-  };
-});
-
-vi.mock('@aws-lambda-powertools/parameters/ssm', async (importOriginal) => {
-  const originalModule = await importOriginal<
-    typeof import('@aws-lambda-powertools/parameters/secrets')
-  >();
-  return {
-    ...originalModule,
-    getParameter: vi.fn().mockResolvedValue(
-      JSON.stringify({
-        client_secret: 'mock-client-param', // pragma: allowlist-secret
       }),
     ),
   };
@@ -212,7 +190,6 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
       UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
     });
     (getSecret as Mock).mockResolvedValue(undefined);
-    (getParameter as Mock).mockResolvedValue('param');
 
     const sub = 'test123';
     const event = getApiGatewayEvent(
@@ -246,8 +223,8 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     });
     (getSecret as Mock)
       .mockResolvedValueOnce('fetchedFirstValid')
-      .mockResolvedValue(undefined);
-    (getParameter as Mock).mockResolvedValue('param');
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce('fetchedThirdValid');
 
     const sub = 'test123';
     const event = getApiGatewayEvent(
@@ -264,8 +241,8 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     });
     (getSecret as Mock)
       .mockResolvedValueOnce('fetched first secret')
-      .mockResolvedValueOnce('fetched second secret');
-    (getParameter as Mock).mockRejectedValue(new Error('network error'));
+      .mockResolvedValueOnce('fetched second secret')
+      .mockRejectedValue(new Error('network error'));
 
     const sub = 'test123';
     const event = getApiGatewayEvent(
@@ -282,8 +259,8 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     });
     (getSecret as Mock)
       .mockResolvedValueOnce('fetchedFirstValid')
-      .mockResolvedValueOnce('fetchedSecondValid');
-    (getParameter as Mock).mockResolvedValue(undefined);
+      .mockResolvedValueOnce('fetchedSecondValid')
+      .mockResolvedValue(undefined);
 
     const sub = 'test123';
     const event = getApiGatewayEvent(
@@ -302,8 +279,8 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     });
     (getSecret as Mock)
       .mockResolvedValueOnce('fetchedFirstValid')
-      .mockResolvedValueOnce('fetchedSecondValid');
-    (getParameter as Mock).mockResolvedValue(pubKeyPem);
+      .mockResolvedValueOnce('fetchedSecondValid')
+      .mockResolvedValue(pubKeyPem);
     kmsMock.on(SignCommand).rejects(new Error('Network Error'));
 
     const sub = 'test123';
@@ -323,8 +300,8 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     });
     (getSecret as Mock)
       .mockResolvedValueOnce('fetchedFirstValid')
-      .mockResolvedValueOnce('fetchedSecondValid');
-    (getParameter as Mock).mockResolvedValue(pubKeyPem);
+      .mockResolvedValueOnce('fetchedSecondValid')
+      .mockResolvedValue(pubKeyPem);
     kmsMock.on(SignCommand).resolves({});
 
     const sub = 'test123';
@@ -336,14 +313,16 @@ describe('GIVEN the Linking Verification Handler is invoked', () => {
     expect(JSON.parse(response.body).message).toBe('No signature returned');
   });
 
-  it.only('WHEN no errors occur THEN a JWE is returned', async () => {
+  it('WHEN no errors occur THEN a JWE is returned', async () => {
     const keys = await generateTestingKeyPair();
     const pubKeyPem = exportSPKI(keys.publicKey);
     cognitoMock.on(AdminGetUserCommand).resolves({
       UserAttributes: [{ Name: 'email', Value: 'bob.ross123@dsit.gov.uk' }],
     });
-    (getSecret as Mock).mockResolvedValue('mock_hash_key');
-    (getParameter as Mock).mockResolvedValue(pubKeyPem);
+    (getSecret as Mock)
+      .mockResolvedValueOnce('mock_hash_key')
+      .mockResolvedValueOnce('mock_hash_key')
+      .mockResolvedValue(pubKeyPem);
     kmsMock.on(SignCommand).resolves({ Signature: Uint8Array.from('abc123') });
 
     const sub = 'test123';

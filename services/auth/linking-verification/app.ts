@@ -2,7 +2,6 @@ import middy from '@middy/core';
 import { captureLambdaHandler } from '@aws-lambda-powertools/tracer/middleware';
 import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets';
-import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import { CompactEncrypt, decodeJwt } from 'jose';
 import { generateErrorResponseV2 } from '@libs/http-utils';
 import { StatusCodes } from 'http-status-codes';
@@ -145,7 +144,7 @@ export const lambdaHandler = middy()
       sessionHashKey = await getSecret(sessionHashKeyParamName, {
         maxAge: sixtyMinutes,
       });
-      dvlaJWEPubKeyPem = await getParameter(dvlaJWEPubKeyParamName, {
+      dvlaJWEPubKeyPem = await getSecret(dvlaJWEPubKeyParamName, {
         maxAge: sixtyMinutes,
       });
     } catch (error) {
