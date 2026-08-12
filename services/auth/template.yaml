@@ -3816,8 +3816,8 @@ Resources:
         Variables:
           VERIFICATION_HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/hash-key-secret
           SESSION_HASH_KEY_SECRET_NAME: !Sub /${ConfigStackName}/linking/dvla/session-hash-key-secret
-          DVLA_JWE_PUBLIC_KEY: !Sub /${ConfigStackName}/linking/dvla/jwe-public-key-secret
-          DVLA_LINKING_KEY_ARN: !GetAtt LinkingVerificationTokenSigningKey.Arn
+          DVLA_JWE_PUB_KEY_PARAM_NAME: !Sub /${ConfigStackName}/linking/dvla/jwe-public-key-secret
+          DVLA_JWS_SIGNING_KEY_ID: !Ref LinkingVerificationTokenSigningKey
           USER_POOL_ID: !Ref CognitoUserPool
           POWERTOOLS_SERVICE_NAME: !Sub ${AWS::StackName}-linking-verification
           POWERTOOLS_LOGGER_LOG_EVENT: !If

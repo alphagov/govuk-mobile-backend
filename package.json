@@ -36,6 +36,7 @@
     "@aws-sdk/client-cloudwatch-logs": "3.1088.0",
     "@aws-sdk/client-cognito-identity-provider": "3.1088.0",
     "@aws-sdk/client-iam": "3.1088.0",
+    "@aws-sdk/client-kms": "3.1088.0",
     "@aws-sdk/client-lambda": "3.1088.0",
     "@aws-sdk/client-secrets-manager": "3.1088.0",
     "@aws-sdk/client-sns": "3.1088.0",
