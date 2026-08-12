@@ -57,10 +57,10 @@
   },
   "devDependencies": {
     "@amiceli/vitest-cucumber": "^5.2.1",
-    "@nx/eslint": "23.1.0",
-    "@nx/eslint-plugin": "23.1.0",
+    "@nx/eslint": "23.1.1",
+    "@nx/eslint-plugin": "23.1.1",
     "@nx/js": "23.1.0",
-    "@nx/vite": "23.1.0",
+    "@nx/vite": "23.1.1",
     "@swc-node/register": "~1.12.0",
     "@swc/core": "~1.15.8",
     "@swc/helpers": "^0.5.21",
