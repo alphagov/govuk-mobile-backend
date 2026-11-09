@@ -48,12 +48,23 @@ describe('Set up the Cognito User Pool OIDC client', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       CallbackURLs: {
         'Fn::If': [
-          'IsTestingEnvironment',
+          'IsDevEnvironment',
           [
             'govuk://govuk/login-auth-callback',
             'https://d84l1y8p4kdic.cloudfront.net',
+            'https://mailbox-web.development.mb-core.once.service.gov.uk/',
           ],
-          ['govuk://govuk/login-auth-callback'],
+          {
+            'Fn::If': [
+              'IsStagingEnvironment',
+              [
+                'govuk://govuk/login-auth-callback',
+                'https://d84l1y8p4kdic.cloudfront.net',
+                'https://mailbox-web.staging.mb-core.once.service.gov.uk/',
+              ],
+              ['govuk://govuk/login-auth-callback'],
+            ],
+          },
         ],
       },
     });
