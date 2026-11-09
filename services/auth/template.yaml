@@ -120,6 +120,14 @@ Conditions:
     - !Ref Environment
     - production
 
+  IsDevEnvironment: !Equals
+    - !Ref Environment
+    - dev
+
+  IsStagingEnvironment: !Equals
+    - !Ref Environment
+    - staging
+
   IsTestingEnvironment:
     Fn::Or:
       - Fn::Equals:
@@ -170,10 +178,6 @@ Conditions:
 
 Globals:
   Function:
-    CodeSigningConfigArn: !If
-      - UseCodeSigning
-      - !Ref CodeSigningConfigArn
-      - !Ref AWS::NoValue
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
@@ -249,10 +253,16 @@ Resources:
         - openid
       GenerateSecret: true # pragma: allowlist secret
       CallbackURLs: !If
-        - IsTestingEnvironment
+        - IsDevEnvironment
         - - govuk://govuk/login-auth-callback
           - https://d84l1y8p4kdic.cloudfront.net
-        - - govuk://govuk/login-auth-callback
+          - https://mailbox-web.development.mb-core.once.service.gov.uk/
+        - !If
+          - IsStagingEnvironment
+          - - govuk://govuk/login-auth-callback
+            - https://d84l1y8p4kdic.cloudfront.net
+            - https://mailbox-web.staging.mb-core.once.service.gov.uk/
+          - - govuk://govuk/login-auth-callback
       LogoutURLs: !If
         - IsProduction
         - - https://oidc.account.gov.uk/logout
@@ -1036,6 +1046,10 @@ Resources:
     Type: AWS::Serverless::Function
     #checkov:skip=CKV2_GOVUKAPP_1:Ensure lambda function has a permissions boundary via an IAM role
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub '${AWS::StackName}-pager-duty-test-endpoint'
       CodeUri: .build/pager-duty-test-endpoint/
       Handler: app.lambdaHandler
@@ -1857,6 +1871,10 @@ Resources:
   AuthProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub ${AWS::StackName}-auth-proxy
       Description:
         Auth proxy - performs app integrity checks and forwards requests to
@@ -2330,6 +2348,10 @@ Resources:
   SharedSignalAuthorizer:
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub ${AWS::StackName}-shared-signal-authorizer-function
       CodeUri: .build/shared-signal-authorizer
       Handler: app.lambdaHandler
@@ -2717,6 +2739,10 @@ Resources:
   SharedSignalReceiverFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub ${AWS::StackName}-shared-signal-receiver
       Description: Shared Signal receiver function
       CodeUri: .build/shared-signal-receiver
@@ -3025,6 +3051,10 @@ Resources:
   SharedSignalHealthCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub ${AWS::StackName}-shared-signal-health-check
       Description: Shared Signal health check function
       CodeUri: .build/shared-signal-health-check
@@ -3502,6 +3532,10 @@ Resources:
   RevokeRefreshTokenFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub "${AWS::StackName}-revoke-refresh-token"
       Description: Revokes a Cognito Refresh Token.
       Handler: app.lambdaHandler
@@ -3804,6 +3838,10 @@ Resources:
   LinkingVerificationFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub "${AWS::StackName}-linking-verification"
       Description: Generates a verification hash for account linking.
       Handler: app.lambdaHandler
@@ -4304,6 +4342,10 @@ Resources:
     Condition: IsTestingEnvironment
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub '${AWS::StackName}-testing-function'
       Description: 'Function required to perform testing actions'
       CodeUri: .build/tests/lambdas/acceptance
@@ -4348,6 +4390,10 @@ Resources:
     Condition: IsNonIntegratedEnvironment
     Type: AWS::Serverless::Function
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub "${AWS::StackName}-mock-shared-signals-transmitter"
       Description: "Function required to mock the shared signals transmitter"
       CodeUri: .build/tests/lambdas/transmitter
@@ -4416,6 +4462,10 @@ Resources:
     Type: AWS::Serverless::Function
     Condition: IsSmokeTestEnvironment
     Properties:
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       FunctionName: !Sub ${AWS::StackName}-smoke-test
       Description: Production smoke test for sign-in and token refresh flows
       CodeUri: .build/smoke-test/
