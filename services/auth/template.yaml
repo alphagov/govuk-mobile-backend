@@ -1357,6 +1357,43 @@ Resources:
       ResourceArn: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${AttestationProxyApi}/stages/${AttestationProxyApi.Stage}
       WebACLArn: !GetAtt AuthProxyWaf.Arn
 
+  AuthProxyDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: !Sub '{{resolve:ssm:/certificates/domain-certificate}}'
+      DomainName: !If
+        - IsEphemeralStack
+        - !Sub ${AWS::StackName}.auth.${Environment}.app-backend.service.gov.uk
+        - !Sub auth.${Environment}.app-backend.service.gov.uk
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Product
+          Value: GOV.UK
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: System
+          Value: Authentication
+
+  AuthProxyBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref AuthProxyDomainName
+      RestApiId: !Ref AttestationProxyApi
+      Stage: !Ref AttestationProxyApi.Stage
+
+  AuthProxyApiRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Sub '{{resolve:ssm:/dns/env-hosted-zone-id}}'
+      Type: A
+      Name: !Sub "${AuthProxyDomainName}."
+      AliasTarget:
+        DNSName: !GetAtt AuthProxyDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt AuthProxyDomainName.RegionalHostedZoneId
+
   AuthProxyWafLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
