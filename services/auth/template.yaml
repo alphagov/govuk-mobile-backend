@@ -257,11 +257,13 @@ Resources:
         - - govuk://govuk/login-auth-callback
           - https://d84l1y8p4kdic.cloudfront.net
           - https://mailbox-web.development.mb-core.once.service.gov.uk/
+          - https://mailbox-web.development.mb-client.once.service.gov.uk/
         - !If
           - IsStagingEnvironment
           - - govuk://govuk/login-auth-callback
             - https://d84l1y8p4kdic.cloudfront.net
             - https://mailbox-web.staging.mb-core.once.service.gov.uk/
+            - https://mailbox-web.staging.mb-client.once.service.gov.uk/
           - - govuk://govuk/login-auth-callback
       LogoutURLs: !If
         - IsProduction

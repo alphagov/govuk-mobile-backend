@@ -53,6 +53,7 @@ describe('Set up the Cognito User Pool OIDC client', () => {
             'govuk://govuk/login-auth-callback',
             'https://d84l1y8p4kdic.cloudfront.net',
             'https://mailbox-web.development.mb-core.once.service.gov.uk/',
+            'https://mailbox-web.development.mb-client.once.service.gov.uk/',
           ],
           {
             'Fn::If': [
@@ -61,6 +62,7 @@ describe('Set up the Cognito User Pool OIDC client', () => {
                 'govuk://govuk/login-auth-callback',
                 'https://d84l1y8p4kdic.cloudfront.net',
                 'https://mailbox-web.staging.mb-core.once.service.gov.uk/',
+                'https://mailbox-web.staging.mb-client.once.service.gov.uk/',
               ],
               ['govuk://govuk/login-auth-callback'],
             ],
