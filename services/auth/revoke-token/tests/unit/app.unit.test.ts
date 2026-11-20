@@ -37,7 +37,7 @@ describe('lambdaHandler - revoke-token', () => {
   });
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   afterEach(() => {

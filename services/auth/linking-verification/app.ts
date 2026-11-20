@@ -105,9 +105,8 @@ export const lambdaHandler = middy()
     });
     let email = '';
     try {
-      const cognitoUser = await cognitoIdentityServiceProvider.send(
-        cognitoCommand,
-      );
+      const cognitoUser =
+        await cognitoIdentityServiceProvider.send(cognitoCommand);
       if (!cognitoUser.UserAttributes) {
         return generateErrorResponseV2({
           status: StatusCodes.INTERNAL_SERVER_ERROR,

@@ -105,7 +105,7 @@ const createEvent = async (overrides?: any): Promise<APIGatewayProxyEvent> =>
     resource: '',
     stageVariables: {},
     ...overrides,
-  } as unknown as APIGatewayProxyEvent);
+  }) as unknown as APIGatewayProxyEvent;
 
 describe('lambdaHandler', () => {
   const mockRequestHandler = vi.fn();

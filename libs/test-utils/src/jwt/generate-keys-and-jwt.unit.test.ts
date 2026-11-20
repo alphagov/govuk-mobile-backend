@@ -29,9 +29,8 @@ describe('Generate Keys & JWT', () => {
       kid: 'key-id',
     };
 
-    const { privateKey, publicKey, publicKid, jwt } = await generateKeysAndJwt(
-      jwtOptions,
-    );
+    const { privateKey, publicKey, publicKid, jwt } =
+      await generateKeysAndJwt(jwtOptions);
 
     expect(isCryptoKey(privateKey)).toBeTruthy();
     expect(isCryptoKey(publicKey)).toBeTruthy();

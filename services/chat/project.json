@@ -23,10 +23,9 @@
       }
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["services/chat/**/*.{ts,tsx,js,jsx}"]
+        "cwd": ".",
+        "command": "eslint \"services/chat/**/*.{ts,tsx,js,jsx}\""
       }
     },
     "checkov": {
@@ -43,24 +42,24 @@
     },
     "test:acc": {
       "executor": "nx:run-commands",
+      "outputs": ["{options.outputFile}"],
       "options": {
         "command": "vitest services/chat/**/* --project acc"
-      },
-      "outputs": ["{options.outputFile}"]
+      }
     },
     "test:int": {
       "executor": "nx:run-commands",
+      "outputs": ["{options.outputFile}"],
       "options": {
         "command": "vitest services/chat/**/* --project int"
-      },
-      "outputs": ["{options.outputFile}"]
+      }
     },
     "test:functional": {
       "executor": "nx:run-commands",
+      "outputs": ["{options.outputFile}"],
       "options": {
         "command": "vitest --dir chat --project functional"
-      },
-      "outputs": ["{options.outputFile}"]
+      }
     },
     "test:coverage": {
       "executor": "nx:run-commands",

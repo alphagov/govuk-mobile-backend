@@ -7,8 +7,8 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.1000.0",
-    "jose": "^6.0.12",
-    "uuid": "^14.0.0"
+    "@aws-sdk/client-cognito-identity-provider": "^3.1173.0",
+    "jose": "^6.2.18",
+    "uuid": "^14.0.3"
   }
 }
