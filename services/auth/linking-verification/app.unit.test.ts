@@ -66,9 +66,10 @@ const testPoolId = 'TEST_USER_POOL_123';
 
 //mocks
 vi.mock('@aws-lambda-powertools/parameters/secrets', async (importOriginal) => {
-  const originalModule = await importOriginal<
-    typeof import('@aws-lambda-powertools/parameters/secrets')
-  >();
+  const originalModule =
+    await importOriginal<
+      typeof import('@aws-lambda-powertools/parameters/secrets')
+    >();
   return {
     ...originalModule,
     getSecret: vi.fn().mockResolvedValue(

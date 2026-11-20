@@ -1,8 +1,6 @@
 import { coverageConfigDefaults, defineConfig } from 'vitest/config';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
   resolve: {
     alias: {
       '@libs/http-utils': new URL(
@@ -13,13 +11,16 @@ export default defineConfig({
         './libs/auth-utils/src/index.ts',
         import.meta.url,
       ).pathname,
+      '@libs/test-utils': new URL(
+        './libs/test-utils/src/index.ts',
+        import.meta.url,
+      ).pathname,
     },
   },
   test: {
-    // Since Vitest 3, you can define a workspace in your root config. In this case, Vitest will ignore the vitest.workspace file in the root, if one exists.
-    workspace: [
+    projects: [
       {
-        // will inherit options from this config like plugins and pool
+        // will inherit options from this config like aliases and pool
         extends: true,
         test: {
           name: 'unit',
@@ -46,9 +47,9 @@ export default defineConfig({
           environment: 'node',
           // allow for extremely long running tests (Deploy script testing)
           testTimeout: 600000,
-          //Move to single thread to avoid parallel running script files
+          // Run script test files one at a time to avoid parallel script execution
           pool: 'threads',
-          poolOptions: { threads: { singleThread: true } },
+          fileParallelism: false,
         },
       },
       {

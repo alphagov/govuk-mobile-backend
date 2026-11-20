@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import zod from 'zod/v4';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 // eslint-disable-next-line @typescript-eslint/no-magic-numbers
 const sixtyMinutes = 60 * 60 * 1000;

@@ -6,9 +6,10 @@ import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 const mockConfigStackName = 'test-ssm';
 
 vi.mock('@aws-lambda-powertools/parameters/ssm', async (importOriginal) => {
-  const originalModule = await importOriginal<
-    typeof import('@aws-lambda-powertools/parameters/ssm')
-  >();
+  const originalModule =
+    await importOriginal<
+      typeof import('@aws-lambda-powertools/parameters/ssm')
+    >();
   return {
     ...originalModule,
     getParameter: vi.fn().mockResolvedValue('True'),
@@ -24,9 +25,9 @@ describe('feature flags', () => {
   });
 
   describe('GIVEN CONFIG_STACK_NAME is missing', async () => {
-    it('THEN an error is thrown', () => {
+    it('THEN an error is thrown', async () => {
       const flags = FEATURE_FLAGS;
-      expect(flags.ATTESTATION()).rejects.toThrow(
+      await expect(flags.ATTESTATION()).rejects.toThrow(
         'Missing Environment Variable: CONFIG_STACK_NAME',
       );
     });
@@ -38,9 +39,9 @@ describe('feature flags', () => {
       vi.stubEnv('CONFIG_STACK_NAME', mockConfigStackName);
     });
 
-    it('THEN an error is thrown', () => {
+    it('THEN an error is thrown', async () => {
       const flags = FEATURE_FLAGS;
-      expect(flags.ATTESTATION()).rejects.toThrow(
+      await expect(flags.ATTESTATION()).rejects.toThrow(
         `Missing SSM Paramater at: /test-ssm/feature-flags/attestation`,
       );
     });
@@ -63,7 +64,7 @@ describe('feature flags', () => {
         vi.mocked(getParameter).mockResolvedValue(parameterValue);
 
         const flags = FEATURE_FLAGS;
-        expect(flags.ATTESTATION()).resolves.toEqual(outcome);
+        await expect(flags.ATTESTATION()).resolves.toEqual(outcome);
       },
     );
   });

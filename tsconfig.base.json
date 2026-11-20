@@ -31,6 +31,7 @@
       "@libs/auth-utils": ["./libs/auth-utils/src/index.ts"],
       "@libs/http-utils": ["./libs/http-utils/src/index.ts"],
       "@libs/test-utils": ["./libs/test-utils/src/index.ts"]
-    }
+    },
+    "types": ["node", "aws-lambda"]
   }
 }

@@ -18,7 +18,7 @@
 - [ ] Automated tests added
       **_Comment:_**
 
-- [ ] Documentation added ([link]())
+- [ ] Documentation added ([link](<>))
       **_Comment:_**
 
 - [ ] Delete any new stacks created for this ticket
